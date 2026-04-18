@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "sweph": "^2.10.3-b-1",
+    "swisseph-wasm": "^0.0.5"
+  }
+}
