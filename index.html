@@ -431,6 +431,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
       <label><input type="checkbox" id="chkNatalAspects"> <span>Natal Aspects</span></label>
       <label><input type="checkbox" id="chkHouseDividers"> <span>House Dividers</span></label>
       <label><input type="checkbox" id="chkVarshaphala"> <span style="color:var(--cyan);font-weight:bold;">Sahams / Varshaphala (Transit Chart)</span></label>
+      <label><input type="checkbox" id="chkShortNames"> <span style="color:#FFAAEE;">Short Planet Names</span></label>
     </div>
     <div class="sep"></div>
     <!-- Aspect type checkboxes -->
@@ -708,6 +709,47 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 <div id="birthModal">
   <div class="modal-box">
     <div class="modal-title">✎ Birth Details</div>
+    
+    <div class="sec-title" style="margin-top:0; margin-bottom:10px;">★ Celebrity Database</div>
+    <div class="form-grid" style="margin-bottom:20px; background:rgba(200,168,75,0.05); padding:10px; border-radius:4px; border:1px solid rgba(200,168,75,0.15);">
+      <div class="fg">
+        <label>Select Profession</label>
+        <select id="celebProfession">
+          <option value="">-- Select Category --</option>
+          <option value="actor">Actor</option>
+          <option value="businessman">Businessman</option>
+          <option value="politician">Politician</option>
+          <option value="sports man">Sports Man</option>
+          <option value="artist">Artist</option>
+          <option value="criminal">Criminal</option>
+          <option value="judge">Judge</option>
+          <option value="architect">Architect</option>
+          <option value="interior designer">Interior Designer</option>
+          <option value="king">King</option>
+          <option value="gay">Gay</option>
+          <option value="lesbian">Lesbian</option>
+          <option value="widow">Widow</option>
+          <option value="saint">Saint</option>
+          <option value="pope">Pope</option>
+          <option value="influencer">Influencer</option>
+          <option value="motivational">Motivational</option>
+          <option value="educator">Educator</option>
+          <option value="goons">Goons</option>
+          <option value="freedom fighter">Freedom Fighter</option>
+          <option value="rich person">Rich Person</option>
+          <option value="industrialist">Industrialist</option>
+          <option value="inventor">Inventor</option>
+          <option value="presenter">Presenter</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Select Celebrity</label>
+        <select id="celebList">
+          <option value="">-- First Select Category --</option>
+        </select>
+      </div>
+    </div>
+
     <div class="form-grid">
       <div class="fg form-grid wide"><label>Full Name</label><input id="fName" placeholder="Native name" value="Native · 7 Oct 1977"></div>
       <div class="fg"><label>Birth Date</label><input type="date" id="fDate" value="1977-10-07"></div>
@@ -762,6 +804,52 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
   </div>
 </div>
 
+<script>
+// --- CELEBRITY LOOKUP LOGIC ---
+document.getElementById('celebProfession')?.addEventListener('change', (e) => {
+  const profession = e.target.value;
+  const celebList = document.getElementById('celebList');
+  if(!celebList) return;
+  
+  celebList.innerHTML = '<option value="">-- Select Celebrity --</option>';
+  
+  if(profession && window.CELEBRITY_DATABASE && window.CELEBRITY_DATABASE[profession]){
+    window.CELEBRITY_DATABASE[profession].forEach(celeb => {
+      const opt = document.createElement('option');
+      opt.value = celeb.name;
+      opt.textContent = celeb.name;
+      celebList.appendChild(opt);
+    });
+  }
+});
+
+document.getElementById('celebList')?.addEventListener('change', (e) => {
+  const name = e.target.value;
+  const profession = document.getElementById('celebProfession')?.value;
+  if(!name || !profession || !window.CELEBRITY_DATABASE) return;
+  
+  const celeb = window.CELEBRITY_DATABASE[profession].find(c => c.name === name);
+  if(celeb){
+    document.getElementById('fName').value = celeb.name;
+    document.getElementById('fDate').value = celeb.date;
+    document.getElementById('fTime').value = celeb.time;
+    document.getElementById('fCity').value = celeb.city;
+    document.getElementById('fLat').value = celeb.lat;
+    document.getElementById('fLon').value = celeb.lon;
+    document.getElementById('fUtc').value = celeb.utcOff;
+    document.getElementById('fAyan').value = celeb.ayan || 'lahiri';
+    
+    // Highlight that data was loaded
+    const res = document.getElementById('calcResult');
+    if(res) {
+      res.style.display = 'block';
+      res.innerHTML = `Loaded birth data for ${celeb.name}. Click 'Calculate & Close' to update.`;
+      res.style.color = 'var(--gold)';
+    }
+  }
+});
+</script>
+
 <div id="tooltip"></div>
 
 <script type="module">
@@ -787,6 +875,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 <script src="./src/yoga_display.js"></script>
 <script src="./src/yoga_implementations.js"></script>
 <script src="./src/yoga_divisional_analysis.js"></script>
+<script src="./src/celebrities_data.js"></script>
 
 <!-- Prediction System Files -->
 <script src="./src/predictions/analysis.js"></script>
@@ -797,8 +886,12 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 <script src="./src/predictions/Tushar_roy.js"></script>
 <script src="./src/predictions/sahams.js"></script>
 <script src="./src/predictions/varshaphala.js"></script>
+<script src="./src/predictions/shadbala.js"></script>
 
 <!-- Predictions UI -->
+<script src="./src/sudarshan_chakra.js"></script>
+<script src="./src/predictions/karra_analysis.js"></script>
+<script src="./src/translations.js"></script>
 <script src="./src/predictions_ui.js"></script>
 
 <!-- Test Verification -->
@@ -1237,25 +1330,26 @@ function s2h(signNum,ascSignNum){
 //  BIRTH DATA  (7 Oct 1977 · 23:45 IST · Bombay Santa Cruz)
 //  Exact coordinates: 72E50 / 19N05  UTC-5:30 (IST = +5:30)
 // ═══════════════════════════════════════════════════════════
-let BIRTH={
+window.BIRTH={
   name:'Native · 7 Oct 1977',
   date:new Date(1977,9,7,23,45,0),
   lat:19.0833, lon:72.8333, utcOff:5.5,   // 19N05 / 72E50
   city:'Bombay Santa Cruz, Maharashtra, India',
   ayan:'lahiri', ephem:'swiss', houseSystem:'whole', chartStyle:'north',
+  useComputed: true
 };
 
 // Compute birth JD (UT = local − utcOffset)
 function birthJD(){
-  const d=BIRTH.date;
-  const utH=d.getHours()-BIRTH.utcOff+d.getMinutes()/60;
+  const d=window.BIRTH.date;
+  const utH=d.getHours()-window.BIRTH.utcOff+d.getMinutes()/60;
   return jd(d.getFullYear(),d.getMonth()+1,d.getDate(),utH);
 }
 
-let BIRTH_JD=birthJD();
-let BIRTH_ASC=null;
-let BIRTH_PLANETS=null;
-let CURRENT_DIV=1;
+window.BIRTH_JD=birthJD();
+window.BIRTH_ASC=null;
+window.BIRTH_PLANETS=null;
+window.CURRENT_DIV=1;
 
 // ─── ACCURATE D1 DATA FROM PARASHARA'S LIGHT ──────────────
 // Source: PDF · Parashara Light 7.0.1 · 7 Oct 1977 23:45 IST
@@ -1359,6 +1453,31 @@ function recalcBirth(){
     BIRTH_PLANETS=divPlanets;
   }
   BIRTH_ASC.house=1;
+  
+  // Expose to window for prediction modules
+  window.BIRTH_PLANETS = BIRTH_PLANETS;
+  window.BIRTH_ASC = BIRTH_ASC;
+  window.CURRENT_PLANETARY_POSITIONS = BIRTH_PLANETS;
+  window.CURRENT_ASCENDANT = BIRTH_ASC.sid;
+  
+  // Populate CURRENT_HOUSES for Yoga and prediction engines
+  const houses = {};
+  for(let i=1; i<=12; i++){
+    const signNum = (BIRTH_ASC.sn + i - 1) % 12;
+    houses[i] = { 
+      num: i, 
+      sign: signNum, 
+      signName: SIGNS[signNum],
+      lord: LORDS[signNum]
+    };
+  }
+  window.CURRENT_HOUSES = houses;
+  
+  // Build Dashas
+  rebuildDashas();
+  YOGINI = buildYoginiDasha();
+  window.VIMSH = VIMSH;
+  window.YOGINI = YOGINI;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1854,7 +1973,8 @@ function buildVimsh(birthDate, moonNakLord, elapsedInLord, totalYrsOfLord){
       const subDur = (duration * subYrs) / 120;
       const e = new Date(s.getTime() + subDur);
       const item = { lord: subLord, start: new Date(s), end: new Date(e) };
-      if(level < 3) item.subs = addSubs(s, e, subLord, level + 1);
+      // Increase level to 5 to get Pratyantar, Sukshma, and Prana dashas
+      if(level < 5) item.subs = addSubs(s, e, subLord, level + 1);
       list.push(item);
       s = e;
     }
@@ -2159,9 +2279,10 @@ function drawDChart(cvId, customData){
     planets.forEach(({p,pd},i)=>{
       const cfg=PCFG[p], col=p==='As'?'#3AF0FF':(cfg?.color||'#888'), py=baseY+i*ROW_H;
       ctx.beginPath();ctx.arc(c.x-14,py,3,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
-      const sym=p==='As'?'As':(cfg?.sym||p.substring(0,2));
+      const useShorts = document.getElementById('chkShortNames')?.checked;
+      const sym = p==='As' ? 'As' : (useShorts ? p.substring(0,2) : (cfg?.sym||p.substring(0,2)));
       ctx.font='bold 8px Courier New';ctx.fillStyle=col;ctx.fillText(sym,c.x-8,py+3);
-      if(p!=='As'){ctx.font='6px Courier New';ctx.fillStyle=col+'99';ctx.fillText(Math.floor(pd.deg)+'°',c.x+6,py+3);}
+      if(p!=='As'){ctx.font='6px Courier New';ctx.fillStyle=col+'99';ctx.fillText(Math.floor(pd.deg)+'°',c.x+5,py+3);}
     });
   }
 
@@ -2424,6 +2545,40 @@ function drawMainChart(){
       }
     }
   }
+  
+  // Saham Conjunctions on Transit Chart
+  if (document.getElementById('chkShowSahamsTransit')?.checked && window.BIRTH_SAHAMS) {
+    ctx.textAlign = 'center';
+    for (const p of pList) {
+      if (!activePlanets.has(p)) continue;
+      const tSids = data.sids[p], tHouses = data.positions[p];
+      const cfg = PCFG[p];
+
+      for (const saham of window.BIRTH_SAHAMS) {
+        const sSid = saham.degree;
+        for (let t = 0; t < N; t += Math.max(1, Math.floor(N / 150))) {
+          const diff = Math.abs((tSids[t] - sSid + 360) % 360);
+          if (diff < 3.0) { // Tight orb for Sahams
+            const x = toX(data.dates[t]);
+            const y = toY(useNakAxis ? (tSids[t] / (360 / 27)) : tHouses[t]);
+            
+            const sahamColor = saham.color || '#00DDFF';
+            ctx.fillStyle = sahamColor; ctx.font = 'bold 10px Arial';
+            ctx.fillText('✨', x, y + 5);
+            
+            // Optional label for major Sahams
+            if (['Punya', 'Rajya', 'Karma', 'Vivaha'].some(k => saham.name.includes(k))) {
+                ctx.globalAlpha = 0.6;
+                ctx.fillStyle = sahamColor; 
+                ctx.font = '7px Courier New';
+                ctx.fillText(saham.slug, x, y - 10);
+                ctx.globalAlpha = 1.0;
+            }
+          }
+        }
+      }
+    }
+  }
 
   // Natal house dots overlay on transit chart
   if(showNatal&&BIRTH_PLANETS){
@@ -2500,7 +2655,9 @@ function drawMainChart(){
     // End label
     if(N>0){
       ctx.fillStyle=cfg.color;ctx.font='bold 9px Trebuchet MS';
-      ctx.fillText(planet.substring(0,3),PAD.left+CW-28,toY(disp[N-1])-4);
+      const useShorts = document.getElementById('chkShortNames')?.checked;
+      const shrtName = useShorts ? planet.substring(0,2) : planet.substring(0,3);
+      ctx.fillText(shrtName,PAD.left+CW-28,toY(disp[N-1])-4);
     }
   }
 
@@ -2927,9 +3084,9 @@ document.getElementById('calcBirth').addEventListener('click',()=>{
   if(!dateStr){alert('Please enter birth date');return;}
   const[y,mo,d]=dateStr.split('-').map(Number);
   const[hh,mm]=(timeStr+':00').split(':').map(Number);
-  BIRTH={name,date:new Date(y,mo-1,d,hh,mm,0),lat,lon,utcOff,city,ayan,ephem,houseSystem:hSys,chartStyle:style,useComputed:true};
+  window.BIRTH={name,date:new Date(y,mo-1,d,hh,mm,0),lat,lon,utcOff,city,ayan,ephem,houseSystem:hSys,chartStyle:style,useComputed:true};
 
-  clearCache();recalcBirth();rebuildDashas();YOGINI=buildYoginiDasha();
+  clearCache();recalcBirth();rebuildDashas();window.YOGINI=buildYoginiDasha();
 
   // Show result
   const ascInfo=BIRTH_ASC;
@@ -3567,14 +3724,50 @@ function renderAll(){
     try {
       const birthChart = {
         planets: BIRTH_PLANETS,
-        houses: HOUSES,
+        houses: window.CURRENT_HOUSES || {},
         asc: BIRTH_ASC
       };
-      const allYogas = detectAllYogasInChart(birthChart);
-      const yogaReport = generateComprehensiveYogaReport(birthChart);
+      
+      // Detect D1 Yogas
+      const yogasD1 = detectAllYogasInChart(birthChart, 'D1');
+      
+      // Detect D9 Yogas (Navamsa)
+      let yogasD9 = [];
+      try {
+        const asc9Lon = (BIRTH_ASC.sid * 9) % 360;
+        const asc9SignIdx = Math.floor(asc9Lon / 30);
+        const d9Planets = {};
+        for (const [p, d] of Object.entries(BIRTH_PLANETS)) {
+          const d9Lon = (d.sid * 9) % 360;
+          const pSignIdx = Math.floor(d9Lon / 30);
+          const house = ((pSignIdx - asc9SignIdx + 12) % 12) + 1;
+          d9Planets[p] = { sid: d9Lon, longitude: d9Lon, house: house };
+        }
+        const birthChartD9 = {
+          planets: d9Planets,
+          houses: window.CURRENT_HOUSES || {}, // Simplified: using D1 houses
+          asc: { sid: asc9Lon, longitude: asc9Lon }
+        };
+        yogasD9 = detectAllYogasInChart(birthChartD9, 'D9');
+      } catch(e) {}
+
+      // Combine only DETECTED yogas from all charts
+      const combinedDetected = [
+        ...yogasD1.filter(y => y.detected),
+        ...yogasD9.filter(y => y.detected)
+      ];
+      
+      const yogaReport = generateComprehensiveYogaReport(birthChart); // Summary still based on D1 for now
       
       if (typeof renderYogasDashboard === 'function') {
-        renderYogasDashboard(allYogas, yogaReport.summary);
+        const outputYogas = combinedDetected.length > 0 ? combinedDetected : yogasD1;
+        renderYogasDashboard(outputYogas, yogaReport.summary);
+      }
+
+      // If the sliding Yoga panel is open, refresh it as well
+      const yogaPanel = document.getElementById('yogasPanel');
+      if (yogaPanel && yogaPanel.classList.contains('open') && typeof showYogasPanel === 'function') {
+        showYogasPanel();
       }
     } catch(e) {
       console.warn('Error rendering yogas:', e);
