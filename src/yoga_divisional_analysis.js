@@ -76,37 +76,246 @@ function analyzeYogasAcrossDivisionalCharts(birthChart) {
  */
 function calculateDivisionalChartPlanets(d1Planets, divisor) {
   const dChartPlanets = {};
-  
+
   Object.keys(d1Planets).forEach(planetName => {
     const planet = d1Planets[planetName];
     if (!planet) return;
-    
+
     // Calculate absolute degree position in zodiac (0-360)
     const absoluteDeg = (planet.sn || 0) * 30 + (planet.deg || 0);
-    
-    // Calculate D-chart position by dividing zodiac into divisor parts
-    const dPosition = absoluteDeg / divisor;
-    
-    // Convert back to sign and degree
-    const dSign = Math.floor(dPosition / 30);
-    const dDegree = dPosition % 30;
-    
-    // Get sign name
-    const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
-    const dSignName = signNames[dSign % 12];
-    
-    dChartPlanets[planetName] = {
-      ...planet,  // Keep original D1 data
-      sn: dSign,  // D-chart sign number (0-11)
-      sign: dSignName,  // D-chart sign name (for reference)
-      deg: Math.round(dDegree * 100) / 100,  // D-chart degree
-      d1Sign: planet.sign,  // Store original D1 sign
-      d1Degree: planet.deg,  // Store original D1 degree
-      house: planet.house  // Houses typically same across D-charts (simplified)
+
+    // Special handling for Navamsa (D9) chart
+    if (divisor === 9) {
+      dChartPlanets[planetName] = calculateNavamsaPosition(planet, absoluteDeg);
+    } else {
+      // Generic Parashari mapping for D-charts:
+      // sign index = floor((absoluteDeg * divisor) / 30) % 12
+      // degree in mapped sign = fractional part within 30°
+      const multiplied = absoluteDeg * divisor;
+      const dSign = Math.floor(multiplied / 30) % 12;
+      const dDegree = multiplied % 30;
+
+      // Get sign name
+      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      const dSignName = signNames[dSign % 12];
+
+      dChartPlanets[planetName] = {
+        ...planet,  // Keep original D1 data
+        sn: dSign,  // D-chart sign number (0-11)
+        sign: dSignName,  // D-chart sign name (for reference)
+        deg: Math.round(dDegree * 100) / 100,  // D-chart degree
+        d1Sign: planet.sign,  // Store original D1 sign
+        d1Degree: planet.deg,  // Store original D1 degree
+        house: planet.house  // Houses typically same across D-charts (simplified)
+      };
+    }
+  });
+
+  return dChartPlanets;
+}
+
+/**
+ * Calculate Navamsa (D9) position using proper Vedic astrology method
+ * @param {Object} planet - Planet data from D1 chart
+ * @param {Number} absoluteDeg - Absolute degree position in zodiac (0-360)
+ * @returns {Object} Navamsa position
+ */
+function calculateNavamsaPosition(planet, absoluteDeg) {
+  // Each sign is divided into 9 navamsa parts (each 3°20' = 30°/9)
+  // We need the degree WITHIN the current sign only (0–29.99°)
+  const degInSign = absoluteDeg % 30;
+  const navamsaPart = Math.floor(degInSign / (30 / 9)); // 0–8 within the sign
+
+  // Determine the starting sign for Navamsa mapping based on the D1 sign
+  const d1Sign = planet.sn || 0;
+  const navamsaStartSign = getNavamsaStartSign(d1Sign);
+
+  // Calculate Navamsa sign (0-11)
+  const navamsaSign = (navamsaStartSign + navamsaPart) % 12;
+
+  // Get sign name
+  const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+  const navamsaSignName = signNames[navamsaSign];
+
+  return {
+    ...planet,  // Keep original D1 data
+    sn: navamsaSign,  // Navamsa sign number (0-11)
+    sign: navamsaSignName,  // Navamsa sign name
+    deg: 0,  // Navamsa degree is always 0 (each navamsa is 3°20')
+    d1Sign: planet.sign,  // Store original D1 sign
+    d1Degree: planet.deg,  // Store original D1 degree
+    house: planet.house,  // Houses typically same across D-charts (simplified)
+    navamsaPart: navamsaPart  // Store which navamsa part (0-8)
+  };
+}
+
+/**
+ * Get the starting sign for Navamsa mapping based on D1 sign
+ * @param {Number} d1Sign - D1 sign number (0-11)
+ * @returns {Number} Starting sign for Navamsa mapping (0-11)
+ */
+function getNavamsaStartSign(d1Sign) {
+  // Navamsa mapping starts from different signs based on D1 sign
+  // Standard Vedic astrology mapping:
+  // Fire signs (Aries, Leo, Sagittarius) start from Aries (0)
+  // Earth signs (Taurus, Virgo, Capricorn) start from Capricorn (9)
+  // Air signs (Gemini, Libra, Aquarius) start from Libra (6)
+  // Water signs (Cancer, Scorpio, Pisces) start from Cancer (3)
+  const startSigns = [0, 9, 6, 3, 0, 9, 6, 3, 0, 9, 6, 3];
+  return startSigns[d1Sign % 12];
+}
+
+/**
+ * Calculate Nakshatra from absolute longitude (0-360)
+ * @param {Number} lon - Absolute longitude
+ * @returns {Object} Nakshatra details
+ */
+function determineNakshatra(lon) {
+  const normalized = ((((lon || 0) % 360) + 360) % 360);
+  const span = 360 / 27;
+  const index = Math.floor(normalized / span);
+  const pada = Math.floor((normalized % span) / (span / 4)) + 1;
+  const names = [
+    'Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha',
+    'Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha',
+    'Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishta','Shatabhisha','Purva Bhadrapada','Uttara Bhadrapada','Revati'
+  ];
+
+  return {
+    index,
+    name: names[index] || 'Unknown',
+    pada,
+    degreeInNakshatra: normalized % span
+  };
+}
+
+/**
+ * Universal Varga calculator for major Parashara Vargas
+ * @param {number} lon - Sidereal Longitude (0-360)
+ * @param {number} v - Varga Number
+ * @returns {{sign:number, longitude:number, degInSign:number}}
+ */
+function getVargaData(lon, v) {
+  const normalizedLon = ((((lon || 0) % 360) + 360) % 360);
+  const signNum = Math.floor(normalizedLon / 30);
+  const degInSign = normalizedLon % 30;
+  const part = Math.floor(degInSign / (30 / v));
+  let targetSign = 0;
+
+  switch (v) {
+    case 1:
+      targetSign = signNum;
+      break;
+    case 2:
+      if (signNum % 2 === 0) targetSign = degInSign <= 15 ? 4 : 3;
+      else targetSign = degInSign <= 15 ? 3 : 4;
+      break;
+    case 3:
+      targetSign = (signNum + (part * 4)) % 12;
+      break;
+    case 4:
+      targetSign = (signNum + (part * 3)) % 12;
+      break;
+    case 7:
+      targetSign = (signNum % 2 === 0) ? (signNum + part) % 12 : (signNum + 6 + part) % 12;
+      break;
+    case 9: {
+      const d9Starts = [0, 9, 6, 3, 0, 9, 6, 3, 0, 9, 6, 3];
+      targetSign = (d9Starts[signNum] + part) % 12;
+      break;
+    }
+    case 10:
+      targetSign = (signNum % 2 === 0) ? (signNum + part) % 12 : (signNum + 8 + part) % 12;
+      break;
+    case 12:
+      targetSign = (signNum + part) % 12;
+      break;
+    case 16:
+    case 20: {
+      const starts = [0, 4, 8, 0, 4, 8, 0, 4, 8, 0, 4, 8];
+      targetSign = (starts[signNum] + part) % 12;
+      break;
+    }
+    case 24:
+      targetSign = (signNum % 2 === 0) ? (4 + part) % 12 : (3 + part) % 12;
+      break;
+    case 27:
+      targetSign = Math.floor(normalizedLon / (360 / 27)) % 12;
+      break;
+    case 30:
+      if (signNum % 2 === 0) {
+        if (degInSign < 5) targetSign = 0;
+        else if (degInSign < 10) targetSign = 10;
+        else if (degInSign < 18) targetSign = 8;
+        else if (degInSign < 25) targetSign = 2;
+        else targetSign = 1;
+      } else {
+        if (degInSign < 5) targetSign = 1;
+        else if (degInSign < 12) targetSign = 5;
+        else if (degInSign < 20) targetSign = 11;
+        else if (degInSign < 25) targetSign = 9;
+        else targetSign = 7;
+      }
+      break;
+    case 40:
+    case 45:
+    case 60:
+      targetSign = (signNum + part) % 12;
+      break;
+    default:
+      targetSign = (signNum * v + part) % 12;
+  }
+
+  const vargaLon = (targetSign * 30) + ((degInSign * v) % 30);
+  return {
+    sign: targetSign,
+    longitude: vargaLon,
+    degInSign: vargaLon % 30
+  };
+}
+
+/**
+ * Build full divisional chart including planets, ascendant and houses
+ * @param {number} vargaNumber
+ * @returns {Object}
+ */
+function castDivisionalChart(vargaNumber) {
+  const vargaChart = { planets: {}, asc: {}, houses: {} };
+  const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+
+  const d1AscLon = window.BIRTH_ASC && Number.isFinite(window.BIRTH_ASC.sid)
+    ? window.BIRTH_ASC.sid
+    : (((window.BIRTH_ASC?.sn || 0) * 30) + (window.BIRTH_ASC?.deg || 0));
+  const vDataAsc = getVargaData(d1AscLon, vargaNumber);
+
+  vargaChart.asc = {
+    sign: vDataAsc.sign,
+    signName: signNames[vDataAsc.sign],
+    lon: vDataAsc.longitude,
+    deg: vDataAsc.degInSign,
+    nakshatra: determineNakshatra(vDataAsc.longitude)
+  };
+
+  const sourcePlanets = window.BIRTH_PLANETS || {};
+  Object.entries(sourcePlanets).forEach(([pName, pData]) => {
+    const d1Lon = Number.isFinite(pData?.sid) ? pData.sid : (((pData?.sn || 0) * 30) + (pData?.deg || 0));
+    const vData = getVargaData(d1Lon, vargaNumber);
+    const house = ((vData.sign - vDataAsc.sign + 12) % 12) + 1;
+
+    vargaChart.planets[pName] = {
+      ...pData,
+      sn: vData.sign,
+      sign: signNames[vData.sign],
+      signName: signNames[vData.sign],
+      longitude: vData.longitude,
+      sid: vData.longitude,
+      deg: vData.degInSign,
+      house,
+      nakshatra: determineNakshatra(vData.longitude)
     };
   });
-  
-  return dChartPlanets;
+
+  return vargaChart;
 }
 
 /**
@@ -117,21 +326,32 @@ function calculateDivisionalChartPlanets(d1Planets, divisor) {
  */
 function calculateDivisionalLagna(d1Lagna, divisor) {
   if (!d1Lagna) return null;
-  
+
   const absoluteDeg = (d1Lagna.sn || 0) * 30 + (d1Lagna.deg || 0);
-  const dPosition = absoluteDeg / divisor;
-  const dSign = Math.floor(dPosition / 30);
-  const dDegree = dPosition % 30;
+
+  // Lagna data may come either as {sn, deg} object OR as numeric ascendant degree (0-360)
+  // from callers using `birthChart.asc`. Normalize both safely.
+  const isNumericAsc = typeof d1Lagna === 'number' && Number.isFinite(d1Lagna);
+  const normalizedSign = isNumericAsc ? Math.floor(((d1Lagna % 360) + 360) % 360 / 30) : (d1Lagna.sn || 0);
+  const normalizedDeg = isNumericAsc ? ((((d1Lagna % 360) + 360) % 360) % 30) : (d1Lagna.deg || 0);
+  const normalizedAbs = normalizedSign * 30 + normalizedDeg;
+
+  const vData = getVargaData(normalizedAbs, divisor);
+  const dSign = vData.sign;
+  const dDegree = vData.degInSign;
   
   const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
   
   return {
-    ...d1Lagna,
+    ...(isNumericAsc ? {} : d1Lagna),
     sn: dSign,
     sign: signNames[dSign % 12],
     deg: Math.round(dDegree * 100) / 100,
-    d1Sign: d1Lagna.sign,
-    d1Degree: d1Lagna.deg
+    d1Sign: isNumericAsc ? signNames[normalizedSign] : d1Lagna.sign,
+    d1Degree: normalizedDeg,
+    sid: vData.longitude,
+    longitude: vData.longitude,
+    nakshatra: determineNakshatra(vData.longitude)
   };
 }
 

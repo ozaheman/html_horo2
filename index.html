@@ -328,6 +328,47 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 .sav-team-lbl{font-family:'Courier New',monospace;font-size:9px;letter-spacing:1px;margin-top:2px;}
 .sav-verdict{text-align:center;font-size:15px;font-weight:900;font-family:Palatino,serif;
   padding:8px;margin:8px 0;border-radius:4px;}
+  
+/* ── MOBILE RESPONSIVENESS ── */
+@media (max-width: 768px) {
+  .app { height: auto; overflow: visible; }
+  .workspace { 
+    grid-template-columns: 1fr; 
+    height: auto; 
+    overflow: visible; 
+  }
+  .left-col, .right-col { height: auto; border: none; }
+  .center-col { 
+    order: -1; 
+    height: 60vh; 
+    border-bottom: 1px solid var(--border2);
+  }
+  .top-bar { height: auto; position: sticky; top: 0; }
+  .tb1, .tb2, .tb3 { 
+    padding: 10px 8px; 
+    gap: 8px; 
+    justify-content: center; 
+  }
+  .btn { 
+    padding: 6px 12px; 
+    font-size: 10.5px;
+  }
+  .sep { display: none; } /* Hide separators to save space on mobile */
+  .lbl { display: none; } /* Hide labels (PLANETS:, SHOW:, etc) to save space */
+  
+  .range-pill { min-width: 140px; }
+  
+  #conjPanel, #activatedPanel, #predictionsPanel, #bizPanel, #marriagePanel, #prashnaPanel {
+    width: 100% !important;
+  }
+  
+  .conj-hdr h2 { font-size: 10px; }
+  .modal-box { width: 96vw; padding: 15px; }
+  .form-grid { grid-template-columns: 1fr; }
+  
+  /* Make graph full screen on mobile when requested or focused */
+  .center-col.mobile-focus { height: 80vh; }
+}
 </style>
 </head>
 <body>
@@ -373,6 +414,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
     <button class="btn" id="nextBtn">▶</button>
     <button class="btn cyan" id="todayBtn">TODAY</button>
     <button class="btn cyan" id="panchangBtn" style="border-color:rgba(58,240,255,.5);color:#3AF0FF;">PANCHANG</button>
+    <button class="btn gold" id="horaBtn" style="border-color:rgba(255,215,0,.5);color:#FFD700;">HORA</button>
     <div class="sep"></div>
     <button class="btn violet" id="btnVimsh">⊙ VIMSHOTTARI</button>
     <button class="btn" id="btnYogini" style="border-color:rgba(42,255,204,.3);color:rgba(42,255,204,.5);">☽ YOGINI</button>
@@ -887,6 +929,7 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
 <script src="./src/predictions/sahams.js"></script>
 <script src="./src/predictions/varshaphala.js"></script>
 <script src="./src/predictions/shadbala.js"></script>
+<script src="./src/business_tarachakra.js"></script>
 
 <!-- Predictions UI -->
 <script src="./src/sudarshan_chakra.js"></script>
@@ -1152,89 +1195,111 @@ function getChogadiya(jday, lat, lon, utcOff){
   return chogs;
 }
 
+function getHora(jday, lat, lon, utcOff) {
+  const res = calcSunriseSunset(jday, lat, lon, utcOff);
+  const nextRise = calcSunriseSunset(jday + 1, lat, lon, utcOff).sunrise + 1;
+  const dPeriod = (res.sunset - res.sunrise) / 12;
+  const nPeriod = (nextRise - res.sunset) / 12;
+
+  const lords = ["Sun", "Venus", "Mercury", "Moon", "Saturn", "Jupiter", "Mars"];
+  const dayIdx = (Math.floor(jday + 0.5 + utcOff/24) + 1) % 7; // Sunday=0
+  // Weekday order: Sun(0), Mon(1), Tue(2), Wed(3), Thu(4), Fri(5), Sat(6)
+  // Chaldean reverse (Hora) order starts from weekday lord
+  // Lords array is already in Hora order if we start at the right spot
+  const weekdayToHoraIdx = [0, 3, 6, 2, 5, 1, 4]; // Sun, Mon, Tue, Wed, Thu, Fri, Sat mapping to lords[]
+  let curLIdx = weekdayToHoraIdx[dayIdx];
+
+  const horas = [];
+  // Day Horas
+  for (let i = 0; i < 12; i++) {
+    horas.push({ lord: lords[curLIdx], start: res.sunrise + i * dPeriod, end: res.sunrise + (i+1) * dPeriod, isDay: true });
+    curLIdx = (curLIdx + 1) % 7;
+  }
+  // Night Horas
+  for (let i = 0; i < 12; i++) {
+    horas.push({ lord: lords[curLIdx], start: res.sunset + i * nPeriod, end: res.sunset + (i+1) * nPeriod, isDay: false });
+    curLIdx = (curLIdx + 1) % 7;
+  }
+  return horas;
+}
+
 // ═══════════════════════════════════════════════════════════
 //  DIVISIONAL CHART LONGITUDE
 // ═══════════════════════════════════════════════════════════
-function divLon(tropicalLon, div){
-  // Varga position: multiply longitude within sign by divisor, then add sign offset
-  const signNum=Math.floor(tropicalLon/30); // 0-11
-  const lonInSign=tropicalLon%30;
-  const divSize=30/div;
-  const part=Math.floor(lonInSign/divSize);
-  // For D1: same; for D2 (hora): odd signs sun/even moon; etc.
-  // Standard Parasara method for all vargas
+function divLon(siderealLon, div){
+  const signNum=Math.floor(siderealLon/30) % 12;
+  const lonInSign=siderealLon%30;
   let targetSign;
+  
   if(div===1){
-    return tropicalLon;
-  } else if(div===2){ // Hora
-    targetSign=(lonInSign<15)?((signNum%2===0)?4:3):((signNum%2===0)?3:4); // Cancer/Leo
-    return norm360(targetSign*30+lonInSign*2%30);
-  } else if(div===3){ // Drekkana
-    const dPart=Math.floor(lonInSign/(30/3));
-    targetSign=(signNum+dPart*4)%12;
-    return norm360(targetSign*30+lonInSign*3%30);
-  } else if(div===4){ // Chaturthamsa
-    targetSign=(signNum+Math.floor(lonInSign/(30/4))*3)%12;
-    return norm360(targetSign*30+lonInSign*4%30);
-  } else if(div===7){ // Saptamsa
+    return siderealLon;
+  } else if(div===2){ // Hora (D2)
+    // Vedic Hora: Odd signs (Leo/Cancer), Even signs (Cancer/Leo)
+    if(signNum%2===0){ targetSign=lonInSign<15?4:3; }
+    else { targetSign=lonInSign<15?3:4; }
+    return norm360(targetSign*30+(lonInSign*2)%30);
+  } else if(div===3){ // Drekkana (D3)
+    targetSign=(signNum + Math.floor(lonInSign/10)*4)%12;
+    return norm360(targetSign*30+(lonInSign*3)%30);
+  } else if(div===4){ // Chaturthamsa (D4)
+    targetSign=(signNum + Math.floor(lonInSign/7.5)*3)%12;
+    return norm360(targetSign*30+(lonInSign*4)%30);
+  } else if(div===7){ // Saptamsa (D7)
     const p7=Math.floor(lonInSign/(30/7));
     targetSign=(signNum%2===0)?(signNum+p7)%12:(signNum+p7+6)%12;
     return norm360(targetSign*30+(lonInSign*7)%30);
   } else if(div===9){ // Navamsa (D9)
     const p9=Math.floor(lonInSign/(30/9));
-    const triStart=[0,4,8,1,5,9,2,6,10,3,7,11];
+    const triStart=[0, 9, 6, 3, 0, 9, 6, 3, 0, 9, 6, 3];
     targetSign=(triStart[signNum]+p9)%12;
     return norm360(targetSign*30+(lonInSign*9)%30);
-  } else if(div===10){ // Dasamsa
+  } else if(div===10){ // Dasamsa (D10)
     const p10=Math.floor(lonInSign/(30/10));
     targetSign=(signNum%2===0)?(signNum+p10)%12:(signNum+p10+9)%12;
     return norm360(targetSign*30+(lonInSign*10)%30);
-  } else if(div===12){ // Dvadasamsa
-    targetSign=(signNum*12+Math.floor(lonInSign/(30/12)))%12;
+  } else if(div===12){ // Dvadasamsa (D12)
+    targetSign=(signNum + Math.floor(lonInSign/(30/12)))%12;
     return norm360(targetSign*30+(lonInSign*12)%30);
-  } else if(div===16){ // Shodasamsa
+  } else if(div===16){ // Shodasamsa (D16)
     const p16=Math.floor(lonInSign/(30/16));
     targetSign=(signNum%4===0||signNum%4===3)?p16%12:(p16+4)%12;
     return norm360(targetSign*30+(lonInSign*16)%30);
-  } else if(div===20){ // Vimshamsa
+  } else if(div===20){ // Vimshamsa (D20)
     const p20=Math.floor(lonInSign/(30/20));
     const vStarts=[0,4,8,0,4,8,0,4,8,0,4,8];
     targetSign=(vStarts[signNum]+p20)%12;
     return norm360(targetSign*30+(lonInSign*20)%30);
-  } else if(div===24){ // Chaturvimshamsa / Siddhamsa
+  } else if(div===24){ // Chaturvimshamsa (D24)
     const p24=Math.floor(lonInSign/(30/24));
     targetSign=(signNum%2===0)?(p24)%12:(p24+9)%12;
     return norm360(targetSign*30+(lonInSign*24)%30);
-  } else if(div===27){ // Saptavimshamsa (Nakshatramsa)
-    targetSign=Math.floor(tropicalLon/(360/27))%12;
-    return norm360(targetSign*30+(tropicalLon*27)%30);
-  } else if(div===30){ // Trimshamsa
-    // Odd signs: 0-5=Mars,5-10=Saturn,10-18=Jupiter,18-25=Mercury,25-30=Venus
-    // Even signs: reversed assignment starting with Venus
+  } else if(div===27){ // Saptavimshamsa (D27)
+    targetSign=Math.floor(siderealLon/(360/27))%12;
+    return norm360(targetSign*30+(siderealLon*27)%30);
+  } else if(div===30){ // Trimshamsa (D30)
     const p=lonInSign;
     let tsign;
-    if(signNum%2===0){ // odd zodiac sign (Aries,Gemini…)
+    if(signNum%2===0){ // Odd sign
       if(p<5)tsign=0;else if(p<10)tsign=6;else if(p<18)tsign=8;else if(p<25)tsign=4;else tsign=2;
-    } else {
+    } else { // Even sign
       if(p<5)tsign=2;else if(p<12)tsign=4;else if(p<20)tsign=8;else if(p<25)tsign=6;else tsign=0;
     }
     return norm360(tsign*30+(p*30/30)%30);
-  } else if(div===40){ // Khavedamsa
+  } else if(div===40){ // Khavedamsa (D40)
     const p40=Math.floor(lonInSign/(30/40));
-    targetSign=(signNum%2===0)?p40%12:(p40+6)%12; // Start Aries for Odd, Libra for Even
+    targetSign=(signNum%2===0)?p40%12:(p40+6)%12;
     return norm360(targetSign*30+(lonInSign*40)%30);
-  } else if(div===45){ // Akshavedamsa
+  } else if(div===45){ // Akshavedamsa (D45)
     const p45=Math.floor(lonInSign/(30/45));
-    const start=[0,4,8][signNum%3]; // Aries, Leo, Sag
+    const start=[0,4,8][signNum%3];
     targetSign=(start+p45)%12;
     return norm360(targetSign*30+(lonInSign*45)%30);
-  } else if(div===60){ // Shashtiamsa
+  } else if(div===60){ // Shashtiamsa (D60)
     const p60=Math.floor(lonInSign/(30/60));
     targetSign=(signNum+p60)%12;
     return norm360(targetSign*30+(lonInSign*60)%30);
   }
-  // fallback: multiply within sign
-  return norm360(Math.floor(tropicalLon/30)*30 + (lonInSign*div)%30);
+  return norm360(siderealLon*div);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1304,7 +1369,7 @@ function computeAll(jday, ayan, div){
       trop=fn(jday);
     }
     const sid=toSid(trop,jday,ayan);
-    const dlon=div>1?toSid(divLon(trop,div),jday,ayan):sid;
+    const dlon=div>1?divLon(sid,div):sid;
     const sn=Math.floor(dlon/30);
     r[p]={trop,sid,dlon,sn,sign:SIGNS[sn],deg:(dlon%30).toFixed(2),
           retro:isRetrograde(p,jday)};
@@ -1315,7 +1380,7 @@ function computeAll(jday, ayan, div){
 function computeAsc(jday,lat,lon,utcOff,ayan,div){
   const ascTrop=calcAscendant(jday,lat,lon,utcOff);
   const ascSid=toSid(ascTrop,jday,ayan);
-  const dAsc=div>1?toSid(divLon(ascTrop,div),jday,ayan):ascSid;
+  const dAsc=div>1?divLon(ascSid,div):ascSid;
   const sn=Math.floor(dAsc/30);
   return{trop:ascTrop,sid:ascSid,dlon:dAsc,sn,sign:SIGNS[sn],deg:(dAsc%30).toFixed(2)};
 }
@@ -1547,7 +1612,7 @@ const VEDIC_ASPECTS={
   Saturn:[90,180,270],  // 3rd=90°, 7th=180°, 10th=270°
   Mars:[90,120,180,240,270], // 4th=90°,5th~,7th=180°,8th=240°
   Jupiter:[120,180,240],  // 5th,7th,9th
-  Rahu:[180],Ketu:[180],
+  Rahu:[120,180,240],Ketu:[120,180,240],
 };
 
 function findAspects(pos1, pos2, p1name, p2name, showAspects){
@@ -1821,13 +1886,26 @@ function findGeneralMuhurta() {
                 });
 
                 if (bCount >= 1 || ['enemies','medicine','property'].includes(type)) {
+                    // Hora Check
+                    const horas = getHora(jday, BIRTH.lat, BIRTH.lon, BIRTH.utcOff);
+                    const curH = horas.find(hor => h >= hor.start*24-0.01 && h < hor.end*24+0.01) || horas[0];
+                    const luckyLords = ["Jupiter", "Venus", "Moon", "Mercury", LORDS[BIRTH_ASC?.sn]];
+                    const isLuckyH = luckyLords.includes(curH.lord);
+                    
+                    const insight = getPersonalHoraInsight(curH.lord, BIRTH_ASC.sign, BIRTH_PLANETS.Moon.nak);
+                    const isSpecial = insight.navStr.includes("Ati") || insight.navStr.includes("Sampat") || insight.navStr.includes("Kshem");
+
                     results.push({
                         date: new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(h), 0),
                         tithi: `${t.name} (${t.phase})`,
                         nak: moonNak.name,
                         lagna: ascP.sign,
-                        score: score + bCount,
-                        reasons: reasons.join(", ") + (bCount > 0 ? `, Strong ${ascP.sign} Lagna` : '')
+                        hora: curH.lord,
+                        isLuckyHora: isLuckyH,
+                        isSpecialHora: isSpecial,
+                        tara: insight.navStr,
+                        score: score + bCount + (isLuckyH ? 2 : 0) + (isSpecial ? 2 : 0),
+                        reasons: reasons.join(", ") + (bCount > 0 ? `, Strong ${ascP.sign} Lagna` : '') + (isLuckyH ? `, Lucky ${curH.lord} Hora` : '') + (isSpecial ? `, ${insight.navStr} Sync` : '')
                     });
                     if (results.length > 30) break;
                 }
@@ -1852,6 +1930,7 @@ function displayMuhurtaResults(results, el, type) {
                     Tithi: <span style="color:var(--cyan)">${r.tithi}</span> | 
                     Nakshatra: <span style="color:var(--cyan)">${r.nak}</span><br>
                     Lagna: <span style="color:var(--gold2)">${r.lagna}</span> | 
+                    Hora: <span style="color:${r.isSpecialHora?'var(--gold)':'var(--text)'};font-weight:${r.isSpecialHora?'bold':'normal'};">${r.isSpecialHora?'🌟 ':''}${r.hora}</span> <span style="font-size:8px;color:var(--muted)">(${r.tara})</span> |
                     Score: <span style="color:var(--green)">${r.score}</span>
                 </div>
                 <div style="font-size:8.5px;color:var(--gold);margin-top:4px;font-style:italic;opacity:0.8;">
@@ -2452,6 +2531,40 @@ function drawMainChart(){
       ctx.strokeStyle='rgba(200,168,75,.5)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.stroke();ctx.setLineDash([]);
       ctx.fillStyle='#C8A84B';ctx.font='bold 9px Trebuchet MS';ctx.fillText('♃↩',x-7,PAD.top+9);inJR=true;
     }else if(pos.Jupiter.sn!==BIRTH_PLANETS?.Jupiter?.sn)inJR=false;
+  }
+
+  // 3D HORA BANDS
+  if (winDays === 3) {
+    const startJD = jd(sd.getFullYear(), sd.getMonth()+1, sd.getDate(), sd.getHours()+sd.getMinutes()/60);
+    const endJD = jd(ed.getFullYear(), ed.getMonth()+1, ed.getDate(), ed.getHours()+ed.getMinutes()/60);
+    const luckyLords = ["Jupiter", "Venus", "Moon", "Mercury", LORDS[BIRTH_ASC?.sn]];
+    
+    for (let j = Math.floor(startJD); j <= Math.ceil(endJD); j++) {
+      try {
+        const horas = getHora(j, BIRTH.lat, BIRTH.lon, BIRTH.utcOff);
+        horas.forEach(h => {
+          const hStart = new Date(sd.getTime() + (h.start - startJD) * 864e5);
+          const hEnd = new Date(sd.getTime() + (h.end - startJD) * 864e5);
+          if (hEnd < sd || hStart > ed) return;
+          const x1 = toX(hStart), x2 = toX(hEnd);
+          const isLucky = luckyLords.includes(h.lord);
+          if (isLucky) {
+             ctx.fillStyle = 'rgba(255,215,0,0.06)';
+             ctx.fillRect(x1, PAD.top, x2-x1, CH);
+          }
+          ctx.beginPath();ctx.moveTo(x1, PAD.top);ctx.lineTo(x1, PAD.top+CH);
+          ctx.strokeStyle = isLucky ? 'rgba(255,215,0,0.2)' : 'rgba(255,255,255,0.05)';
+          ctx.lineWidth = isLucky ? 1 : 0.5; ctx.stroke();
+          
+          if (x2 - x1 > 20) {
+            ctx.fillStyle = isLucky ? 'var(--gold)' : 'var(--muted)';
+            ctx.font = '7px Arial';
+            const sym = PCFG[h.lord]?.sym || '';
+            ctx.fillText(sym, (x1+x2)/2 - 3, PAD.top - 5);
+          }
+        });
+      } catch(e){}
+    }
   }
 
   // TODAY line
@@ -3525,11 +3638,18 @@ function GetDivisionalSign2(degrees, division) {
         case "D3-Dreshkana": DivSize = 10; iDiv = Math.floor(SignDeg / DivSize); StartSign = [0, 4, 8]; return (SignNum + StartSign[iDiv]) % 12 + 1;
         case "D4-Chaturtamsa": DivSize = 7.5; iDiv = Math.floor(SignDeg / DivSize); StartSign = [0, 3, 6, 9]; return (SignNum + StartSign[iDiv]) % 12 + 1;
         case "D7-Saptamsa": DivSize = 30.0 / 7.0; iDiv = Math.floor(SignDeg / DivSize); SignOdd = (SignNum + 1) % 2; StartSign = SignOdd ? SignNum : (SignNum + 6) % 12; return (StartSign + iDiv) % 12 + 1;
-        case "D9-Navamsa": 
-            DivSize = 30.0 / 9.0; 
-            iDiv = Math.floor(SignDeg / DivSize); 
-            StartSign = (SignNum * 9) % 12; 
-            return (StartSign + iDiv) % 12 + 1;
+        //case "D9-Navamsa": 
+        //    DivSize = 30.0 / 9.0; 
+         //   iDiv = Math.floor(SignDeg / DivSize); 
+         //   StartSign = (SignNum * 9) % 12; 
+         //   return (StartSign + iDiv) % 12 + 1;
+         case "D9-Navamsa": 
+    DivSize = 30.0 / 9.0; 
+    iDiv = Math.floor(SignDeg / DivSize); 
+    // Explicit start signs for D9: 0=Aries, 9=Cap, 6=Libra, 3=Cancer
+    const d9Starts = [0, 9, 6, 3, 0, 9, 6, 3, 0, 9, 6, 3];
+    StartSign = d9Starts[SignNum]; 
+    return (StartSign + iDiv) % 12 + 1;
         case "D10-Dasamsa": DivSize = 3.0; iDiv = Math.floor(SignDeg / DivSize); SignOdd = (SignNum + 1) % 2; StartSign = SignOdd ? SignNum : (SignNum + 8) % 12; return (StartSign + iDiv) % 12 + 1;
         case "D12-Dwadasamsa": DivSize = 2.5; iDiv = Math.floor(SignDeg / DivSize); StartSign = SignNum; return (StartSign + iDiv) % 12 + 1;
         case "D16-Shodashamsa": DivSize = 1.875; iDiv = Math.floor(SignDeg / DivSize); const signTypeD16 = (SignNum % 3 === 0) ? 'movable' : ((SignNum % 3 === 1) ? 'fixed' : 'dual'); if (signTypeD16 === 'movable') StartSign = 0; else if (signTypeD16 === 'fixed') StartSign = 4; else StartSign = 8; return (StartSign + iDiv) % 12 + 1;
@@ -4256,6 +4376,16 @@ function runBusinessAnalysis() {
     }
   } catch(e){ console.error("SAV FAIL", e); }
 
+  // 1.6 TARA CHAKRA (from Moon Nakshatra)
+  try {
+    if (BIRTH_PLANETS && BIRTH_PLANETS.Moon && typeof renderTaraChakra === 'function') {
+      var moonSid = BIRTH_PLANETS.Moon.sid;
+      var moonNakIdx = Math.floor(((moonSid % 360) + 360) % 360 / (360/27)) % 27;
+      el.innerHTML += renderTaraChakra(moonNakIdx);
+      console.log('TARA CHAKRA RENDERED for nakIdx:', moonNakIdx);
+    }
+  } catch(e) { console.error('TARA CHAKRA FAIL', e); }
+
   // 1.5 ADVANCED BNN & JAIMINI ANALYSIS (NEW)
   try {
     const advancedBNN = generateAdvancedReport('business', BIRTH_PLANETS, BIRTH_ASC);
@@ -4803,16 +4933,17 @@ function getBNNConversations(pName, planets) {
 }
 
 function calculateCharkarakas() {
-  const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu'];
   const pData = planets.map(p => {
     const d = BIRTH_PLANETS[p];
-    return { name: p, degInRange: d.sid % 30 };
+    let deg = d.sid % 30;
+    if (p === 'Rahu') deg = 30 - deg;
+    return { name: p, degInRange: deg };
   });
 
-  // Sort by degrees in descending order
   pData.sort((a, b) => b.degInRange - a.degInRange);
 
-  const kLabels = ['AK', 'AmK', 'BK', 'MK', 'PK', 'GK', 'DK'];
+  const kLabels = ['AK', 'AmK', 'BK', 'MK', 'PiK', 'PuK', 'GK', 'DK'];
   pData.forEach((p, i) => {
     if (i < kLabels.length) {
       BIRTH_PLANETS[p.name].karaka = kLabels[i];
@@ -5437,6 +5568,7 @@ document.getElementById('btnPrashna').addEventListener('click', () => {
 
 // PANCHANG FEATURE LOGIC
 document.getElementById('panchangBtn').addEventListener('click', showPanchang);
+document.getElementById('horaBtn').addEventListener('click', showPanchang);
 
 const P_YOGAS = [
  {n:"Vishkumbha", t:"Inauspicious", m:"Obstacles"}, {n:"Preeti", t:"Auspicious", m:"Love, affection"}, {n:"Ayushman", t:"Auspicious", m:"Longevity"},
@@ -5475,6 +5607,70 @@ const P_NAKS = {
  "Purva Bhadrapada":{r:"Jupiter", c:"Ugra (Fierce)", m:"Battles, surgery, demolition"}, "Uttara Bhadrapada":{r:"Saturn", c:"Dhruva (Fixed)", m:"Permanent structures, foundations"},
  "Revati":{r:"Mercury", c:"Mridu (Soft)", m:"Arts, romance, friendships"}
 };
+
+const LAGNA_HORA_MAPPING = {
+  "Aries": { best: ["Sun", "Mars", "Jupiter"], avg: ["Moon"], avoid: ["Mercury", "Venus", "Saturn"] },
+  "Taurus": { best: ["Venus", "Mercury", "Saturn"], avg: ["Sun"], avoid: ["Moon", "Mars", "Jupiter"] },
+  "Gemini": { best: ["Mercury", "Venus"], avg: ["Saturn"], avoid: ["Moon", "Mars", "Sun", "Jupiter"] },
+  "Cancer": { best: ["Moon", "Mars", "Jupiter"], avg: ["Sun"], avoid: ["Venus", "Mercury", "Saturn"] },
+  "Leo": { best: ["Sun", "Mars", "Jupiter"], avg: ["Moon"], avoid: ["Venus", "Mercury", "Saturn"] },
+  "Virgo": { best: ["Mercury", "Venus"], avg: ["Saturn"], avoid: ["Sun", "Moon", "Mars", "Jupiter"] },
+  "Libra": { best: ["Venus", "Mercury", "Saturn"], avg: ["Moon"], avoid: ["Sun", "Mars", "Jupiter"] },
+  "Scorpio": { best: ["Mars", "Moon", "Jupiter"], avg: ["Sun"], avoid: ["Mercury", "Venus", "Saturn"] },
+  "Sagittarius": { best: ["Jupiter", "Sun", "Mars"], avg: ["Moon"], avoid: ["Mercury", "Venus", "Saturn"] },
+  "Capricorn": { best: ["Saturn", "Venus", "Mercury"], avg: ["Sun"], avoid: ["Moon", "Mars", "Jupiter"] },
+  "Aquarius": { best: ["Saturn", "Venus"], avg: ["Mercury"], avoid: ["Sun", "Moon", "Mars", "Jupiter"] },
+  "Pisces": { best: ["Jupiter", "Moon", "Mars"], avg: ["Sun"], avoid: ["Venus", "Mercury", "Saturn"] }
+};
+
+const HORA_ACTIVITIES = {
+  "Sun": { p: "Power, Identity, Status", a: "Applying for government tenders, meeting the CEO, starting a political campaign, wearing a ruby, performed Havan." },
+  "Moon": { p: "Growth, Public Reach, Mental Peace", a: "Public speeches, traveling over water, buying silver, grocery business, joining a club, meeting mother figure." },
+  "Mars": { p: "Courage, Property, Victory", a: "Signing property papers, starting gym/sports, court hearings, surgery, land excavation, dealing with fire/electricity." },
+  "Mercury": { p: "Logic, Commerce, Communication", a: "Accounting, publishing a book, coding, marketing, sending an important email, learning astrology, opening a shop." },
+  "Jupiter": { p: "Expansion, Wealth, Wisdom", a: "Marriage rituals, banking, starting a course, pilgrimage, legal advice, gold investment, Charity." },
+  "Venus": { p: "Luxury, Love, Beauty", a: "First dates, buying a luxury car, fashion design, beauty treatments, interior decoration, music, signing creative contracts." },
+  "Saturn": { p: "Stability, Discipline, Endings", a: "Research, laying a foundation stone, cleaning, labor contracts, dealing with iron/oil, starting meditation." }
+};
+
+function getPersonalHoraInsight(horaLord, birthAscSign, janmaNak) {
+  const map = LAGNA_HORA_MAPPING[birthAscSign] || { best:[], avg:[], avoid:[] };
+  const acts = HORA_ACTIVITIES[horaLord] || { p:"N/A", a:"N/A" };
+  
+  // Navatara Check
+  let navStr = "";
+  if (janmaNak) {
+    const lordToNakPos = { "Ketu":0, "Venus":1, "Sun":2, "Moon":3, "Mars":4, "Rahu":5, "Jupiter":6, "Saturn":7, "Mercury":8 };
+    const janmaLrd = P_NAKS[janmaNak]?.r;
+    const horaLrdVal = lordToNakPos[horaLord];
+    const janmaLrdVal = lordToNakPos[janmaLrd];
+    if (janmaLrdVal !== undefined && horaLrdVal !== undefined) {
+      const dist = (horaLrdVal - janmaLrdVal + 9) % 9 + 1; // 1 to 9
+      const taraNames = ["Janma", "Sampat (Wealth)", "Vipat", "Kshem (Peace)", "Pratyak", "Sadhak", "Vadh", "Mitra", "Ati-Mitra (Support)"];
+      navStr = taraNames[dist-1];
+    }
+  }
+
+  let status = "Average";
+  let color = "var(--muted)";
+  if (map.best.includes(horaLord)) { status = "Benefic"; color = "var(--green)"; }
+  else if (map.avoid.includes(horaLord)) { status = "Malefic"; color = "var(--rose)"; }
+
+  const isAtiMitra = navStr.includes("Ati-Mitra");
+  const isSampat = navStr.includes("Sampat");
+  const isKshem = navStr.includes("Kshem");
+  
+  let lifeChanging = "";
+  if (isAtiMitra) {
+    lifeChanging = `<div style="margin-top:6px;padding:4px 8px;background:rgba(255,215,0,0.1);border:1px solid var(--gold);color:var(--gold);font-size:9px;border-radius:4px;font-weight:bold;">✨ THE LIFE-CHANGING COMBO: Highest Preference!</div>`;
+  }
+
+  return {
+    status, color, navStr, lifeChanging,
+    purpose: acts.p,
+    activities: acts.a
+  };
+}
 
 function showPanchang() {
    if(!BIRTH_PLANETS) { alert('Calculate birth details first'); return; }
@@ -5541,8 +5737,37 @@ function showPanchang() {
        <hr style="border:0;border-top:1px solid var(--border);margin:8px 0;">
        <strong style="color:var(--text);font-size:11px;">Karana:</strong> <span style="color:${kCol}">${kData.n}</span> <span style="font-size:9px;background:${kCol}22;color:${kCol};padding:1px 4px;border-radius:2px;">${kData.t}</span><br>
        <span style="color:var(--muted);font-size:10px;">└ <strong>Uses:</strong> ${kData.m}</span><br>
+       <hr style="border:0;border-top:1px solid var(--border);margin:8px 0;">
+       <strong style="color:var(--text);font-size:11px;">Hora:</strong> <span id="curHoraDisplay">Loading...</span><br>
      </div>
    `;
+
+   // Update Hora in display
+   try {
+     const horas = getHora(jday, BIRTH.lat, BIRTH.lon, BIRTH.utcOff);
+     const nowH = d.getHours() + d.getMinutes()/60;
+     const cur = horas.find(h => nowH >= h.start*24-0.01 && nowH < h.end*24+0.01) || horas[0];
+     
+     const insight = getPersonalHoraInsight(cur.lord, BIRTH_ASC.sign, BIRTH_PLANETS.Moon.nak);
+     const hIcon = insight.navStr.includes("Ati") ? '🌟 ' : '';
+     
+     document.getElementById('curHoraDisplay').innerHTML = `
+       <div style="margin-top:4px;">
+         <span style="color:${insight.color};font-weight:bold;font-size:12px;">${hIcon}${cur.lord}</span> 
+         <span style="color:var(--muted);font-size:9px;">(${cur.isDay?'Day':'Night'} Hora) — ${insight.status}</span>
+       </div>
+       <div style="font-size:9.5px;color:var(--gold);margin-top:4px;"><strong>Personal Sync:</strong> ${insight.navStr}</div>
+       <div style="font-size:9px;color:var(--text);margin-top:6px;line-height:1.4;">
+         <strong style="color:var(--cyan)">Purpose:</strong> ${insight.purpose}<br>
+         <strong style="color:var(--cyan)">Best Activities:</strong> ${insight.activities}
+       </div>
+       ${insight.lifeChanging}
+     `;
+   } catch(e){ 
+     console.error(e);
+     document.getElementById('curHoraDisplay').textContent = "N/A"; 
+   }
+
    document.getElementById('conjPanel').classList.add('open');
 }
 
@@ -5641,9 +5866,24 @@ function toggleTransitFullScreen() {
     document.getElementById('fsExitBtn')?.remove();
   }
   
-  // Need to handle resizing if necessary, drawMainChart is usually enough
-  setTimeout(drawMainChart, 100);
+  // Redraw charts for new dimensions
+  setTimeout(() => {
+    drawMainChart();
+    if (typeof drawDChart === 'function') drawDChart();
+    // Also handle SVG/Chakra if visible
+    const svgCont = document.getElementById('svgChartContainer');
+    if (svgCont && svgCont.style.display !== 'none' && window.renderSvgChart) window.renderSvgChart();
+  }, 150);
 }
+
+// Debounced resize handler
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    renderAll();
+  }, 250);
+});
 
 renderAll();
 </script>
