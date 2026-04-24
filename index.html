@@ -369,6 +369,26 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
   /* Make graph full screen on mobile when requested or focused */
   .center-col.mobile-focus { height: 80vh; }
 }
+
+/* ── MOBILE LANDSCAPE ── */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  .app { height: 100vh; overflow: hidden; }
+  .workspace { 
+    grid-template-columns: 300px 1fr; 
+    height: calc(100vh - 40px); 
+    overflow: hidden; 
+  }
+  .top-bar { height: 40px; overflow: hidden; display: flex; align-items: center; }
+  .tb1 { padding: 4px 10px; border: none; }
+  .tb2, .tb3 { display: none; } /* Hide extra bars in landscape to save height */
+  .left-col { height: 100%; border-right: 1px solid var(--border2); }
+  .center-col { height: 100%; }
+  .right-col { display: none; } /* Focus on charts in landscape */
+  
+  .dwheel-wrap { padding: 2px; }
+  #dchartCanvas { width: 220px !important; height: 220px !important; }
+}
+
 </style>
 </head>
 <body>
@@ -2302,7 +2322,8 @@ function setupAutoCanvas(cv,h){
   return{ctx:setupCanvas(cv,w,h),w,h};
 }
 function drawDChart(cvId, customData){
-  const cv=document.getElementById(cvId);
+  const cv=document.getElementById(cvId || 'dchartCanvas');
+  if(!cv) return; // Prevent TypeError if canvas is not found
   const parentW=cv.parentElement?cv.parentElement.clientWidth:320;
   const S=Math.min(parentW-8,318);
   const ctx=setupCanvas(cv,S,S);
@@ -5869,7 +5890,7 @@ function toggleTransitFullScreen() {
   // Redraw charts for new dimensions
   setTimeout(() => {
     drawMainChart();
-    if (typeof drawDChart === 'function') drawDChart();
+    if (typeof drawDChart === 'function') drawDChart('dchartCanvas');
     // Also handle SVG/Chakra if visible
     const svgCont = document.getElementById('svgChartContainer');
     if (svgCont && svgCont.style.display !== 'none' && window.renderSvgChart) window.renderSvgChart();
