@@ -33,7 +33,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 /* ── LAYOUT ── */
 .app{display:grid;grid-template-rows:auto 1fr;height:100vh;overflow:hidden;}
 .top-bar{background:var(--bg2);border-bottom:1px solid var(--border2);z-index:50;flex-shrink:0;}
-.workspace{display:grid;grid-template-columns:340px 1fr 300px;height:calc(100vh - 170px);overflow:hidden;}
+.workspace{display:grid;grid-template-columns:auto 1fr auto;height:calc(100vh - 170px);overflow:hidden;}
 
 /* ── TOP BAR ── */
 .tb1{padding:10px 16px 6px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--border);}
@@ -76,7 +76,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
   padding:3px 10px;background:rgba(58,240,255,.05);border:1px solid rgba(58,240,255,.2);border-radius:2px;min-width:180px;text-align:center;}
 
 /* ── LEFT: D-CHART PANEL ── */
-.left-col{border-right:1px solid var(--border2);overflow-y:auto;background:var(--bg2);display:flex;flex-direction:column;}
+.left-col{border-right:1px solid var(--border2);overflow:auto;resize:horizontal;background:var(--bg2);display:flex;flex-direction:column;width:340px;min-width:250px;max-width:50vw;padding-bottom:10px;}
 .left-col canvas{display:block;}
 .chart-header{padding:8px 12px 4px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .chart-title{font-family:Palatino,'Book Antiqua',serif;font-size:12px;font-weight:700;color:var(--gold);letter-spacing:1.5px;}
@@ -91,7 +91,8 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 .dasha-lbl{font-family:'Courier New',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;width:52px;flex-shrink:0;text-align:right;}
 
 /* ── RIGHT: INFO COL ── */
-.right-col{border-left:1px solid var(--border2);background:var(--bg2);overflow-y:auto;display:flex;flex-direction:column;}
+.right-col{border-left:1px solid var(--border2);background:var(--bg2);overflow:auto;resize:horizontal;direction:rtl;display:flex;flex-direction:column;width:310px;min-width:250px;max-width:50vw;padding-bottom:10px;}
+.right-col > * {direction:ltr;}
 .sec{border-bottom:1px solid var(--border);padding:8px 12px;}
 .sec:last-child{border-bottom:none;}
 .sec-title{font-family:Palatino,'Book Antiqua',serif;font-size:9px;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid rgba(200,168,75,.12);}
@@ -448,6 +449,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
     <button class="btn" id="btnPrint" title="Print Report">⎙ PRINT</button>
     <button class="btn sky" id="btnActivated" title="Show Activated House">⊕ ACTIVATED</button>
     <button class="btn" id="btnBizAnalysis" title="Business & Career Analysis (D1/D2/D9/D10)" style="border-color:rgba(200,168,75,.4);color:rgba(200,168,75,.6);">💼 BUSINESS</button>
+    <button class="btn" id="btnHitAstrology" title="HIT Astrology & Vastu Mapping" style="border-color:rgba(255,155,58,.4);color:rgba(255,155,58,.6);">🎯 HIT ASTROLOGY</button>
     <button class="btn" id="btnMarriageAnalysis" title="Marriage & Relationship Analysis (D1/D9)" style="border-color:rgba(255,68,119,.4);color:rgba(255,68,119,.6);">♥ MARRIAGE</button>
     <button class="btn" id="btnPrashna" title="Prashna Kundali (Horary Astrology)" style="border-color:rgba(155,111,255,.4);color:rgba(155,111,255,.6);">🔮 PRASHNA</button>
     <button class="btn" id="btnYogas" title="Show Important Yogas" style="border-color:rgba(255,215,0,.4);color:rgba(255,215,0,.6);">✨ YOGAS</button>
@@ -494,6 +496,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
       <label><input type="checkbox" id="chkHouseDividers"> <span>House Dividers</span></label>
       <label><input type="checkbox" id="chkVarshaphala"> <span style="color:var(--cyan);font-weight:bold;">Sahams / Varshaphala (Transit Chart)</span></label>
       <label><input type="checkbox" id="chkShortNames"> <span style="color:#FFAAEE;">Short Planet Names</span></label>
+      <label><input type="checkbox" id="chkShowAspectPlanets" checked> <span style="color:var(--gold);">Show Aspect Planets</span></label>
     </div>
     <div class="sep"></div>
     <!-- Aspect type checkboxes -->
@@ -571,8 +574,35 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
   <!-- RIGHT: Info -->
   <div class="right-col">
     <div class="sec">
-      <div class="sec-title">Current Transits <span id="todayLbl" style="font-size:8px;color:var(--muted);"></span></div>
-      <table class="ptbl" id="currentTbl"></table>
+      <div class="sec-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span>Mini Charts</span>
+          <span id="toggleRightCharts" style="cursor:pointer; margin-left:5px; color:var(--cyan); font-weight:bold;">[-]</span>
+        </div>
+        <span id="todayLbl" style="font-size:8px;color:var(--muted);"></span>
+      </div>
+      <div id="rightChartsContainer" style="display: flex; flex-direction: column; gap: 8px; align-items: center; margin-bottom: 8px;">
+        <div style="text-align:center; width:100%;">
+          <div style="font-size:10px;color:var(--cyan);margin-bottom:2px;">Transit</div>
+          <canvas id="rTransitCanvas" width="180" height="180" style="background:var(--panel2);border-radius:3px;"></canvas>
+        </div>
+        <div style="text-align:center; width:100%;">
+          <div style="font-size:10px;color:var(--gold);margin-bottom:2px;">Lagna Tulya</div>
+          <canvas id="rLagnaTransitCanvas" width="180" height="180" style="background:var(--panel2);border-radius:3px;"></canvas>
+        </div>
+        <div style="text-align:center; width:100%;">
+          <div style="font-size:10px;color:var(--violet);margin-bottom:2px;">Moon Tulya</div>
+          <canvas id="rMoonTransitCanvas" width="180" height="180" style="background:var(--panel2);border-radius:3px;"></canvas>
+        </div>
+      </div>
+      <table class="ptbl" id="currentTbl">
+        <thead>
+          <tr style="color:var(--muted); font-size:8.5px;text-align:left;">
+            <th></th><th>Pl</th><th>Pos</th><th>Nak/Pad</th><th title="Nakshatra Lord">NL</th><th title="Sub Lord">SL</th><th>H</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
     <div class="sec">
       <div class="sec-title">Active Dashas</div>
@@ -640,6 +670,27 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
     BNN & Jaimini Method · D1 · D2 · D9 · D10
   </div>
   <div id="bizContent" style="padding-bottom:20px;"></div>
+</div>
+
+<!-- HIT ASTROLOGY PANEL -->
+<div id="hitPanel" style="position:fixed;right:0;top:0;bottom:0;width:580px;max-width:100vw;background:rgba(4,4,18,.98);border-left:1px solid var(--border2);z-index:200;transform:translateX(100%);transition:transform .3s cubic-bezier(.25,.46,.45,.94);overflow-y:auto;backdrop-filter:blur(12px);">
+  <div class="conj-hdr">
+    <h2 style="color:var(--amber)">🎯 HIT ASTROLOGY & VASTU DASHBOARD</h2>
+    <div style="display:flex;gap:10px;align-items:center;">
+       <button class="close-btn" id="closeHit">✕</button>
+    </div>
+  </div>
+  <div style="padding:15px;background:rgba(255,155,58,0.05);border-bottom:1px solid var(--border);">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.5;">
+      Apply the full system to birth chart and current transit with quantitative predictions, Vastu mapping, and remedial actions.
+    </div>
+    <button class="btn primary" id="btnGenerateHitReport" style="width:100%; border-color:var(--amber); color:var(--amber); background:rgba(255,155,58,.1); padding:8px;">⟲ Generate Excel-Style Dashboard & Report</button>
+  </div>
+  <div id="hitContent" style="padding:15px;padding-bottom:100px;">
+    <div style="text-align:center;padding:40px 20px;color:var(--muted);font-family:Courier New,monospace;font-size:11px;">
+      Click 'Generate Dashboard' to apply the full system to confirm birth details and calculate numerical HIT scores.
+    </div>
+  </div>
 </div>
 
 <!-- MARRIAGE ANALYSIS PANEL -->
@@ -950,6 +1001,7 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
 <script src="./src/predictions/varshaphala.js"></script>
 <script src="./src/predictions/shadbala.js"></script>
 <script src="./src/business_tarachakra.js"></script>
+<script src="./src/predictions/hit_astrology.js"></script>
 
 <!-- Predictions UI -->
 <script src="./src/sudarshan_chakra.js"></script>
@@ -2175,11 +2227,28 @@ function getPos(date){
     for(const[p,d] of Object.entries(raw)){
       const house=s2h(d.sn, BIRTH_ASC?.sn??0);
       const nakInfo = determineNakshatra(d.sid);
-      r[p]={...d, house, nak: nakInfo.name, pada: nakInfo.pada, nl: nakInfo.lord};
+      r[p]={...d, house, nak: nakInfo.name, pada: nakInfo.pada, nl: nakInfo.lord, sl: getSubLord(d.sid, nakInfo.lord)};
     }
     posCache.set(k,r);
   }
   return posCache.get(k);
+}
+function getSubLord(sidLon, nakLord) {
+  if(!nakLord) return '';
+  const dashaSeq = ['Ketu','Venus','Sun','Moon','Mars','Rahu','Jupiter','Saturn','Mercury'];
+  const dashaYears = [7, 20, 6, 10, 7, 18, 16, 19, 17];
+  const nakSize = 360/27;
+  let startIdx = dashaSeq.indexOf(nakLord);
+  if (startIdx === -1) return '';
+  let degInNak = sidLon % nakSize;
+  let accumulatedDeg = 0;
+  for(let i=0; i<9; i++) {
+    let currIdx = (startIdx + i) % 9;
+    let subSize = (dashaYears[currIdx] / 120) * nakSize;
+    accumulatedDeg += subSize;
+    if (degInNak < accumulatedDeg) return dashaSeq[currIdx];
+  }
+  return '';
 }
 function clearCache(){posCache.clear();}
 
@@ -2324,7 +2393,8 @@ function setupAutoCanvas(cv,h){
 function drawDChart(cvId, customData){
   const cv=document.getElementById(cvId || 'dchartCanvas');
   if(!cv) return; // Prevent TypeError if canvas is not found
-  const parentW=cv.parentElement?cv.parentElement.clientWidth:320;
+  const attrW = parseFloat(cv.getAttribute('width'));
+  const parentW=attrW || (cv.parentElement?cv.parentElement.clientWidth:320);
   const S=Math.min(parentW-8,318);
   const ctx=setupCanvas(cv,S,S);
   ctx.fillStyle=getHexVar('--bg');ctx.fillRect(0,0,S,S);
@@ -2366,11 +2436,36 @@ function drawDChart(cvId, customData){
     Object.entries(planetsData).filter(([p])=>!['Uranus','Neptune','Pluto'].includes(p))
       .sort((a,b)=>parseFloat(a[1].deg)-parseFloat(b[1].deg))
       .forEach(([p,pd])=>{
-        const h = customData ? pd.house : pd.house; // house is already pre-computed or standard s2h
+        const h = pd.house; 
         if(h>=1&&h<=12)hmap[h].push({p,pd});
       });
   }
   if(ascData) hmap[1].unshift({p:'As',pd:{...ascData,house:1}});
+
+  // Vedic Aspect Calculation
+  const aspectMap = {}; for(let i=1;i<=12;i++) aspectMap[i] = [];
+  const showVedicAspects = document.getElementById('chkAspects')?.checked;
+
+  if(showVedicAspects && planetsData) {
+    Object.entries(planetsData).forEach(([p, pd]) => {
+      if(['Uranus','Neptune','Pluto'].includes(p)) return;
+      const h = pd.house;
+      if(!h) return;
+      // All planets aspect 7th
+      const a7 = ((h + 6 - 1) % 12) + 1; aspectMap[a7].push(p);
+      // Special aspects
+      if(p === 'Mars') {
+        const a4 = ((h + 3 - 1) % 12) + 1; aspectMap[a4].push(p);
+        const a8 = ((h + 7 - 1) % 12) + 1; aspectMap[a8].push(p);
+      } else if(p === 'Jupiter' || p === 'Rahu' || p === 'Ketu') {
+        const a5 = ((h + 4 - 1) % 12) + 1; aspectMap[a5].push(p);
+        const a9 = ((h + 8 - 1) % 12) + 1; aspectMap[a9].push(p);
+      } else if(p === 'Saturn') {
+        const a3 = ((h + 2 - 1) % 12) + 1; aspectMap[a3].push(p);
+        const a10 = ((h + 9 - 1) % 12) + 1; aspectMap[a10].push(p);
+      }
+    });
+  }
 
   const ROW_H=12;
   for(let h=1;h<=12;h++){
@@ -2384,6 +2479,53 @@ function drawDChart(cvId, customData){
       ctx.font='bold 8px Courier New';ctx.fillStyle=col;ctx.fillText(sym,c.x-8,py+3);
       if(p!=='As'){ctx.font='6px Courier New';ctx.fillStyle=col+'99';ctx.fillText(Math.floor(pd.deg)+'°',c.x+5,py+3);}
     });
+    
+    // Render House Aspects
+    const showAspectPlanets = document.getElementById('chkShowAspectPlanets')?.checked;
+    if(showAspectPlanets && aspectMap[h].length > 0) {
+      const aspectingPlanets = aspectMap[h].map(p => {
+          const cfg = PCFG[p];
+          const useShorts = document.getElementById('chkShortNames')?.checked;
+          return useShorts ? p.substring(0,2) : (cfg?.sym || p.substring(0,2));
+      }).join(',');
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 8px Courier New';
+      ctx.fillStyle = getHexVar('--gold') || '#E8C97A';
+      ctx.fillText(aspectingPlanets, c.x, c.y - 12);
+      ctx.font = 'italic 6px Courier New';
+      ctx.fillStyle = getHexVar('--muted');
+      ctx.fillText('drishti', c.x, c.y - 19);
+    }
+  }
+
+  // Animated Aspect Lines (Drishti)
+  if(showVedicAspects && planetsData) {
+    ctx.save();
+    const time = Date.now() / 1000;
+    ctx.setLineDash([5, 5]);
+    ctx.lineDashOffset = -time * 15;
+    Object.entries(planetsData).forEach(([p, pd]) => {
+      if(['Uranus','Neptune','Pluto','As'].includes(p)) return;
+      const h = pd.house;
+      if(!h) return;
+      const targets = [];
+      targets.push(((h + 6 - 1) % 12) + 1);
+      if(p === 'Mars') { targets.push(((h + 3 - 1) % 12) + 1); targets.push(((h + 7 - 1) % 12) + 1); }
+      else if(p === 'Jupiter' || p === 'Rahu' || p === 'Ketu') { targets.push(((h + 4 - 1) % 12) + 1); targets.push(((h + 8 - 1) % 12) + 1); }
+      else if(p === 'Saturn') { targets.push(((h + 2 - 1) % 12) + 1); targets.push(((h + 9 - 1) % 12) + 1); }
+
+      const cfg = PCFG[p];
+      ctx.strokeStyle = (cfg?.color || '#888') + '33';
+      ctx.lineWidth = 1;
+
+      targets.forEach(tH => {
+        const start = CE[h], end = CE[tH];
+        if(start && end) {
+          ctx.beginPath(); ctx.moveTo(start.x, start.y); ctx.lineTo(end.x, end.y); ctx.stroke();
+        }
+      });
+    });
+    ctx.restore();
   }
 
   // Draw natal aspects (lines between houses)
@@ -2833,18 +2975,45 @@ function drawMainChart(){
 
   // Aspect lines on transit chart (between current planet positions)
   if(showAspects){
-    const today=getPos(TODAY);
+    const dotsCount = Math.max(1, Math.floor(N/150));
     const allP=Object.keys(PCFG).filter(p=>activePlanets.has(p));
-    for(let i=0;i<allP.length;i++){
-      for(let j=i+1;j<allP.length;j++){
-        const p1=allP[i],p2=allP[j];
-        const asps=findAspects(today[p1],today[p2],p1,p2,true);
-        for(const asp of asps){
-          // Draw vertical dotted line at TODAY for the aspect
-          const tx=toX(TODAY);
-          const y1=toY(today[p1].house),y2=toY(today[p2].house);
-          ctx.beginPath();ctx.moveTo(tx,y1);ctx.lineTo(tx,y2);
-          ctx.strokeStyle=asp.color+'55';ctx.lineWidth=asp.lw;ctx.setLineDash(asp.dash);ctx.stroke();ctx.setLineDash([]);
+    
+    // Draw markers for aspects along the lines
+    for(let i=0; i<N; i+=dotsCount) {
+      const d = data.dates[i];
+      const pos = getPos(d);
+      if(!pos) continue;
+      
+      allP.forEach(p1 => {
+        allP.forEach(p2 => {
+          if(p1 === p2) return;
+          const vAsps = findVedicTransitAspects(pos[p1], pos[p2], p1, p2);
+          if(vAsps.length > 0) {
+            const x = iX(i);
+            const y1 = toY(useNakAxis ? (pos[p1].sid/(360/27)) : pos[p1].house);
+            ctx.fillStyle = PCFG[p1]?.color || '#C8A84B';
+            ctx.font = 'bold 8px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('v', x, y1 - 4);
+          }
+        });
+      });
+    }
+
+    // Vertical line at TODAY
+    if(TODAY>=sd&&TODAY<=ed){
+      const todayPos=getPos(TODAY);
+      const tx=toX(TODAY);
+      for(let i=0;i<allP.length;i++){
+        for(let j=i+1;j<allP.length;j++){
+          const p1=allP[i],p2=allP[j];
+          const asps=findAspects(todayPos[p1],todayPos[p2],p1,p2,true);
+          for(const asp of asps){
+            const y1=toY(useNakAxis ? (todayPos[p1].sid/(360/27)): todayPos[p1].house),
+                  y2=toY(useNakAxis ? (todayPos[p2].sid/(360/27)): todayPos[p2].house);
+            ctx.beginPath();ctx.moveTo(tx,y1);ctx.lineTo(tx,y2);
+            ctx.strokeStyle=asp.color+'55';ctx.lineWidth=asp.lw;ctx.setLineDash(asp.dash);ctx.stroke();ctx.setLineDash([]);
+          }
         }
       }
     }
@@ -3016,7 +3185,8 @@ function updatePlanetTable(){
 }
 
 function updateCurrentTbl(){
-  const tbl=document.getElementById('currentTbl');tbl.innerHTML='';
+  const tbl=document.getElementById('currentTbl').querySelector('tbody') || document.getElementById('currentTbl');
+  tbl.innerHTML='';
   document.getElementById('todayLbl').textContent=fmtFull(TODAY);
   const pos=getPos(TODAY);
   if(!pos)return;
@@ -3029,6 +3199,7 @@ function updateCurrentTbl(){
       <td style="font-family:Courier New,monospace;font-size:9px;color:${cfg.color}99">${pd.sign.substring(0,3)} ${pd.deg}°</td>
       <td style="font-family:Courier New,monospace;font-size:8.5px;color:var(--muted);white-space:nowrap;">${pd.nak||''}<span style="color:rgba(100,100,160,.6)">${pd.pada?'/P'+pd.pada:''}</span></td>
       <td class="ph-sign" style="font-size:8px;">${pd.nl||''}</td>
+      <td class="ph-sign" style="font-size:8px;">${pd.sl||''}</td>
       <td><span class="ph-badge">H${pd.house}</span></td>`;
     tbl.appendChild(r);
   }
@@ -3038,8 +3209,20 @@ function updateActiveDashas(){
   const v=getVimsh(TODAY),y=getYogini(TODAY);
   const vR=Math.round((v.end-TODAY)/864e5/365.25*10)/10;
   const yR=Math.round((y.end-TODAY)/864e5/365.25*10)/10;
+  let pdHtml = '';
+  if(v && v.subs){
+    const ad = v.subs.find(s => TODAY >= s.start && TODAY < s.end);
+    if(ad && ad.subs) {
+      const pd = ad.subs.find(s => TODAY >= s.start && TODAY < s.end);
+      if(pd) {
+        const pdDur = Math.round((pd.end - pd.start) / 864e5);
+        pdHtml = `<div class="ditem cur" style="margin-top:3px"><span class="di-l" style="color:${VCOL[pd.lord]}">● PD: ${pd.lord}</span><span class="di-d">${fmtCompact(pd.start)} to ${fmtCompact(pd.end)} (${pdDur}d)</span></div>`;
+      }
+    }
+  }
   document.getElementById('activeDashas').innerHTML=`
     <div class="ditem cur"><span class="di-l" style="color:${VCOL[v.lord]}">⊙ ${v.lord}</span><span class="di-d">ends ${fmtD(v.end)} (${vR}y)</span></div>
+    ${pdHtml}
     <div class="ditem cur" style="margin-top:3px"><span class="di-l" style="color:${YCOL[y.lord]}">☽ ${y.lord} (${y.planet})</span><span class="di-d">ends ${fmtD(y.end)} (${yR}y)</span></div>`;
 }
 
@@ -3914,6 +4097,16 @@ function renderAll(){
       console.warn('Error rendering yogas:', e);
     }
   }
+  
+  // Right Column Mini Charts
+  try {
+    const tPos = getPos(centerDate);
+    const j2 = jd(centerDate.getFullYear(), centerDate.getMonth() + 1, centerDate.getDate(), 12.0);
+    const tAsc = computeAsc(j2, BIRTH.lat, BIRTH.lon, BIRTH.utcOff, BIRTH.ayan, 1);
+    drawDChart('rTransitCanvas', { planets: tPos, asc: tAsc });
+    drawDChart('rLagnaTransitCanvas', { planets: tPos, asc: BIRTH_ASC });
+    drawDChart('rMoonTransitCanvas', { planets: tPos, asc: { sn: BIRTH_PLANETS?.Moon?.sn ?? 0 } });
+  } catch(e) {}
   
   if(showVimsh) {
     drawDashaBar('vimshBar', VIMSH, VCOL);
@@ -5761,6 +5954,24 @@ function showPanchang() {
        <hr style="border:0;border-top:1px solid var(--border);margin:8px 0;">
        <strong style="color:var(--text);font-size:11px;">Hora:</strong> <span id="curHoraDisplay">Loading...</span><br>
      </div>
+     <h3 style="color:var(--cyan);padding:10px;display:flex;justify-content:space-between;align-items:center;">
+       <span>🌟 Transit Charts</span>
+       <span id="togglePanchangCharts" style="cursor:pointer;font-weight:bold;font-size:14px;color:var(--cyan);">[-]</span>
+     </h3>
+     <div id="panchangChartsContainer" style="display: flex; flex-direction: column; gap: 15px; align-items: center; margin-bottom: 10px; padding: 0 10px;">
+       <div style="text-align:center; width:100%;">
+         <div style="font-size:12px;color:var(--cyan);margin-bottom:4px;">Transit</div>
+         <canvas id="pTransitCanvas" width="200" height="200" style="background:var(--panel2);border-radius:3px;"></canvas>
+       </div>
+       <div style="text-align:center; width:100%;">
+         <div style="font-size:12px;color:var(--gold);margin-bottom:4px;">Lagna Tulya</div>
+         <canvas id="pLagnaTransitCanvas" width="200" height="200" style="background:var(--panel2);border-radius:3px;"></canvas>
+       </div>
+       <div style="text-align:center; width:100%;">
+         <div style="font-size:12px;color:var(--violet);margin-bottom:4px;">Moon Tulya</div>
+         <canvas id="pMoonTransitCanvas" width="200" height="200" style="background:var(--panel2);border-radius:3px;"></canvas>
+       </div>
+     </div>
    `;
 
    // Update Hora in display
@@ -5790,6 +6001,25 @@ function showPanchang() {
    }
 
    document.getElementById('conjPanel').classList.add('open');
+   
+   document.getElementById('togglePanchangCharts')?.addEventListener('click', function() {
+       const container = document.getElementById('panchangChartsContainer');
+       if (container.style.display === 'none') {
+           container.style.display = 'flex';
+           this.textContent = '[-]';
+       } else {
+           container.style.display = 'none';
+           this.textContent = '[+]';
+       }
+   });
+   
+   try {
+     const tPos = getPos(d);
+     const tAsc = computeAsc(jday, BIRTH.lat, BIRTH.lon, BIRTH.utcOff, BIRTH.ayan, 1);
+     drawDChart('pTransitCanvas', { planets: tPos, asc: tAsc });
+     drawDChart('pLagnaTransitCanvas', { planets: tPos, asc: BIRTH_ASC });
+     drawDChart('pMoonTransitCanvas', { planets: tPos, asc: { sn: BIRTH_PLANETS?.Moon?.sn ?? 0 } });
+   } catch(e) {}
 }
 
 // YOGAS PANEL LOGIC
@@ -5849,6 +6079,69 @@ async function showYogasPanel() {
   }
 }
 
+// HIT ASTROLOGY PANEL LOGIC
+document.getElementById('btnHitAstrology')?.addEventListener('click', () => {
+   document.getElementById('hitPanel').style.transform = 'translateX(0)';
+});
+document.getElementById('closeHit')?.addEventListener('click', () => {
+   document.getElementById('hitPanel').style.transform = 'translateX(100%)';
+});
+document.getElementById('btnGenerateHitReport')?.addEventListener('click', () => {
+   if (window.HitAstrologyEngine && typeof window.HitAstrologyEngine.generateReport === 'function') {
+       const btn = document.getElementById('btnGenerateHitReport');
+       btn.textContent = 'Generating...';
+       setTimeout(() => {
+           const reportHtml = window.HitAstrologyEngine.generateReport(BIRTH_PLANETS, BIRTH_ASC, getPos(centerDate), centerDate);
+           document.getElementById('hitContent').innerHTML = reportHtml;
+           btn.textContent = '⟲ Refresh Dashboard & Report';
+       }, 50);
+   } else {
+       alert("HIT Astrology Engine is not loaded.");
+   }
+});
+
+// Toggle Right Charts
+document.getElementById('toggleRightCharts')?.addEventListener('click', function() {
+    const container = document.getElementById('rightChartsContainer');
+    if (container.style.display === 'none') {
+        container.style.display = 'flex';
+        this.textContent = '[-]';
+    } else {
+        container.style.display = 'none';
+        this.textContent = '[+]';
+    }
+});
+
+// Ticker for Animations
+function tick() {
+  if (document.getElementById('chkAspects')?.checked) {
+    // Redraw transit canvases for animation
+    try {
+      const tPos = getPos(centerDate);
+      const j2 = jd(centerDate.getFullYear(), centerDate.getMonth() + 1, centerDate.getDate(), 12.0);
+      const tAsc = computeAsc(j2, BIRTH.lat, BIRTH.lon, BIRTH.utcOff, BIRTH.ayan, 1);
+      
+      // Right col canvases
+      drawDChart('rTransitCanvas', { planets: tPos, asc: tAsc });
+      drawDChart('rLagnaTransitCanvas', { planets: tPos, asc: BIRTH_ASC });
+      drawDChart('rMoonTransitCanvas', { planets: tPos, asc: { sn: BIRTH_PLANETS?.Moon?.sn ?? 0 } });
+      
+      // Panchang canvases if open
+      if (document.getElementById('conjPanel')?.classList.contains('open')) {
+        drawDChart('pTransitCanvas', { planets: tPos, asc: tAsc });
+        drawDChart('pLagnaTransitCanvas', { planets: tPos, asc: BIRTH_ASC });
+        drawDChart('pMoonTransitCanvas', { planets: tPos, asc: { sn: BIRTH_PLANETS?.Moon?.sn ?? 0 } });
+      }
+      
+      // Natal chart if it also shows aspects
+      drawDChart('dchartCanvas');
+      
+    } catch(e) {}
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
 // Add Nakshatra Y-axis event listener
 const chkYAxis = document.getElementById('chkYAxisNak');
 if(chkYAxis) {
@@ -5865,6 +6158,9 @@ if(chkYAxis) {
 initPrashna();
 
 document.getElementById('chkHouseDividers')?.addEventListener('change', drawMainChart);
+document.getElementById('chkShowAspectPlanets')?.addEventListener('change', () => {
+  if (typeof drawDChart === 'function') drawDChart('dchartCanvas');
+});
 document.getElementById('btnFullScreen')?.addEventListener('click', toggleTransitFullScreen);
 
 function toggleTransitFullScreen() {
