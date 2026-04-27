@@ -28,7 +28,9 @@ window.YOGAS_DATA = [
       const trikonaHouses = [1, 5, 9];
       const asnc = c.asc.sn || 0;
       
-      let rajYogaPresent = false;
+      let rationale = "";
+      let found = false;
+
       kendraHouses.forEach(kh => {
         trikonaHouses.forEach(th => {
           const kendraSignNum = (asnc + kh - 1) % 12;
@@ -39,11 +41,12 @@ window.YOGAS_DATA = [
           const kp = c.planets[kendraLord];
           const tp = c.planets[trikonaLord];
           if (kp && tp && kp.sn === tp.sn && Math.abs((kp.deg || 0) - (tp.deg || 0)) <= 8) {
-            rajYogaPresent = true;
+            found = true;
+            rationale = `${kendraLord} (Lord of H${kh}) and ${trikonaLord} (Lord of H${th}) are conjunct in ${kp.sign}.`;
           }
         });
       });
-      return rajYogaPresent;
+      return found ? { result: true, rationale } : false;
     }
   },
   
@@ -60,7 +63,25 @@ window.YOGAS_DATA = [
     mantras: ['Om Shreem Mahalakshmiyai Namaha', 'Om Aim Kleem Sauh', 'Om Mahakalikayai Namaha'],
     deities: ['Lakshmi', 'Jupiter', 'Mercury'],
     keywords: ['Wealth', 'Prosperity', 'Finance', 'Abundance'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets || !c.asc) return false;
+      const wealthHouses = [2, 5, 9, 11];
+      const asnc = c.asc.sn || 0;
+      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      
+      for(let i=0; i<wealthHouses.length; i++) {
+        for(let j=i+1; j<wealthHouses.length; j++) {
+           const h1 = wealthHouses[i], h2 = wealthHouses[j];
+           const l1 = getSignLord(signNames[(asnc + h1 - 1) % 12]);
+           const l2 = getSignLord(signNames[(asnc + h2 - 1) % 12]);
+           const p1 = c.planets[l1], p2 = c.planets[l2];
+           if (p1 && p2 && p1.sn === p2.sn) {
+             return { result: true, rationale: `House ${h1} Lord (${l1}) and House ${h2} Lord (${l2}) are in conjunction in ${p1.sign}.` };
+           }
+        }
+      }
+      return false;
+    },
   },
 
   {
@@ -79,26 +100,14 @@ window.YOGAS_DATA = [
       const jup = c.planets.Jupiter, moon = c.planets.Moon;
       if(!jup || !moon) return false;
       const d = (jup.sn - moon.sn + 12) % 12;
-      return [0,3,6,9].includes(d);
-    }
-  },
-  {
-    name: "Gajakesari Yoga",
-    description: "Jupiter positioned in a Kendra (1,4,7,10) from the Moon",
-    result: "Bestows wisdom, wealth, respect, fame, and authority in society. Strength like an elephant and courage of a lion.",
-    effect: "Native becomes wise leader with good reputation. Success in endeavors and respect from all.",
-    quality: "Positive",
-    strength: 'Very Strong',
-    varga: 1,
-    remedies: ['Wear yellow gemstone', 'Fast on Thursdays', 'Chant Guru Mantra', 'Worship Jupiter'],
-    mantras: ['Om Brihaspataye Namaha', 'Om Guru Guravaay Namaha', 'Om Jupitery Namaha'],
-    deities: ['Jupiter', 'Brihaspati', 'Wisdom-givers'],
-    keywords: ['Wisdom', 'Fame', 'Authority', 'Respect'],
-    evaluate: (c) => {
-      const jup = c.planets.Jupiter, moon = c.planets.Moon;
-      if(!jup || !moon) return false;
-      const d = (jup.sn - moon.sn + 12) % 12;
-      return [0,3,6,9].includes(d);
+      const kendraPos = (d / 3) + 1;
+      if ([0,3,6,9].includes(d)) {
+        return { 
+          result: true, 
+          rationale: `Jupiter is in the ${kendraPos}${kendraPos===1?'st':(kendraPos===2?'nd':(kendraPos===3?'rd':'th'))} house position from the Moon.` 
+        };
+      }
+      return false;
     }
   },
 
@@ -113,7 +122,13 @@ window.YOGAS_DATA = [
     mantras: ['Om Angarakaya Namaha', 'Om Mangalaya Namaha', 'Om Chandraya Namaha'],
     deities: ['Mars', 'Hanuman', 'Moon'],
     keywords: ['Prosperity', 'Determination', 'Property', 'Reputation'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const moon = c.planets.Moon, mars = c.planets.Mars;
+      if (!moon || !mars) return false;
+      if (moon.sn === mars.sn) return { result: true, rationale: "Moon and Mars are conjunct in the same sign." };
+      if ((moon.sn - mars.sn + 12) % 12 === 6) return { result: true, rationale: "Moon and Mars are in mutual aspect (7th house from each other)." };
+      return false;
+    },
   },
 
   {
@@ -127,7 +142,13 @@ window.YOGAS_DATA = [
     mantras: ['Om Budhaya Namaha', 'Om Herambaya Namaha', 'Om Mitrayaya Namaha'],
     deities: ['Mercury', 'Saraswati', 'Sun'],
     keywords: ['Intelligence', 'Communication', 'Success', 'Business'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const sun = c.planets.Sun, merc = c.planets.Mercury;
+      if (sun && merc && sun.sn === merc.sn && !merc.combust) {
+         return { result: true, rationale: "Sun and Mercury are conjunct (Mercury is not combust)." };
+      }
+      return false;
+    },
   },
 
   {
@@ -296,7 +317,15 @@ window.YOGAS_DATA = [
     mantras: ['Om Rahu Rahu Namaha', 'Om Ketu Ketu Namaha', 'Maha Mrityunjaya Mantra'],
     deities: ['Durga', 'Ganesha', 'Hanuman'],
     keywords: ['Health', 'Mental stress', 'Reputation', 'Disturbance'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const sun = c.planets.Sun, moon = c.planets.Moon, rahu = c.planets.Rahu, ketu = c.planets.Ketu;
+      if (!rahu || !ketu) return false;
+      if (sun && rahu && sun.sn === rahu.sn) return { result: true, rationale: "Sun is conjunct Rahu (Solar Grahan effect)." };
+      if (sun && ketu && sun.sn === ketu.sn) return { result: true, rationale: "Sun is conjunct Ketu (Solar Grahan effect)." };
+      if (moon && rahu && moon.sn === rahu.sn) return { result: true, rationale: "Moon is conjunct Rahu (Lunar Grahan effect)." };
+      if (moon && ketu && moon.sn === ketu.sn) return { result: true, rationale: "Moon is conjunct Ketu (Lunar Grahan effect)." };
+      return false;
+    },
   },
 
   {
@@ -310,7 +339,23 @@ window.YOGAS_DATA = [
     mantras: ['Om Kali Kali Namaha', 'Maha Mrityunjaya Mantra', 'Om Rahu Rahu Namaha'],
     deities: ['Kali', 'Durga', 'Shiva'],
     keywords: ['Obstacles', 'Delays', 'Struggles', 'Challenges'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const rahu = c.planets.Rahu, ketu = c.planets.Ketu;
+      if (!rahu || !ketu) return false;
+      const r_sn = rahu.sn, k_sn = ketu.sn;
+      const arc1 = [], arc2 = [];
+      let cur = (r_sn + 1) % 12;
+      while (cur !== k_sn) { arc1.push(cur); cur = (cur + 1) % 12; }
+      cur = (k_sn + 1) % 12;
+      while (cur !== r_sn) { arc2.push(cur); cur = (cur + 1) % 12; }
+      
+      const p_sns = Object.values(c.planets).filter(p => !['Rahu','Ketu','Uranus','Neptune','Pluto'].includes(p.p || p.name)).map(p => p.sn);
+      if (p_sns.length === 0) return false;
+      const all_in_1 = p_sns.every(s => arc1.includes(s) || s === r_sn || s === k_sn);
+      const all_in_2 = p_sns.every(s => arc2.includes(s) || s === r_sn || s === k_sn);
+      if (all_in_1 || all_in_2) return { result: true, rationale: "All planets are hemmed between the Rahu and Ketu axis." };
+      return false;
+    },
   },
 
   {
@@ -327,7 +372,11 @@ window.YOGAS_DATA = [
     evaluate: (c) => {
       const mars = c.planets.Mars;
       if(!mars) return false;
-      return [0,3,6,7,11].includes(mars.house);
+      const m_house = mars.house;
+      if ([1,4,7,8,12].includes(m_house)) {
+         return { result: true, rationale: `Mars is placed in the ${m_house}${m_house===1?'st':(m_house===2?'nd':(m_house===3?'rd':'th'))} house, causing Mangal Dosha.` };
+      }
+      return false;
     }
   },
 

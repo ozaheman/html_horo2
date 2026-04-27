@@ -218,6 +218,10 @@ async function updatePredictionsDisplay() {
       const analysis = PREDICTION_ANALYSIS.getPlanetsInHouses();
       html += renderMultiChartAnalysisSection(analysis);
 
+      // 4.1 DETAILED PLANETARY KNOWLEDGE
+      await showProgress('Fetching Detailed Planetary Insights...');
+      html += renderAstrologyKnowledgeSection();
+
       // 4.5 NATAL DEGREES & DIVISIONAL DATA
       await showProgress('Calculating Natal Degrees & Varga Data...');
       html += renderNatalDegreesSection();
@@ -451,6 +455,94 @@ function renderMultiChartAnalysisSection(analysis) {
     Total planets: ${analysis.length} | Chart: D1 Rasi
   </div></div>`;
   
+  return html;
+}
+
+/**
+ * Render Detailed Astrology Knowledge Section
+ */
+function renderAstrologyKnowledgeSection() {
+  if (typeof window.getAstrologyInsight !== 'function') return '';
+  const d1 = window.CURRENT_PLANETARY_POSITIONS || {};
+  const houses = window.CURRENT_HOUSES || {};
+  if (!Object.keys(d1).length || !Object.keys(houses).length) return '';
+
+  let html = '<div class="pred-item" style="border-left: 3px solid var(--amber); background: rgba(255, 155, 58, 0.05);">';
+  html += '<div class="pred-title" style="color:var(--amber);">📚 Deep Astrological Insights</div>';
+  
+  // Basic rendering of planets in houses
+  const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
+  let foundInsights = false;
+  
+  planets.forEach(p => {
+    const loc = Object.values(houses).find(h => h.planets && h.planets.includes(p));
+    if (loc && loc.house) {
+      const insight = window.getAstrologyInsight('planet_in_house', `${p}_${loc.house}`);
+      if (insight) {
+        foundInsights = true;
+        html += `
+          <div style="margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:3px;">
+            <div style="font-weight:700; font-size:10px; color:var(--text); margin-bottom:2px;">${insight.title}</div>
+            <div style="font-size:9.5px; color:var(--muted); line-height:1.4;">${insight.description}</div>
+          </div>
+        `;
+      }
+    }
+  });
+
+  // Basic check for conjunctions mapping
+  const houseVals = Object.values(houses).filter(h => h.planets && h.planets.length > 1);
+  houseVals.forEach(h => {
+    if (h.planets.length === 2) {
+      const insight1 = window.getAstrologyInsight('conjunction', `${h.planets[0]}_${h.planets[1]}`);
+      const insight2 = window.getAstrologyInsight('conjunction', `${h.planets[1]}_${h.planets[0]}`);
+      const insight = insight1 || insight2;
+      if (insight) {
+        foundInsights = true;
+        html += `
+          <div style="margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:3px; border-left:2px solid var(--violet);">
+            <div style="font-weight:700; font-size:10px; color:var(--violet); margin-bottom:2px;">${insight.title}</div>
+            <div style="font-size:9.5px; color:var(--muted); line-height:1.4;">${insight.description}</div>
+          </div>
+        `;
+      }
+    } else if (h.planets.length === 3) {
+      const insight = window.getAstrologyInsight('conjunction', `Three_Planets`);
+      if(insight) {
+        html += `
+          <div style="margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:3px; border-left:2px solid var(--violet);">
+            <div style="font-weight:700; font-size:10px; color:var(--violet); margin-bottom:2px;">${h.planets.join(', ')} (3 Planet Conjunction in H${h.house})</div>
+            <div style="font-size:9.5px; color:var(--muted); line-height:1.4;">${insight.description}</div>
+          </div>
+        `;
+      }
+    } else if (h.planets.length >= 4) {
+      const insight = window.getAstrologyInsight('conjunction', `Four_Planets`);
+      if(insight) {
+        html += `
+          <div style="margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:3px; border-left:2px solid var(--violet);">
+            <div style="font-weight:700; font-size:10px; color:var(--violet); margin-bottom:2px;">${h.planets.join(', ')} (${h.planets.length} Planet Conjunction)</div>
+            <div style="font-size:9.5px; color:var(--muted); line-height:1.4;">${insight.description}</div>
+          </div>
+        `;
+      }
+    }
+  });
+
+  // Display advanced concepts dynamically
+  const mandiInsight = window.getAstrologyInsight('advanced', 'Mandi');
+  if (mandiInsight) {
+    foundInsights = true;
+    html += `
+      <div style="margin-top:8px; border-top:1px dashed var(--border3); padding-top:6px;">
+        <div style="font-weight:700; font-size:9px; color:var(--text);">${mandiInsight.title}</div>
+        <div style="font-size:9px; color:var(--muted);">${mandiInsight.description}</div>
+      </div>
+    `;
+  }
+  
+  if (!foundInsights) return '';
+  html += '</div>';
   return html;
 }
 
@@ -997,4 +1089,57 @@ function renderDailyCombinationsSection(date) {
   html += `</div>`;
   return html;
 }
+
+/**
+ * Shift Prediction Date by a specified delta and unit
+ */
+window.shiftPredDate = function(delta, unit) {
+  const startInp = document.getElementById('pred-start');
+  const endInp = document.getElementById('pred-end');
+  
+  if (!startInp || !endInp || !startInp.value || !endInp.value) {
+    alert("Please select a valid date range first!");
+    return;
+  }
+  
+  let sDate = new Date(startInp.value + 'T00:00:00');
+  let eDate = new Date(endInp.value + 'T00:00:00');
+  
+  if (isNaN(sDate.getTime()) || isNaN(eDate.getTime())) return;
+  
+  let shiftDays = 0;
+  if (unit === 'day') shiftDays = 1;
+  if (unit === 'week') shiftDays = 7;
+  if (unit === 'month') {
+    sDate.setMonth(sDate.getMonth() + delta);
+    eDate.setMonth(eDate.getMonth() + delta);
+  } else if (unit === 'year') {
+    sDate.setFullYear(sDate.getFullYear() + delta);
+    eDate.setFullYear(eDate.getFullYear() + delta);
+  } else {
+    sDate.setDate(sDate.getDate() + (delta * shiftDays));
+    eDate.setDate(eDate.getDate() + (delta * shiftDays));
+  }
+  
+  startInp.value = sDate.toISOString().split('T')[0];
+  endInp.value = eDate.toISOString().split('T')[0];
+  
+  // Sync global centerDate used by the transit charts so visualization updates
+  if (typeof window.centerDate !== 'undefined') {
+      window.centerDate = new Date(sDate.getTime());
+      window.centerDate.setHours(12,0,0,0); // Avoid timezone shift bugs
+      
+      const tdateInp = document.getElementById('tDate');
+      if (tdateInp) tdateInp.value = sDate.toISOString().split('T')[0];
+      
+      if (typeof window.renderAll === 'function') {
+          window.renderAll();
+      }
+  }
+
+  const btnUpdatePredictions = document.getElementById('btnUpdatePredictions');
+  if (btnUpdatePredictions) {
+      btnUpdatePredictions.click();
+  }
+};
 

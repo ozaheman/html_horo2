@@ -798,6 +798,23 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
       </select>
       
       <label style="font-family:'Courier New',monospace;font-size:9px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;">Forecast Range</label>
+      
+      <div style="display:flex; padding-bottom:5px; justify-content:space-between; align-items:center; margin-bottom:5px;">
+        <div style="display:flex; gap:2px;">
+          <button class="btn sky" onclick="shiftPredDate(-1, 'year')" title="-1 Year" style="padding:2px 4px;font-size:9px;">«Y</button>
+          <button class="btn sky" onclick="shiftPredDate(-1, 'month')" title="-1 Month" style="padding:2px 4px;font-size:9px;">«M</button>
+          <button class="btn sky" onclick="shiftPredDate(-1, 'week')" title="-1 Week" style="padding:2px 4px;font-size:9px;">«W</button>
+          <button class="btn sky" onclick="shiftPredDate(-1, 'day')" title="-1 Day" style="padding:2px 4px;font-size:9px;">«D</button>
+        </div>
+        <div style="font-family:'Courier New',monospace;font-size:8px;color:var(--muted);">STEP</div>
+        <div style="display:flex; gap:2px;">
+          <button class="btn sky" onclick="shiftPredDate(1, 'day')" title="+1 Day" style="padding:2px 4px;font-size:9px;">D»</button>
+          <button class="btn sky" onclick="shiftPredDate(1, 'week')" title="+1 Week" style="padding:2px 4px;font-size:9px;">W»</button>
+          <button class="btn sky" onclick="shiftPredDate(1, 'month')" title="+1 Month" style="padding:2px 4px;font-size:9px;">M»</button>
+          <button class="btn sky" onclick="shiftPredDate(1, 'year')" title="+1 Year" style="padding:2px 4px;font-size:9px;">Y»</button>
+        </div>
+      </div>
+      
       <div style="display:flex;gap:5px;margin-bottom:10px;">
         <input type="date" id="pred-start" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:10px;padding:4px;border-radius:2px;">
         <input type="date" id="pred-end" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:10px;padding:4px;border-radius:2px;">
@@ -996,6 +1013,7 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
 <script src="./src/predictions/advanced_analysis.js"></script>
 <script src="./src/predictions/phaladeepika.js"></script>
 <script src="./src/predictions/Tushar_roy_db.js"></script>
+<script src="./src/predictions/astrology_knowledge.js"></script>
 <script src="./src/predictions/Tushar_roy.js"></script>
 <script src="./src/predictions/sahams.js"></script>
 <script src="./src/predictions/varshaphala.js"></script>
@@ -2436,11 +2454,15 @@ function drawDChart(cvId, customData){
     Object.entries(planetsData).filter(([p])=>!['Uranus','Neptune','Pluto'].includes(p))
       .sort((a,b)=>parseFloat(a[1].deg)-parseFloat(b[1].deg))
       .forEach(([p,pd])=>{
-        const h = pd.house; 
+        // Recompute house relative to the chart's ascendant sign
+        const h = ((pd.sn - ascSn + 12) % 12) + 1;
         if(h>=1&&h<=12)hmap[h].push({p,pd});
       });
   }
-  if(ascData) hmap[1].unshift({p:'As',pd:{...ascData,house:1}});
+  if(ascData) {
+     const h = 1; // Ascendant is always House 1 in its own chart
+     hmap[h].unshift({p:'As',pd:{...ascData,house:1}});
+  }
 
   // Vedic Aspect Calculation
   const aspectMap = {}; for(let i=1;i<=12;i++) aspectMap[i] = [];
@@ -6067,6 +6089,7 @@ async function showYogasPanel() {
           <span style="font-size:9px;padding:2px 6px;border-radius:2px;background:${qColor}22;color:${qColor};">${y.activeChart} | ${y.quality}</span>
         </div>
         <div style="font-size:10px;color:var(--cyan);margin-bottom:6px;font-style:italic;">"${y.description}"</div>
+        ${y.rationale ? `<div style="background:rgba(0,188,212,0.1);padding:6px;border-radius:3px;margin:8px 0;font-size:10.5px;color:var(--cyan);border-left:2px solid var(--cyan);"><strong>Why:</strong> ${y.rationale}</div>` : ''}
         <div style="font-size:10.5px;color:var(--text);line-height:1.4;">${y.result}</div>
       </div>`;
     });
