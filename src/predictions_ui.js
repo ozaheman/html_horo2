@@ -9,6 +9,20 @@ window.PREDICTIONS_UI = window.PREDICTIONS_UI || {
   initialized: false
 };
 
+window.savePredictionOverride = function(key, newText) {
+  if (key && newText !== undefined) {
+    localStorage.setItem('pred_override_' + key, newText.trim());
+    console.log('Saved override for:', key);
+  }
+};
+
+window.makeEditable = function(key, defaultContent) {
+  const customKey = 'pred_override_' + key;
+  const savedContent = localStorage.getItem(customKey);
+  const contentToRender = savedContent ? savedContent : defaultContent;
+  return `<div contenteditable="plaintext-only" spellcheck="false" title="Click to edit this template" class="editable-prediction" data-pred-key="${key}" style="outline:none; border:1px solid transparent; border-radius:3px; transition:all 0.2s; padding:2px;" onfocus="this.style.border='1px dashed var(--cyan)'; this.style.background='rgba(255,255,255,0.05)';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent'; window.savePredictionOverride('${key}', this.innerText);">${contentToRender}</div>`;
+};
+
 /**
  * Initialize predictions UI panel
  */
@@ -192,6 +206,76 @@ async function updatePredictionsDisplay() {
               }
           }
       }
+    } else if (mode === 'comprehensive') {
+      const classicalFlatDB = [];
+      if (window.ASTRO_KNOWLEDGE) {
+          try {
+            ['planet_in_house', 'planet_in_sign', 'nakshatra', 'yogas'].forEach(cat => {
+                if(window.ASTRO_KNOWLEDGE[cat]) {
+                    Object.keys(window.ASTRO_KNOWLEDGE[cat]).forEach(k => {
+                        classicalFlatDB.push({ topic: cat + '_' + k, text: window.ASTRO_KNOWLEDGE[cat][k] });
+                    });
+                }
+            });
+          } catch(e) {}
+      }
+
+      const dbMap = {
+          "Tushar Roy": { data: window.TUSHAR_DB || [], color: '#FFAAEE' },
+          "Saral Jyotish": { data: window.SARAL_DB || [], color: 'var(--amber)' },
+          "Astro Pathshala": { data: window.ASTRO_DB || [], color: 'var(--cyan)' },
+          "Arun Pandit": { data: window.ARUN_PANDIT_DB || [], color: '#FF9933' },
+          "Astrology Made Easy": { data: window.ASTROLOGY_MADE_EASY_DB || [], color: '#44FF88' },
+          "BNN": { data: window.BNN_DB || [], color: 'var(--rose)' },
+          "Kaalpurush Astrology": { data: window.KAALPURUSH_ASTROLOGY_DB || [], color: '#00FF88' },
+          "Tathastu Anubhav": { data: window.TATHASTU_ANUBHAV_DB || [], color: '#44AAFF' },
+          "The Professor": { data: window.THE_PROFESSOR_DB || [], color: '#FF3344' },
+          "Vedang Jyotish": { data: window.VEDANG_JYOTIS_BY_SHIV_SHARMA_DB || [], color: '#FFD700' },
+          "Classical texts (ASTRO KNOWLEDGE)": { data: classicalFlatDB, color: '#f3f3f3' }
+      };
+
+      const d1 = window.CURRENT_PLANETARY_POSITIONS || {};
+      const asc = window.CURRENT_ASCENDANT || 0;
+      const houses = window.CURRENT_HOUSES || {};
+      
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, d1, houses, asc, null);
+      html += window.makeEditable('comprehensive_master', generatedHTML);
+    } else if (mode === 'saral') {
+      const dbMap = { "Saral Jyotish": { data: window.SARAL_DB || [], color: 'var(--amber)' } };
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      html += window.makeEditable('saral_jyotish', generatedHTML);
+    } else if (mode === 'astro') {
+      const dbMap = { "Astro Pathshala": { data: window.ASTRO_DB || [], color: 'var(--cyan)' } };
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      html += window.makeEditable('astro_jyotish', generatedHTML);
+    } else if (mode === 'arun_pandit') {
+      const dbMap = { "Arun Pandit": { data: window.ARUN_PANDIT_DB || [], color: '#FF9933' } };
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      html += window.makeEditable('arun_pandit_db', generatedHTML);
+    } else if (mode === 'astrology_made_easy') {
+      const dbMap = { "Astrology Made Easy": { data: window.ASTROLOGY_MADE_EASY_DB || [], color: '#44FF88' } };
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      html += window.makeEditable('astro_made_easy_db', generatedHTML);
+    } else if (mode === 'bnn') {
+      const dbMap = { "BNN": { data: window.BNN_DB || [], color: 'var(--rose)' } };
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      html += window.makeEditable('bnn_db', generatedHTML);
+    } else if (mode === 'kaalpurush') {
+      const dbMap = { "Kaalpurush Astrology": { data: window.KAALPURUSH_ASTROLOGY_DB || [], color: '#00FF88' } };
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      html += window.makeEditable('kaalpurush_db', generatedHTML);
+    } else if (mode === 'tathastu') {
+      const dbMap = { "Tathastu Anubhav": { data: window.TATHASTU_ANUBHAV_DB || [], color: '#44AAFF' } };
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      html += window.makeEditable('tathastu_db', generatedHTML);
+    } else if (mode === 'professor') {
+      const dbMap = { "The Professor": { data: window.THE_PROFESSOR_DB || [], color: '#FF3344' } };
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      html += window.makeEditable('professor_db', generatedHTML);
+    } else if (mode === 'vedang') {
+      const dbMap = { "Vedang Jyotish": { data: window.VEDANG_JYOTIS_BY_SHIV_SHARMA_DB || [], color: '#FFD700' } };
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      html += window.makeEditable('vedang_db', generatedHTML);
     } else {
       await showProgress('Loading forecasting modules...');
       html += renderDailyCombinationsSection(targetDate);
@@ -483,7 +567,7 @@ function renderAstrologyKnowledgeSection() {
         html += `
           <div style="margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:3px;">
             <div style="font-weight:700; font-size:10px; color:var(--text); margin-bottom:2px;">${insight.title}</div>
-            <div style="font-size:9.5px; color:var(--muted); line-height:1.4;">${insight.description}</div>
+            <div contenteditable="plaintext-only" spellcheck="false" title="Click to edit" onblur="window.savePredictionOverride('${insight.key || mandiInsight?.key}', this.innerText)" style="font-size:9.5px; color:var(--muted); line-height:1.4; outline:none; border-bottom:1px dashed transparent; transition:all 0.2s; padding:2px; cursor:text;" onfocus="this.style.borderBottom='1px dashed var(--cyan)'; this.style.color='var(--text)'; this.style.background='rgba(255,255,255,0.05)';" onblur="this.style.borderBottom='1px dashed transparent'; this.style.color='var(--muted)'; this.style.background='transparent'; window.savePredictionOverride('${insight?.key || mandiInsight?.key}', this.innerText)">${insight?.description || mandiInsight?.description}</div>
           </div>
         `;
       }
@@ -502,7 +586,7 @@ function renderAstrologyKnowledgeSection() {
         html += `
           <div style="margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:3px; border-left:2px solid var(--violet);">
             <div style="font-weight:700; font-size:10px; color:var(--violet); margin-bottom:2px;">${insight.title}</div>
-            <div style="font-size:9.5px; color:var(--muted); line-height:1.4;">${insight.description}</div>
+            <div contenteditable="plaintext-only" spellcheck="false" title="Click to edit" onblur="window.savePredictionOverride('${insight.key || mandiInsight?.key}', this.innerText)" style="font-size:9.5px; color:var(--muted); line-height:1.4; outline:none; border-bottom:1px dashed transparent; transition:all 0.2s; padding:2px; cursor:text;" onfocus="this.style.borderBottom='1px dashed var(--cyan)'; this.style.color='var(--text)'; this.style.background='rgba(255,255,255,0.05)';" onblur="this.style.borderBottom='1px dashed transparent'; this.style.color='var(--muted)'; this.style.background='transparent'; window.savePredictionOverride('${insight?.key || mandiInsight?.key}', this.innerText)">${insight?.description || mandiInsight?.description}</div>
           </div>
         `;
       }
@@ -512,7 +596,7 @@ function renderAstrologyKnowledgeSection() {
         html += `
           <div style="margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:3px; border-left:2px solid var(--violet);">
             <div style="font-weight:700; font-size:10px; color:var(--violet); margin-bottom:2px;">${h.planets.join(', ')} (3 Planet Conjunction in H${h.house})</div>
-            <div style="font-size:9.5px; color:var(--muted); line-height:1.4;">${insight.description}</div>
+            <div contenteditable="plaintext-only" spellcheck="false" title="Click to edit" onblur="window.savePredictionOverride('${insight.key || mandiInsight?.key}', this.innerText)" style="font-size:9.5px; color:var(--muted); line-height:1.4; outline:none; border-bottom:1px dashed transparent; transition:all 0.2s; padding:2px; cursor:text;" onfocus="this.style.borderBottom='1px dashed var(--cyan)'; this.style.color='var(--text)'; this.style.background='rgba(255,255,255,0.05)';" onblur="this.style.borderBottom='1px dashed transparent'; this.style.color='var(--muted)'; this.style.background='transparent'; window.savePredictionOverride('${insight?.key || mandiInsight?.key}', this.innerText)">${insight?.description || mandiInsight?.description}</div>
           </div>
         `;
       }
@@ -522,7 +606,7 @@ function renderAstrologyKnowledgeSection() {
         html += `
           <div style="margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:3px; border-left:2px solid var(--violet);">
             <div style="font-weight:700; font-size:10px; color:var(--violet); margin-bottom:2px;">${h.planets.join(', ')} (${h.planets.length} Planet Conjunction)</div>
-            <div style="font-size:9.5px; color:var(--muted); line-height:1.4;">${insight.description}</div>
+            <div contenteditable="plaintext-only" spellcheck="false" title="Click to edit" onblur="window.savePredictionOverride('${insight.key || mandiInsight?.key}', this.innerText)" style="font-size:9.5px; color:var(--muted); line-height:1.4; outline:none; border-bottom:1px dashed transparent; transition:all 0.2s; padding:2px; cursor:text;" onfocus="this.style.borderBottom='1px dashed var(--cyan)'; this.style.color='var(--text)'; this.style.background='rgba(255,255,255,0.05)';" onblur="this.style.borderBottom='1px dashed transparent'; this.style.color='var(--muted)'; this.style.background='transparent'; window.savePredictionOverride('${insight?.key || mandiInsight?.key}', this.innerText)">${insight?.description || mandiInsight?.description}</div>
           </div>
         `;
       }
@@ -536,7 +620,7 @@ function renderAstrologyKnowledgeSection() {
     html += `
       <div style="margin-top:8px; border-top:1px dashed var(--border3); padding-top:6px;">
         <div style="font-weight:700; font-size:9px; color:var(--text);">${mandiInsight.title}</div>
-        <div style="font-size:9px; color:var(--muted);">${mandiInsight.description}</div>
+        <div contenteditable="plaintext-only" spellcheck="false" title="Click to edit" onblur="window.savePredictionOverride('${mandiInsight.key}', this.innerText)" style="font-size:9px; color:var(--muted); line-height:1.4; outline:none; border-bottom:1px dashed transparent; transition:all 0.2s; padding:2px; cursor:text;" onfocus="this.style.borderBottom='1px dashed var(--cyan)'; this.style.color='var(--text)'; this.style.background='rgba(255,255,255,0.05)';" onblur="this.style.borderBottom='1px dashed transparent'; this.style.color='var(--muted)'; this.style.background='transparent'; window.savePredictionOverride('${mandiInsight.key}', this.innerText)">${mandiInsight.description}</div>
       </div>
     `;
   }

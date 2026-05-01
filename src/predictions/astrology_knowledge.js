@@ -187,8 +187,18 @@ window.ASTRO_KNOWLEDGE = {
  * @returns {Object|null} - { title, description }
  */
 window.getAstrologyInsight = function(type, key) {
+  const customKey = 'insight_' + type + '_' + key;
+  const customDesc = localStorage.getItem('pred_override_' + customKey);
+
   if (window.ASTRO_KNOWLEDGE && window.ASTRO_KNOWLEDGE[type] && window.ASTRO_KNOWLEDGE[type][key]) {
-    return window.ASTRO_KNOWLEDGE[type][key];
+    const original = window.ASTRO_KNOWLEDGE[type][key];
+    return {
+      title: original.title,
+      description: customDesc ? customDesc : original.description,
+      isOverridden: !!customDesc,
+      key: customKey,
+      originalDesc: original.description
+    };
   }
   return null;
 };

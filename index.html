@@ -248,12 +248,12 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 .aspli{display:flex;align-items:center;gap:4px;}
 .aspld{width:20px;height:2px;border-radius:1px;}
 
-/* ── BUSINESS & MARRIAGE & PRASHNA PANELS ── */
-#bizPanel, #marriagePanel, #prashnaPanel{position:fixed;right:0;top:0;bottom:0;width:480px;background:rgba(4,4,18,.98);
+/* ── BUSINESS, MARRIAGE, PRASHNA & MATCHING PANELS ── */
+#bizPanel, #marriagePanel, #prashnaPanel, #matchingPanel{position:fixed;right:0;top:0;bottom:0;width:480px;background:rgba(4,4,18,.98);
   border-left:1px solid var(--border2);z-index:200;transform:translateX(100%);
   transition:transform .3s cubic-bezier(.25,.46,.45,.94);overflow-y:auto;backdrop-filter:blur(12px);}
-#bizPanel.open, #marriagePanel.open, #prashnaPanel.open{transform:translateX(0);}
-.readable #bizPanel, .readable #marriagePanel, .readable #prashnaPanel{background:rgba(248,249,250,.98);}
+#bizPanel.open, #marriagePanel.open, #prashnaPanel.open, #matchingPanel.open{transform:translateX(0);}
+.readable #bizPanel, .readable #marriagePanel, .readable #prashnaPanel, .readable #matchingPanel{background:rgba(248,249,250,.98);}
 .biz-card{margin:8px 12px;padding:12px;background:rgba(8,8,22,.7);border:1px solid var(--border);
   border-radius:4px;border-left:3px solid var(--gold);animation:sIn .25s ease;}
 .readable .biz-card{background:rgba(241,243,245,.9);}
@@ -457,6 +457,8 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
     <button class="btn" id="btnPrashna" title="Prashna Kundali (Horary Astrology)" style="border-color:rgba(155,111,255,.4);color:rgba(155,111,255,.6);">🔮 PRASHNA</button>
     <button class="btn" id="btnYogas" title="Show Important Yogas" style="border-color:rgba(255,215,0,.4);color:rgba(255,215,0,.6);">✨ YOGAS</button>
     <button class="btn violet" id="btnPredictions" title="Show Predictions & Forecasts">🔮 PREDICTIONS</button>
+    <button class="btn" id="btnCuspChart" title="Bhava Chalit / Cusp Chart" style="border-color:rgba(255,255,255,.4);color:white;">◬ CUSP CHART</button>
+    <button class="btn" id="btnMatching" title="Chart Matching / Synastry (Ashtakoota)" style="border-color:rgba(255,20,147,.4);color:#ff1493;">💞 MATCHING</button>
     <button class="btn" id="btnFullScreen" title="View Transit Chart Full Screen" style="border-color:rgba(58,240,255,.4);color:#3AF0FF;">⛶ FULL SCREEN</button>
     <div class="sep"></div>
     <select id="muhurtaType" style="background:var(--panel2);border:1px solid var(--gold);color:var(--gold2);padding:3px 7px;border-radius:2px;font-size:11px;font-family:'Trebuchet MS',sans-serif;outline:none;cursor:pointer;">
@@ -725,9 +727,50 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
       <!-- Categories populated by JS -->
     </div>
   </div>
-  <div id="prashnaContent" style="padding:15px;padding-bottom:100px;">
-    <div style="text-align:center;padding:40px 20px;color:var(--muted);font-family:Courier New,monospace;font-size:11px;">
+  <div id="prashnaContent" style="padding:15px;padding-bottom:20px;">
+    <div style="text-align:center;padding:10px 20px;color:var(--muted);font-family:Courier New,monospace;font-size:11px;">
       Select a question category above to begin analysis.
+    </div>
+  </div>
+
+  <div style="padding:15px; border-top:1px dashed var(--border2); background:rgba(255,255,255,0.02);">
+    <h3 style="color:var(--violet); font-size:13px; margin-bottom:8px; display:flex; align-items:center; gap:5px;">
+      <span>🔢</span> Sankhya Prasna (Numerical Oracle)
+    </h3>
+    <div style="font-size:10px; color:var(--muted); margin-bottom:12px; line-height:1.4;">
+      Focus purely on your question. Enter a random number between 1 and 108.
+    </div>
+    
+    <div style="display:flex; gap:8px; margin-bottom:15px;">
+      <input type="number" id="sankhyaNumInput" min="1" max="108" placeholder="1-108" style="background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:8px; flex:1; border-radius:4px; font-family:'Courier New',monospace; text-align:center; font-size:14px;">
+      <button class="btn" id="btnSankhyaRand" style="border-color:var(--violet); color:var(--violet); padding:0 15px;" title="Auto-generate a number based on current ms">RANDOM</button>
+      <button class="btn primary" id="btnSankhyaEval" style="background:rgba(155,111,255,0.2); border-color:var(--violet); color:var(--violet); font-weight:bold; padding:0 15px;">EVALUATE</button>
+    </div>
+
+    <div id="sankhyaResultContainer" style="display:none; padding:12px; border:1px solid var(--violet); border-radius:4px; background:rgba(155,111,255,0.08);">
+       <div id="sankhyaResultHeader" style="font-size:16px; font-weight:bold; color:white; text-align:center; margin-bottom:4px;"></div>
+       <div id="sankhyaResultVerdict" style="font-size:12px; color:var(--cyan); text-align:center; font-family:Palatino,serif; margin-bottom:10px;"></div>
+       <div style="font-size:10px; color:var(--muted); display:grid; grid-template-columns:1fr 1fr; gap:5px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:8px;" id="sankhyaResultDetails"></div>
+    </div>
+  </div>
+
+  <div style="padding:15px; border-top:1px dashed var(--border2); background:rgba(255,255,255,0.02);">
+    <h3 style="color:var(--amber); font-size:13px; margin-bottom:8px; display:flex; align-items:center; gap:5px;">
+      <span>⏳</span> Kashyapa Hora Nadi (Mook Prashna)
+    </h3>
+    <div style="font-size:10px; color:var(--muted); margin-bottom:12px; line-height:1.4;">
+      Identify intent based purely on arrival time via the ruling Hora Lord and specific planetary alignments.
+    </div>
+    
+    <button class="btn primary" id="btnKashyapaEval" style="width:100%; border-color:var(--amber); color:var(--amber); background:rgba(255,155,58,0.1); font-weight:bold; padding:8px;">Compute Arrival Time Intent</button>
+
+    <div id="kashyapaResultContainer" style="display:none; margin-top:15px; padding:12px; border:1px solid var(--amber); border-radius:4px; background:rgba(255,155,58,0.05);">
+       <div style="font-size:13px; font-weight:bold; color:var(--amber); margin-bottom:4px;" id="kashyapaHoraLord"></div>
+       <div style="font-size:11px; color:white; margin-bottom:10px;" id="kashyapaDirection"></div>
+       <div style="font-size:11px; color:var(--cyan); margin-bottom:6px; font-weight:bold;">Causing Planets (2, 3, 5, 7, 11):</div>
+       <div style="font-size:11px; color:var(--muted); margin-bottom:10px;" id="kashyapaCausing"></div>
+       <div style="font-size:11px; color:var(--violet); font-weight:bold; margin-bottom:6px;">Deducted Intent (Combinations):</div>
+       <div style="font-size:11px; color:var(--text); line-height:1.4;" id="kashyapaDeductions"></div>
     </div>
   </div>
 </div>
@@ -796,8 +839,18 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
     <div style="margin-bottom:15px;">
       <label style="font-family:'Courier New',monospace;font-size:9px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;">Prediction Mode</label>
       <select id="predictionModeSel" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:11px;padding:4px;border-radius:2px;margin-bottom:10px;outline:none;">
-        <option value="default">Default Forecast (Timeline & Sahams)</option>
-        <option value="tushar">Deep Knowledge Base & Tushar Roy Transcripts</option>
+        <option value="comprehensive">🌌 Comprehensive Master Report (All Rules)</option>
+        <option value="default">Classical Texts (Phaladeepika etc)</option>
+        <option value="tushar">Deep Knowledge Base & Tushar Roy</option>
+        <option value="saral">Saral Jyotish</option>
+        <option value="astro">Astro Pathshala</option>
+        <option value="arun_pandit">Arun Pandit</option>
+        <option value="astrology_made_easy">Astrology Made Easy</option>
+        <option value="bnn">BNN</option>
+        <option value="kaalpurush">Kaalpurush Astrology</option>
+        <option value="tathastu">Tathastu Anubhav</option>
+        <option value="professor">The Professor</option>
+        <option value="vedang">Vedang Jyotish (Shiv Sharma)</option>
       </select>
       
       <label style="font-family:'Courier New',monospace;font-size:9px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;">Forecast Range</label>
@@ -834,6 +887,66 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
   <div id="predictionsContent" style="padding:15px;padding-bottom:50px;">
     <div style="text-align:center;padding:40px 20px;color:var(--muted);font-family:Courier New,monospace;font-size:11px;">
       Set forecast range and click Analyze to generate predictions.
+    </div>
+  </div>
+</div>
+
+<!-- MATCHING PANEL (Ashtakoota Synastry) -->
+<div id="matchingPanel">
+  <div style="padding:15px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border2);position:sticky;top:0;background:rgba(4,4,18,.95);z-index:10;backdrop-filter:blur(8px);">
+    <div style="font-family:Palatino,serif;font-size:16px;color:#ff1493;font-weight:700;letter-spacing:1px;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:20px;">💞</span> Ashta Koota Matching
+    </div>
+    <button class="btn" onclick="document.getElementById('matchingPanel').classList.remove('open')" style="padding:4px 10px;border-color:var(--rose);color:var(--rose);">✕ CLOSE</button>
+  </div>
+  
+  <div style="padding:15px;">
+    <div style="margin-bottom:15px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;">
+      <h3 style="font-size:12px;color:#ff1493;margin-bottom:8px;font-family:'Courier New',monospace;">ENTER PARTNER DETAILS</h3>
+      
+      <div class="fg" style="margin-bottom:10px;">
+        <label>Load from Saved Profiles</label>
+        <select id="partnerProfileSel" onchange="loadPartnerProfile(this)">
+          <option value="">-- Custom Inputs Below --</option>
+        </select>
+      </div>
+
+      <div class="form-grid">
+        <div class="fg">
+          <label>Partner Date (DD/MM/YYYY)</label>
+          <input type="text" id="partnerDate" placeholder="15/08/1996" value="15/08/1996">
+        </div>
+        <div class="fg">
+          <label>Partner Time (HH:MM)</label>
+          <input type="time" id="partnerTime" value="14:30">
+        </div>
+        <div class="fg">
+          <label>Latitude (Dec)</label>
+          <input type="number" id="partnerLat" step="any" placeholder="28.6139" value="28.6139">
+        </div>
+        <div class="fg">
+          <label>Longitude (Dec)</label>
+          <input type="number" id="partnerLon" step="any" placeholder="77.2090" value="77.2090">
+        </div>
+      </div>
+      <div style="margin-top:12px;text-align:right;">
+        <button class="btn" id="btnCalculateMatch" style="border-color:#ff1493;color:#ff1493;">CALCULATE SYNASTRY</button>
+      </div>
+    </div>
+    
+    <div id="matchingResults" style="display:none;">
+      <div style="text-align:center;padding:15px;margin-bottom:15px;background:rgba(255,20,147,.1);border:1px solid rgba(255,20,147,.3);border-radius:6px;">
+        <div style="font-size:10px;color:white;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Total Compatibility Score</div>
+        <div id="matchTotalScore" style="font-size:32px;font-weight:700;color:#ff1493;font-family:Palatino,serif;">0 / 36</div>
+        <div id="matchVerdict" style="font-size:12px;color:rgba(255,255,255,.8);margin-top:4px;font-weight:bold;">Pending...</div>
+      </div>
+      
+      <h4 style="font-size:11px;color:var(--muted);text-transform:uppercase;border-bottom:1px dashed var(--border);padding-bottom:5px;margin-bottom:10px;font-family:'Courier New',monospace;">The 8 Kootas (Factors)</h4>
+      <div id="kootaGrid" style="display:flex;flex-direction:column;gap:8px;"></div>
+      
+      <div id="mangalikStatus" style="margin-top:15px;padding:10px;background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.3);border-radius:4px;font-size:11px;color:white;"></div>
+      
+      <div id="partnerChartTableContainer" style="margin-top:15px;"></div>
     </div>
   </div>
 </div>
@@ -1016,7 +1129,23 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
 <script src="./src/predictions/advanced_analysis.js"></script>
 <script src="./src/predictions/phaladeepika.js"></script>
 <script src="./src/predictions/Tushar_roy_db.js"></script>
+<script src="./src/predictions/Saral_jyotish_db.js"></script>
+<script src="./src/predictions/Astro_pathshala_db.js"></script>
+<script src="./src/predictions/arun_pandit_db.js"></script>
+<script src="./src/predictions/ASTROLOGY_MADE_EASY_db.js"></script>
+<script src="./src/predictions/bnn_db.js"></script>
+<script src="./src/predictions/kaalpurush_astrology_db.js"></script>
+<script src="./src/predictions/TATHASTU_Anubhav_db.js"></script>
+<script src="./src/predictions/the_professor_db.js"></script>
+<script src="./src/predictions/Tusharr_roy___Videos_db.js"></script>
+<script src="./src/predictions/vedang_jyotis_by_shiv_sharma_db.js"></script>
+<script src="./src/predictions/custom_db_en.js"></script>
+<script src="./src/predictions/custom_db_hi.js"></script>
+<script src="./src/predictions/generic_analyzer.js"></script>
 <script src="./src/predictions/astrology_knowledge.js"></script>
+<script src="./src/predictions/matching.js"></script>
+<script src="./src/predictions/sankhya_prasna.js"></script>
+<script src="./src/predictions/kashyapa_nadi.js"></script>
 <script src="./src/predictions/Tushar_roy.js"></script>
 <script src="./src/predictions/sahams.js"></script>
 <script src="./src/predictions/varshaphala.js"></script>
@@ -6181,6 +6310,121 @@ document.getElementById('chkHouseDividers')?.addEventListener('change', drawMain
 document.getElementById('chkShowAspectPlanets')?.addEventListener('change', () => {
   if (typeof drawDChart === 'function') drawDChart('dchartCanvas');
 });
+
+// ---------- MATCHING & CUSP CHART HANDLERS ----------
+document.getElementById('btnMatching')?.addEventListener('click', () => {
+  document.getElementById('matchingPanel').classList.add('open');
+  // Populate the dropdown
+  const pSel = document.getElementById('partnerProfileSel');
+  if (pSel) {
+      pSel.innerHTML = '<option value="">-- Custom Inputs / Select Profile --</option>';
+      
+      // Saved Profiles
+      const profiles = getSavedProfiles();
+      if(profiles.length > 0) {
+          let ogSaved = document.createElement('optgroup');
+          ogSaved.label = "My Saved Profiles";
+          profiles.forEach((p, idx) => {
+              let opt = document.createElement('option');
+              opt.value = "saved:" + idx;
+              opt.textContent = `${p.name} (${p.date.split('T')[0]})`;
+              ogSaved.appendChild(opt);
+          });
+          pSel.appendChild(ogSaved);
+      }
+      
+      // Celebrity DB
+      if (window.CELEBRITY_DATABASE) {
+          Object.keys(window.CELEBRITY_DATABASE).forEach(prof => {
+              let ogCeleb = document.createElement('optgroup');
+              ogCeleb.label = "Famous " + prof.charAt(0).toUpperCase() + prof.slice(1) + "s";
+              window.CELEBRITY_DATABASE[prof].forEach((c, idx) => {
+                  let opt = document.createElement('option');
+                  opt.value = `celeb:${prof}:${idx}`;
+                  opt.textContent = `${c.name} (${c.date})`;
+                  ogCeleb.appendChild(opt);
+              });
+              pSel.appendChild(ogCeleb);
+          });
+      }
+  }
+});
+
+window.loadPartnerProfile = function(selectElem) {
+    const val = selectElem.value;
+    if (!val) return;
+    
+    let p = null;
+    if (val.startsWith("saved:")) {
+        const idx = parseInt(val.split(":")[1]);
+        const profiles = getSavedProfiles();
+        p = profiles[idx];
+    } else if (val.startsWith("celeb:")) {
+        const parts = val.split(":");
+        const prof = parts[1];
+        const idx = parseInt(parts[2]);
+        if (window.CELEBRITY_DATABASE && window.CELEBRITY_DATABASE[prof]) {
+            p = window.CELEBRITY_DATABASE[prof][idx];
+        }
+    }
+    
+    if (p) {
+        // Date comes in "YYYY-MM-DD" or similar
+        let dParts = p.date.split('T')[0].split('-');
+        if (dParts.length === 3) {
+            document.getElementById('partnerDate').value = `${dParts[2]}/${dParts[1]}/${dParts[0]}`;
+        }
+        document.getElementById('partnerTime').value = p.time || '12:00';
+        document.getElementById('partnerLat').value = p.lat;
+        document.getElementById('partnerLon').value = p.lon;
+    }
+};
+
+document.getElementById('btnCalculateMatch')?.addEventListener('click', () => {
+  if (window.doChartMatching) window.doChartMatching();
+});
+
+window.SHOW_CUSP_CHART = false;
+window.calculateBhavaChalit = function(planets, asc) {
+    const ascAbsDeg = (asc.sn * 30) + asc.deg;
+    Object.keys(planets).forEach(k => {
+        const p = planets[k];
+        if (!p || p.deg === undefined) return;
+        const pAbsDeg = (p.sn * 30) + parseFloat(p.deg);
+        let diff = (pAbsDeg - (ascAbsDeg - 15)) % 360;
+        if (diff < 0) diff += 360;
+        p.house = Math.floor(diff / 30) + 1;
+    });
+};
+
+document.getElementById('btnCuspChart')?.addEventListener('click', function() {
+    window.SHOW_CUSP_CHART = !window.SHOW_CUSP_CHART;
+    this.classList.toggle('active', window.SHOW_CUSP_CHART);
+    this.style.backgroundColor = window.SHOW_CUSP_CHART ? 'rgba(255,255,255,0.2)' : '';
+    this.style.borderStyle = window.SHOW_CUSP_CHART ? 'dashed' : 'solid';
+    
+    // Process D1 Chart
+    if (window.BIRTH_PLANETS && window.BIRTH_ASC) {
+        if (window.SHOW_CUSP_CHART) {
+            window.calculateBhavaChalit(window.BIRTH_PLANETS, window.BIRTH_ASC);
+        } else {
+            // Revert to Equal Sign Houses
+            Object.values(window.BIRTH_PLANETS).forEach(p => {
+                if(p.sn !== undefined) {
+                    p.house = ((p.sn - window.BIRTH_ASC.sn + 12) % 12) + 1;
+                }
+            });
+        }
+        
+        // Trigger Redraws
+        if (typeof drawMainChart === 'function') drawMainChart();
+        const svgCont = document.getElementById('svgChartContainer');
+        if (svgCont && svgCont.style.display !== 'none' && window.renderSvgChart) window.renderSvgChart();
+        if (typeof drawDChart === 'function') drawDChart('dchartCanvas');
+    }
+});
+// ---------------------------------------------------
+
 document.getElementById('btnFullScreen')?.addEventListener('click', toggleTransitFullScreen);
 
 function toggleTransitFullScreen() {

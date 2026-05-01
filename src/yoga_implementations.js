@@ -45,7 +45,7 @@ function enhanceYogaImplementations() {
           const orbSign = Math.abs((p1.sn || 0) - (p2.sn || 0));
           const orbDeg = Math.abs((p1.deg || 0) - (p2.deg || 0));
           if (orbSign === 0 && orbDeg <= 8) {
-            connections.push(`${w1.lord} (L${w1.house}) and ${w2.lord} (L${w2.house}) are conjunct in ${p1.sign}`);
+            connections.push(`${w1.lord} (Lord of H${w1.house}) and ${w2.lord} (Lord of H${w2.house}) are conjunct in ${p1.sign} (H${p1.house})`);
             return true;
           }
           return false;
@@ -54,7 +54,7 @@ function enhanceYogaImplementations() {
       
       return { 
         result: isDetected, 
-        rationale: isDetected ? `Multiple wealth lords (${connections.join('; ')}) are connected in the chart.` : "No direct connection between lords of 2nd, 5th, 9th, or 11th houses."
+        rationale: isDetected ? `Dhana Yoga is actively forming because ${connections.join('; ')}. This creates a powerful wealth combination.` : "No direct connection between lords of 2nd, 5th, 9th, or 11th houses."
       };
     },
     
@@ -69,7 +69,7 @@ function enhanceYogaImplementations() {
       const isDetected = isConj || isOpp;
       return {
         result: isDetected,
-        rationale: isDetected ? `Moon (${moon.sign}) and Mars (${mars.sign}) are in ${isConj ? 'conjunction' : 'opposition'}, creating financial drive.` : "Moon and Mars are not significantly connected."
+        rationale: isDetected ? `It forms because Moon is in ${moon.sign} (H${moon.house}) and Mars is in ${mars.sign} (H${mars.house}). They are in direct ${isConj ? 'conjunction' : 'opposition'}, creating financial drive.` : "Moon and Mars are not significantly connected."
       };
     },
     
@@ -81,7 +81,7 @@ function enhanceYogaImplementations() {
       const isDetected = orbSign === 0 && orbDeg <= 12;
       return {
         result: isDetected,
-        rationale: isDetected ? `Sun and Mercury are conjunct in ${sun.sign} within ${orbDeg.toFixed(1)}°, indicating intellectual brilliance.` : "Sun and Mercury are too far apart to form this yoga."
+        rationale: isDetected ? `It forms because Sun is in ${sun.sign} (H${sun.house}) and Mercury is placed exactly in ${merc.sign} (H${merc.house}) within a ${orbDeg.toFixed(1)}° orb, illuminating intellectual capabilities.` : "Sun and Mercury are too far apart to form this yoga."
       };
     },
     
@@ -95,7 +95,7 @@ function enhanceYogaImplementations() {
       const isDetected = p9 && p9.house === 10;
       return {
         result: !!isDetected,
-        rationale: isDetected ? `Lord of 9th house (${lord9}) is placed in 10th house, bringing grace to the career.` : `9th lord is not in the 10th house.`
+        rationale: isDetected ? `It forms because the Lord of 9th house (${lord9}) is placed strongly in the 10th house of career (${p9.sign}), bringing profound grace to professional endeavors.` : `9th lord is not in the 10th house.`
       };
     },
     
@@ -113,7 +113,7 @@ function enhanceYogaImplementations() {
       const isDetected = (p2 && p2.house === 5) || (p5 && p5.house === 2) || (kendraTrikonaHouses.includes(p2?.house) && kendraTrikonaHouses.includes(p5?.house));
       return {
         result: isDetected,
-        rationale: isDetected ? `Beneficial exchange or placement of 2nd and 5th lords in auspicious houses.` : "2nd and 5th lords are not in mutual connection or kendra/trikona."
+        rationale: isDetected ? `It forms because the 2nd Lord (${lord2} in H${p2?.house||'?'}) and 5th Lord (${lord5} in H${p5?.house||'?'}) are exchanging houses or placed securely in favorable Kendra/Trikona houses.` : "2nd and 5th lords are not in mutual connection or kendra/trikona."
       };
     },
     
@@ -130,7 +130,7 @@ function enhanceYogaImplementations() {
       const isDetected = dusthana.includes(p11.house);
       return {
         result: isDetected,
-        rationale: isDetected ? `Lord of gains (11th Lord: ${lord11}) is placed in a difficult house (H${p11.house}), causing financial drain.` : "11th lord is in a favorable house."
+        rationale: isDetected ? `It forms because the Lord of Gains (11th House Lord: ${lord11}) is placed in a difficult dusthana house (${p11.sign}, H${p11.house}), causing potential financial drainage.` : "11th lord is in a favorable house."
       };
     },
     
@@ -156,9 +156,11 @@ function enhanceYogaImplementations() {
         else if (moonKetuDeg <= nodeOrb && moon.sn === ketu.sn) matched = "Moon and Ketu";
       }
       
+      const details = matched && matched.includes('Sun') ? `${sun.sign} (H${sun.house})` : (matched && matched.includes('Moon') ? `${moon.sign} (H${moon.house})` : '');
+      
       return {
         result: !!matched,
-        rationale: matched ? `${matched} are conjunct at nodes, causing emotional or vital eclipse.` : "Sun/Moon are clear of Rahu/Ketu conjunctions."
+        rationale: matched ? `It forms because ${matched} are in a tight conjunction in ${details}, causing a deep eclipse effect on vitality or emotions.` : "Sun/Moon are clear of Rahu/Ketu conjunctions."
       };
     },
     
@@ -179,8 +181,55 @@ function enhanceYogaImplementations() {
       const isDetected = betweenCount >= 5;
       return {
         result: isDetected,
-        rationale: isDetected ? `${betweenCount} planets are hemmed between nodes Rahu and Ketu, creating karmic focus.` : "Planets are distributed outside the node axis."
+        rationale: isDetected ? `It forms because ${betweenCount >= 7 ? 'all core' : 'the majority of'} planets are hemmed between Rahu in ${rahu.sign} (H${rahu.house}) and Ketu in ${ketu.sign} (H${ketu.house}), creating an intense karmic axis.` : "Planets are distributed outside the node axis."
       };
+    },
+    
+    // ========== MOON & SUN FLANK YOGAS ==========
+    "Sunapha Yoga": (c) => {
+      const moon = c.planets.Moon; if(!moon) return { result: false };
+      const h2 = (moon.sn + 1) % 12;
+      const flankers = Object.keys(c.planets).filter(p => !['Sun','Moon','Rahu','Ketu'].includes(p) && c.planets[p].sn === h2);
+      return { result: flankers.length > 0, rationale: flankers.length > 0 ? `It forms because ${flankers.join(', ')} occupied the 2nd position from the Moon (${moon.sign}, H${moon.house}), bringing self-made wealth.` : '' };
+    },
+    
+    "Anapha Yoga": (c) => {
+      const moon = c.planets.Moon; if(!moon) return { result: false };
+      const h12 = (moon.sn + 11) % 12;
+      const flankers = Object.keys(c.planets).filter(p => !['Sun','Moon','Rahu','Ketu'].includes(p) && c.planets[p].sn === h12);
+      return { result: flankers.length > 0, rationale: flankers.length > 0 ? `It forms because ${flankers.join(', ')} occupied the 12th position from the Moon (${moon.sign}, H${moon.house}), ensuring spiritual inclination and polite manners.` : '' };
+    },
+    
+    "Durdhara Yoga": (c) => {
+      const moon = c.planets.Moon; if(!moon) return { result: false };
+      const h2 = (moon.sn + 1) % 12, h12 = (moon.sn + 11) % 12;
+      const p2 = Object.keys(c.planets).filter(p => !['Sun','Moon','Rahu','Ketu'].includes(p) && c.planets[p].sn === h2);
+      const p12 = Object.keys(c.planets).filter(p => !['Sun','Moon','Rahu','Ketu'].includes(p) && c.planets[p].sn === h12);
+      const isDet = (p2.length > 0 && p12.length > 0);
+      return { result: isDet, rationale: isDet ? `It forms because the Moon (${moon.sign}, H${moon.house}) is hemmed by ${p2.join(', ')} in the 2nd and ${p12.join(', ')} in the 12th position, granting abundance.` : '' };
+    },
+    
+    "Vesi Yoga": (c) => {
+      const sun = c.planets.Sun; if(!sun) return { result: false };
+      const h2 = (sun.sn + 1) % 12;
+      const flankers = Object.keys(c.planets).filter(p => !['Sun','Moon','Rahu','Ketu'].includes(p) && c.planets[p].sn === h2);
+      return { result: flankers.length > 0, rationale: flankers.length > 0 ? `It forms because ${flankers.join(', ')} occupied the 2nd position from the Sun (${sun.sign}, H${sun.house}), indicating good financial status and truthful speech.` : '' };
+    },
+    
+    "Vosi Yoga": (c) => {
+      const sun = c.planets.Sun; if(!sun) return { result: false };
+      const h12 = (sun.sn + 11) % 12;
+      const flankers = Object.keys(c.planets).filter(p => !['Sun','Moon','Rahu','Ketu'].includes(p) && c.planets[p].sn === h12);
+      return { result: flankers.length > 0, rationale: flankers.length > 0 ? `It forms because ${flankers.join(', ')} occupied the 12th position from the Sun (${sun.sign}, H${sun.house}), granting philosophical nature and charitable disposition.` : '' };
+    },
+    
+    "Ubhayachari Yoga": (c) => {
+      const sun = c.planets.Sun; if(!sun) return { result: false };
+      const h2 = (sun.sn + 1) % 12, h12 = (sun.sn + 11) % 12;
+      const p2 = Object.keys(c.planets).filter(p => !['Sun','Moon','Rahu','Ketu'].includes(p) && c.planets[p].sn === h2);
+      const p12 = Object.keys(c.planets).filter(p => !['Sun','Moon','Rahu','Ketu'].includes(p) && c.planets[p].sn === h12);
+      const isDet = (p2.length > 0 && p12.length > 0);
+      return { result: isDet, rationale: isDet ? `It forms because the Sun (${sun.sign}, H${sun.house}) is beautifully flanked by ${p2.join(', ')} in the 2nd position and ${p12.join(', ')} in the 12th, indicating great renown and physical endurance.` : '' };
     },
     
     // ========== DIGNTY YOGAS ==========
@@ -189,7 +238,7 @@ function enhanceYogaImplementations() {
       const exalted = Object.keys(c.planets).filter(p => c.planets[p] && c.planets[p].status === 'Exalt.');
       return {
         result: exalted.length > 0,
-        rationale: exalted.length > 0 ? `Exalted planets found: ${exalted.join(', ')}.` : "No exalted planets."
+        rationale: exalted.length > 0 ? `It forms because ${exalted.map(p => `${p} is exalted in ${c.planets[p].sign} (H${c.planets[p].house})`).join(' and ')}.` : "No exalted planets."
       };
     },
     
@@ -198,7 +247,7 @@ function enhanceYogaImplementations() {
       const own = Object.keys(c.planets).filter(p => c.planets[p] && c.planets[p].status === 'Own');
       return {
         result: own.length > 0,
-        rationale: own.length > 0 ? `Planets in own signs: ${own.join(', ')}.` : "No planets in own signs."
+        rationale: own.length > 0 ? `It forms because ${own.map(p => `${p} is in its own sign ${c.planets[p].sign} (H${c.planets[p].house})`).join(' and ')}.` : "No planets in own signs."
       };
     },
     
@@ -206,13 +255,13 @@ function enhanceYogaImplementations() {
       if (!c.planets) return { result: false };
       const varg = Object.keys(c.planets).filter(p => {
         const planet = c.planets[p];
-        if (!planet) return false;
+        if (!planet || planet.deg === undefined) return false;
         const deg = parseFloat(planet.deg) || 0;
-        return deg < 3.33; // Approximately first navamsha
+        return deg >= 0 && deg < 3.33; // Approximately first navamsha
       });
       return {
         result: varg.length > 0,
-        rationale: varg.length > 0 ? `Planets in Vargottama degrees (0-3.3°): ${varg.join(', ')}.` : "No planets in Vargottama degrees."
+        rationale: varg.length > 0 ? `It forms because ${varg.map(p => `${p} is placed in the Vargottama degree (${(parseFloat(c.planets[p].deg) || 0).toFixed(1)}° in ${c.planets[p].sign}, H${c.planets[p].house})`).join(' and ')}.` : "No planets in Vargottama degrees."
       };
     },
     
@@ -221,7 +270,7 @@ function enhanceYogaImplementations() {
       const retro = Object.keys(c.planets).filter(p => c.planets[p] && c.planets[p].retro === true);
       return {
         result: retro.length > 0,
-        rationale: retro.length > 0 ? `Retrograde planets found: ${retro.join(', ')}.` : "No retrograde planets."
+        rationale: retro.length > 0 ? `It forms because ${retro.map(p => `${p} is retrograde in ${c.planets[p].sign} (H${c.planets[p].house})`).join(' and ')}.` : "No retrograde planets."
       };
     },
     
@@ -237,7 +286,7 @@ function enhanceYogaImplementations() {
       });
       return {
         result: combust.length > 0,
-        rationale: combust.length > 0 ? `Combust planets (close to Sun): ${combust.join(', ')}.` : "No planets are combust."
+        rationale: combust.length > 0 ? `It forms because ${combust.map(p => `${p} (H${c.planets[p].house}) is combust heavily due to being too close to the Sun in ${sun.sign}`).join(' and ')}.` : "No planets are combust."
       };
     },
     
@@ -304,7 +353,7 @@ function enhanceYogaImplementations() {
           const rulerPlanet = c.planets[rulerName];
           const kendraTrikonaHouses = [1, 4, 5, 7, 9, 10];
           if (kendraTrikonaHouses.includes(rulerPlanet.house)) {
-            cancelReason = `Debilitated ${planet} cancelled by exaltation lord ${rulerName} in H${rulerPlanet.house}`;
+            cancelReason = `the deep debilitation of ${planet} (in ${c.planets[planet].sign}, H${c.planets[planet].house}) is miraculously cancelled and reversed by its exaltation lord ${rulerName} sitting powerfully in H${rulerPlanet.house} (${rulerPlanet.sign})`;
             return true;
           }
         }
@@ -313,7 +362,7 @@ function enhanceYogaImplementations() {
 
       return {
         result: isDetected,
-        rationale: isDetected ? cancelReason : "No debilitated planets found or their cancellation lords are not in key houses."
+        rationale: isDetected ? `It forms because ${cancelReason}, creating an unexpected rise to power after initial adversity.` : "No debilitated planets found or their cancellation lords are not in key houses."
       };
     },
     
@@ -330,13 +379,13 @@ function enhanceYogaImplementations() {
         const lord = getSignLord(lordSign);
         const lordPlanet = c.planets[lord];
         if (lordPlanet && difficult.includes(lordPlanet.house)) {
-          findings.push(`${lord} (L${house}) in H${lordPlanet.house}`);
+          findings.push(`${lord} (Lord of H${house}) located in another dusthana H${lordPlanet.house} (${lordPlanet.sign})`);
         }
       });
 
       return {
         result: findings.length > 0,
-        rationale: findings.length > 0 ? `Lords of difficult houses ${findings.join(', ')} creates Vipareeta (Reverse) Raj Yoga.` : "Lords of 6, 8, 12 are not in dusthanas."
+        rationale: findings.length > 0 ? `It forms because the lords of historically difficult houses are beautifully neutralizing each other: ${findings.join(' and ')}. This creates Vipareeta (Reverse) Raj Yoga.` : "Lords of 6, 8, 12 are not in dusthanas."
       };
     },
     
@@ -350,7 +399,7 @@ function enhanceYogaImplementations() {
       const found = exaltedPlanets.filter(p => kendraHouses.includes(c.planets[p].house));
       return {
         result: found.length > 0,
-        rationale: found.length > 0 ? `Exalted planets in Kendras: ${found.join(', ')}.` : "No exalted planets in Kendra houses."
+        rationale: found.length > 0 ? `It forms because the exalted planet(s) ${found.map(p => `${p} is soaring in H${c.planets[p].house} (${c.planets[p].sign})`).join(', ')} are positioned purely in Kendra houses.` : "No exalted planets in Kendra houses."
       };
     },
     
@@ -365,18 +414,18 @@ function enhanceYogaImplementations() {
         const lord = getSignLord(lordSign);
         const lordPlanet = c.planets[lord];
         if (lordPlanet && (lordPlanet.house === house || [1, 5, 9].includes(lordPlanet.house))) {
-          details.push(`L${house} (${lord}) in H${lordPlanet.house}`);
+          details.push(`L${house} (${lord}) in H${lordPlanet.house} (${lordPlanet.sign})`);
         }
       });
       return {
         result: details.length > 0,
-        rationale: details.length > 0 ? `Beneficial house lords in Trikona/Own houses: ${details.join(', ')}.` : "Main house lords are not in auspicious placements."
+        rationale: details.length > 0 ? `It forms because your most beneficial house lords are firmly seated in Trikona or Their Own houses: ${details.join(', ')}.` : "Main house lords are not in auspicious placements."
       };
     },
     
     // ========== LAGNADHI YOGAS ==========
     "Lagnadhi Yoga": (c) => {
-      if (!c.planets || !c.asc) return false;
+      if (!c.planets || !c.asc) return { result: false };
       // Lagna lord with Jupiter in kendra
       const ascSn = c.asc.sn || 0;
       const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
@@ -385,96 +434,45 @@ function enhanceYogaImplementations() {
       const lagnaLordPlanet = c.planets[lagnaLord];
       const jupiter = c.planets.Jupiter;
       
-      if (!lagnaLordPlanet || !jupiter) return false;
+      if (!lagnaLordPlanet || !jupiter) return { result: false };
       
       const kendraHouses = [1, 4, 7, 10];
-      return kendraHouses.includes(lagnaLordPlanet.house) && kendraHouses.includes(jupiter.house);
+      const isDet = kendraHouses.includes(lagnaLordPlanet.house) && kendraHouses.includes(jupiter.house);
+      return {
+          result: isDet, 
+          rationale: isDet ? `It forms because the Ascendant Lord ${lagnaLord} (H${lagnaLordPlanet.house}, ${lagnaLordPlanet.sign}) and the supreme benefic Jupiter (H${jupiter.house}, ${jupiter.sign}) are both holding commanding Kendra houses.` : ''
+      };
     },
     
     // ========== PARIVARTANA YOGA ==========
     "Parivartana Yoga": (c) => {
-      if (!c.planets || !c.asc) return false;
-      // Two planets in mutual kendras (exchange of houses)
+      if (!c.planets || !c.asc) return { result: false };
       const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
       
+      let findings = [];
       for (let i = 0; i < planets.length; i++) {
         for (let j = i + 1; j < planets.length; j++) {
-          const p1 = c.planets[planets[i]];
-          const p2 = c.planets[planets[j]];
+          const p1 = planets[i];
+          const p2 = planets[j];
+          const pd1 = c.planets[p1];
+          const pd2 = c.planets[p2];
           
-          if (!p1 || !p2) continue;
+          if (!pd1 || !pd2) continue;
           
-          // Check if both in kendra (1,4,7,10) - mutual kendras
-          const kendraHouses = [1, 4, 7, 10];
-          if (kendraHouses.includes(p1.house) && kendraHouses.includes(p2.house)) {
-            return true;
+          if (getSignLord(pd1.sign) === p2 && getSignLord(pd2.sign) === p1) {
+            findings.push(`${p1} (in ${pd1.sign}, H${pd1.house}) and ${p2} (in ${pd2.sign}, H${pd2.house})`);
           }
         }
       }
-      return false;
-    },
-    
-    // ========== SUNAPHA & RELATED ==========
-    "Sunapha Yoga": (c) => {
-      if (!c.planets) return false;
-      // Benefic planets (other than Sun) in 2nd from Sun
-      const sun = c.planets.Sun;
-      if (!sun) return false;
-      
-      const benefics = ['Jupiter', 'Venus', 'Mercury', 'Moon'];
-      const sunHouse = sun.house || 0;
-      const secondFromSun = ((sunHouse - 1 + 1) % 12) + 1;
-      
-      return benefics.some(b => {
-        const planet = c.planets[b];
-        return planet && planet.house === secondFromSun;
-      });
-    },
-    
-    "Anapha Yoga": (c) => {
-      if (!c.planets) return false;
-      // Benefic planets (other than Sun) in 12th from Sun
-      const sun = c.planets.Sun;
-      if (!sun) return false;
-      
-      const benefics = ['Jupiter', 'Venus', 'Mercury', 'Moon'];
-      const sunHouse = sun.house || 0;
-      const twelfthFromSun = ((sunHouse - 1 + 11) % 12) + 1;
-      
-      return benefics.some(b => {
-        const planet = c.planets[b];
-        return planet && planet.house === twelfthFromSun;
-      });
-    },
-    
-    // ========== DURDHARA YOGA ==========
-    "Durdhara Yoga": (c) => {
-      if (!c.planets) return false;
-      // Benefic planets on both sides of Moon (in 2nd and 12th)
-      const moon = c.planets.Moon;
-      if (!moon) return false;
-      
-      const benefics = ['Jupiter', 'Venus', 'Mercury'];
-      const moonHouse = moon.house || 0;
-      const secondFromMoon = ((moonHouse - 1 + 1) % 12) + 1;
-      const twelfthFromMoon = ((moonHouse - 1 + 11) % 12) + 1;
-      
-      const inSecond = benefics.some(b => {
-        const planet = c.planets[b];
-        return planet && planet.house === secondFromMoon;
-      });
-      
-      const inTwelfth = benefics.some(b => {
-        const planet = c.planets[b];
-        return planet && planet.house === twelfthFromMoon;
-      });
-      
-      return inSecond && inTwelfth;
+      return {
+          result: findings.length > 0,
+          rationale: findings.length > 0 ? `It forms because there is a perfect mutual exchange of signs between ${findings.join(' | ')}, linking their house significations powerfully.` : ''
+      };
     },
     
     // ========== AYUSHI YOGA ==========
     "Ayushi Yoga": (c) => {
-      if (!c.planets || !c.asc) return false;
+      if (!c.planets || !c.asc) return { result: false };
       // 8th lord strong and well-placed = long life
       const ascSn = c.asc.sn || 0;
       const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
@@ -482,67 +480,50 @@ function enhanceYogaImplementations() {
       const lord8 = getSignLord(signNames[eighthSign]);
       const lord8Planet = c.planets[lord8];
       
-      if (!lord8Planet) return false;
-      return lord8Planet.status === 'Own' || lord8Planet.status === 'Exalt.' || [1, 4, 5, 9, 10].includes(lord8Planet.house);
-    },
-    
-    // ========== DASA YOGA ==========
-    "Dasa Yoga": (c) => {
-      if (!c.planets) return false;
-      // Concerned house lord + 10th lord conjunction/aspect
-      const lord10 = c.planets.Saturn; // Simplified
-      const planets = Object.keys(c.planets).filter(p => c.planets[p]);
-      
-      return planets.some(p => {
-        const planet = c.planets[p];
-        const kendra = [1, 4, 7, 10].includes(planet.house);
-        return kendra && (planet.status === 'Own' || planet.status === 'Exalt.');
-      });
+      if (!lord8Planet) return { result: false };
+      const strongPlacement = lord8Planet.status === 'Own' || lord8Planet.status === 'Exalt.' || [1, 4, 5, 9, 10].includes(lord8Planet.house);
+      return {
+          result: strongPlacement,
+          rationale: strongPlacement ? `It forms because the 8th Lord of longevity (${lord8}) is placed powerfully in H${lord8Planet.house} (${lord8Planet.sign}), reinforcing vitality and lifespan.` : ''
+      };
     },
     
     // ========== NAKSHATRA YOGAS ==========
     "Pushya Nakshatra Yoga": (c) => {
-      if (!c.planets) return false;
-      return Object.keys(c.planets).some(p => c.planets[p] && c.planets[p].nak === 'Pushya');
+      if (!c.planets) return { result: false };
+      const found = Object.keys(c.planets).filter(p => c.planets[p] && c.planets[p].nak === 'Pushya');
+      return { result: found.length > 0, rationale: found.length > 0 ? `It forms because ${found.join(', ')} is placed in the highly auspicious Pushya Nakshatra.` : '' };
     },
     
     "Magha Nakshatra Yoga": (c) => {
-      if (!c.planets) return false;
-      return Object.keys(c.planets).some(p => c.planets[p] && c.planets[p].nak === 'Magha');
+      if (!c.planets) return { result: false };
+      const found = Object.keys(c.planets).filter(p => c.planets[p] && c.planets[p].nak === 'Magha');
+      return { result: found.length > 0, rationale: found.length > 0 ? `It forms because ${found.join(', ')} is placed in the royal Magha Nakshatra.` : '' };
     },
     
     "Revati Nakshatra Yoga": (c) => {
-      if (!c.planets) return false;
-      return Object.keys(c.planets).some(p => c.planets[p] && c.planets[p].nak === 'Revati');
-    },
-    
-    // ========== MORE DIGNITY YOGAS ==========
-    "Vargottama Yoga": (c) => {
-      if (!c.planets) return false;
-      // Planet in same rashi and navamsha = intense strength
-      return Object.keys(c.planets).some(p => {
-        const planet = c.planets[p];
-        // Simplified: planet with high strength indicator
-        return planet && (planet.status === 'Exalt.' || planet.status === 'Own');
-      });
+      if (!c.planets) return { result: false };
+      const found = Object.keys(c.planets).filter(p => c.planets[p] && c.planets[p].nak === 'Revati');
+      return { result: found.length > 0, rationale: found.length > 0 ? `It forms because ${found.join(', ')} is placed in the prosperous Revati Nakshatra.` : '' };
     },
     
     "Atma Karaka Yoga": (c) => {
-      if (!c.planets) return false;
+      if (!c.planets) return { result: false };
       // Retrograde planet in 1st house or with lagna lord
       const retrograde = Object.keys(c.planets).filter(p => 
         c.planets[p] && c.planets[p].retro
       );
       
-      return retrograde.some(p => {
+      const soulPlanets = retrograde.filter(p => {
         const planet = c.planets[p];
         return planet.house === 1 || planet.house === 10;
       });
+      return { result: soulPlanets.length > 0, rationale: soulPlanets.length > 0 ? `It forms because the retrograde soul-indicator ${soulPlanets.join(', ')} is placed predominantly in Kendra H${c.planets[soulPlanets[0]].house}.` : '' };
     },
     
     // ========== MAHAPURUSHA YOGAS ==========
     "Ruchaka Yoga": (c) => {
-      if (!c.planets) return false;
+      if (!c.planets) return { result: false };
       // Mars in own/exalt sign in kendra
       const mars = c.planets.Mars;
       if (!mars) return false;
@@ -624,24 +605,27 @@ function enhanceYogaImplementations() {
     
     // ========== SHAKATA & NEGATIVE ==========
     "Shakata Yoga": (c) => {
-      if (!c.planets) return false;
+      if (!c.planets) return { result: false };
       // Jupiter in 6/8/12 from Moon = challenges
       const moon = c.planets.Moon;
       const jupiter = c.planets.Jupiter;
-      if (!moon || !jupiter) return false;
+      if (!moon || !jupiter) return { result: false };
       
       const moonHouse = moon.house || 0;
       const jupiterHouse = jupiter.house || 0;
       const diff = Math.abs(jupiterHouse - moonHouse);
       
-      return (diff === 5 || diff === 7 || diff === 11);  // Houses 6, 8, 12 from moon
+      const isDet = (diff === 5 || diff === 7 || diff === 11);  // Houses 6, 8, 12 from moon
+      return { 
+          result: isDet, 
+          rationale: isDet ? `It forms because Jupiter (H${jupiterHouse}, ${jupiter.sign}) is placed in a difficult 6th, 8th or 12th position from the Moon (H${moonHouse}, ${moon.sign}), causing fluctuating fortunes.` : '' 
+      };
     },
     
     "Kemadruma Yoga": (c) => {
-      if (!c.planets) return false;
-      // Kemadruma: No planets (except Sun, Rahu, Ketu) in the 2nd or 12th house from the Moon.
+      if (!c.planets) return { result: false };
       const moon = c.planets.Moon;
-      if (!moon) return false;
+      if (!moon) return { result: false };
       
       const validPlanets = ['Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
       const moonHouse = moon.house || 0;
@@ -655,55 +639,23 @@ function enhanceYogaImplementations() {
         return planet.house === secondFromMoon || planet.house === twelfthFromMoon;
       });
       
-      // Kemadruma occurs if there are NO valid planets in 2nd or 12th
-      return !hasPlanetIn2ndOr12th;
-    },
-    
-    "Grahan Yoga": (c) => {
-      if (!c.planets) return false;
-      // Rahu/Ketu in kendra or trikona
-      const rahu = c.planets.Rahu;
-      const ketu = c.planets.Ketu;
-      
-      const nodeHouses = [1, 4, 5, 7, 9, 10];
-      return (rahu && nodeHouses.includes(rahu.house)) || (ketu && nodeHouses.includes(ketu.house));
-    },
-    
-    "Kala Sarpa Yoga": (c) => {
-      if (!c.planets) return false;
-      // All planets between Rahu and Ketu
-      const rahu = c.planets.Rahu;
-      const ketu = c.planets.Ketu;
-      
-      if (!rahu || !ketu) return false;
-      
-      const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
-      const rahuDeg = rahu.deg || 0;
-      const ketuDeg = ketu.deg || 0;
-      
-      const allBetween = planets.every(p => {
-        const planet = c.planets[p];
-        if (!planet) return false;
-        const deg = planet.deg || 0;
-        
-        if (rahuDeg < ketuDeg) {
-          return deg > rahuDeg && deg < ketuDeg;
-        } else {
-          return deg > rahuDeg || deg < ketuDeg;
-        }
-      });
-      
-      return allBetween;
+      return { 
+          result: !hasPlanetIn2ndOr12th, 
+          rationale: !hasPlanetIn2ndOr12th ? `It forms because the Moon (in H${moonHouse}, ${moon.sign}) is completely isolated without any major planets in either the 2nd (H${secondFromMoon}) or 12th (H${twelfthFromMoon}) positions.` : '' 
+      };
     },
     
     "Mangal Dosha": (c) => {
-      if (!c.planets) return false;
-      // Mars in 12, 1, 4, 7, 8 from lagna/moon
+      if (!c.planets) return { result: false };
       const mars = c.planets.Mars;
-      if (!mars) return false;
+      if (!mars) return { result: false };
       
       const doshaHouses = [1, 4, 7, 8, 12];
-      return doshaHouses.includes(mars.house);
+      const isDet = doshaHouses.includes(mars.house);
+      return { 
+          result: isDet, 
+          rationale: isDet ? `It forms because Mars is aggressively positioned in H${mars.house} (${mars.sign}), directly activating the Kuja Dosha axis.` : '' 
+      };
     },
     
     // ========== ADVANCED STRENGTH YOGAS ==========
@@ -734,7 +686,7 @@ function enhanceYogaImplementations() {
     },
     
     "Chandamatha Yoga": (c) => {
-      if (!c.planets || !c.asc) return false;
+      if (!c.planets || !c.asc) return { result: false };
       // Moon with 9th lord or in 9th
       const ascSn = c.asc.sn || 0;
       const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
@@ -744,13 +696,17 @@ function enhanceYogaImplementations() {
       const moon = c.planets.Moon;
       const lord9Planet = c.planets[lord9];
       
-      if (!moon) return false;
+      if (!moon) return { result: false };
       
-      return (moon.house === 9) || (lord9Planet && moon.house === lord9Planet.house);
+      const isDet = (moon.house === 9) || (lord9Planet && moon.house === lord9Planet.house);
+      return {
+          result: isDet,
+          rationale: isDet ? `It forms because the Moon (H${moon.house}, ${moon.sign}) is deeply connected with the 9th house of fortune (Lord ${lord9}).` : ''
+      };
     },
     
     "Chatushkona Yoga": (c) => {
-      if (!c.planets) return false;
+      if (!c.planets) return { result: false };
       // 4 planets, especially benefics, in kendra
       const kendraHouses = [1, 4, 7, 10];
       const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
@@ -760,11 +716,14 @@ function enhanceYogaImplementations() {
         return planet && kendraHouses.includes(planet.house);
       });
       
-      return inKendra.length >= 4;
+      return {
+          result: inKendra.length >= 4,
+          rationale: inKendra.length >= 4 ? `It forms because a powerful cluster of ${inKendra.length} planets (${inKendra.join(', ')}) are occupying the pivotal Kendra houses.` : ''
+      };
     },
     
     "Rajadhiyoga": (c) => {
-      if (!c.planets || !c.asc) return false;
+      if (!c.planets || !c.asc) return { result: false };
       // 9th lord in 10th or 10th lord in 9th
       const ascSn = c.asc.sn || 0;
       const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
@@ -781,16 +740,23 @@ function enhanceYogaImplementations() {
       const lord9Planet = c.planets[lord9];
       const lord10Planet = c.planets[lord10];
       
-      return (lord9Planet && lord9Planet.house === 10) || (lord10Planet && lord10Planet.house === 9);
+      const l9in10 = (lord9Planet && lord9Planet.house === 10);
+      const l10in9 = (lord10Planet && lord10Planet.house === 9);
+      
+      const isDet = l9in10 || l10in9;
+      return {
+          result: isDet,
+          rationale: isDet ? `It forms because there is an explosive connection between the 9th Lord of luck (${lord9}) and the 10th Lord of career (${lord10}), placed in each other's domain.` : ''
+      };
     },
     
     "Panch Mahapurusha Yoga": (c) => {
-      if (!c.planets) return false;
+      if (!c.planets) return { result: false };
       // At least 3 of the 5 Mahapurusha yogas
       const mahapurushas = ['Ruchaka', 'Bhadra', 'Hamsa', 'Malavya', 'Sasha'];
       const kendraHouses = [1, 4, 7, 10];
       
-      const mahapurCount = mahapurushas.filter(yoga => {
+      const matched = mahapurushas.filter(yoga => {
         const planetMap = {
           'Ruchaka': 'Mars',
           'Bhadra': 'Mercury',
@@ -805,13 +771,16 @@ function enhanceYogaImplementations() {
         const inKendra = planet && kendraHouses.includes(planet.house);
         
         return inKendra && (isOwn || isExalt);
-      }).length;
+      });
       
-      return mahapurCount >= 3;
+      return {
+          result: matched.length >= 3,
+          rationale: matched.length >= 3 ? `Extremely rare! It forms because ${matched.length} major Yoga combinations (${matched.join(', ')}) are operating simultaneously due to immense planetary dignities in Kendras.` : ''
+      };
     },
     
     "Amla Yoga": (c) => {
-      if (!c.planets || !c.asc) return false;
+      if (!c.planets || !c.asc) return { result: false };
       // 10th lord in 10th house with strength
       const ascSn = c.asc.sn || 0;
       const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
@@ -821,260 +790,16 @@ function enhanceYogaImplementations() {
       const lord10 = getSignLord(lord10Sign);
       const lord10Planet = c.planets[lord10];
       
-      if (!lord10Planet) return false;
+      if (!lord10Planet) return { result: false };
       
-      return lord10Planet.house === 10 && (lord10Planet.status === 'Own' || lord10Planet.status === 'Exalt.');
+      const isDet = lord10Planet.house === 10 && (lord10Planet.status === 'Own' || lord10Planet.status === 'Exalt.');
+      return {
+          result: isDet,
+          rationale: isDet ? `It forms because the 10th Lord of career (${lord10}) is powerfully exalted or situated in its own sign precisely in the 10th house (${lord10Planet.sign}).` : ''
+      };
     },
     
-    // ========== ADDITIONAL NAKSHATRA YOGAS ==========
-    "Ashwini Nakshatra Yoga": (c) => {
-      if (!c.planets) return false;
-      return Object.keys(c.planets).some(p => c.planets[p] && c.planets[p].nak === 'Ashwini');
-    },
-    
-    "Krittika Nakshatra Yoga": (c) => {
-      if (!c.planets) return false;
-      return Object.keys(c.planets).some(p => c.planets[p] && c.planets[p].nak === 'Krittika');
-    },
-    
-    "Rohini Nakshatra Yoga": (c) => {
-      if (!c.planets) return false;
-      return Object.keys(c.planets).some(p => c.planets[p] && c.planets[p].nak === 'Rohini');
-    },
-    
-    "Mrigashira Nakshatra Yoga": (c) => {
-      if (!c.planets) return false;
-      return Object.keys(c.planets).some(p => c.planets[p] && c.planets[p].nak === 'Mrigashira');
-    },
-    
-    "Ardra Nakshatra Yoga": (c) => {
-      if (!c.planets) return false;
-      return Object.keys(c.planets).some(p => c.planets[p] && c.planets[p].nak === 'Ardra');
-    },
-    
-    "Punarvasu Nakshatra Yoga": (c) => {
-      if (!c.planets) return false;
-      return Object.keys(c.planets).some(p => c.planets[p] && c.planets[p].nak === 'Punarvasu');
-    },
-    
-    "Hasta Nakshatra Yoga": (c) => {
-      if (!c.planets) return false;
-      return Object.keys(c.planets).some(p => c.planets[p] && c.planets[p].nak === 'Hasta');
-    },
-    
-    "Chitra Nakshatra Yoga": (c) => {
-      if (!c.planets) return false;
-      return Object.keys(c.planets).some(p => c.planets[p] && c.planets[p].nak === 'Chitra');
-    },
-    
-    "Swati Nakshatra Yoga": (c) => {
-      if (!c.planets) return false;
-      return Object.keys(c.planets).some(p => c.planets[p] && c.planets[p].nak === 'Swati');
-    },
-    
-    "Vishakha Nakshatra Yoga": (c) => {
-      if (!c.planets) return false;
-      return Object.keys(c.planets).some(p => c.planets[p] && c.planets[p].nak === 'Vishakha');
-    },
-    
-    // ========== STRENGTH & PROSPERITY YOGAS ==========
-    "Siddhi Yoga": (c) => {
-      if (!c.planets) return false;
-      // All planets in own/exalt/friendly signs
-      const strongPlanets = Object.keys(c.planets).filter(p => {
-        const planet = c.planets[p];
-        return planet && (planet.status === 'Own' || planet.status === 'Exalt.' || planet.status === 'Friend');
-      });
-      return strongPlanets.length >= 6;
-    },
-    
-    "Ubhayachari Yoga": (c) => {
-      if (!c.planets) return false;
-      // Benefics on both sides of a planet
-      const benefics = ['Jupiter', 'Venus', 'Mercury'];
-      const malefics = ['Mars', 'Saturn', 'Rahu', 'Ketu'];
-      
-      return malefics.some(p => {
-        const planet = c.planets[p];
-        if (!planet) return false;
-        const planetHouse = planet.house;
-        
-        const hasLeftBenefic = benefics.some(b => {
-          const ben = c.planets[b];
-          return ben && ben.house === (planetHouse === 1 ? 12 : planetHouse - 1);
-        });
-        
-        const hasRightBenefic = benefics.some(b => {
-          const ben = c.planets[b];
-          return ben && ben.house === (planetHouse === 12 ? 1 : planetHouse + 1);
-        });
-        
-        return hasLeftBenefic && hasRightBenefic;
-      });
-    },
-    
-    "Adhi Yoga": (c) => {
-      if (!c.planets) return false;
-      // Benefics in 6th, 7th, 8th
-      const benefics = ['Jupiter', 'Venus', 'Mercury', 'Moon'];
-      const houses678 = [6, 7, 8];
-      
-      const count = benefics.filter(b => {
-        const planet = c.planets[b];
-        return planet && houses678.includes(planet.house);
-      }).length;
-      
-      return count >= 2;
-    },
-    
-    "Harsha Yoga": (c) => {
-      if (!c.planets || !c.asc) return false;
-      // 6th lord strong in 6th or 8th lord in 12th = obstacles removed
-      const ascSn = c.asc.sn || 0;
-      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
-      
-      const sixth = (ascSn + 5) % 12;
-      const lord6 = getSignLord(signNames[sixth]);
-      const lord6Planet = c.planets[lord6];
-      
-      return lord6Planet && (lord6Planet.house === 6 || lord6Planet.house === 8);
-    },
-    
-    "Sarala Yoga": (c) => {
-      if (!c.planets || !c.asc) return false;
-      // 8th lord strong in 8th
-      const ascSn = c.asc.sn || 0;
-      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
-      
-      const eighth = (ascSn + 7) % 12;
-      const lord8 = getSignLord(signNames[eighth]);
-      const lord8Planet = c.planets[lord8];
-      
-      return lord8Planet && lord8Planet.house === 8 && (lord8Planet.status === 'Own' || lord8Planet.status === 'Exalt.');
-    },
-    
-    "Parvata Yoga": (c) => {
-      if (!c.planets) return false;
-      // 9th and 10th lords in kendras
-      const kendraHouses = [1, 4, 7, 10];
-      const planets = Object.keys(c.planets).filter(p => c.planets[p]);
-      
-      const ninthLordInKendra = planets.some(p => {
-        const planet = c.planets[p];
-        return planet && kendraHouses.includes(planet.house) && [3, 5].includes(planet.house);
-      });
-      
-      return ninthLordInKendra;
-    },
-    
-    "Yoga Yoga": (c) => {
-      if (!c.planets || !c.asc) return false;
-      // 9th lord in 9th/10th = spiritual + material success
-      const ascSn = c.asc.sn || 0;
-      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
-      
-      const ninth = (ascSn + 8) % 12;
-      const lord9 = getSignLord(signNames[ninth]);
-      const lord9Planet = c.planets[lord9];
-      
-      return lord9Planet && (lord9Planet.house === 9 || lord9Planet.house === 10);
-    },
-    
-    "Dhanayoga": (c) => {
-      if (!c.planets) return false;
-      // 11th lord strong in kendra/trikona
-      const kendraTrikonaHouses = [1, 4, 5, 7, 9, 10];
-      const planets = Object.keys(c.planets).filter(p => {
-        const planet = c.planets[p];
-        return planet && kendraTrikonaHouses.includes(planet.house) && (planet.status === 'Own' || planet.status === 'Exalt.');
-      });
-      
-      return planets.length >= 3;
-    },
-    
-    "Gaja Kesari Yoga Variation": (c) => {
-      if (!c.planets) return false;
-      // Jupiter in 4th from Moon
-      const moon = c.planets.Moon;
-      const jupiter = c.planets.Jupiter;
-      if (!moon || !jupiter) return false;
-      
-      const moonHouse = moon.house || 0;
-      const expectedJupiterHouse = ((moonHouse + 3) % 12) + 1;
-      
-      return Math.abs(jupiter.house - expectedJupiterHouse) <= 1;
-    },
-    
-    "Virinchi Yoga": (c) => {
-      if (!c.planets) return false;
-      // 5th, 9th and 12th lords in kendra
-      const kendraHouses = [1, 4, 7, 10];
-      const planets = Object.keys(c.planets).filter(p => {
-        const planet = c.planets[p];
-        return planet && kendraHouses.includes(planet.house);
-      });
-      
-      return planets.length >= 3;
-    },
-    
-    "Lakshmi Yoga Extended": (c) => {
-      if (!c.planets) return false;
-      // Jupiter with benefics in kendra = wealth
-      const jupiter = c.planets.Jupiter;
-      const benefics = ['Venus', 'Mercury', 'Moon'];
-      
-      if (!jupiter || !benefics.some(b => c.planets[b])) return false;
-      
-      const kendraHouses = [1, 4, 7, 10];
-      return kendraHouses.includes(jupiter.house);
-    },
-    
-    "Rajayoga Extended": (c) => {
-      if (!c.planets) return false;
-      // Multiple planet conjunctions in power houses
-      const kendraHouses = [1, 4, 7, 10];
-      const planets = Object.keys(c.planets).filter(p => {
-        const planet = c.planets[p];
-        return planet && kendraHouses.includes(planet.house);
-      });
-      
-      return planets.length >= 4;
-    },
-    
-    "Pushpa Yoga Extended": (c) => {
-      if (!c.planets) return false;
-      // Multiple benefics in trikonas
-      const benefics = ['Jupiter', 'Venus', 'Mercury', 'Moon'];
-      const trikonaHouses = [1, 5, 9];
-      
-      const count = benefics.filter(b => {
-        const planet = c.planets[b];
-        return planet && trikonaHouses.includes(planet.house);
-      }).length;
-      
-      return count >= 3;
-    },
-    
-    "Chandra Yoga": (c) => {
-      if (!c.planets) return false;
-      // Moon strong in natal chart
-      const moon = c.planets.Moon;
-      if (!moon) return false;
-      
-      const kendraTrikonaHouses = [1, 4, 5, 7, 9, 10];
-      return kendraTrikonaHouses.includes(moon.house) && (moon.status === 'Own' || moon.status === 'Exalt.');
-    },
-    
-    "Sukha Yoga": (c) => {
-      if (!c.planets) return false;
-      // 4th lord strong - comfort & happiness
-      const planets = Object.keys(c.planets).filter(p => {
-        const planet = c.planets[p];
-        return planet && [4, 5].includes(planet.house) && (planet.status === 'Own' || planet.status === 'Exalt.');
-      });
-      
-      return planets.length >= 2;
-    }
+    // ========== END OF IMPLEMENTATIONS ==========
   };
   
   // Apply implementations to YOGAS_DATA
