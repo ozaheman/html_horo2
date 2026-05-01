@@ -131,7 +131,21 @@ window.TUSHAR_ROY.analyze = function(d1Planets, houses, ascendant, d9Planets = n
     }
   }
 
-  // 5. D9 Navamsha Insights
+  // 5. Advanced Nakshatra Analysis (Padas)
+  planetList.forEach(p => {
+    const data = d1Planets[p];
+    if (data && data.nakId !== undefined && data.pada) {
+      addPrediction('Advanced Nakshatras', `${p} in ${data.nak} Pada ${data.pada}`, [data.nak, `pada ${data.pada}`, `चरण ${data.pada}`], 'Nakshatra');
+    }
+  });
+
+  // 6. Upagrahas (Mandi / Gulika)
+  if (window.CURRENT_UPAGRAHAS || window.MANDI_POS) {
+    // If the system calculates Mandi elsewhere, append it. For now, we perform a generic DB scrape for Mandi traits if it's referenced in the chart.
+    addPrediction('Upagrahas & Sub-Planets', `Mandi & Gulika Insights`, ['mandi', 'gulika', 'मांदी', 'गुलिका'], 'Mandi');
+  }
+
+  // 7. D9 Navamsha Insights
   if (d9Planets) {
     planetList.forEach(p => {
         const d9House = d9Planets[p]?.house;

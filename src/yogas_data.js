@@ -341,13 +341,15 @@ window.YOGAS_DATA = [
     keywords: ['Obstacles', 'Delays', 'Struggles', 'Challenges'],
     evaluate: (c) => {
       const rahu = c.planets.Rahu, ketu = c.planets.Ketu;
-      if (!rahu || !ketu) return false;
+      if (!rahu || !ketu || typeof rahu.sn !== 'number' || typeof ketu.sn !== 'number' || rahu.sn === ketu.sn) return false;
       const r_sn = rahu.sn, k_sn = ketu.sn;
       const arc1 = [], arc2 = [];
       let cur = (r_sn + 1) % 12;
-      while (cur !== k_sn) { arc1.push(cur); cur = (cur + 1) % 12; }
+      let failsafe = 0;
+      while (cur !== k_sn && failsafe < 15) { arc1.push(cur); cur = (cur + 1) % 12; failsafe++; }
       cur = (k_sn + 1) % 12;
-      while (cur !== r_sn) { arc2.push(cur); cur = (cur + 1) % 12; }
+      failsafe = 0;
+      while (cur !== r_sn && failsafe < 15) { arc2.push(cur); cur = (cur + 1) % 12; failsafe++; }
       
       const p_sns = Object.values(c.planets).filter(p => !['Rahu','Ketu','Uranus','Neptune','Pluto'].includes(p.p || p.name)).map(p => p.sn);
       if (p_sns.length === 0) return false;

@@ -37,17 +37,36 @@ function detectAllYogasInChart(birthChart, vargaName = 'D1') {
         }
     });
     
+    // Helper to extract exact positions natively
+    const extractTriggeringPlanets = (rationale, description) => {
+        const planetNames = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
+        const found = [];
+        const combinedText = ((rationale || '') + ' ' + (description || '')).replace(/Lord of H\d+/g, '');
+        planetNames.forEach(p => {
+            if (combinedText.includes(p)) {
+                const planetData = birthChart?.planets?.[p];
+                if (planetData) {
+                    const houseStr = planetData.house ? `H${planetData.house}` : '';
+                    found.push(`${p}: ${planetData.sign} ${parseFloat(planetData.deg||0).toFixed(1)}° ${houseStr}`);
+                }
+            }
+        });
+        return found;
+    };
+
     // Second pass: add all yogas to output (detected or reference)
     window.YOGAS_DATA.forEach(yogaTemplate => {
         try {
             if (!yogaTemplate) return;
             
             const isDetected = detectedYogaNames.has(yogaTemplate.name);
+            const rationaleText = isDetected ? (rationales.get(yogaTemplate.name) || '') : '';
             
             const yogaAnalysis = {
                 ...yogaTemplate,
                 detected: isDetected,
-                rationale: isDetected ? (rationales.get(yogaTemplate.name) || '') : '',
+                rationale: rationaleText,
+                triggeringPlanets: isDetected ? extractTriggeringPlanets(rationaleText, yogaTemplate.description) : [],
                 varga: vargaName,
                 isReference: !isDetected,  // Mark non-detected yogas as reference
                 strength: isDetected ? calculateYogaStrengthLevel(yogaTemplate, birthChart) : yogaTemplate.strength,

@@ -31,9 +31,12 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 ::-webkit-scrollbar-thumb{background:var(--border3);border-radius:3px;}
 
 /* ── LAYOUT ── */
-.app{display:grid;grid-template-rows:auto 1fr;height:100vh;overflow:hidden;}
-.top-bar{background:var(--bg2);border-bottom:1px solid var(--border2);z-index:50;flex-shrink:0;}
-.workspace{display:grid;grid-template-columns:auto 1fr auto;height:calc(100vh - 170px);overflow:hidden;}
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.top-bar{background:var(--bg2);border-bottom:1px solid var(--border2);z-index:50;flex-shrink:0;resize:vertical;overflow:hidden;max-height:50vh;min-height:50px;}
+.workspace{display:flex;flex:1;overflow:hidden;}
+.drag-handle{background:var(--bg3);color:var(--muted);text-align:center;cursor:grab;font-size:9px;padding:2px;letter-spacing:2px;user-select:none;border-bottom:1px solid var(--border);}
+.drag-handle:active{cursor:grabbing;}
+.col-dragging{opacity:0.6;background:var(--panel2);}
 
 /* ── TOP BAR ── */
 .tb1{padding:10px 16px 6px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--border);}
@@ -83,7 +86,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 .chart-sub{font-family:'Courier New',monospace;font-size:9px;color:var(--muted);}
 
 /* ── CENTER: TRANSIT CHART ── */
-.center-col{overflow:hidden;display:flex;flex-direction:column;background:var(--panel);}
+.center-col{overflow:hidden;display:flex;flex-direction:column;background:var(--panel);flex:1;min-width:300px;}
 .chart-wrap{position:relative;flex:1;overflow:hidden;}
 .chart-wrap canvas{display:block;width:100%;height:100%;}
 .dasha-wrap{background:var(--panel2);border-top:1px solid var(--border);padding:6px 0 4px;flex-shrink:0;}
@@ -279,7 +282,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 .biz-summary li::before{content:'\2726';color:var(--gold);font-size:8px;margin-top:2px;}
 .biz-remedy{margin:10px 12px;padding:12px;background:rgba(58,240,255,0.05);border:1px solid rgba(58,240,255,0.15);
   border-radius:4px;border-left:4px solid var(--cyan);animation:pulse-glow 3s infinite;}
-.biz-remedy-title{font-weight:900;font-size:9x;color:var(--cyan);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;}
+.biz-remedy-title{font-weight:900;font-size:9px;color:var(--cyan);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;}
 .biz-remedy p{font-size:10.5px;line-height:1.5;color:var(--text);}
 .sav-grid{display:grid;grid-template-columns:30px 1fr 30px;gap:10px;align-items:center;}
 .sav-lbl{font-family:'Courier New',monospace;font-size:9px;color:var(--muted);}
@@ -793,8 +796,8 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
     <div style="margin-bottom:15px;">
       <label style="font-family:'Courier New',monospace;font-size:9px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;">Prediction Mode</label>
       <select id="predictionModeSel" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:11px;padding:4px;border-radius:2px;margin-bottom:10px;outline:none;">
-        <option value="default">Default Forecast</option>
-        <option value="tushar">Tushar Roy Transcripts</option>
+        <option value="default">Default Forecast (Timeline & Sahams)</option>
+        <option value="tushar">Deep Knowledge Base & Tushar Roy Transcripts</option>
       </select>
       
       <label style="font-family:'Courier New',monospace;font-size:9px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;">Forecast Range</label>
@@ -6053,53 +6056,41 @@ document.getElementById('closeYogas').addEventListener('click', () => {
 async function showYogasPanel() {
   document.getElementById('yogasPanel').classList.add('open');
   const contentEl = document.getElementById('yogasContent');
+  contentEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:12px;">Loading Yogas Analysis via Background Worker...</div>';
+  
+  if (!window.panelWorker) {
+    window.panelWorker = new Worker('./src/panel_worker.js');
+    setupPanelWorkerMessages();
+  }
   
   try {
-    if (!window.YOGAS_DATA || typeof window.YOGAS_DATA[0].evaluate !== 'function') {
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = './src/yogas_data.js?v=' + Date.now();
-        script.onload = resolve;
-        script.onerror = () => reject(new Error("Failed to load yogas_data.js. Ensure it exists in src/"));
-        document.body.appendChild(script);
-      });
-    }
-    
-    let html = '<div style="display:grid;gap:12px;">';
-    
-    // Compute all vargas for analysis
     const allVargas = computeAllVargas(BIRTH_JD, BIRTH.ayan, BIRTH.lat, BIRTH.lon, BIRTH.utcOff);
-    const appliedYogas = window.getAllYogas(allVargas);
-    
-    if(appliedYogas.length === 0) {
-       contentEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:12px;">No major Yogas identified in this chart.</div>';
-       return;
-    }
-
-    appliedYogas.forEach(y => {
-      let qColor = 'var(--muted)';
-      if(y.quality === 'Positive') qColor = 'var(--green)';
-      else if(y.quality === 'Negative') qColor = 'var(--rose)';
-      else if(y.quality === 'Mixed') qColor = 'var(--gold)';
-
-      html += `
-      <div style="background:rgba(20,20,40,0.5);border:1px solid var(--border);border-left:3px solid ${qColor};border-radius:4px;padding:12px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <h3 style="color:var(--gold);font-size:12px;margin:0;">${y.name}</h3>
-          <span style="font-size:9px;padding:2px 6px;border-radius:2px;background:${qColor}22;color:${qColor};">${y.activeChart} | ${y.quality}</span>
-        </div>
-        <div style="font-size:10px;color:var(--cyan);margin-bottom:6px;font-style:italic;">"${y.description}"</div>
-        ${y.rationale ? `<div style="background:rgba(0,188,212,0.1);padding:6px;border-radius:3px;margin:8px 0;font-size:10.5px;color:var(--cyan);border-left:2px solid var(--cyan);"><strong>Why:</strong> ${y.rationale}</div>` : ''}
-        <div style="font-size:10.5px;color:var(--text);line-height:1.4;">${y.result}</div>
-      </div>`;
+    window.panelWorker.postMessage({
+      action: 'yogas_analysis',
+      payload: { vargas: allVargas }
     });
-    
-    html += '</div>';
-    contentEl.innerHTML = html;
   } catch(e) {
-    console.error("Failed to load yogas mapping:", e);
-    contentEl.innerHTML = `<div style="color:var(--rose);font-size:11px;">Error loading yogas data. ${e.message}</div>`;
+    console.error("Error setting up Yogas Panel Worker:", e);
+    contentEl.innerHTML = `<div style="color:var(--rose);font-size:11px;">Error computing yogas dependencies. ${e.message}</div>`;
   }
+}
+
+function setupPanelWorkerMessages() {
+  window.panelWorker.onmessage = function(e) {
+    if (e.data.action === 'hit_astrology_done') {
+      document.getElementById('hitContent').innerHTML = e.data.html;
+      const btn = document.getElementById('btnGenerateHitReport');
+      if(btn) btn.textContent = '⟲ Refresh Dashboard & Report';
+    } else if (e.data.action === 'hit_astrology_error') {
+      document.getElementById('hitContent').innerHTML = `<div style="color:var(--rose)">Worker Error: ${e.data.error}</div>`;
+      const btn = document.getElementById('btnGenerateHitReport');
+      if(btn) btn.textContent = '⟲ Refresh Dashboard & Report';
+    } else if (e.data.action === 'yogas_analysis_done') {
+      document.getElementById('yogasContent').innerHTML = e.data.html;
+    } else if (e.data.action === 'yogas_analysis_error') {
+      document.getElementById('yogasContent').innerHTML = `<div style="color:var(--rose);font-size:11px;">Worker Error: ${e.data.error}</div>`;
+    }
+  };
 }
 
 // HIT ASTROLOGY PANEL LOGIC
@@ -6110,17 +6101,23 @@ document.getElementById('closeHit')?.addEventListener('click', () => {
    document.getElementById('hitPanel').style.transform = 'translateX(100%)';
 });
 document.getElementById('btnGenerateHitReport')?.addEventListener('click', () => {
-   if (window.HitAstrologyEngine && typeof window.HitAstrologyEngine.generateReport === 'function') {
-       const btn = document.getElementById('btnGenerateHitReport');
-       btn.textContent = 'Generating...';
-       setTimeout(() => {
-           const reportHtml = window.HitAstrologyEngine.generateReport(BIRTH_PLANETS, BIRTH_ASC, getPos(centerDate), centerDate);
-           document.getElementById('hitContent').innerHTML = reportHtml;
-           btn.textContent = '⟲ Refresh Dashboard & Report';
-       }, 50);
-   } else {
-       alert("HIT Astrology Engine is not loaded.");
-   }
+    if (!window.panelWorker) {
+      window.panelWorker = new Worker('./src/panel_worker.js');
+      setupPanelWorkerMessages();
+    }
+    const btn = document.getElementById('btnGenerateHitReport');
+    btn.textContent = 'Generating... (Worker)';
+    document.getElementById('hitContent').innerHTML = '<div style="padding:40px;text-align:center;color:var(--amber);font-size:12px;">Loading Hit Astrology Analysis via Background Worker...</div>';
+    
+    window.panelWorker.postMessage({
+        action: 'hit_astrology',
+        payload: {
+            natalPlanets: BIRTH_PLANETS,
+            ascendant: BIRTH_ASC,
+            transitPlanets: getPos(centerDate),
+            currentDate: centerDate
+        }
+    });
 });
 
 // Toggle Right Charts
@@ -6221,11 +6218,56 @@ let resizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
-    renderAll();
+    if(typeof renderAll === 'function') renderAll();
   }, 250);
 });
 
-renderAll();
+// Panel Drag and Drop Logic
+const workspaceCols = document.querySelectorAll('.left-col, .center-col, .right-col');
+workspaceCols.forEach(col => {
+  const handle = document.createElement('div');
+  handle.className = 'drag-handle';
+  handle.innerText = '☷ DRAG TO REARRANGE';
+  handle.draggable = true;
+  col.insertBefore(handle, col.firstChild);
+  
+  handle.addEventListener('dragstart', (e) => {
+    col.classList.add('col-dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  handle.addEventListener('dragend', () => {
+    col.classList.remove('col-dragging');
+    window.dispatchEvent(new Event('resize')); 
+  });
+});
+
+const wsContainer = document.querySelector('.workspace');
+wsContainer.addEventListener('dragover', e => {
+  e.preventDefault();
+  const dragging = document.querySelector('.col-dragging');
+  if(!dragging) return;
+  const afterElement = getDragAfterElement(wsContainer, e.clientX);
+  if (afterElement == null) {
+    wsContainer.appendChild(dragging);
+  } else {
+    wsContainer.insertBefore(dragging, afterElement);
+  }
+});
+
+function getDragAfterElement(container, x) {
+  const draggableElements = [...container.querySelectorAll('.left-col, .center-col, .right-col')].filter(el => !el.classList.contains('col-dragging'));
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = x - box.left - box.width / 2;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+if(typeof renderAll === 'function') renderAll();
 </script>
 </body>
 </html>
