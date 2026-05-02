@@ -6696,35 +6696,97 @@ if(typeof renderAll === 'function') renderAll();
     if(!window.LAL_KITAB || !window.BIRTH_PLANETS) return;
     
     // Evaluate the Lal Kitab data based on CURRENT planetary positions
-    const lkData = window.LAL_KITAB.evaluateChart(window.BIRTH_PLANETS);
+    const birthDate = window.BIRTH && window.BIRTH.date ? window.BIRTH.date : null;
+    const lkResult = window.LAL_KITAB.evaluateChart(window.BIRTH_PLANETS, birthDate);
+    const { analysis, conditions, varshphal } = lkResult;
     
     let html = '';
-    if (lkData.length === 0) {
-      html = '<div style="color:var(--rose)">No valid planetary placements found for Lal Kitab.</div>';
-    } else {
-      lkData.forEach(dt => {
-        let remsHtml = dt.remedies.map(r => `<li>${r}</li>`).join('');
+    
+    // Render Varshphal Summary
+    if (varshphal) {
+      html += `
+        <div style="background:rgba(200,168,75,0.1); border:1px solid var(--gold); border-radius:6px; margin-bottom:15px; padding:10px;">
+          <div style="color:var(--gold); font-size:11px; font-weight:bold; margin-bottom:5px;">📅 LAL KITAB VARSHPHAL (ANNUAL CHART)</div>
+          <div style="display:flex; justify-content:space-between; font-size:12px;">
+            <div>Current Age: <strong>${varshphal.age}</strong></div>
+            <div>35yr Cycle: <strong style="color:var(--gold)">${varshphal.cycle.planet}</strong></div>
+          </div>
+          <div style="font-size:10px; color:var(--muted); margin-top:4px;">Annual Cycle duration: ${varshphal.cycle.dur} years</div>
+        </div>
+      `;
+    }
+
+    // Render Special Conditions
+    if (conditions && conditions.length > 0) {
+      html += '<div class="sec-title" style="margin-top:0;">Special Indicators & Yogas</div>';
+      conditions.forEach(cond => {
+        let color = '#AAA';
+        if(cond.type === 'Positive') color = 'var(--cyan)';
+        if(cond.type === 'Warning') color = 'var(--gold)';
+        if(cond.type === 'Negative') color = 'var(--rose)';
+        
         html += `
-          <div class="biz-card" style="border-left-color:var(--rose); background:rgba(255,68,68,0.03);">
-            <div class="biz-card-title"><span style="color:var(--rose)">${dt.planet}</span> in House ${dt.house}</div>
-            <div style="font-size:10px;font-family:monospace;color:var(--text);margin-bottom:8px;">Sign: ${dt.sign}</div>
-            <div class="biz-desc">${dt.prediction}</div>
-            <div class="biz-remedy" style="margin-top:10px; border-left-color:var(--gold); background:rgba(200,168,75,0.05);">
-               <div class="biz-remedy-title" style="color:var(--gold);">Remedies</div>
-               <ul style="margin:0; padding-left:15px; font-size:10.5px; color:var(--text); line-height:1.5;">
-                  ${remsHtml}
-               </ul>
-            </div>
+          <div style="background:rgba(255,255,255,0.03); border-radius:4px; margin-bottom:10px; padding:10px; border-left:3px solid ${color};">
+            <div style="font-weight:bold; font-size:12px; color:${color}; margin-bottom:4px;">${cond.name}</div>
+            <div style="font-size:10.5px; line-height:1.4; color:var(--text);">${cond.desc}</div>
           </div>
         `;
       });
     }
+
+    html += '<div class="sec-title">Planetary Analysis (By House)</div>';
+    
+    let housesFound = 0;
+    for (let h = 1; h <= 12; h++) {
+      const housePls = analysis[h] || [];
+      if (housePls.length > 0) {
+        housesFound++;
+        html += `<div style="margin-bottom:15px; border:1px solid var(--border); border-radius:6px; background:rgba(255,255,255,0.02); overflow:hidden;">
+                   <div style="background:var(--panel2); padding:6px 12px; font-size:11px; font-weight:bold; color:var(--gold); border-bottom:1px solid var(--border);">HOUSE ${h}</div>
+                   <div style="padding:10px;">`;
+        
+        housePls.forEach(dt => {
+          let remsHtml = dt.remedies.map(r => `<li>${r}</li>`).join('');
+          let statusBadge = '';
+          if (dt.annualStatus === 'Good') statusBadge = '<span style="color:var(--cyan); font-size:9px; border:1px solid var(--cyan); padding:1px 4px; border-radius:3px; margin-left:8px;">ANNUAL: GOOD</span>';
+          if (dt.annualStatus === 'Bad') statusBadge = '<span style="color:var(--rose); font-size:9px; border:1px solid var(--rose); padding:1px 4px; border-radius:3px; margin-left:8px;">ANNUAL: BAD</span>';
+          
+          html += `
+            <div class="biz-card" style="border-left-color:var(--rose); background:rgba(255,68,68,0.03); margin-bottom:10px;">
+              <div class="biz-card-title">
+                <span style="color:var(--rose)">${dt.planet}</span> (${dt.sign})
+                ${statusBadge}
+              </div>
+              <div class="biz-desc">${dt.prediction}</div>
+              <div class="biz-remedy" style="margin-top:8px; border-left-color:var(--gold); background:rgba(200,168,75,0.05);">
+                 <div class="biz-remedy-title" style="color:var(--gold);">Remedies</div>
+                 <ul style="margin:0; padding-left:15px; font-size:10.5px; color:var(--text); line-height:1.5;">
+                    ${remsHtml}
+                 </ul>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += `</div></div>`;
+      }
+    }
+    
+    if (housesFound === 0) {
+      html += '<div style="color:var(--rose); padding:20px; text-align:center;">No planetary placements detected in the chart.</div>';
+    }
+
     document.getElementById('lalKitabContent').innerHTML = html;
     
     // Draw visual chart
     const canvas = document.getElementById('lalKitabChart');
-    if (canvas && lkData.length > 0) {
-      document.getElementById('lalKitabChartContainer').style.display = 'block';
+    if (canvas) {
+      // Re-map analysis to flat lkData for drawing logic
+      const flatLkData = [];
+      Object.keys(analysis).forEach(h => analysis[h].forEach(p => flatLkData.push(p)));
+      
+      if (flatLkData.length > 0) {
+        document.getElementById('lalKitabChartContainer').style.display = 'block';
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.strokeStyle = '#444';
@@ -6753,7 +6815,7 @@ if(typeof renderAll === 'function') renderAll();
       centers.forEach(c => ctx.fillText(c.n, c.x-15, c.y-15));
       
       const housePlanets = {};
-      lkData.forEach(d => {
+      flatLkData.forEach(d => {
         if(!housePlanets[d.house]) housePlanets[d.house] = [];
         housePlanets[d.house].push(d.planet.substring(0,2));
       });
@@ -6765,7 +6827,8 @@ if(typeof renderAll === 'function') renderAll();
         if(pls.length > 0) ctx.fillText(pls.join(','), c.x-20, c.y);
       });
     }
-  });
+  }
+});
 </script>
 </body>
 </html>
