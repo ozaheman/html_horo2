@@ -488,6 +488,20 @@ window.YOGAS_DATA = [
   },
 
   {
+    name: "Parivartana Yoga",
+    description: "Mutual exchange of signs between two planet lords",
+    result: "Creates a powerful link between the houses involved, blending their energies and often strengthening both.",
+    quality: "Variable",
+    strength: 'Very Strong',
+    varga: 1,
+    remedies: ['Strengthen both planets involved', 'Perform related charity'],
+    mantras: ['Mantras for both planets'],
+    deities: ['Deities of both planets'],
+    keywords: ['Exchange', 'Mutual', 'Powerful link'],
+    evaluate: (c) => false,
+  },
+
+  {
     name: "Neecha Bhanga Raj Yoga",
     description: "Debilitated planet's exaltation lord in Kendra/Trikona; or debilitated planet aspects exaltation lord",
     result: "Debilitation is cancelled. Native rises from low to high position, often with greater wisdom and humility.",

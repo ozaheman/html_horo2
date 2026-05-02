@@ -343,17 +343,14 @@ function enhanceYogaImplementations() {
       
       let cancelReason = null;
       const isDetected = debilitatedPlanets.some(planet => {
-        const ruler = exaltationLords[planet];
-        const rulerName = Object.keys(c.planets).find(p => {
-          const pd = c.planets[p];
-          return pd && pd.sign === ruler;
-        });
+        const exaltationSign = exaltationLords[planet];
+        const exaltationLordPlanetName = typeof getSignLord === 'function' ? getSignLord(exaltationSign) : null;
         
-        if (rulerName) {
-          const rulerPlanet = c.planets[rulerName];
+        if (exaltationLordPlanetName && c.planets[exaltationLordPlanetName]) {
+          const rulerPlanet = c.planets[exaltationLordPlanetName];
           const kendraTrikonaHouses = [1, 4, 5, 7, 9, 10];
           if (kendraTrikonaHouses.includes(rulerPlanet.house)) {
-            cancelReason = `the deep debilitation of ${planet} (in ${c.planets[planet].sign}, H${c.planets[planet].house}) is miraculously cancelled and reversed by its exaltation lord ${rulerName} sitting powerfully in H${rulerPlanet.house} (${rulerPlanet.sign})`;
+            cancelReason = `the deep debilitation of ${planet} (in ${c.planets[planet].sign}, H${c.planets[planet].house}) is miraculously cancelled and reversed by its exaltation lord ${exaltationLordPlanetName} sitting powerfully in H${rulerPlanet.house} (${rulerPlanet.sign})`;
             return true;
           }
         }
