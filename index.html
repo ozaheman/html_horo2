@@ -887,6 +887,8 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
     <div style="margin-bottom:15px;">
       <label style="font-family:'Courier New',monospace;font-size:9px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;">Prediction Mode</label>
       <select id="predictionModeSel" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:11px;padding:4px;border-radius:2px;margin-bottom:10px;outline:none;">
+        <option value="step2step">⭐️ Step by Step Panchang & Rotated Kundali</option>
+        <option value="ai">🌌 AI Prediction (BNN + Jaimini + Arudha)</option>
         <option value="comprehensive">🌌 Comprehensive Master Report (All Rules)</option>
         <option value="default">Classical Texts (Phaladeepika etc)</option>
         <option value="tushar">Deep Knowledge Base & Tushar Roy</option>
@@ -941,11 +943,9 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 
 <!-- MATCHING PANEL (Ashtakoota Synastry) -->
 <div id="matchingPanel">
-  <div style="padding:15px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border2);position:sticky;top:0;background:rgba(4,4,18,.95);z-index:10;backdrop-filter:blur(8px);">
-    <div style="font-family:Palatino,serif;font-size:16px;color:#ff1493;font-weight:700;letter-spacing:1px;display:flex;align-items:center;gap:8px;">
-      <span style="font-size:20px;">💞</span> Ashta Koota Matching
-    </div>
-    <button class="btn" onclick="document.getElementById('matchingPanel').classList.remove('open')" style="padding:4px 10px;border-color:var(--rose);color:var(--rose);">✕ CLOSE</button>
+  <div class="conj-hdr">
+    <h2>💞 Chart Matching</h2>
+    <button class="close-btn" id="closeMatching">×</button>
   </div>
   
   <div style="padding:15px;">
@@ -1164,6 +1164,7 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
 </script>
 
 <!-- Yoga Analysis Files -->
+<script src="src/marriage.js"></script>
 <script src="./src/yogas_data.js"></script>
 <script src="./src/yoga_engine.js"></script>
 <script src="./src/yoga_display.js"></script>
@@ -1200,6 +1201,11 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
 <script src="./src/predictions/shadbala.js"></script>
 <script src="./src/business_tarachakra.js"></script>
 <script src="./src/predictions/hit_astrology.js"></script>
+<script src="./src/predictions/ap_prediction_day.js"></script>
+<script src="./src/predictions/ap_prediction_tithi.js"></script>
+<script src="./src/predictions/ap_prediction_yoga.js"></script>
+<script src="./src/predictions/navamsha_analysis.js"></script>
+<script src="./src/predictions/step2step_panchang.js"></script>
 
 <!-- Predictions UI -->
 <script src="./src/sudarshan_chakra.js"></script>
@@ -1228,10 +1234,76 @@ function fmtCompact(d){
   return `${dd}${mm}${yyyy}`;
 }
 
+// Global Mappings (Moved up to prevent TDZ errors)
+var LAGNA_HORA_MAPPING = {
+  "Aries": { best: ["Sun", "Mars", "Jupiter"], avg: ["Moon"], avoid: ["Mercury", "Venus", "Saturn"] },
+  "Taurus": { best: ["Venus", "Mercury", "Saturn"], avg: ["Sun"], avoid: ["Moon", "Mars", "Jupiter"] },
+  "Gemini": { best: ["Mercury", "Venus"], avg: ["Saturn"], avoid: ["Moon", "Mars", "Sun", "Jupiter"] },
+  "Cancer": { best: ["Moon", "Mars", "Jupiter"], avg: ["Sun"], avoid: ["Venus", "Mercury", "Saturn"] },
+  "Leo": { best: ["Sun", "Mars", "Jupiter"], avg: ["Moon"], avoid: ["Venus", "Mercury", "Saturn"] },
+  "Virgo": { best: ["Mercury", "Venus"], avg: ["Saturn"], avoid: ["Sun", "Moon", "Mars", "Jupiter"] },
+  "Libra": { best: ["Venus", "Mercury", "Saturn"], avg: ["Moon"], avoid: ["Sun", "Mars", "Jupiter"] },
+  "Scorpio": { best: ["Mars", "Moon", "Jupiter"], avg: ["Sun"], avoid: ["Mercury", "Venus", "Saturn"] },
+  "Sagittarius": { best: ["Jupiter", "Sun", "Mars"], avg: ["Moon"], avoid: ["Mercury", "Venus", "Saturn"] },
+  "Capricorn": { best: ["Saturn", "Venus", "Mercury"], avg: ["Sun"], avoid: ["Moon", "Mars", "Jupiter"] },
+  "Aquarius": { best: ["Saturn", "Venus"], avg: ["Mercury"], avoid: ["Sun", "Moon", "Mars", "Jupiter"] },
+  "Pisces": { best: ["Jupiter", "Moon", "Mars"], avg: ["Sun"], avoid: ["Venus", "Mercury", "Saturn"] }
+};
+
+var HORA_ACTIVITIES = {
+  "Sun": { p: "Power, Identity, Status", a: "Applying for government tenders, meeting the CEO, starting a political campaign, wearing a ruby, performed Havan." },
+  "Moon": { p: "Growth, Public Reach, Mental Peace", a: "Public speeches, traveling over water, buying silver, grocery business, joining a club, meeting mother figure." },
+  "Mars": { p: "Courage, Property, Victory", a: "Signing property papers, starting gym/sports, court hearings, surgery, land excavation, dealing with fire/electricity." },
+  "Mercury": { p: "Logic, Commerce, Communication", a: "Accounting, publishing a book, coding, marketing, sending an important email, learning astrology, opening a shop." },
+  "Jupiter": { p: "Expansion, Wealth, Wisdom", a: "Marriage rituals, banking, starting a course, pilgrimage, legal advice, gold investment, Charity." },
+  "Venus": { p: "Luxury, Love, Beauty", a: "First dates, buying a luxury car, fashion design, beauty treatments, interior decoration, music, signing creative contracts." },
+  "Saturn": { p: "Stability, Discipline, Endings", a: "Research, laying a foundation stone, cleaning, labor contracts, dealing with iron/oil, starting meditation." }
+};
+
 // ═══════════════════════════════════════════════════════════
 //  NAKSHATRA LOOKUP
 // ═══════════════════════════════════════════════════════════
 const NAK_NAMES=['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha','Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha','Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishta','Shatabhisha','Purva Bhadra','Uttara Bhadra','Revati'];
+
+const P_YOGAS = [
+ {n:"Vishkumbha", t:"Inauspicious", m:"Obstacles"}, {n:"Preeti", t:"Auspicious", m:"Love, affection"}, {n:"Ayushman", t:"Auspicious", m:"Longevity"},
+ {n:"Saubhagya", t:"Auspicious", m:"Good fortune"}, {n:"Shobhana", t:"Auspicious", m:"Beauty, splendor"}, {n:"Atiganda", t:"Inauspicious", m:"Danger"},
+ {n:"Sukarma", t:"Auspicious", m:"Good deeds"}, {n:"Dhriti", t:"Auspicious", m:"Steadiness"}, {n:"Shoola", t:"Inauspicious", m:"Pain, suffering"},
+ {n:"Ganda", t:"Inauspicious", m:"Problems"}, {n:"Vriddhi", t:"Auspicious", m:"Growth"}, {n:"Dhruva", t:"Auspicious", m:"Stability"},
+ {n:"Vyaghata", t:"Inauspicious", m:"Conflict"}, {n:"Harshana", t:"Auspicious", m:"Joy"}, {n:"Vajra", t:"Mixed", m:"Strength"},
+ {n:"Siddhi", t:"Auspicious", m:"Success"}, {n:"Vyatipata", t:"Inauspicious", m:"Calamity"}, {n:"Variyan", t:"Auspicious", m:"Excellence"},
+ {n:"Parigha", t:"Inauspicious", m:"Obstruction"}, {n:"Shiva", t:"Auspicious", m:"Auspiciousness"}, {n:"Siddha", t:"Auspicious", m:"Accomplishment"},
+ {n:"Sadhya", t:"Auspicious", m:"Achievement"}, {n:"Shubha", t:"Auspicious", m:"Goodness"}, {n:"Shukla", t:"Auspicious", m:"Purity"},
+ {n:"Brahma", t:"Auspicious", m:"Creation"}, {n:"Indra", t:"Auspicious", m:"Power"}, {n:"Vaidhriti", t:"Inauspicious", m:"Misfortune"}
+];
+
+const P_KARANAS = [
+  {n:"Bava", t:"Auspicious", m:"All permanent works"}, {n:"Balava", t:"Auspicious", m:"Auspicious ceremonies"},
+  {n:"Kaulava", t:"Auspicious", m:"Friendships, relations"}, {n:"Taitila", t:"Auspicious", m:"Royalty, authority matters"},
+  {n:"Gara", t:"Auspicious", m:"Agriculture, husbandry"}, {n:"Vanija", t:"Auspicious", m:"Trade, commerce"},
+  {n:"Vishti (Bhadra)", t:"Inauspicious", m:"Avoid all activities"}, {n:"Shakuni", t:"Mixed", m:"2nd half Krishna Chaturdashi"},
+  {n:"Chatushpada", t:"Mixed", m:"1st half Amavasya"}, {n:"Naga", t:"Mixed", m:"2nd half Amavasya"},
+  {n:"Kintughna", t:"Mixed", m:"1st half Shukla Pratipada"}
+];
+
+const P_NAKS = {
+ "Ashwini":{r:"Ketu", c:"Kshipra (Swift)", m:"Quick activities, trade"}, "Bharani":{r:"Venus", c:"Ugra (Fierce)", m:"Battles, surgery, demolition"},
+ "Krittika":{r:"Sun", c:"Mixed", m:"Sharp, intense activities"}, "Rohini":{r:"Moon", c:"Dhruva (Fixed)", m:"Permanent structures, foundations"},
+ "Mrigashira":{r:"Mars", c:"Mridu (Soft)", m:"Arts, romance, friendships"}, "Ardra":{r:"Rahu", c:"Tikshna (Dreadful)", m:"Destruction, conquering"},
+ "Punarvasu":{r:"Jupiter", c:"Chara (Movable)", m:"Travel, change, movement"}, "Pushya":{r:"Saturn", c:"Kshipra (Swift)", m:"Quick activities, trade"},
+ "Ashlesha":{r:"Mercury", c:"Tikshna (Dreadful)", m:"Hidden, aggressive acts"}, "Magha":{r:"Ketu", c:"Ugra (Fierce)", m:"Battles, surgery, demolition"},
+ "Purva Phalguni":{r:"Venus", c:"Ugra (Fierce)", m:"Battles, surgery, demolition"}, "Uttara Phalguni":{r:"Sun", c:"Dhruva (Fixed)", m:"Permanent structures, foundations"},
+ "Hasta":{r:"Moon", c:"Kshipra (Swift)", m:"Quick activities, trade"}, "Chitra":{r:"Mars", c:"Mridu (Soft)", m:"Arts, romance, friendships"},
+ "Swati":{r:"Rahu", c:"Chara (Movable)", m:"Travel, change, movement"}, "Vishakha":{r:"Jupiter", c:"Mixed", m:"Routine duties"},
+ "Anuradha":{r:"Saturn", c:"Mridu (Soft)", m:"Arts, romance, friendships"}, "Jyeshtha":{r:"Mercury", c:"Tikshna (Dreadful)", m:"Harsh actions, secrecy"},
+ "Mula":{r:"Ketu", c:"Tikshna (Dreadful)", m:"Root-level changes, destruction"}, "Purva Ashadha":{r:"Venus", c:"Ugra (Fierce)", m:"Battles, surgery, demolition"},
+ "Uttara Ashadha":{r:"Sun", c:"Dhruva (Fixed)", m:"Permanent structures, foundations"}, "Shravana":{r:"Moon", c:"Chara (Movable)", m:"Travel, change, movement"},
+ "Dhanishta":{r:"Mars", c:"Chara (Movable)", m:"Travel, change, movement"}, "Shatabhisha":{r:"Rahu", c:"Chara (Movable)", m:"Travel, change, movement"},
+ "Purva Bhadrapada":{r:"Jupiter", c:"Ugra (Fierce)", m:"Battles, surgery, demolition"}, "Uttara Bhadrapada":{r:"Saturn", c:"Dhruva (Fixed)", m:"Permanent structures, foundations"},
+ "Revati":{r:"Mercury", c:"Mridu (Soft)", m:"Arts, romance, friendships"}
+};
+
+
 function getNakshatra(sidLon){
   const nakSize=360/27;
   const idx=Math.floor(sidLon/nakSize)%27;
@@ -4391,7 +4463,7 @@ const BIZ_PLANET_FIELDS = {
   Ketu: ['Coding/Software','Computer programming','Medical/Bone surgery','Artificial prosthetics','Spiritual/Occult field','Copper trade','Healing arts','Research','Alternative medicine','Meditation/Yoga']
 };
 
-const BNN_NAK_PROPERTIES = {
+var BNN_NAK_PROPERTIES = {
   'Ketu': { biz: 'Unconventional, spiritual, or healing business', mar: 'Unusual marriage; spouse may be foreign or spiritually inclined' },
   'Venus': { biz: 'Luxury, arts, beauty, or women-centric business', mar: 'Love marriage; spouse is attractive and creative' },
   'Sun': { biz: 'Leadership, government, authoritative business', mar: 'Arranged marriage; spouse is authoritative or from respected family' },
@@ -4411,7 +4483,7 @@ const BNN_DIRECTIONAL_STRENGTH = {
 };
 
 
-const ANUKARI_RULES = {
+var ANUKARI_RULES = {
   Saturn: {
     Jupiter: 'Expansive, ethical, teaching-oriented business',
     Mercury: 'Trading, analytics, communication business',
@@ -4435,7 +4507,7 @@ const ANUKARI_RULES = {
   }
 };
 
-const UPAGRAHA_EFFECTS = {
+var UPAGRAHA_EFFECTS = {
   Gulika: { biz: 'Karmic delay; success after 36. Requires extra effort.', mar: 'Marriage after 30 or spouse with heavy past karma.' },
   Mandi: { biz: 'Sudden obstacles in karma. Success requires deep discipline.', mar: 'Karmic partnership; lessons through relationship.' },
   Yamaghantaka: { biz: 'Business risks, partnership disputes.', mar: 'Fear of commitment; sudden breakdowns.' }
@@ -4498,7 +4570,7 @@ function getSaturnReturnDetails() {
 
 
 
-const BNN_REMEDY_RITUALS = {
+var BNN_REMEDY_RITUALS = {
   Sun: 'Rise before dawn. Offer water (Arghya) into a copper vessel while reciting Surya Gayatri. Respect your father.',
   Moon: 'Offer raw milk to a Shiva Lingam on Mondays. Keep a silver coin in your wallet at all times.',
   Mars: 'Recite Hanuman Chalisa. Offer red flowers. Avoid spicy food on Tuesdays.',
@@ -5043,189 +5115,7 @@ function getBNNReportHTML(type, planets, asc, isIntegrated = false) {
   return html;
 }
 
-function generateAdvancedReport(type, planets, asc) {
-  const isBiz = type === 'business';
-  const karaka = isBiz ? 'Saturn' : 'Venus';
-  const kData = planets[karaka];
-  if (!kData) return `<div class="error">Karaka ${karaka} not found in chart.</div>`;
 
-  const upagrahas = calculateUpagrahas();
-  const exchanges = findParivartana(planets);
-  const circuit = getBNNConversations(karaka, planets);
-  const circNames = [karaka, ...circuit.map(c => c.p)];
-
-  // Detection logic for Exchange Influence
-  exchanges.forEach(ex => {
-    if (circNames.includes(ex.p1) || circNames.includes(ex.p2)) {
-      if (!circNames.includes(ex.p1)) circNames.push(ex.p1);
-      if (!circNames.includes(ex.p2)) circNames.push(ex.p2);
-    }
-  });
-
-  const matches = BNN_YOGAS.filter(y => {
-    if (isBiz && y.c !== 'Career') return false;
-    if (!isBiz && y.c !== 'Marriage') return false;
-    return y.p.every(yp => circNames.includes(yp));
-  });
-
-  const propMatches = BNN_PROPERTY_YOGAS.filter(y => y.p.every(yp => circNames.includes(yp)));
-  const spiritMatches = BNN_SPIRITUAL_YOGAS.filter(y => {
-    const meetP = y.p.every(yp => circNames.includes(yp));
-    if (!meetP) return false;
-    if (y.dist !== undefined) {
-      const p1Data = planets[y.p[0]], p2Data = planets[y.p[1]];
-      if (!p1Data || !p2Data) return false;
-      const realDist = (p2Data.sn - p1Data.sn + 12) % 12;
-      return realDist === y.dist;
-    }
-    return true;
-  });
-
-  let html = `<div class="advanced-report">`;
-  
-  // 1. Karaka Core (Step 1-3)
-  const str = getKarakaStrength(karaka, kData.sn);
-  html += `<div class="biz-summary" style="border-color:${str.color}; background:rgba(255,255,255,0.02);">`;
-  html += `<h3 style="color:${str.color};"><span style="margin-right:8px;">💎</span> Step 1-3: Karaka Core (${karaka})</h3>`;
-  html += `<div style="display:flex;justify-content:space-between;margin-bottom:10px;">`;
-  html += `<span>Placed in ${kData.sign} (H${kData.house})</span>`;
-  html += `<span style="font-weight:900;color:${str.color}">${str.label}</span>`;
-  html += `</div>`;
-  if (kData.retro) html += `<div class="alert-mini" style="color:var(--amber);background:rgba(255,155,58,0.05);padding:4px;border-radius:4px;font-size:10px;margin-bottom:5px;">⚠ <strong>Retrograde:</strong> Internalizing results; success comes through deep introspection.</div>`;
-  if (kData.combust) html += `<div class="alert-mini" style="color:var(--rose);background:rgba(255,68,119,0.05);padding:4px;border-radius:4px;font-size:10px;">⚠ <strong>Combust:</strong> Ego challenges; needs to work behind the scenes for recognition.</div>`;
-  html += `</div>`;
-
-  // 2. Anukari Circuit (Step 4)
-  const anukari = getAnukariPlanets(karaka, planets);
-  if (anukari.length > 0) {
-    html += `<div class="biz-summary"><h3>📜 Step 4: Anukari (Supporting) Circuit</h3><div class="biz-fields">`;
-    anukari.forEach(a => {
-      const effect = (ANUKARI_RULES[karaka] && ANUKARI_RULES[karaka][a.p]) || 'Supportive energy';
-      html += `<span class="biz-field" title="${effect}">${a.p} (${a.dist})</span>`;
-    });
-    html += `</div><p style="font-size:9px;color:var(--muted);margin-top:4px;">Supportive planets at 2nd, 5th, and 11th from ${karaka}.</p></div>`;
-  }
-
-  // 3. Resistance & Expenses (Step 5: 7th & 12th)
-  const opposingH = (kData.house + 6) % 12 || 12;
-  const expenseH = (kData.house + 11) % 12 || 12;
-  const oppPlanets = Object.entries(planets).filter(([p, pd]) => pd.house === opposingH).map(p => p[0]);
-  const expPlanets = Object.entries(planets).filter(([p, pd]) => pd.house === expenseH).map(p => p[0]);
-
-  if (oppPlanets.length > 0 || expPlanets.length > 0) {
-    html += `<div class="biz-summary" style="border-color:var(--rose);"><h3>🚫 Step 5: Resistance & Loss</h3>`;
-    if (oppPlanets.length > 0) html += `<div style="font-size:10px;margin-bottom:5px;"><strong>Opposition (7th):</strong> ${oppPlanets.join(', ')} causes direct challenge to ${karaka}.</div>`;
-    if (expPlanets.length > 0) html += `<div style="font-size:10px;"><strong>Expenditure (12th):</strong> ${expPlanets.join(', ')} drains the energy of ${karaka}.</div>`;
-    html += `</div>`;
-  }
-
-  // 4. Jaimini Karakas (Step 6)
-  html += getJaiminiReportHTML(type, planets);
-
-  // 5. Upagraha & Directional Strength (Step 7-8)
-  const dir = getElementType(kData.sn);
-  let dirOk = false;
-  if (isBiz && (dir === 'Earth' || dir === 'Fire')) dirOk = true;
-  if (!isBiz && (dir === 'Water' || dir === 'Air')) dirOk = true;
-
-  html += `<div class="biz-summary" style="border-color:var(--sky);"><h3>⚖ Step 7-8: Stability & Direction</h3>`;
-  html += `<div style="display:flex;justify-content:space-between;font-size:10px;">`;
-  html += `<span>Direction: <strong>${dir}</strong> Sign</span>`;
-  html += `<span style="color:${dirOk?'var(--green)':'var(--rose)'}">${dirOk?'Aligned':'Neutral'}</span>`;
-  html += `</div>`;
-  
-  // Upagraha check
-  const gSn = upagrahas.Gulika.sn;
-  const distG = (gSn - kData.sn + 12) % 12;
-  if (distG === 0 || distG === 6) {
-    html += `<div style="margin-top:8px;font-size:10px;color:var(--rose);">⚠ <strong>Gulika Influence:</strong> Karmic burden on ${karaka}. Remedies essential.</div>`;
-  }
-  html += `</div>`;
-
-  // --- NEW PRECISION TIMING SECTION ---
-  html += `<div class="biz-summary" style="border-color:var(--amber);background:rgba(255,155,58,0.03);">`;
-  html += `<h3>📅 Precision Timing & Milestones</h3>`;
-
-  if (isBiz) {
-    // Career Milestones
-    const ss = getSadeSatiDetails();
-    if (ss) {
-      html += `<div class="shimmer" style="padding:8px;border-radius:4px;margin-bottom:10px;border:1px solid rgba(255,155,58,0.3);">`;
-      html += `<div style="color:var(--amber);font-weight:900;font-size:11px;">⚠️ Sade Sati: ${ss.label}</div>`;
-      html += `<div style="font-size:10px;margin-top:4px;">${ss.desc}</div>`;
-      html += `</div>`;
-    }
-    const returns = getSaturnReturnDetails();
-    html += `<div style="font-size:10px;margin-bottom:10px;">`;
-    html += `<strong>Saturn Cycles:</strong><br>`;
-    returns.forEach(r => html += `<span class="biz-field" style="font-size:9px;margin-right:5px;">Cycle ${r.cycle}: Age ${r.age} (${r.year})</span>`);
-    html += `</div>`;
-    html += `<p style="font-size:9.5px;color:var(--muted);">Saturn in H${kData.house} tests your ${isBiz? (kData.house===10?'career-status':kData.house===6?'daily routines':'financial foundation') : 'spouse connection'}. Success is inevitable but slow.</p>`;
-  } else {
-    // Marriage Milestones
-    const saham = calculateVivahaSaham();
-    const ul = calculateUpapadaLagna();
-    if (saham) {
-        html += `<div style="margin-bottom:10px;padding:6px;background:rgba(255,68,119,0.05);border:1px solid rgba(255,68,119,0.2);">`;
-        html += `<div style="color:var(--rose);font-weight:700;font-size:10.5px;">♡ Vivaha Saham (Marriage Point): ${fmtDeg(saham)}</div>`;
-        html += `<p style="font-size:9px;margin-top:2px;">Events trigger when Jupiter/Venus transit this exact degree.</p>`;
-        html += `</div>`;
-    }
-    if (ul) {
-        html += `<div style="margin-bottom:10px;font-size:10px;"><strong>Upapada Lagna (UL):</strong> ${ul.sign} sign. Represents the marriage vessel and environment.</div>`;
-    }
-    
-    // Double Transit Detection
-    const tPos = getPos(new Date());
-    if (tPos) {
-       const jupH = tPos.Jupiter.house, satH = tPos.Saturn.house;
-       const h7Sign = (BIRTH_ASC.sn + 6) % 12;
-       const h7Lord = LORDS[h7Sign];
-       const l7NatalSign = BIRTH_PLANETS[h7Lord].sn;
-       
-       const jupAspects = [jupH, (jupH+4)%12+1, (jupH+6)%12+1, (jupH+8)%12+1]; // 1, 5, 7, 9
-       const satAspects = [satH, (satH+2)%12+1, (satH+6)%12+1, (satH+9)%12+1]; // 1, 3, 7, 10
-       
-       const targetHouses = [7]; // H7
-       // Note: Simplified logic here for illustrative precision
-       const jupHits = jupAspects.includes(7) || tPos.Jupiter.sn === l7NatalSign;
-       const satHits = satAspects.includes(7) || tPos.Saturn.sn === l7NatalSign;
-       
-       if (jupHits && satHits) {
-         html += `<div class="alert-mini" style="background:var(--green)22;color:var(--green);border-color:var(--green)44;">🌟 <strong>Double Transit Active:</strong> Jupiter and Saturn are simultaneously blessing the 7th House/Lord. High potential for union now!</div>`;
-       }
-    }
-  }
-  html += `</div>`;
-
-  // 6. Yogas & Spiritual Insights (Detailed)
-  if (matches.length > 0) {
-    html += `<div class="biz-summary" style="border-color:var(--gold);"><h3>🌟 Step 9: Specialized BNN Yogas</h3><ul>`;
-    matches.forEach(m => html += `<li style="margin-bottom:4px;"><strong>${m.t}</strong>: Indicates success via ${m.p.join(' + ')} interactions.</li>`);
-    html += `</ul></div>`;
-  }
-
-  if (spiritMatches.length > 0) {
-    html += `<div class="biz-summary" style="border-color:var(--violet);"><h3>🧘 Soul Silence Diagnostics</h3><ul>`;
-    spiritMatches.forEach(m => html += `<li><strong>${m.t}</strong>: ${m.r || 'A deeper spiritual search is indicated.'}</li>`);
-    html += `</ul></div>`;
-  }
-
-  // 7. Transit Cycles & Timing (Step 9)
-  html += getTransitCycleHTML(karaka, kData);
-
-  // 8. Remedies (Step 10)
-  const nakProp = BNN_NAK_PROPERTIES[LORDS[kData.sn]] || {};
-  html += `<div class="biz-remedy">`;
-  html += `<div class="biz-remedy-title">✨ Step 10: Remedies & Mitigation</div>`;
-  html += `<p>${BNN_REMEDY_RITUALS[karaka] || 'Connect with the divine nature of ' + karaka + '.'}</p>`;
-  if (isBiz && nakProp.biz) html += `<p style="margin-top:8px;"><strong>Strategic Alignment:</strong> ${nakProp.biz}</p>`;
-  if (!isBiz && nakProp.mar) html += `<p style="margin-top:8px;"><strong>Relationship Alignment:</strong> ${nakProp.mar}</p>`;
-  html += `</div>`;
-
-  html += `</div>`;
-  return html;
-}
 const PRASHNA_HOUSE_DATA = {
   1: { sig: 'Self, health, appearance, longevity, general success', body: 'Head, brain, complexion', yes: 'Lord in 1, 4, 7, 10, 5, 9', no: 'Lord in 6, 8, 12' },
   2: { sig: 'Wealth, family, speech, food, vision', body: 'Face, right eye, teeth, tongue, nose', yes: 'Lord in 2, 5, 9, 11', no: 'Lord in 6, 8, 12' },
@@ -5329,7 +5219,7 @@ const PRASHNA_CATS = [
   ]}
 ];
 
-const BNN_YOGAS = [
+var BNN_YOGAS = [
   { p:['Jupiter','Venus','Mercury'], t:'Early Marriage', c:'Marriage' },
   { p:['Venus','Saturn'], t:'Delayed Marriage', c:'Marriage' },
   { p:['Sun','Moon','Saturn'], t:'Late Marriage', c:'Marriage' },
@@ -5341,7 +5231,7 @@ const BNN_YOGAS = [
   { p:['Mars','Saturn'], t:'Police / Technical', c:'Career' }
 ];
 
-const BNN_PROPERTY_YOGAS = [
+var BNN_PROPERTY_YOGAS = [
   { p:['Venus','Jupiter'], t:'Beautiful house with exquisite furniture' },
   { p:['Venus','Mercury'], t:'Duplex / Commercial Complex' },
   { p:['Venus','Mercury','Rahu'], t:'Old or ancestral property' },
@@ -5351,7 +5241,7 @@ const BNN_PROPERTY_YOGAS = [
   { p:['Venus','Mars'], t:'Ordinary / Simple house' }
 ];
 
-const BNN_SPIRITUAL_YOGAS = [
+var BNN_SPIRITUAL_YOGAS = [
   { p:['Jupiter','Ketu'], t:'Soul Silence / Spiritual Blockage', r:'Parad Shivling Remedy recommended' },
   { p:['Saturn','Jupiter'], dist:11, t:'Karmic Lock - Burden without reason', r:'Search for surrender, not mantras' },
   { p:['Ketu','Venus'], t:'Mantras stop working (Spiritual impasse)', r:'' },
@@ -5386,39 +5276,9 @@ function getBNNConversations(pName, planets) {
   return conv;
 }
 
-function calculateCharkarakas() {
-  const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu'];
-  const pData = planets.map(p => {
-    const d = BIRTH_PLANETS[p];
-    let deg = d.sid % 30;
-    if (p === 'Rahu') deg = 30 - deg;
-    return { name: p, degInRange: deg };
-  });
 
-  pData.sort((a, b) => b.degInRange - a.degInRange);
 
-  const kLabels = ['AK', 'AmK', 'BK', 'MK', 'PiK', 'PuK', 'GK', 'DK'];
-  pData.forEach((p, i) => {
-    if (i < kLabels.length) {
-      BIRTH_PLANETS[p.name].karaka = kLabels[i];
-    }
-  });
-}
 
-function getKarakaStrength(planet, sn) {
-  const own = LORDS[sn] === planet;
-  const exalted = (planet === 'Sun' && sn === 0) || (planet === 'Moon' && sn === 1) || (planet === 'Mars' && sn === 9) || 
-                  (planet === 'Mercury' && sn === 5) || (planet === 'Jupiter' && sn === 3) || (planet === 'Venus' && sn === 11) || 
-                  (planet === 'Saturn' && sn === 6);
-  const debilitated = (planet === 'Sun' && sn === 6) || (planet === 'Moon' && sn === 7) || (planet === 'Mars' && sn === 3) || 
-                      (planet === 'Mercury' && sn === 11) || (planet === 'Jupiter' && sn === 9) || (planet === 'Venus' && sn === 5) || 
-                      (planet === 'Saturn' && sn === 0);
-  
-  if (exalted) return { label: 'Exalted (High)', color: 'var(--gold)', score: 100 };
-  if (own) return { label: 'Own House', color: 'var(--cyan)', score: 80 };
-  if (debilitated) return { label: 'Debilitated', color: 'var(--rose)', score: 20 };
-  return { label: 'Neutral', color: 'var(--muted)', score: 50 };
-}
 
 
 
@@ -5429,118 +5289,9 @@ function getKarakaStrength(planet, sn) {
 //  ADVANCED COMPREHENSIVE BNN & JAIMINI ENGINE
 // ─────────────────────────────────────────────────────────────
 
-function getAnukariPlanets(karaka, planets) {
-  const base = planets[karaka];
-  if (!base) return [];
-  const anukari = [];
-  const targets = [1, 4, 10]; // 2nd, 5th, 11th (0-indexed distances)
-  for (const [p, pd] of Object.entries(planets)) {
-    if (p === karaka) continue;
-    const dist = (pd.sn - base.sn + 12) % 12;
-    if (targets.includes(dist)) anukari.push({ p, pd, dist: dist + 1 });
-  }
-  return anukari;
-}
 
-function getTransitCycleHTML(karaka, kData) {
-  const birthYear = BIRTH.year;
-  const targetSign = kData.sn;
-  const trines = [targetSign, (targetSign + 4) % 12, (targetSign + 8) % 12];
-  const cycles = [];
-  
-  // Quick scan for the first 84 years (approx 7 Jupiter cycles)
-  // Step through time annually to find sign/trine hits
-  for (let age = 0; age <= 84; age++) {
-    const checkDate = new Date(BIRTH.date);
-    checkDate.setFullYear(checkDate.getFullYear() + age);
-    const pos = getPos(checkDate);
-    if (pos && pos.Jupiter && trines.includes(pos.Jupiter.sn)) {
-      // If result is within the same cycle period (approx 1 year), only take the first hit
-      if (cycles.length === 0 || (age - cycles[cycles.length - 1].age) > 3) {
-        cycles.push({ age, year: birthYear + age, sign: SIGNS[pos.Jupiter.sn] });
-      }
-    }
-  }
 
-  let html = `<div class="biz-summary" style="border-color:var(--cyan);background:rgba(58,240,255,0.03);">`;
-  html += `<h3 style="color:var(--cyan);font-size:11px;">🚀 Actual Timing: 12-Year Jupiter Cycle</h3>`;
-  html += `<p style="font-size:10px;line-height:1.4;">Significant triggers occur when <strong>Jupiter</strong> transits ${kData.sign} or its trines (${SIGNS[trines[1]]}, ${SIGNS[trines[2]]}).</p>`;
-  html += `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;">`;
-  
-  if (cycles.length > 0) {
-    cycles.forEach(c => {
-      html += `<span class="biz-field" style="font-size:9px;padding:3px 8px;" title="Transit in ${c.sign}">Age ${c.age} (${c.year})</span>`;
-    });
-  } else {
-    // Fallback if no exact hit found in annual sampling
-    [12, 24, 36, 48, 60, 72].forEach(age => {
-      html += `<span style="padding:2px 6px;border-radius:10px;background:rgba(58,240,255,0.05);border:1px solid rgba(58,240,255,0.1);font-size:9px;">Age ${age} (Approx)</span>`;
-    });
-  }
-  
-  html += `</div>`;
-  html += `<div style="margin-top:10px;font-size:9px;color:var(--muted);">In Nadi (BNN), Jupiter transiting the 1st, 5th, or 9th from Natal ${karaka} marks major fruit-bearing years.</div>`;
-  html += `</div>`;
-  return html;
-}
 
-function getJaiminiReportHTML(type, planets) {
-  const isBiz = type === 'business';
-  const ak = Object.entries(planets).find(([p, pd]) => pd.karaka === 'AK');
-  const amk = Object.entries(planets).find(([p, pd]) => pd.karaka === 'AmK');
-  const dk = Object.entries(planets).find(([p, pd]) => pd.karaka === 'DK');
-
-  if (!ak) return "";
-
-  let html = `<div class="biz-summary" style="border-color:var(--violet);background:rgba(155,111,255,0.03);">`;
-  html += `<h3 style="color:var(--violet);font-size:11px;">💎 Jaimini Chara Karaka Insights</h3>`;
-  
-  // AK - Atmakaraka
-  const akStr = getKarakaStrength(ak[0], ak[1].sn);
-  html += `<div style="margin-bottom:12px;">`;
-  html += `<div style="display:flex;justify-content:space-between;align-items:center;">`;
-  html += `<span style="font-weight:900;color:var(--violet);">Atmakaraka (AK): ${ak[0]}</span>`;
-  html += `<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:${akStr.color}22;color:${akStr.color};border:1px solid ${akStr.color}44;">${akStr.label}</span>`;
-  html += `</div>`;
-  html += `<div style="font-size:10.5px;margin-top:4px;line-height:1.4;"><strong>Soul's Purpose:</strong> Your soul seeks to master ${ak[0] === 'Saturn' ? 'endurance, discipline and karma' : ak[0] === 'Sun' ? 'leadership and authority' : ak[0] === 'Venus' ? 'unconditional love and harmony' : 'its unique cosmic role'}.</div>`;
-  html += `</div>`;
-
-  if (isBiz && amk) {
-    const amkStr = getKarakaStrength(amk[0], amk[1].sn);
-    html += `<div style="margin-bottom:12px;padding-top:8px;border-top:1px dashed rgba(255,255,255,0.1);">`;
-    html += `<div style="display:flex;justify-content:space-between;align-items:center;">`;
-    html += `<span style="font-weight:900;color:var(--cyan);">Amatyakaraka (AmK): ${amk[0]}</span>`;
-    html += `<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:${amkStr.color}22;color:${amkStr.color};border:1px solid ${amkStr.color}44;">${amkStr.label}</span>`;
-    html += `</div>`;
-    html += `<div style="font-size:10.5px;margin-top:4px;line-height:1.4;"><strong>Career Path:</strong> Practical achievements manifest through the energy of ${amk[0]}.</div>`;
-    html += `</div>`;
-  }
-
-  // DK - Darakaraka (Marriage)
-  if (!isBiz && dk) {
-    const dkStr = getKarakaStrength(dk[0], dk[1].sn);
-    const dkDescs = {
-      Sun: 'authoritative, dignified, possibly government-connected spouse',
-      Moon: 'nurturing, emotional, caring spouse with domestic focus',
-      Mars: 'passionate, bold, athletic or military-connected spouse',
-      Mercury: 'intellectual, youthful, communicative, business-minded spouse',
-      Jupiter: 'wise, spiritual, traditional, well-educated spouse',
-      Venus: 'beautiful, artistic, luxurious, romantic spouse',
-      Saturn: 'mature, disciplined, older or foreign spouse; delayed marriage likely'
-    };
-    html += `<div style="margin-bottom:12px;padding-top:8px;border-top:1px dashed rgba(255,255,255,0.1);">`;
-    html += `<div style="display:flex;justify-content:space-between;align-items:center;">`;
-    html += `<span style="font-weight:900;color:var(--rose);">💍 Darakaraka (DK): ${dk[0]}</span>`;
-    html += `<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:${dkStr.color}22;color:${dkStr.color};border:1px solid ${dkStr.color}44;">${dkStr.label}</span>`;
-    html += `</div>`;
-    html += `<div style="font-size:10.5px;margin-top:4px;line-height:1.4;"><strong>Spouse Nature:</strong> ${dkDescs[dk[0]] || 'Unique characteristics defined by ' + dk[0] + ' energy'}.</div>`;
-    html += `<div style="font-size:9.5px;margin-top:4px;color:var(--muted);">DK in ${dk[1].sign} (H${dk[1].house}) · Degree: ${parseFloat(dk[1].deg).toFixed(1)}° · ${dk[1].retro ? '℞ Retrograde' : 'Direct'}</div>`;
-    html += `</div>`;
-  }
-
-  html += `</div>`;
-  return html;
-}
 
 const SIGN_NATURES = ['Movable','Fixed','Dual','Movable','Fixed','Dual','Movable','Fixed','Dual','Movable','Fixed','Dual'];
 const SIGN_DIRECTIONS = ['East','South','West','North','East','South','West','North','East','South','West','North'];
@@ -5843,168 +5594,8 @@ document.getElementById('closePrashna').addEventListener('click', () => {
 document.getElementById('btnShowPrashnaRules').addEventListener('click', () => togglePrashnaRules(true));
 document.getElementById('prashnaOverlay').addEventListener('click', () => togglePrashnaRules(false));
 
-function runMarriageAnalysis() {
-  var el = document.getElementById('marriageContent');
-  if (!el) return;
-  el.innerHTML = '';
-  calculateCharkarakas();
-  el.innerHTML += generateAdvancedReport('marriage', BIRTH_PLANETS, BIRTH_ASC);
-  const d9 = getChartPlanetsForDiv(9);
-  if (d9 && d9.planets) {
-    const vD9 = d9.planets.Venus;
-    let d9Html = `<div class="biz-card" style="border-left-color:var(--violet)"><div class="biz-card-title"><span class="biz-chart-lbl">NAVAMSHA D9</span> Strength</div>`;
-    if (vD9 && BIRTH_PLANETS.Venus) {
-      const vargotta = vD9.sn === BIRTH_PLANETS.Venus.sn;
-      d9Html += `<div class="biz-desc">Venus in ${vD9.sign}. ${vargotta ? '<strong>Vargottama:</strong> Exceptional stability.' : 'Spouse nature evolves over time.'}</div>`;
-    }
-    d9Html += `</div>`;
-    el.innerHTML += d9Html;
-  }
 
-  // Vivaha Saham transit finder with processing indicator
-  const sahamDeg = calculateVivahaSaham();
-  if (sahamDeg !== null) {
-    const transitId = 'vivahTransitResults';
-    const startYear = new Date().getFullYear();
-    el.innerHTML += `<div class="biz-summary" style="border-color:var(--rose);background:rgba(255,68,119,0.03);">
-      <h3 style="color:var(--rose);font-size:11px;">🔍 Vivaha Saham Transit Scanner</h3>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:8px 0;border-bottom:1px solid rgba(255,68,119,0.1);">
-        <label style="font-size:9px;color:var(--muted);">From: <input type="number" id="scanStartYear" value="${startYear}" style="width:50px;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:9px;padding:2px;"></label>
-        <label style="font-size:9px;color:var(--muted);">Years: <input type="number" id="scanDuration" value="10" style="width:40px;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:9px;padding:2px;"></label>
-        <button class="btn rose" style="font-size:8px;padding:2px 8px;height:20px;border-radius:2px;" onclick="const s=document.getElementById('scanStartYear').value, d=document.getElementById('scanDuration').value; scanVivahaSahamTransits(${sahamDeg}, '${transitId}', parseInt(s), parseInt(d))">RE-SCAN</button>
-      </div>
-      <div id="${transitId}" style="min-height:40px;">
-        <div style="display:flex;align-items:center;gap:8px;padding:12px 0;">
-          <div style="width:14px;height:14px;border:2px solid var(--rose);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>
-          <span style="font-size:10.5px;color:var(--muted);">Scanning Jupiter & Venus transits over ${(sahamDeg).toFixed(1)}°... Please wait.</span>
-        </div>
-      </div>
-    </div>`;
-    // Add spinner keyframe if not already present
-    if (!document.getElementById('spinnerStyle')) {
-      const st = document.createElement('style'); st.id = 'spinnerStyle';
-      st.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
-      document.head.appendChild(st);
-    }
-    // Run async transit scan with defaults
-    setTimeout(() => scanVivahaSahamTransits(sahamDeg, transitId, startYear, 10), 100);
-  }
 
-  document.getElementById('marriagePanel').classList.add('open');
-}
-
-function scanVivahaSahamTransits(sahamDeg, targetElId, startYear, duration) {
-  const el = document.getElementById(targetElId);
-  if (el) {
-    el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:12px 0;">
-      <div style="width:14px;height:14px;border:2px solid var(--rose);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>
-      <span style="font-size:10.5px;color:var(--muted);">Refreshing scan...</span>
-    </div>`;
-  }
-
-  const ORB = 3; // orb in degrees for trigger
-  const results = [];
-  const now = new Date();
-  const endYear = startYear + duration;
-  
-  // Identify the DK (Darakaraka)
-  const dkInfo = BIRTH_PLANETS ? Object.entries(BIRTH_PLANETS).find(([p, pd]) => pd.karaka === 'DK') : null;
-  const dkPlanet = dkInfo ? dkInfo[0] : null;
-
-  // Scan day by day for Jupiter and Venus transiting over sahamDeg
-  let d = new Date(startYear, 0, 1);
-  const endDate = new Date(endYear, 11, 31);
-  let lastJupHit = null, lastVenHit = null;
-
-  while (d <= endDate) {
-    const pos = getPos(d);
-    // Hit check logic
-    const jupClose = Math.min(Math.abs(pos.Jupiter.sid - sahamDeg), 360 - Math.abs(pos.Jupiter.sid - sahamDeg));
-    const venClose = Math.min(Math.abs(pos.Venus.sid - sahamDeg), 360 - Math.abs(pos.Venus.sid - sahamDeg));
-    
-    let isHit = false;
-    let planet = '';
-    let dist = 0;
-
-    if (jupClose <= ORB && (!lastJupHit || (d - lastJupHit) > 30 * 864e5)) {
-      isHit = true; planet = 'Jupiter'; dist = jupClose; lastJupHit = new Date(d);
-    } else if (venClose <= ORB && (!lastVenHit || (d - lastVenHit) > 20 * 864e5)) {
-      isHit = true; planet = 'Venus'; dist = venClose; lastVenHit = new Date(d);
-    }
-
-    if (isHit) {
-      // Analyze transiting DK position for this hit
-      let dkContext = null;
-      if (dkPlanet && pos[dkPlanet]) {
-        const transDK = pos[dkPlanet];
-        const conjs = [];
-        Object.keys(pos).forEach(p => {
-          if (p !== dkPlanet && !['Uranus','Neptune','Pluto'].includes(p)) {
-            if (pos[p].house === transDK.house) conjs.push(p);
-          }
-        });
-        dkContext = { house: transDK.house, sign: transDK.sign, conjs: conjs };
-      }
-      results.push({ date: new Date(d), planet: planet, dist: dist.toFixed(1), dk: dkContext });
-    }
-    
-    d = new Date(d.getTime() + 3 * 864e5);
-  }
-
-  if (!el) return;
-  if (results.length === 0) {
-    el.innerHTML = `<div style="font-size:10.5px;color:var(--muted);padding:8px 0;">No Jupiter/Venus transits within ${ORB}° found for ${startYear}–${endYear}.</div>`;
-    return;
-  }
-
-  results.sort((a, b) => a.date - b.date);
-
-  // Find Double Orbit windows
-  const doubleHits = [];
-  for (let i = 0; i < results.length; i++) {
-    for (let j = i + 1; j < results.length; j++) {
-      if (results[i].planet !== results[j].planet && Math.abs(results[i].date - results[j].date) < 45 * 864e5) {
-        doubleHits.push({ j1: results[i], j2: results[j] });
-      }
-    }
-  }
-
-  let html = `<div style="font-size:9px;color:var(--muted);margin-bottom:8px;">Found ${results.length} windows for ${startYear}–${endYear}</div>`;
-
-  if (doubleHits.length > 0) {
-    html += `<div style="margin-bottom:10px;padding:8px;background:rgba(61,255,155,0.08);border:1px solid rgba(61,255,155,0.3);border-radius:4px;">`;
-    html += `<div style="font-weight:900;color:var(--green);font-size:10.5px;margin-bottom:6px;">🌟 HIGH-PROBABILITY WINDOWS</div>`;
-    doubleHits.forEach(dh => {
-      const dt1 = dh.j1.date.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-      const dt2 = dh.j2.date.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-      html += `<div style="font-size:9.5px;margin-bottom:4px;line-height:1.3;">${dh.j1.planet} (${dt1}) + ${dh.j2.planet} (${dt2})<br>`;
-      if (dh.j1.dk) {
-        html += `<span style="color:var(--muted);font-size:8.5px;">└ DK ${dkPlanet} transits H${dh.j1.dk.house} in ${dh.j1.dk.sign} ${dh.j1.dk.conjs.length?'(with '+dh.j1.dk.conjs.join('/')+')':''}</span>`;
-      }
-      html += `</div>`;
-    });
-    html += `</div>`;
-  }
-
-  html += `<div style="display:grid;grid-template-columns:1fr;gap:6px;">`;
-  results.slice(0, 24).forEach(r => {
-    const dt = r.date.toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
-    const col = r.planet === 'Jupiter' ? 'var(--gold)' : 'var(--rose)';
-    const sym = r.planet === 'Jupiter' ? '♃' : '♀';
-    const isPast = r.date < now;
-    html += `<div style="padding:6px 10px;border-radius:3px;background:${col}11;border:1px solid ${col}33;${isPast ? 'opacity:0.5;' : ''}">`;
-    html += `<div style="display:flex;justify-content:space-between;margin-bottom:2px;">`;
-    html += `<span style="color:${col};font-weight:700;font-size:10px;">${sym} ${r.planet} Hits Saham</span> <span style="font-size:9px;color:var(--muted);">${dt} (${r.dist}°)</span>`;
-    html += `</div>`;
-    if (r.dk) {
-      html += `<div style="font-size:8.5px;color:var(--text);">DK ${dkPlanet} in <strong>${r.dk.sign} (H${r.dk.house})</strong> ${r.dk.conjs.length ? '· Conjunct: '+r.dk.conjs.join(', ') : ''}</div>`;
-    }
-    html += `</div>`;
-  });
-  html += `</div>`;
-  if (results.length > 24) html += `<div style="font-size:9px;color:var(--muted);margin-top:6px;text-align:center;">Showing top 24 windows.</div>`;
-  el.innerHTML = html;
-}
 
 document.getElementById('btnConj')?.addEventListener('click', () => openConjPanel(false));
 document.getElementById('btnNakConj')?.addEventListener('click', () => openConjPanel(true));
@@ -6014,6 +5605,7 @@ document.getElementById('btnBizAnalysis').addEventListener('click', runBusinessA
 document.getElementById('closeBiz').addEventListener('click', function() { document.getElementById('bizPanel').classList.remove('open'); });
 document.getElementById('btnMarriageAnalysis').addEventListener('click', runMarriageAnalysis);
 document.getElementById('closeMarriage').addEventListener('click', function() { document.getElementById('marriagePanel').classList.remove('open'); });
+document.getElementById('closeMatching')?.addEventListener('click', function() { document.getElementById('matchingPanel').classList.remove('open'); });
 
 document.getElementById('btnPrashna').addEventListener('click', () => {
   document.getElementById('prashnaPanel').classList.add('open');
@@ -6024,68 +5616,7 @@ document.getElementById('btnPrashna').addEventListener('click', () => {
 document.getElementById('panchangBtn').addEventListener('click', showPanchang);
 document.getElementById('horaBtn').addEventListener('click', showPanchang);
 
-const P_YOGAS = [
- {n:"Vishkumbha", t:"Inauspicious", m:"Obstacles"}, {n:"Preeti", t:"Auspicious", m:"Love, affection"}, {n:"Ayushman", t:"Auspicious", m:"Longevity"},
- {n:"Saubhagya", t:"Auspicious", m:"Good fortune"}, {n:"Shobhana", t:"Auspicious", m:"Beauty, splendor"}, {n:"Atiganda", t:"Inauspicious", m:"Danger"},
- {n:"Sukarma", t:"Auspicious", m:"Good deeds"}, {n:"Dhriti", t:"Auspicious", m:"Steadiness"}, {n:"Shoola", t:"Inauspicious", m:"Pain, suffering"},
- {n:"Ganda", t:"Inauspicious", m:"Problems"}, {n:"Vriddhi", t:"Auspicious", m:"Growth"}, {n:"Dhruva", t:"Auspicious", m:"Stability"},
- {n:"Vyaghata", t:"Inauspicious", m:"Conflict"}, {n:"Harshana", t:"Auspicious", m:"Joy"}, {n:"Vajra", t:"Mixed", m:"Strength"},
- {n:"Siddhi", t:"Auspicious", m:"Success"}, {n:"Vyatipata", t:"Inauspicious", m:"Calamity"}, {n:"Variyan", t:"Auspicious", m:"Excellence"},
- {n:"Parigha", t:"Inauspicious", m:"Obstruction"}, {n:"Shiva", t:"Auspicious", m:"Auspiciousness"}, {n:"Siddha", t:"Auspicious", m:"Accomplishment"},
- {n:"Sadhya", t:"Auspicious", m:"Achievement"}, {n:"Shubha", t:"Auspicious", m:"Goodness"}, {n:"Shukla", t:"Auspicious", m:"Purity"},
- {n:"Brahma", t:"Auspicious", m:"Creation"}, {n:"Indra", t:"Auspicious", m:"Power"}, {n:"Vaidhriti", t:"Inauspicious", m:"Misfortune"}
-];
-
-const P_KARANAS = [
-  {n:"Bava", t:"Auspicious", m:"All permanent works"}, {n:"Balava", t:"Auspicious", m:"Auspicious ceremonies"},
-  {n:"Kaulava", t:"Auspicious", m:"Friendships, relations"}, {n:"Taitila", t:"Auspicious", m:"Royalty, authority matters"},
-  {n:"Gara", t:"Auspicious", m:"Agriculture, husbandry"}, {n:"Vanija", t:"Auspicious", m:"Trade, commerce"},
-  {n:"Vishti (Bhadra)", t:"Inauspicious", m:"Avoid all activities"}, {n:"Shakuni", t:"Mixed", m:"2nd half Krishna Chaturdashi"},
-  {n:"Chatushpada", t:"Mixed", m:"1st half Amavasya"}, {n:"Naga", t:"Mixed", m:"2nd half Amavasya"},
-  {n:"Kintughna", t:"Mixed", m:"1st half Shukla Pratipada"}
-];
-
-const P_NAKS = {
- "Ashwini":{r:"Ketu", c:"Kshipra (Swift)", m:"Quick activities, trade"}, "Bharani":{r:"Venus", c:"Ugra (Fierce)", m:"Battles, surgery, demolition"},
- "Krittika":{r:"Sun", c:"Mixed", m:"Sharp, intense activities"}, "Rohini":{r:"Moon", c:"Dhruva (Fixed)", m:"Permanent structures, foundations"},
- "Mrigashira":{r:"Mars", c:"Mridu (Soft)", m:"Arts, romance, friendships"}, "Ardra":{r:"Rahu", c:"Tikshna (Dreadful)", m:"Destruction, conquering"},
- "Punarvasu":{r:"Jupiter", c:"Chara (Movable)", m:"Travel, change, movement"}, "Pushya":{r:"Saturn", c:"Kshipra (Swift)", m:"Quick activities, trade"},
- "Ashlesha":{r:"Mercury", c:"Tikshna (Dreadful)", m:"Hidden, aggressive acts"}, "Magha":{r:"Ketu", c:"Ugra (Fierce)", m:"Battles, surgery, demolition"},
- "Purva Phalguni":{r:"Venus", c:"Ugra (Fierce)", m:"Battles, surgery, demolition"}, "Uttara Phalguni":{r:"Sun", c:"Dhruva (Fixed)", m:"Permanent structures, foundations"},
- "Hasta":{r:"Moon", c:"Kshipra (Swift)", m:"Quick activities, trade"}, "Chitra":{r:"Mars", c:"Mridu (Soft)", m:"Arts, romance, friendships"},
- "Swati":{r:"Rahu", c:"Chara (Movable)", m:"Travel, change, movement"}, "Vishakha":{r:"Jupiter", c:"Mixed", m:"Routine duties"},
- "Anuradha":{r:"Saturn", c:"Mridu (Soft)", m:"Arts, romance, friendships"}, "Jyeshtha":{r:"Mercury", c:"Tikshna (Dreadful)", m:"Harsh actions, secrecy"},
- "Mula":{r:"Ketu", c:"Tikshna (Dreadful)", m:"Root-level changes, destruction"}, "Purva Ashadha":{r:"Venus", c:"Ugra (Fierce)", m:"Battles, surgery, demolition"},
- "Uttara Ashadha":{r:"Sun", c:"Dhruva (Fixed)", m:"Permanent structures, foundations"}, "Shravana":{r:"Moon", c:"Chara (Movable)", m:"Travel, change, movement"},
- "Dhanishta":{r:"Mars", c:"Chara (Movable)", m:"Travel, change, movement"}, "Shatabhisha":{r:"Rahu", c:"Chara (Movable)", m:"Travel, change, movement"},
- "Purva Bhadrapada":{r:"Jupiter", c:"Ugra (Fierce)", m:"Battles, surgery, demolition"}, "Uttara Bhadrapada":{r:"Saturn", c:"Dhruva (Fixed)", m:"Permanent structures, foundations"},
- "Revati":{r:"Mercury", c:"Mridu (Soft)", m:"Arts, romance, friendships"}
-};
-
-const LAGNA_HORA_MAPPING = {
-  "Aries": { best: ["Sun", "Mars", "Jupiter"], avg: ["Moon"], avoid: ["Mercury", "Venus", "Saturn"] },
-  "Taurus": { best: ["Venus", "Mercury", "Saturn"], avg: ["Sun"], avoid: ["Moon", "Mars", "Jupiter"] },
-  "Gemini": { best: ["Mercury", "Venus"], avg: ["Saturn"], avoid: ["Moon", "Mars", "Sun", "Jupiter"] },
-  "Cancer": { best: ["Moon", "Mars", "Jupiter"], avg: ["Sun"], avoid: ["Venus", "Mercury", "Saturn"] },
-  "Leo": { best: ["Sun", "Mars", "Jupiter"], avg: ["Moon"], avoid: ["Venus", "Mercury", "Saturn"] },
-  "Virgo": { best: ["Mercury", "Venus"], avg: ["Saturn"], avoid: ["Sun", "Moon", "Mars", "Jupiter"] },
-  "Libra": { best: ["Venus", "Mercury", "Saturn"], avg: ["Moon"], avoid: ["Sun", "Mars", "Jupiter"] },
-  "Scorpio": { best: ["Mars", "Moon", "Jupiter"], avg: ["Sun"], avoid: ["Mercury", "Venus", "Saturn"] },
-  "Sagittarius": { best: ["Jupiter", "Sun", "Mars"], avg: ["Moon"], avoid: ["Mercury", "Venus", "Saturn"] },
-  "Capricorn": { best: ["Saturn", "Venus", "Mercury"], avg: ["Sun"], avoid: ["Moon", "Mars", "Jupiter"] },
-  "Aquarius": { best: ["Saturn", "Venus"], avg: ["Mercury"], avoid: ["Sun", "Moon", "Mars", "Jupiter"] },
-  "Pisces": { best: ["Jupiter", "Moon", "Mars"], avg: ["Sun"], avoid: ["Venus", "Mercury", "Saturn"] }
-};
-
-const HORA_ACTIVITIES = {
-  "Sun": { p: "Power, Identity, Status", a: "Applying for government tenders, meeting the CEO, starting a political campaign, wearing a ruby, performed Havan." },
-  "Moon": { p: "Growth, Public Reach, Mental Peace", a: "Public speeches, traveling over water, buying silver, grocery business, joining a club, meeting mother figure." },
-  "Mars": { p: "Courage, Property, Victory", a: "Signing property papers, starting gym/sports, court hearings, surgery, land excavation, dealing with fire/electricity." },
-  "Mercury": { p: "Logic, Commerce, Communication", a: "Accounting, publishing a book, coding, marketing, sending an important email, learning astrology, opening a shop." },
-  "Jupiter": { p: "Expansion, Wealth, Wisdom", a: "Marriage rituals, banking, starting a course, pilgrimage, legal advice, gold investment, Charity." },
-  "Venus": { p: "Luxury, Love, Beauty", a: "First dates, buying a luxury car, fashion design, beauty treatments, interior decoration, music, signing creative contracts." },
-  "Saturn": { p: "Stability, Discipline, Endings", a: "Research, laying a foundation stone, cleaning, labor contracts, dealing with iron/oil, starting meditation." }
-};
+// Constants moved to top
 
 function getPersonalHoraInsight(horaLord, birthAscSign, janmaNak) {
   const map = LAGNA_HORA_MAPPING[birthAscSign] || { best:[], avg:[], avoid:[] };
@@ -6830,5 +6361,7 @@ if(typeof renderAll === 'function') renderAll();
   }
 });
 </script>
+<script src="src/predictions/AI_prediction.js"></script>
+<!-- Scripts moved -->
 </body>
 </html>

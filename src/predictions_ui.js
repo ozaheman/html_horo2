@@ -117,6 +117,26 @@ function initPredictionsUI() {
     }
   }
   
+  const btnMarriageAnalysis = document.getElementById('btnMarriageAnalysis');
+  const closeMarriage = document.getElementById('closeMarriage');
+  const marriagePanel = document.getElementById('marriagePanel');
+
+  if (btnMarriageAnalysis && marriagePanel) {
+    btnMarriageAnalysis.addEventListener('click', () => {
+      if (typeof runMarriageAnalysis === 'function') {
+        runMarriageAnalysis();
+      } else {
+        marriagePanel.classList.add('open');
+        console.error("runMarriageAnalysis not found in marriage.js");
+      }
+    });
+  }
+  if (closeMarriage && marriagePanel) {
+    closeMarriage.addEventListener('click', () => {
+      marriagePanel.classList.remove('open');
+    });
+  }
+
   console.log('✅ Predictions UI initialized');
 }
 
@@ -205,6 +225,53 @@ async function updatePredictionsDisplay() {
                   window.BIRTH_SAHAMS = vSahams;
               }
           }
+      }
+    } else if (mode === 'ai') {
+      await showProgress('Synthesizing 19-Factor AI Prediction...');
+      const d1 = window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {};
+      const asc = window.CURRENT_ASCENDANT || window.BIRTH_ASC || { signIndex: 0 };
+      const bDate = window.BIRTH?.date || new Date();
+      const targetDate = PREDICTIONS_UI.currentStartDate || new Date();
+      const age = targetDate.getFullYear() - bDate.getFullYear();
+      
+      const dashaInfo = window.PREDICTION_FORECASTING ? window.PREDICTION_FORECASTING.getCurrentDashaInfo(targetDate) : null;
+      const transitJupiter = d1.Jupiter || {};
+
+      const planetsArr = Object.entries(d1).map(([name, data]) => {
+          const deg = data.sid !== undefined ? data.sid : (data.longitude || 0);
+          return {
+            name,
+            degree: deg,
+            longitude: deg,
+            signIndex: Math.floor(deg / 30),
+            house: data.house || 1,
+            sign: data.sign || "",
+            isRetrograde: !!data.isRetrograde
+          };
+      });
+      
+      const inputData = { 
+          planets: planetsArr, 
+          planetMap: d1,
+          asc: asc, 
+          age, 
+          dashaInfo, 
+          transitPlanets: d1, // Actually we should pass current transit if different
+          birthDate: bDate,
+          natalJupiterSign: window.BIRTH_PLANETS?.Jupiter?.signIndex || 0,
+          natalRahuSign: window.BIRTH_PLANETS?.Rahu?.signIndex || 0
+      };
+
+      html += window.AI_PREDICTION.generateHTMLReport(inputData);
+    } else if (mode === 'step2step') {
+      const d1 = window.CURRENT_PLANETARY_POSITIONS || {};
+      const asc = window.CURRENT_ASCENDANT || 0;
+      const houses = window.CURRENT_HOUSES || {};
+      const birthDate = window.BIRTH?.date || new Date();
+      if (window.STEP2STEP_PANCHANG) {
+         html += window.STEP2STEP_PANCHANG.analyze(d1, asc, houses, birthDate, window.BIRTH);
+      } else {
+         html += `<div class="pred-item">Error: step2step_panchang.js module not found</div>`;
       }
     } else if (mode === 'comprehensive') {
       const classicalFlatDB = [];
@@ -1186,8 +1253,20 @@ window.shiftPredDate = function(delta, unit) {
     return;
   }
   
-  let sDate = new Date(startInp.value + 'T00:00:00');
-  let eDate = new Date(endInp.value + 'T00:00:00');
+  const parseLocalDate = (str) => {
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d, 12, 0, 0); 
+  };
+
+  const formatLocalDate = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  let sDate = parseLocalDate(startInp.value);
+  let eDate = parseLocalDate(endInp.value);
   
   if (isNaN(sDate.getTime()) || isNaN(eDate.getTime())) return;
   
@@ -1201,20 +1280,18 @@ window.shiftPredDate = function(delta, unit) {
     sDate.setFullYear(sDate.getFullYear() + delta);
     eDate.setFullYear(eDate.getFullYear() + delta);
   } else {
-    sDate.setDate(sDate.getDate() + (delta * shiftDays));
-    eDate.setDate(eDate.getDate() + (delta * shiftDays));
+    sDate.setDate(sDate.getDate() + (delta * (shiftDays || 30)));
   }
   
-  startInp.value = sDate.toISOString().split('T')[0];
-  endInp.value = eDate.toISOString().split('T')[0];
+  startInp.value = formatLocalDate(sDate);
+  endInp.value = formatLocalDate(eDate);
   
-  // Sync global centerDate used by the transit charts so visualization updates
   if (typeof window.centerDate !== 'undefined') {
       window.centerDate = new Date(sDate.getTime());
-      window.centerDate.setHours(12,0,0,0); // Avoid timezone shift bugs
+      window.centerDate.setHours(12,0,0,0);
       
       const tdateInp = document.getElementById('tDate');
-      if (tdateInp) tdateInp.value = sDate.toISOString().split('T')[0];
+      if (tdateInp) tdateInp.value = formatLocalDate(sDate);
       
       if (typeof window.renderAll === 'function') {
           window.renderAll();
@@ -1226,4 +1303,19 @@ window.shiftPredDate = function(delta, unit) {
       btnUpdatePredictions.click();
   }
 };
+
+/**
+ * Specialized Marriage Panel Update
+ */
+/**
+ * Specialized Marriage Panel Update (Deprecated: Now handled by src/marriage.js)
+ */
+async function updateMarriagePanel() {
+  if (typeof runMarriageAnalysis === 'function') {
+    runMarriageAnalysis();
+  } else {
+    console.error("runMarriageAnalysis not found in marriage.js");
+  }
+}
+
 

@@ -68,7 +68,7 @@ window.MATCHING.calculateAshtakoota = function(boyNak, boyPada, boySign, girlNak
     };
 };
 
-function doChartMatching() {
+window.doChartMatching = function() {
     // Read current user chart dynamically
     let userDate = window.BIRTH?.date;
     if (!userDate) {
