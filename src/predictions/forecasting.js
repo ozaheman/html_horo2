@@ -48,6 +48,62 @@ window.PREDICTION_FORECASTING = {
   /**
    * Find active dasha for given Julian Day
    */
+   
+   // --- ADD TO forecasting.js ---
+
+    /**
+     * Advanced Dasha Evaluation (Based on V.P. Goel / Classical Sutras)
+     * Evaluates Dual-Lordship, Moolatrikona, and Mutual Placements (MD vs AD)
+     */
+    evaluateDashaLord: function(mdLordName, adLordName, planets, ascendant) {
+        if (!planets[mdLordName] || !planets[adLordName]) return null;
+
+        const mdP = planets[mdLordName];
+        const adP = planets[adLordName];
+        
+        // 1. Mutual Distance (Saha-Dharma)
+        const mutualDistance = ((adP.house - mdP.house + 12) % 12) + 1;
+        let mutualRelation = "Neutral";
+        let mutualEffect = "";
+
+        if ([5, 9].includes(mutualDistance)) {
+            mutualRelation = "Navpancham (5/9 - Trine)";
+            mutualEffect = "Highly auspicious. The AD lord supports the MD lord. Excellent growth, learning, and ease of operations.";
+        } else if ([6, 8].includes(mutualDistance)) {
+            mutualRelation = "Shadashtak (6/8)";
+            mutualEffect = "Transformational and challenging. Sudden changes, health issues, or intense hard work required. The AD lord opposes the MD lord's agenda.";
+        } else if ([2, 12].includes(mutualDistance)) {
+            mutualRelation = "Dwi-Dvadash (2/12)";
+            mutualEffect = "Loss, investment, or relocation. One planet drains the energy of the other. Good for foreign travel or spiritual pursuits.";
+        } else if (mutualDistance === 7) {
+            mutualRelation = "Sam-Saptak (1/7)";
+            mutualEffect = "Opposing but complementary. Intense focus on partnerships, marriage, or public life. Can bring conflict but also manifestation.";
+        } else if (mutualDistance === 1) {
+            mutualRelation = "Conjunction (1/1)";
+            mutualEffect = "Intense focus on the house they occupy. Energies are blended.";
+        }
+
+        // 2. Moolatrikona vs Placement Result (First Half vs Second Half logic)
+        let dualLordshipLogic = "";
+        const moolatrikonaData = window.ASTRO_CONSTANTS ? window.ASTRO_CONSTANTS.MULATRIKONA[mdLordName] : null;
+        
+        if (moolatrikonaData) {
+            const moolSign = moolatrikonaData.sign;
+            const isOddSign = mdP.signIndex % 2 !== 0; // True if Odd (Aries, Gemini, etc.)
+            
+            dualLordshipLogic = `According to classical texts, a planet in an ODD sign gives results of its first zodiac sign in the first half of the Dasha, and the second sign in the second half. `;
+            dualLordshipLogic += `However, functionally, the planet will predominantly give results of the house where its Moolatrikona sign (${window.ASTRO_CONSTANTS.SIGNS[moolSign]}) falls, AND heavily relies on its placement from the Antardasha Lord.`;
+        }
+
+        return {
+            mdLord: mdLordName,
+            adLord: adLordName,
+            mutualHouseDistance: `${mutualDistance} houses away`,
+            relationshipType: mutualRelation,
+            effect: mutualEffect,
+            dashaProgressionRule: dualLordshipLogic
+        };
+    },
   findActiveDasha: function(dashaArray, jd) {
     if (!Array.isArray(dashaArray)) return null;
     

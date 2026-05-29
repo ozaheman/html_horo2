@@ -1,3 +1,4 @@
+
 /**
  * Step by Step Panchang & Rotated Kundalis Prediction Module
  */
@@ -45,20 +46,45 @@ window.STEP2STEP_PANCHANG = {
 
     const nakInfo = window.getNakshatra ? window.getNakshatra(moonLon) : { name: 'Unknown', pada: 1 };
 
-    const SIGNS = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+    const SIGNS = window.ASTRO_CONSTANTS ? window.ASTRO_CONSTANTS.SIGNS : ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
     const moonSign = SIGNS[Math.floor(moonLon/30)];
-    const sunSign = SIGNS[Math.floor((planets.Sun.longitude)/30)] || "Unknown"; // Western sun sign approximated via sayana lon
+    const sunSign = SIGNS[Math.floor((planets.Sun.longitude)/30)] || "Unknown"; 
     
-    // Attempt Shadbala string
+    // SHADBALA ADVANCED VISUALIZATION
     let sbHtml = "";
     if (window.SHADBALA && typeof window.SHADBALA.calculateAll === "function") {
       const sb = window.SHADBALA.calculateAll(planets, ascendant.longitude);
-      sbHtml = `<div style="font-size:10px; color:var(--text); margin-top:10px;">
-        <strong style="color:var(--cyan);">Basic Strength (Shadbala Proxy View):</strong><br>`;
+      sbHtml = `<div style="margin-top:15px; border-top:1px solid var(--border2); padding-top:10px;">
+        <strong style="color:var(--cyan); font-size:12px; margin-bottom:8px; display:block;">Shadbala (Planetary Strength) - Achieved vs Required</strong>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px;">`;
+      
+      // Typical baseline requirements scaled to our engine's standard 0-200 output model
+      const reqMap = { Sun: 110, Moon: 130, Mars: 100, Mercury: 140, Jupiter: 130, Venus: 110, Saturn: 100 };
+      
       Object.keys(sb).forEach(p => {
-        sbHtml += `<span style="display:inline-block; margin-right:10px;">${p}: ${Math.floor(sb[p].totalRupas)} Rupas</span> `;
+        const ach = Math.floor(sb[p].totalRupas);
+        const req = reqMap[p] || 100;
+        const pct = Math.min(100, Math.round((ach / req) * 100));
+        const color = ach >= req ? 'var(--green)' : (ach >= req * 0.75 ? 'var(--gold)' : 'var(--rose)');
+        const effectLabel = ach >= req ? 'Manifests fully' : 'Requires support';
+        
+        sbHtml += `
+          <div style="background:rgba(0,0,0,0.2); padding:8px; border-radius:4px; font-size:10px; color:var(--text); border:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <strong style="color:${color};">${p}</strong>
+              <span style="color:var(--muted);">${ach} / ${req}</span>
+            </div>
+            <div style="height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; margin-bottom:4px;">
+              <div style="height:100%; width:${pct}%; background:${color}; box-shadow: 0 0 5px ${color}88;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:8px;">
+              <span style="color:var(--muted);">${effectLabel}</span>
+              <span style="color:${color}; font-weight:bold;">${sb[p].details.level}</span>
+            </div>
+          </div>
+        `;
       });
-      sbHtml += "</div>";
+      sbHtml += `</div></div>`;
     }
 
     let html = `
@@ -90,7 +116,7 @@ window.STEP2STEP_PANCHANG = {
       
       let dayKey = bCtx.date ? bCtx.date.getDay() : null;
       if (dayKey === null && window.BIRTH && window.BIRTH.date) dayKey = window.BIRTH.date.getDay(); 
-      if (dayKey === null) dayKey = dayStr.split(',')[0].toLowerCase(); // Fallback string
+      if (dayKey === null) dayKey = dayStr.split(',')[0].toLowerCase(); 
 
       const dayPred = window.AP_PREDICTION_DAY.get(dayKey);
       const tithiPred = window.AP_PREDICTION_TITHI.get(tithiNum);
@@ -154,6 +180,190 @@ window.STEP2STEP_PANCHANG = {
       html += `</div></div>`;
     }
 
+    // ─────────────────────────────────────────────────────────────────
+    // STEP-BY-STEP KARMIC AXIS CALCULATION (Per Prompt)
+    // ─────────────────────────────────────────────────────────────────
+    let stepHtml = `<div class="pred-item" style="border-left: 3px solid var(--violet); margin-top:20px;">
+        <div class="pred-title" style="color:var(--violet); font-size:14px; text-align:center; margin-bottom:15px;">Step-by-Step Astrological Derivation (Karmic Axis)</div>
+        <div style="font-family:'Courier New', monospace; font-size:11px; color:var(--text); line-height:1.7; background:rgba(0,0,0,0.25); padding:15px; border-radius:6px; border:1px solid rgba(255,255,255,0.05); overflow-x:auto;">`;
+
+    try {
+        const LORDS = window.ASTRO_CONSTANTS.SIGN_LORDS;
+        const pNames = window.ASTRO_CONSTANTS.PLANETS.slice(0, 9);
+        const ascSn = ascendant.sn || Math.floor((ascendant.sid || ascendant.longitude) / 30);
+        const ascDegInSign = (ascendant.deg !== undefined) ? ascendant.deg : ((ascendant.sid || ascendant.longitude) % 30);
+        const h8Sn = (ascSn + 7) % 12;
+        const h8Lord = LORDS[h8Sn];
+
+        // Step 1
+        stepHtml += `<div style="color:var(--gold2); font-weight:bold; margin-bottom:4px; font-size:12px;">1. Ascendant and Basic Rashi Positions</div>`;
+        stepHtml += `<div style="margin-bottom:12px; padding-left:10px; border-left:2px solid rgba(255,255,255,0.1);">`;
+        stepHtml += `Ascendant = ${SIGNS[ascSn]} (${ascDegInSign.toFixed(2)}°)<br><br>`;
+        stepHtml += `<table style="width:100%; max-width:300px; color:var(--muted); border-collapse:collapse; text-align:left;">`;
+        stepHtml += `<tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><th style="padding:2px 0;">House</th><th style="padding:2px 0;">Sign</th><th style="padding:2px 0;">Planets</th></tr>`;
+        
+        let houseMap = {};
+        for(let i=1; i<=12; i++) {
+            let sn = (ascSn + i - 1) % 12;
+            let occupants = pNames.filter(p => planets[p] && Math.floor((planets[p].sid || planets[p].longitude) / 30) === sn);
+            if (occupants.length > 0 || i === 1 || i === 8 || i === 10) {
+               houseMap[i] = { sign: SIGNS[sn], occupants: occupants };
+               stepHtml += `<tr><td style="padding:2px 0;">${i}</td><td style="padding:2px 0;">${SIGNS[sn]}</td><td style="padding:2px 0;">${occupants.length > 0 ? occupants.join(', ') : 'None'}</td></tr>`;
+            }
+        }
+        stepHtml += `</table></div>`;
+
+        // Step 2
+        stepHtml += `<div style="color:var(--gold2); font-weight:bold; margin-bottom:4px; font-size:12px;">2. Randhreshvara (8th Lord)</div>`;
+        stepHtml += `<div style="margin-bottom:12px; padding-left:10px; border-left:2px solid rgba(255,255,255,0.1);">`;
+        stepHtml += `The 8th house from ${SIGNS[ascSn]} is ${SIGNS[h8Sn]}.<br>`;
+        stepHtml += `Lord of ${SIGNS[h8Sn]} is ${h8Lord} (in D1 natal chart).<br>`;
+        stepHtml += `<strong style="color:var(--cyan);">Therefore: Randhreshvara = ${h8Lord}</strong></div>`;
+
+        // Step 3
+        stepHtml += `<div style="color:var(--gold2); font-weight:bold; margin-bottom:4px; font-size:12px;">3. Randhra Yukta (Planets occupying 8th house)</div>`;
+        stepHtml += `<div style="margin-bottom:12px; padding-left:10px; border-left:2px solid rgba(255,255,255,0.1);">`;
+        stepHtml += `8th house = ${SIGNS[h8Sn]}.<br>`;
+        let occ8 = pNames.filter(p => planets[p] && Math.floor((planets[p].sid || planets[p].longitude)/30) === h8Sn);
+        stepHtml += `Check planets in ${SIGNS[h8Sn]}: ${occ8.length > 0 ? occ8.join(', ') : 'None'}.<br>`;
+        stepHtml += `<strong style="color:var(--cyan);">Therefore: Randhra Yukta = ${occ8.length > 0 ? occ8.join(', ') : 'None'}</strong></div>`;
+
+        // Step 4
+        stepHtml += `<div style="color:var(--gold2); font-weight:bold; margin-bottom:4px; font-size:12px;">4. Randhra Drishta (Planets aspecting 8th house)</div>`;
+        stepHtml += `<div style="margin-bottom:12px; padding-left:10px; border-left:2px solid rgba(255,255,255,0.1);">`;
+        stepHtml += `Checking 7th aspect for all planets, and special aspects for Mars, Jupiter, Saturn, Rahu, and Ketu on ${SIGNS[h8Sn]}.<br>`;
+        let asp8 = [];
+        pNames.forEach(p => {
+           if (!planets[p]) return;
+           let pSn = Math.floor((planets[p].sid || planets[p].longitude)/30);
+           if (pSn === h8Sn) return; // In house, not aspecting
+           let dist = (h8Sn - pSn + 12) % 12; // 0-11
+           let aspecting = false;
+           let aspectType = "";
+           
+           if (dist === 6) { aspecting = true; aspectType = "7th"; }
+           else if (p === 'Mars' && dist === 3) { aspecting = true; aspectType = "4th"; }
+           else if (p === 'Mars' && dist === 7) { aspecting = true; aspectType = "8th"; }
+           else if (['Jupiter', 'Rahu', 'Ketu'].includes(p) && dist === 4) { aspecting = true; aspectType = "5th"; }
+           else if (['Jupiter', 'Rahu', 'Ketu'].includes(p) && dist === 8) { aspecting = true; aspectType = "9th"; }
+           else if (p === 'Saturn' && dist === 2) { aspecting = true; aspectType = "3rd"; }
+           else if (p === 'Saturn' && dist === 9) { aspecting = true; aspectType = "10th"; }
+
+           if (aspecting) {
+               asp8.push(p);
+               stepHtml += `${p} from ${SIGNS[pSn]} casts its ${aspectType} aspect to ${SIGNS[h8Sn]}.<br>`;
+           }
+        });
+        if (asp8.length === 0) stepHtml += `No planets cast an aspect to ${SIGNS[h8Sn]}.<br>`;
+        stepHtml += `<strong style="color:var(--cyan);">Therefore: Randhra Drishta = ${asp8.length > 0 ? asp8.join(', ') : 'None'}</strong></div>`;
+
+        // Step 5
+        stepHtml += `<div style="color:var(--gold2); font-weight:bold; margin-bottom:4px; font-size:12px;">5. Randhreshvara Yuti (Conjunction with 8th Lord)</div>`;
+        stepHtml += `<div style="margin-bottom:12px; padding-left:10px; border-left:2px solid rgba(255,255,255,0.1);">`;
+        stepHtml += `8th lord = ${h8Lord}.<br>`;
+        let h8LordSn = planets[h8Lord] ? Math.floor((planets[h8Lord].sid || planets[h8Lord].longitude)/30) : -1;
+        let yuti8 = [];
+        if (h8LordSn !== -1) {
+            yuti8 = pNames.filter(p => p !== h8Lord && planets[p] && Math.floor((planets[p].sid || planets[p].longitude)/30) === h8LordSn);
+            stepHtml += `Checking conjunction with the 8th lord in its placed house:<br>`;
+            stepHtml += `${h8Lord} is placed in ${SIGNS[h8LordSn]} with ${yuti8.length > 0 ? yuti8.join(', ') : 'no other planets'}.<br>`;
+        } else {
+            stepHtml += `${h8Lord} position is unavailable.<br>`;
+        }
+        stepHtml += `<strong style="color:var(--cyan);">Therefore: Randhreshvara Yuti = ${yuti8.length > 0 ? yuti8.join(', ') : 'None'}</strong></div>`;
+
+        // Step 6
+        stepHtml += `<div style="color:var(--gold2); font-weight:bold; margin-bottom:4px; font-size:12px;">6. Kharesha (22nd Drekkana Lord)</div>`;
+        stepHtml += `<div style="margin-bottom:12px; padding-left:10px; border-left:2px solid rgba(255,255,255,0.1);">`;
+        
+        let ascAbs = ascendant.sid || ascendant.longitude;
+        let kharesha = '-';
+        if (typeof window.getVargaData === 'function') {
+            let d3AscSign = window.getVargaData(ascAbs, 3).sign;
+            // The 22nd Drekkana corresponds to the 8th house in the D3 chart.
+            let h8D3Sign = (d3AscSign + 7) % 12;
+            kharesha = LORDS[h8D3Sign];
+            
+            stepHtml += `Seeking D3 (Drekkana) chart:<br>`;
+            stepHtml += `D3 Ascendant is ${SIGNS[d3AscSign]}.<br>`;
+            stepHtml += `The 22nd Drekkana corresponds to the 8th house in the D3 chart.<br>`;
+            stepHtml += `The 8th house in D3 is ${SIGNS[h8D3Sign]}.<br>`;
+            stepHtml += `Lord of ${SIGNS[h8D3Sign]} is ${kharesha}.<br>`;
+            stepHtml += `<strong style="color:var(--cyan);">Therefore: Kharesha = ${kharesha}</strong></div>`;
+        } else {
+            // Fallback logic
+            let d3Idx = Math.floor(ascDegInSign / 10);
+            let kharD3Sign = (h8Sn + d3Idx * 4) % 12;
+            kharesha = LORDS[kharD3Sign];
+            stepHtml += `D3 calculation fallback. 22nd Drekkana sign is ${SIGNS[kharD3Sign]}. Lord is ${kharesha}.<br>`;
+            stepHtml += `<strong style="color:var(--cyan);">Therefore: Kharesha = ${kharesha}</strong></div>`;
+        }
+
+        // Step 7
+        stepHtml += `<div style="color:var(--gold2); font-weight:bold; margin-bottom:4px; font-size:12px;">7. 64th Navamsha from Moon</div>`;
+        stepHtml += `<div style="margin-bottom:12px; padding-left:10px; border-left:2px solid rgba(255,255,255,0.1);">`;
+        if (planets.Moon) {
+            let mDeg = (planets.Moon.sid || planets.Moon.longitude);
+            let mDegInSign = mDeg % 30;
+            let mSn = Math.floor(mDeg/30);
+            
+            // Formula: +210 degrees gives exact 64th Navamsha
+            let khar64LonMoon = (mDeg + 210) % 360;
+            let m64D9Sn = typeof window.getVargaData === 'function' ? window.getVargaData(khar64LonMoon, 9).sign : 0;
+            let m64Lord = LORDS[m64D9Sn];
+            
+            stepHtml += `Moon is in ${SIGNS[mSn]} at ${mDegInSign.toFixed(2)}°.<br>`;
+            stepHtml += `Adding 210° (exactly 64 Navamshas = 7 signs + 1 Navamsha equivalence).<br>`;
+            stepHtml += `This projects to ${SIGNS[Math.floor(khar64LonMoon/30)]} ${(khar64LonMoon%30).toFixed(2)}°.<br>`;
+            stepHtml += `The Navamsha of this point falls in ${SIGNS[m64D9Sn]}.<br>`;
+            stepHtml += `${SIGNS[m64D9Sn]} is ruled by ${m64Lord}.<br>`;
+            stepHtml += `<strong style="color:var(--cyan);">Therefore: 64th Navamsha from Moon = ${m64Lord}</strong></div>`;
+        } else {
+            stepHtml += `Moon data unavailable.</div>`;
+        }
+
+        // Step 8
+        stepHtml += `<div style="color:var(--gold2); font-weight:bold; margin-bottom:4px; font-size:12px;">8. 64th Navamsha from Ascendant</div>`;
+        stepHtml += `<div style="margin-bottom:12px; padding-left:10px; border-left:2px solid rgba(255,255,255,0.1);">`;
+        let khar64LonAsc = (ascAbs + 210) % 360;
+        let a64D9Sn = typeof window.getVargaData === 'function' ? window.getVargaData(khar64LonAsc, 9).sign : 0;
+        let a64Lord = LORDS[a64D9Sn];
+        
+        stepHtml += `Ascendant is in ${SIGNS[ascSn]} at ${ascDegInSign.toFixed(2)}°.<br>`;
+        stepHtml += `Adding 210° projects to ${SIGNS[Math.floor(khar64LonAsc/30)]} ${(khar64LonAsc%30).toFixed(2)}°.<br>`;
+        stepHtml += `The Navamsha of this point falls in ${SIGNS[a64D9Sn]}.<br>`;
+        stepHtml += `${SIGNS[a64D9Sn]} is ruled by ${a64Lord}.<br>`;
+        stepHtml += `<strong style="color:var(--cyan);">Therefore: 64th Navamsha from Ascendant = ${a64Lord}</strong></div>`;
+
+        // Final Summary
+        stepHtml += `<div style="color:var(--gold2); font-weight:bold; margin-top:20px; margin-bottom:4px; font-size:12px;">Final Summary Table</div>`;
+        stepHtml += `<table style="width:100%; max-width:400px; color:var(--text); border-collapse:collapse; text-align:left; border:1px solid rgba(255,255,255,0.1);">`;
+        stepHtml += `<tr style="background:rgba(255,255,255,0.05);"><th style="padding:4px 8px; border:1px solid rgba(255,255,255,0.1);">Factor</th><th style="padding:4px 8px; border:1px solid rgba(255,255,255,0.1);">Result</th></tr>`;
+        stepHtml += `<tr><td style="padding:4px 8px; border:1px solid rgba(255,255,255,0.1);">Randhreshvara (8th Lord)</td><td style="padding:4px 8px; border:1px solid rgba(255,255,255,0.1); font-weight:bold; color:var(--cyan);">${h8Lord}</td></tr>`;
+        stepHtml += `<tr><td style="padding:4px 8px; border:1px solid rgba(255,255,255,0.1);">Randhra Yukta</td><td style="padding:4px 8px; border:1px solid rgba(255,255,255,0.1); font-weight:bold; color:var(--cyan);">${occ8.length > 0 ? occ8.join(', ') : 'None'}</td></tr>`;
+        stepHtml += `<tr><td style="padding:4px 8px; border:1px solid rgba(255,255,255,0.1);">Randhra Drishta</td><td style="padding:4px 8px; border:1px solid rgba(255,255,255,0.1); font-weight:bold; color:var(--cyan);">${asp8.length > 0 ? asp8.join(', ') : 'None'}</td></tr>`;
+        stepHtml += `<tr><td style="padding:4px 8px; border:1px solid rgba(255,255,255,0.1);">Randhreshvara Yuti</td><td style="padding:4px 8px; border:1px solid rgba(255,255,255,0.1); font-weight:bold; color:var(--cyan);">${yuti8.length > 0 ? yuti8.join(', ') : 'None'}</td></tr>`;
+        stepHtml += `<tr><td style="padding:4px 8px; border:1px solid rgba(255,255,255,0.1);">Kharesha (22nd Drek Lord)</td><td style="padding:4px 8px; border:1px solid rgba(255,255,255,0.1); font-weight:bold; color:var(--rose);">${kharesha}</td></tr>`;
+        
+        let m64L = planets.Moon ? LORDS[(typeof window.getVargaData === 'function' ? window.getVargaData(((planets.Moon.sid||planets.Moon.longitude)+210)%360, 9).sign : 0)] : '-';
+        stepHtml += `<tr><td style="padding:4px 8px; border:1px solid rgba(255,255,255,0.1);">64th Navamsha from Moon</td><td style="padding:4px 8px; border:1px solid rgba(255,255,255,0.1); font-weight:bold; color:var(--rose);">${m64L}</td></tr>`;
+        stepHtml += `<tr><td style="padding:4px 8px; border:1px solid rgba(255,255,255,0.1);">64th Navamsha from Asc</td><td style="padding:4px 8px; border:1px solid rgba(255,255,255,0.1); font-weight:bold; color:var(--rose);">${a64Lord}</td></tr>`;
+        stepHtml += `</table>`;
+
+        // Gather unique karmic planets
+        let karmicSet = new Set([h8Lord, ...occ8, ...asp8, ...yuti8, kharesha, m64L, a64Lord]);
+        karmicSet.delete('None');
+        karmicSet.delete('-');
+        
+        stepHtml += `<div style="margin-top:12px; font-style:italic; color:var(--muted);">These combinations show strong karmic activation through: <strong style="color:var(--text);">${Array.from(karmicSet).join(', ')}</strong>. Watch these planets carefully during their Mahadasha or transit over sensitive points.</div>`;
+
+    } catch(e) {
+        stepHtml += `<div style="color:var(--rose)">Error computing step-by-step breakdown: ${e.message}</div>`;
+    }
+
+    stepHtml += `</div></div>`;
+    html += stepHtml;
+
     // 2. Rotated Kundalis (12 Horoscopes)
     html += `<div class="pred-item" style="border-left: 3px solid var(--cyan); margin-top:20px;">
         <div class="pred-title" style="color:var(--cyan); font-size:14px; text-align:center;">12 Horoscopes (Rotated Kundalis)</div>
@@ -210,10 +420,11 @@ window.STEP2STEP_PANCHANG = {
             svgContent = `<div style="text-align:center; padding:20px; color:red;">SVG Engine Offline</div>`;
         }
 
+        let lagnaTitle = i === 0 ? `Natal Chart (1st House) - ${rotAscSignName}` : `Horoscope ${i+1} : ${rotAscSignName} Lagna (${i+1}th House)`;
         // HTML for this rotated chart
         html += `<div style="background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:4px; margin-bottom:15px; padding:10px; display:flex; flex-direction:column; align-items:center; overflow:hidden;">
             <div style="font-size:12px; font-weight:bold; color:var(--gold2); margin-bottom:0px; border-bottom:1px solid var(--border2); padding-bottom:4px; width:100%; text-align:center;">
-               Horoscope ${i+1} : ${rotAscSignName} Lagna
+               ${lagnaTitle}
             </div>
             <div style="transform: scale(0.85); transform-origin: top center; margin-bottom:-45px;">
                 ${svgContent}
@@ -227,27 +438,41 @@ window.STEP2STEP_PANCHANG = {
     html += `</div>`; // End 12 Horoscopes
 
     // 3. Deep Astrological Tables
+    let navData = null;
+    if (window.NAVAMSHA_ANALYSIS && typeof window.NAVAMSHA_ANALYSIS.calculate === 'function') {
+        navData = window.NAVAMSHA_ANALYSIS.calculate(planets, ascendant);
+    }
+    
     html += `<div class="pred-item" style="border-left: 3px solid #ff4757; margin-top:20px;">
         <div class="pred-title" style="color:#ff4757; font-size:14px; text-align:center;">Deep Astrological Tables</div>
         <div style="display:grid; grid-template-columns:1fr; gap:15px; margin-top:10px;">
     `;
 
-    // A. Planets Nakshatra Chart
+    // A. Planets Nakshatra, Degree & Vish Navamsha
     html += `<div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:10px; overflow-x:auto;">
-        <div style="color:var(--gold); font-size:12px; margin-bottom:8px; font-weight:bold; border-bottom:1px solid var(--border2); padding-bottom:4px;">✨ Nakshatra & Pada Chart</div>
+        <div style="color:var(--gold); font-size:12px; margin-bottom:8px; font-weight:bold; border-bottom:1px solid var(--border2); padding-bottom:4px;">✨ Nakshatra, Degrees & Vish Status</div>
         <table style="width:100%; font-size:10px; color:var(--text); text-align:left; border-collapse: collapse;">
             <tr style="color:var(--cyan); border-bottom:1px solid var(--border2);">
                 <th style="padding:4px;">Planet</th>
-                <th style="padding:4px;">Nakshatra</th>
-                <th style="padding:4px;">Pada</th>
+                <th style="padding:4px;">Degree</th>
+                <th style="padding:4px;">Nakshatra (Pada)</th>
                 <th style="padding:4px;">Lord</th>
+                <th style="padding:4px;">Vish Navamsha?</th>
             </tr>
     `;
     planetList.forEach(p => {
         if(planets[p]) {
             let lon = planets[p].sid !== undefined ? planets[p].sid : planets[p].longitude;
+            let degStr = (lon % 30).toFixed(2) + "°";
             let nakInfo = (typeof window.determineNakshatra === 'function') ? window.determineNakshatra(lon) : {name:'-', pada:'-', lord:'-'};
-            html += `<tr><td style="padding:4px;">${p}</td><td style="padding:4px;">${nakInfo.name}</td><td style="padding:4px;">${nakInfo.pada}</td><td style="padding:4px;">${nakInfo.lord}</td></tr>`;
+            
+            let isVish = '-';
+            if (navData && navData.vishPlanets) {
+                let vp = navData.vishPlanets.find(v => v.name === p);
+                if (vp) isVish = `<span style="color:#ff4757;font-weight:bold;">Yes${vp.sunHora ? ' (Sun Hora)' : ''}</span>`;
+            }
+            
+            html += `<tr><td style="padding:4px;">${p}</td><td style="padding:4px; font-family:monospace;">${degStr}</td><td style="padding:4px;">${nakInfo.name} (${nakInfo.pada})</td><td style="padding:4px;">${nakInfo.lord}</td><td style="padding:4px;">${isVish}</td></tr>`;
         }
     });
     html += `</table></div>`;
@@ -264,14 +489,12 @@ window.STEP2STEP_PANCHANG = {
             </tr>
     `;
     planetList.forEach(p => {
-        if(planets[p] && typeof window.getVargaSign === 'function') {
+        if(planets[p] && typeof window.getVargaData === 'function') {
             let lon = planets[p].sid !== undefined ? planets[p].sid : planets[p].longitude;
-            let signDeg = lon % 30;
-            let signNum = Math.floor(lon / 30);
             
-            let d1 = SIGNS[(window.getVargaSign(signDeg, signNum, "D1-Rashi") - 1) % 12];
-            let d9 = SIGNS[(window.getVargaSign(signDeg, signNum, "D9-Navamsa") - 1) % 12];
-            let d10 = SIGNS[(window.getVargaSign(signDeg, signNum, "D10-Dasamsa") - 1) % 12];
+            let d1 = SIGNS[window.getVargaData(lon, 1).sign];
+            let d9 = SIGNS[window.getVargaData(lon, 9).sign];
+            let d10 = SIGNS[window.getVargaData(lon, 10).sign];
             
             html += `<tr><td style="padding:4px;">${p}</td><td style="padding:4px;">${d1}</td><td style="padding:4px;">${d9}</td><td style="padding:4px;">${d10}</td></tr>`;
         }
@@ -280,46 +503,41 @@ window.STEP2STEP_PANCHANG = {
 
     // C. Planetary Friendship & Shadbala
     html += `<div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:10px; overflow-x:auto;">
-        <div style="color:var(--gold); font-size:12px; margin-bottom:8px; font-weight:bold; border-bottom:1px solid var(--border2); padding-bottom:4px;">⚔️ Planetary Friendships & Shadbala</div>
+        <div style="color:var(--gold); font-size:12px; margin-bottom:8px; font-weight:bold; border-bottom:1px solid var(--border2); padding-bottom:4px;">⚔️ Planetary Friendships</div>
         <table style="width:100%; font-size:10px; color:var(--text); text-align:left; border-collapse: collapse;">
             <tr style="color:var(--cyan); border-bottom:1px solid var(--border2);">
                 <th style="padding:4px;">Planet</th>
-                <th style="padding:4px;">Shadbala (Rupas)</th>
-                <th style="padding:4px;">Natural Friends</th>
-                <th style="padding:4px;">Enemies</th>
+                <th style="padding:4px;">Five-Fold Friends</th>
+                <th style="padding:4px;">Five-Fold Enemies</th>
             </tr>
     `;
-    const naturalFriends = {
-        'Sun': { f: 'Moon, Mars, Jup', e: 'Ven, Sat' },
-        'Moon': { f: 'Sun, Mer', e: 'None' },
-        'Mars': { f: 'Sun, Moon, Jup', e: 'Mer' },
-        'Mercury': { f: 'Sun, Ven', e: 'Moon' },
-        'Jupiter': { f: 'Sun, Moon, Mars', e: 'Mer, Ven' },
-        'Venus': { f: 'Mer, Sat', e: 'Sun, Moon' },
-        'Saturn': { f: 'Mer, Ven', e: 'Sun, Moon, Mars' },
-        'Rahu': { f: 'Jup, Ven, Sat', e: 'Sun, Moon, Mars' },
-        'Ketu': { f: 'Mars, Ven, Sat', e: 'Sun, Moon' }
-    };
-    
-    let sbData = null;
-    if (window.SHADBALA && typeof window.SHADBALA.calculateAll === "function") {
-        sbData = window.SHADBALA.calculateAll(planets, ascendant.longitude);
+
+    let gmData = null;
+    if (window.GRAHA_MAITRI && typeof window.GRAHA_MAITRI.calculateRelationships === "function") {
+        gmData = window.GRAHA_MAITRI.calculateRelationships(planets);
     }
     
     planetList.forEach(p => {
         if(planets[p]) {
-            let sbVal = sbData && sbData[p] ? Math.floor(sbData[p].totalRupas) : 'N/A';
-            let fr = naturalFriends[p] ? naturalFriends[p].f : '-';
-            let en = naturalFriends[p] ? naturalFriends[p].e : '-';
-            html += `<tr><td style="padding:4px; font-weight:bold;">${p}</td><td style="padding:4px;">${sbVal}</td><td style="padding:4px; color:#2ed573;">${fr}</td><td style="padding:4px; color:#ff4757;">${en}</td></tr>`;
+            let fList = [];
+            let eList = [];
+            if (gmData && gmData[p]) {
+                Object.keys(gmData[p]).forEach(p2 => {
+                    let st = gmData[p][p2].fiveFold;
+                    if (st === 'Intimate' || st === 'Friend') fList.push(p2);
+                    else if (st === 'Enemy' || st === 'Bitter') eList.push(p2);
+                });
+            }
+            let fr = fList.length > 0 ? fList.join(', ') : '-';
+            let en = eList.length > 0 ? eList.join(', ') : '-';
+            
+            html += `<tr><td style="padding:4px; font-weight:bold;">${p}</td><td style="padding:4px; color:#2ed573;">${fr}</td><td style="padding:4px; color:#ff4757;">${en}</td></tr>`;
         }
     });
-    html += `</table></div></div></div>`; // End table and section
+    html += `</table></div></div></div>`; 
 
     // 4. Navamsha (D9) & Khar (Poisonous) Analysis
-    if (window.NAVAMSHA_ANALYSIS && typeof window.NAVAMSHA_ANALYSIS.calculate === 'function') {
-        const navData = window.NAVAMSHA_ANALYSIS.calculate(planets, ascendant);
-        
+    if (navData) {
         html += `<div class="pred-item" style="border-left: 3px solid #ff9f43; margin-top:20px;">
             <div class="pred-title" style="color:#ff9f43; font-size:14px; text-align:center;">Deep Navamsha & Khar Analysis</div>
             <div style="font-size:10px; color:var(--muted); text-align:center; margin-bottom:15px;">Jaimini Karakas, 64th Navamsha, 22nd Drekkana, and Poisonous Navamshas.</div>
@@ -341,12 +559,42 @@ window.STEP2STEP_PANCHANG = {
                 <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:10px;">
                     <div style="color:var(--gold); font-size:11px; margin-bottom:6px; font-weight:bold; border-bottom:1px solid var(--border2); padding-bottom:4px;">☠️ Khar (Malefic) Points</div>
                     <div style="font-size:9.5px; color:var(--text); line-height:1.6;">
-                        <span style="color:var(--rose)">64th Navamsha Lord:</span> <strong>${navData.Khar64Lord}</strong><br/>
+                        <span style="color:var(--rose)">64th Navamsha Lord (Moon):</span> <strong>${navData.Khar64Lord}</strong><br/>
+                        <span style="color:var(--rose)">64th Navamsha Lord (Asc):</span> <strong>${navData.Khar64Lord_Asc || '-'}</strong><br/>
                         <span style="color:var(--rose)">22nd Drekkana Lord:</span> <strong>${navData.Khar22Lord}</strong><br/>
-                        <span style="color:var(--rose)">Double Khar Planet:</span> <strong>${navData.DoubleKhar}</strong>
+                        <span style="color:var(--rose)">Double Khar Planet:</span> <strong>${navData.DoubleKhar || '-'}</strong>
                     </div>
                 </div>
             </div>`;
+            
+        if (navData.Khar64_AllBodies) {
+             html += `<div style="background:rgba(255,99,71,0.05); border:1px solid rgba(255,99,71,0.2); border-radius:6px; padding:10px; margin-top:10px; overflow-x:auto;">
+                 <div style="color:#ff6b6b; font-size:12px; margin-bottom:8px; font-weight:bold; text-align:center;">🎯 64th Navamsha Step-by-Step Positions</div>
+                 <div style="font-size:9px; color:var(--muted); text-align:center; margin-bottom:8px;">8th House from Rasi and 4th from Natal D9 (+210 Degrees). Check Transit Planets crossing these exact degrees.</div>
+                 <table style="width:100%; font-size:9.5px; color:var(--text); text-align:left; border-collapse: collapse;">
+                     <tr style="color:var(--cyan); border-bottom:1px solid rgba(255,99,71,0.2);">
+                         <th style="padding:4px;">Planet/Point</th>
+                         <th style="padding:4px;">Navamsa Span</th>
+                         <th style="padding:4px;">In 8th Rasi</th>
+                         <th style="padding:4px;">Exact 210° Point</th>
+                         <th style="padding:4px;">Span Degrees</th>
+                         <th style="padding:4px;">Lord</th>
+                     </tr>`;
+             
+             navData.Khar64_AllBodies.forEach(b => {
+                 let rasiName = SIGNS[b.rasi64];
+                 let navName = SIGNS[b.navamsa64Sign];
+                 html += `<tr>
+                     <td style="padding:4px; font-weight:bold;">${b.name}</td>
+                     <td style="padding:4px;">${navName}</td>
+                     <td style="padding:4px;">${rasiName}</td>
+                     <td style="padding:4px; color:#ff4757; font-weight:bold;">${b.pointLon.toFixed(4)}°</td>
+                     <td style="padding:4px; font-family:monospace; color:var(--gold2);">${b.startDeg.toFixed(4)}° - ${b.endDeg.toFixed(4)}°</td>
+                     <td style="padding:4px;">${b.navamsa64Lord}</td>
+                 </tr>`;
+             });
+             html += `</table></div>`;
+        }
 
         // Vish Block
         html += `<div style="background:rgba(255,99,71,0.05); border:1px solid rgba(255,99,71,0.2); border-radius:6px; padding:10px; margin-top:10px;">
@@ -371,30 +619,11 @@ window.STEP2STEP_PANCHANG = {
     // 5. Analytical Blueprint: Timeline & House Matrix
     html += `<div class="pred-item" style="border-left: 3px solid #00cec9; margin-top:20px;">
         <div class="pred-title" style="color:#00cec9; font-size:14px; text-align:center;">Dynamic Analytical Blueprint</div>
-        <div style="font-size:10px; color:var(--muted); text-align:center; margin-bottom:15px;">Dasha Timeline & 10th House Matrix for Advanced Life Path Tracking.</div>
+        <div style="font-size:10px; color:var(--muted); text-align:center; margin-bottom:15px;">10th House Matrix for Advanced Life Path Tracking.</div>
     `;
 
-    // 5A. Vimshottari Dasha Timeline
-    let dInfo = window.PREDICTION_FORECASTING ? window.PREDICTION_FORECASTING.getCurrentDashaInfo(new Date()) : null;
-    if (dInfo && dInfo.mahadasha) {
-        html += `<div style="background:rgba(0,0,0,0.2); border:1px solid var(--border2); border-radius:4px; padding:10px; margin-bottom:15px;">
-            <div style="color:var(--cyan); font-size:11px; margin-bottom:4px; font-weight:bold;">⏳ Vimshottari Timeline</div>
-            <div style="display:flex; justify-content:space-between; font-size:10px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:5px;">
-                <span><strong>Mahadasha (MD):</strong> ${dInfo.mahadasha.lord}</span>
-                <span style="color:var(--muted)">${dInfo.daysRemainingInMD ? Math.round(dInfo.daysRemainingInMD) : '?'} days left</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:10px; margin-top:5px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:5px;">
-                <span><strong>Antardasha (AD):</strong> ${dInfo.antardasha?.lord || '-'}</span>
-                <span style="color:var(--muted)">${dInfo.daysRemainingInAD ? Math.round(dInfo.daysRemainingInAD) : '?'} days left</span>
-            </div>
-            <div style="font-size:10px; margin-top:5px;">
-                <strong>Pratyantardasha (PD):</strong> <span style="color:var(--gold);">${dInfo.pratyantar?.lord || '-'}</span>
-            </div>
-        </div>`;
-    }
-
     // 5B. 10th House Analysis Matrix
-    const LORDS = ['Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter'];
+    const LORDS = window.ASTRO_CONSTANTS.SIGN_LORDS;
     let h10SignNum = (baseAscSign + 9) % 12;
     let h10LordName = LORDS[h10SignNum];
 
@@ -407,9 +636,9 @@ window.STEP2STEP_PANCHANG = {
         let d1Sign = Math.floor(lon / 30);
         dispositorName = LORDS[d1Sign];
 
-        if (typeof window.getVargaSign === 'function') {
-            let d9Sign = window.getVargaSign(lon % 30, d1Sign, "D9-Navamsa") - 1;
-            d9DispositorName = LORDS[(d9Sign + 12) % 12];
+        if (typeof window.getVargaData === 'function') {
+            let d9Sign = window.getVargaData(lon, 9).sign;
+            d9DispositorName = LORDS[d9Sign];
         }
     }
 
@@ -419,7 +648,6 @@ window.STEP2STEP_PANCHANG = {
     let fromSun = h10LordPlanet ? (((Math.floor((h10LordPlanet.sid !== undefined ? h10LordPlanet.sid : h10LordPlanet.longitude)/30) - sunPos + 12) % 12) + 1) : '-';
     let fromMoon = h10LordPlanet ? (((Math.floor((h10LordPlanet.sid !== undefined ? h10LordPlanet.sid : h10LordPlanet.longitude)/30) - moonPos + 12) % 12) + 1) : '-';
     
-    // We already have navData if the block above executed, else we manually compute it or leave it
     let navDataReference = (window.NAVAMSHA_ANALYSIS && typeof window.NAVAMSHA_ANALYSIS.calculate === 'function') ? window.NAVAMSHA_ANALYSIS.calculate(planets, ascendant) : null;
     let kSignName = navDataReference?.KarakamsaSign;
     let aSignName = navDataReference?.ArudhaLagna;
@@ -428,13 +656,6 @@ window.STEP2STEP_PANCHANG = {
     
     let fromKarakamsa = (h10LordPlanet && kPos !== -1) ? (((Math.floor((h10LordPlanet.sid !== undefined ? h10LordPlanet.sid : h10LordPlanet.longitude)/30) - kPos + 12) % 12) + 1) : '-';
     let fromArudha = (h10LordPlanet && aPos !== -1) ? (((Math.floor((h10LordPlanet.sid !== undefined ? h10LordPlanet.sid : h10LordPlanet.longitude)/30) - aPos + 12) % 12) + 1) : '-';
-
-    let dashaLordName = dInfo?.mahadasha?.lord;
-    let fromDasha = '-';
-    if (dashaLordName && planets[dashaLordName] && h10LordPlanet) {
-        let dlPos = Math.floor((planets[dashaLordName].sid !== undefined ? planets[dashaLordName].sid : planets[dashaLordName].longitude) / 30);
-        fromDasha = (((Math.floor((h10LordPlanet.sid !== undefined ? h10LordPlanet.sid : h10LordPlanet.longitude)/30) - dlPos + 12) % 12) + 1);
-    }
 
     let conj = [];
     if (h10LordPlanet) {
@@ -502,12 +723,6 @@ window.STEP2STEP_PANCHANG = {
                 <td style="padding:4px; border-bottom:1px solid rgba(255,255,255,0.05);">From Arudha Lagna</td>
                 <td style="padding:4px; border-bottom:1px solid rgba(255,255,255,0.05); font-weight:bold; color:var(--gold2)">H${fromArudha}</td>
             </tr>
-            <tr>
-                <td style="padding:4px; border-bottom:1px solid rgba(255,255,255,0.05);">From Dasha Lord (${dashaLordName || '-'})</td>
-                <td style="padding:4px; border-bottom:1px solid rgba(255,255,255,0.05); font-weight:bold; color:var(--gold2)">H${fromDasha}</td>
-            </tr>
-        </table>
-
         </table>
 
         <div style="font-size:9.5px; margin-bottom:4px;">

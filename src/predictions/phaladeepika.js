@@ -9,15 +9,21 @@
  * - getPlanetaryResultsByHouse()  : All classical results for planet in each house
  */
 
+/**
+ * PREDICTION SYSTEM - Phaladeepika Rule Engine
+ * Classical astrology interpretation based on Phaladeepika and Jaimini texts
+ * 
+ * Key Functions:
+ * - applyPhaladeepika()           : Get classic rules for planet in house/sign/aspect
+ * - getPhaladeepikaPrediction()   : Full predictive report
+ * - interpretYogaWithPhaladeepika(): Yoga interpretation using classic rules
+ * - getPlanetaryResultsByHouse()  : All classical results for planet in each house
+ */
+
 window.PREDICTION_PHALADEEPIKA = {
   
   /**
    * Apply Phaladeepika classical rules for a planet in given house/sign
-   * @param {String} planetName - Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu
-   * @param {Number} house - House number (1-12)
-   * @param {String} sign - Sign name (Aries, Taurus, etc.)
-   * @param {Array} aspects - Array of aspecting planets
-   * @returns {Array} Classical prediction texts
    */
   applyPhaladeepika: function(planetName, house, sign, aspects = []) {
     const predictions = [];
@@ -43,8 +49,6 @@ window.PREDICTION_PHALADEEPIKA = {
   
   /**
    * Generate comprehensive Phaladeepika prediction report
-   * @param {Object} birthChart - Current chart object
-   * @returns {Object} Complete predictive analysis
    */
   getPhaladeepikaPrediction: function(birthChart = window.BIRTH_PLANETS) {
     if (!birthChart) return null;
@@ -60,9 +64,8 @@ window.PREDICTION_PHALADEEPIKA = {
       recommendations: []
     };
     
-    const planetNames = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
-    const signNames = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
-                      'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+    const planetNames = window.ASTRO_CONSTANTS.PLANETS;
+    const signNames = window.ASTRO_CONSTANTS.SIGNS;
     
     planetNames.forEach(planetName => {
       const planet = birthChart[planetName];
@@ -111,9 +114,6 @@ window.PREDICTION_PHALADEEPIKA = {
   
   /**
    * Interpret yoga using Phaladeepika context
-   * @param {Object} yoga - Yoga definition
-   * @param {Object} charts - Chart data (can include divisional charts)
-   * @returns {Object} Context-aware interpretation
    */
   interpretYogaWithPhaladeepika: function(yoga, charts = {}) {
     const interpretation = {
@@ -139,7 +139,6 @@ window.PREDICTION_PHALADEEPIKA = {
   
   /**
    * Get all Phaladeepika planetary results organized by house
-   * @returns {Object} House-wise results for each planet
    */
   getPlanetaryResultsByHouse: function() {
     return {
@@ -274,17 +273,11 @@ window.PREDICTION_PHALADEEPIKA = {
   
   // ===== HELPER FUNCTIONS =====
   
-  /**
-   * Get planet in house rule
-   */
   getPlanetInHouseRule: function(planetName, house) {
     const rules = this.getPlanetaryResultsByHouse();
     return rules[planetName]?.[house] || null;
   },
   
-  /**
-   * Get planet in sign modifier
-   */
   getPlanetInSignRule: function(planetName, sign) {
     const signModifiers = {
       'Sun': { 'Leo': 'Strength doubles in Leo', 'Libra': 'Weakened in Libra' },
@@ -298,9 +291,6 @@ window.PREDICTION_PHALADEEPIKA = {
     return signModifiers[planetName]?.[sign] || '';
   },
   
-  /**
-   * Get aspect modifier
-   */
   getAspectModifier: function(aspectingPlanet, targetPlanet, type) {
     if (type === 'Favorable') {
       return `${aspectingPlanet}'s favorable aspect strengthens ${targetPlanet}'s significations`;
@@ -310,9 +300,6 @@ window.PREDICTION_PHALADEEPIKA = {
     return '';
   },
   
-  /**
-   * Get Phaladeepika meaning for yoga
-   */
   getPhaladeepikaMeaning: function(yogaName) {
     const meanings = {
       'Raj Yoga': 'Kendra/Trikona lords conjunction - ultimate power yoga',
@@ -324,9 +311,6 @@ window.PREDICTION_PHALADEEPIKA = {
     return meanings[yogaName] || yogaName + ' - See complete text';
   },
   
-  /**
-   * Get dignity interpretation
-   */
   getDignityInterpretation: function(status) {
     const interpretations = {
       'Own': 'Excellent dignity - full power',
@@ -340,77 +324,41 @@ window.PREDICTION_PHALADEEPIKA = {
     return interpretations[status] || 'Check dignity carefully';
   },
   
-  /**
-   * Get yoga-specific rules
-   */
   getYogaSpecificRules: function(yogaName) {
     return `Check if the yoga is fully formed. Check if planets are retrograde. Check divisional charts for confirmation.`;
   },
   
-  /**
-   * Get yoga cancellation factors
-   */
   getYogaCancellationFactors: function(yogaName) {
     return `Yoga can be cancelled by opposite indicators. Check Kriyaman Yoga. Check current dasha compatibility.`;
   },
   
-  /**
-   * Get yoga supporting factors
-   */
   getYogaSupportingFactors: function(yogaName) {
     return `Supporting yogas amplify the effect. Strong dasha lord increases manifestation.`;
   },
   
-  /**
-   * Get yoga applications
-   */
   getYogaApplications: function(yogaName) {
     return ['Career advancement', 'Financial growth', 'Relationship matters', 'Health improvement'];
   },
   
-  /**
-   * Get gemstones for deities
-   */
   getGemstonesForDeities: function(deities) {
-    const gemMapping = {
-      'Sun': 'Ruby', 'Moon': 'Pearl', 'Mars': 'Coral',
-      'Mercury': 'Emerald', 'Jupiter': 'Yellow Sapphire',
-      'Venus': 'Diamond/White Sapphire', 'Saturn': 'Blue Sapphire',
-      'Shiva': 'Blue Sapphire', 'Vishnu': 'Emerald', 'Lakshmi': 'Diamond'
-    };
+    const gemMapping = window.ASTRO_CONSTANTS.GEMSTONES;
     return deities.map(d => gemMapping[d] || d);
   },
   
-  /**
-   * Get yoga activation period (which dasha)
-   */
   getYogaActivationPeriod: function(yogaName) {
     return 'Yoga activates during Mahadasha/Antardasha of yoga lord or involved planets';
   },
   
-  /**
-   * Get yoga expected outcomes
-   */
   getYogaOutcomes: function(yogaName) {
     return ['Success in endeavors', 'Wealth and prosperity', 'Recognition and respect', 'Good health', 'Family happiness'];
   },
   
-  /**
-   * Recommend gemstone
-   */
   recommendGemstone: function(planetName, status) {
-    const gemstones = {
-      'Sun': 'Ruby', 'Moon': 'Pearl', 'Mars': 'Coral',
-      'Mercury': 'Emerald', 'Jupiter': 'Yellow Sapphire',
-      'Venus': 'Diamond', 'Saturn': 'Blue Sapphire'
-    };
-    if (['Deb.', 'Enemy'].includes(status)) return `4-5 carat ${gemstones[planetName] || 'recommended stone'}`;
-    return `Consider ${gemstones[planetName] || 'auspicious stone'} if needed`;
+    const gem = window.ASTRO_CONSTANTS.GEMSTONES[planetName] || 'recommended stone';
+    if (['Deb.', 'Enemy'].includes(status)) return `4-5 carat ${gem}`;
+    return `Consider ${gem} if needed`;
   },
   
-  /**
-   * Recommend mantra
-   */
   recommendMantra: function(planetName) {
     const mantras = {
       'Sun': 'Om Suryaya Namaha (108x daily)',
@@ -424,9 +372,6 @@ window.PREDICTION_PHALADEEPIKA = {
     return mantras[planetName] || 'Planetary mantra 108x daily';
   },
   
-  /**
-   * Get planetary day
-   */
   getPlanetaryDay: function(planetName) {
     const days = {
       'Sun': 'Sunday', 'Moon': 'Monday', 'Mars': 'Tuesday',
@@ -436,9 +381,6 @@ window.PREDICTION_PHALADEEPIKA = {
     return days[planetName] || 'Specific planetary day';
   },
   
-  /**
-   * Generate overall interpretation
-   */
   generateOverallInterpretation: function(birthChart, strengths, challenges) {
     let text = 'Based on Phaladeepika analysis: ';
     if (strengths.length > 0) {
@@ -451,9 +393,6 @@ window.PREDICTION_PHALADEEPIKA = {
     return text;
   },
   
-  /**
-   * Generate recommendations
-   */
   generateRecommendations: function(birthChart) {
     return [
       'Perform weekly appropriate planetary pierchas',

@@ -23,15 +23,14 @@ window.PREDICTION_ANALYSIS = {
     if (!birthChart) return [];
     
     const planetData = [];
-    const planetNames = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
+    const planetNames = window.ASTRO_CONSTANTS.PLANETS;
+    const signNames = window.ASTRO_CONSTANTS.SIGNS;
     
     planetNames.forEach(name => {
       const p = birthChart[name];
       if (!p) return;
       
       const signNum = p.sn || 0;
-      const signNames = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
-                        'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
       const signName = signNames[signNum % 12];
       
       const degree = parseInt(p.deg) || 0;
@@ -68,7 +67,8 @@ window.PREDICTION_ANALYSIS = {
     if (!birthChart) return [];
     
     const conjunctions = [];
-    const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
+    const planets = window.ASTRO_CONSTANTS.PLANETS;
+    const signNames = window.ASTRO_CONSTANTS.SIGNS;
     const ORB = 8; // Standard orb for conjunction
     
     for (let i = 0; i < planets.length; i++) {
@@ -87,8 +87,7 @@ window.PREDICTION_ANALYSIS = {
             conjunctions.push({
               planet1: planets[i],
               planet2: planets[j],
-              sign: ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
-                    'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'][p1.sn],
+              sign: signNames[p1.sn],
               orb: actualOrb,
               strength: this.scoreConjunction(planets[i], planets[j], actualOrb)
             });
@@ -106,12 +105,10 @@ window.PREDICTION_ANALYSIS = {
   scoreConjunction: function(p1, p2, orb) {
     let score = 80 - (orb * 10); // Base on orb (exact = 80, 8° = 0)
     
-    // Benefic pairs get bonus
-    const benefics = ['Jupiter', 'Venus', 'Mercury', 'Moon'];
+    const benefics = window.ASTRO_CONSTANTS.BENEFICS;
     if (benefics.includes(p1) && benefics.includes(p2)) score += 20;
     
-    // Malefic pairs get penalty
-    const malefics = ['Mars', 'Saturn', 'Rahu', 'Ketu'];
+    const malefics = window.ASTRO_CONSTANTS.MALEFICS;
     if (malefics.includes(p1) && malefics.includes(p2)) score -= 15;
     
     return Math.min(100, Math.max(0, score));
@@ -176,8 +173,8 @@ window.PREDICTION_ANALYSIS = {
    * Score aspect as favorable or unfavorable
    */
   scoreAspectType: function(aspectingPlanet, targetPlanet) {
-    const benefics = ['Jupiter', 'Venus', 'Mercury', 'Moon'];
-    const malefics = ['Mars', 'Saturn', 'Rahu', 'Ketu'];
+    const benefics = window.ASTRO_CONSTANTS.BENEFICS;
+    const malefics = window.ASTRO_CONSTANTS.MALEFICS;
     
     const aspectingIsBenefic = benefics.includes(aspectingPlanet);
     const targetIsBenefic = benefics.includes(targetPlanet);
@@ -205,7 +202,7 @@ window.PREDICTION_ANALYSIS = {
     if (!birthChart) return [];
     
     const degrees = [];
-    ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'].forEach(name => {
+    window.ASTRO_CONSTANTS.PLANETS.forEach(name => {
       const p = birthChart[name];
       if (!p) return;
       
@@ -235,7 +232,7 @@ window.PREDICTION_ANALYSIS = {
     if (!birthChart) return null;
     
     const planetNaks = {};
-    ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'].forEach(name => {
+    window.ASTRO_CONSTANTS.PLANETS.forEach(name => {
       const p = birthChart[name];
       if (!p) return;
       
@@ -270,9 +267,6 @@ window.PREDICTION_ANALYSIS = {
    * @returns {Object} Complete analysis for that chart
    */
   getChartAnalysisByDivisor: function(divisor = 1) {
-    // Note: This function assumes divisional chart data is already calculated
-    // In index.html, use computeAllVargas() and load the specific varga
-    
     return {
       divisor: divisor,
       chartName: this.getDivisionalChartName(divisor),
@@ -293,8 +287,7 @@ window.PREDICTION_ANALYSIS = {
     if (!birthChart) return [];
     
     const houses = [];
-    const signNames = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
-                      'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+    const signNames = window.ASTRO_CONSTANTS.SIGNS;
     const asc = window.BIRTH_ASC || {};
     const ascSn = asc.sn || 0;
     
@@ -304,7 +297,7 @@ window.PREDICTION_ANALYSIS = {
       
       // Planets in this house
       const planetsInHouse = [];
-      ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'].forEach(name => {
+      window.ASTRO_CONSTANTS.PLANETS.forEach(name => {
         const p = birthChart[name];
         if (p && p.house === h) {
           planetsInHouse.push({
@@ -358,21 +351,8 @@ window.PREDICTION_ANALYSIS = {
    * Get house significance meanings
    */
   getHouseSignificance: function(houseNum) {
-    const significance = {
-      1: 'Self, personality, appearance, health',
-      2: 'Wealth, family, speech, food',
-      3: 'Siblings, courage, communication, short travel',
-      4: 'Mother, property, vehicles, home, emotions',
-      5: 'Children, education, creativity, romance',
-      6: 'Health, enemies, service, debts, diseases',
-      7: 'Spouse, partnerships, public image, marriage',
-      8: 'Longevity, inheritance, occult, transformation',
-      9: 'Luck, father, spirituality, long travel, dharma',
-      10: 'Career, status, public life, achievements',
-      11: 'Gains, friends, networks, income, hopes',
-      12: 'Losses, expenses, foreign travel, spirituality, liberation'
-    };
-    return significance[houseNum] || '';
+    const significance = window.ASTRO_CONSTANTS.HOUSE_SIGNIFICATIONS[houseNum];
+    return significance ? significance.keywords : '';
   },
   
   /**
@@ -405,47 +385,22 @@ window.PREDICTION_ANALYSIS = {
  * Helper: Get nakshatra lord
  */
 function getNakshatraLord(nakName) {
-  const lords = {
-    'Ashwini': 'Ketu', 'Bharani': 'Venus', 'Krittika': 'Sun',
-    'Rohini': 'Moon', 'Mrigashira': 'Mars', 'Ardra': 'Rahu',
-    'Punarvasu': 'Jupiter', 'Pushya': 'Saturn', 'Aslesha': 'Mercury',
-    'Magha': 'Ketu', 'Purva Phalguni': 'Venus', 'Uttara Phalguni': 'Sun',
-    'Hasta': 'Moon', 'Chitra': 'Mars', 'Swati': 'Rahu',
-    'Vishakha': 'Jupiter', 'Anuradha': 'Saturn', 'Jyeshtha': 'Mercury',
-    'Mula': 'Ketu', 'Purvashadha': 'Venus', 'Uttarashadha': 'Sun',
-    'Sravana': 'Moon', 'Dhanishta': 'Mars', 'Shatabhisha': 'Rahu',
-    'Purva Bhadrapada': 'Jupiter', 'Uttara Bhadrapada': 'Saturn',
-    'Revati': 'Mercury'
-  };
-  return lords[nakName] || 'Unknown';
+  const nak = window.ASTRO_CONSTANTS.NAKSHATRAS.find(n => n.name === nakName);
+  return nak ? nak.lord : 'Unknown';
 }
 
 /**
  * Helper: Get nakshatra nature
  */
 function getNakshatraNature(nakName) {
-  const natures = {
-    'Ashwini': 'Mobile, quick, energetic',
-    'Bharani': 'Stable but controlled',
-    'Krittika': 'Sharp, cutting, fierce',
-    'Rohini': 'Creative, domestic, fertile',
-    'Mrigashira': 'Curious, nervous, restless',
-    'Ardra': 'Fierce, extreme, transformative',
-    'Punarvasu': 'Return, repetition, positive',
-    'Pushya': 'Nourishing, supportive, best',
-    'Aslesha': 'Secretive, mysterious, cunning'
-  };
-  return natures[nakName] || 'See Nakshatra details';
+  const nak = window.ASTRO_CONSTANTS.NAKSHATRAS.find(n => n.name === nakName);
+  return nak ? nak.nature : 'See Nakshatra details';
 }
 
 /**
  * Helper: Get sign lord (Rashi lord)
  */
 function getSignLord(signName) {
-  const lords = {
-    'Aries': 'Mars', 'Taurus': 'Venus', 'Gemini': 'Mercury', 'Cancer': 'Moon',
-    'Leo': 'Sun', 'Virgo': 'Mercury', 'Libra': 'Venus', 'Scorpio': 'Mars',
-    'Sagittarius': 'Jupiter', 'Capricorn': 'Saturn', 'Aquarius': 'Saturn', 'Pisces': 'Jupiter'
-  };
-  return lords[signName] || 'Unknown';
+  const signIndex = window.ASTRO_CONSTANTS.SIGNS.indexOf(signName);
+  return window.ASTRO_CONSTANTS.SIGN_LORDS[signIndex] || 'Unknown';
 }

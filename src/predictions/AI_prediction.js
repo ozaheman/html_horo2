@@ -152,6 +152,60 @@ const AI_PREDICTION = (function() {
      * @param {number} rotatedHouse - The house in the rotated chart (e.g., 2 for Mother's wealth)
      * @returns {string} - What this rotated house represents
      */
+     
+     // --- REPLACE IN AI_prediction.js ---
+
+    /**
+     * Generate 12 Rotated Horoscopes (Bhavat Bhavam)
+     * Horoscope 1 = Natal Chart. Horoscope 2 = 2nd House as Ascendant (Wealth), etc.
+     */
+    function generate12RotatedHoroscopes(planets, natalAsc) {
+        const rotatedCharts = [];
+        const ascSignIndex = natalAsc.signIndex !== undefined ? natalAsc.signIndex : 0;
+
+        for (let h = 1; h <= 12; h++) {
+            // New Ascendant Sign for this rotation
+            const newAscSignIndex = (ascSignIndex + h - 1) % 12;
+            const focusSignification = HOUSE_SIGNIFICATIONS[h];
+
+            const rotatedPlanets = planets.map(p => {
+                const planetSign = p.signIndex !== undefined ? p.signIndex : Math.floor((p.longitude || p.degree) / 30);
+                // Calculate new house relative to the new Ascendant
+                const newHouse = ((planetSign - newAscSignIndex + 12) % 12) + 1;
+                
+                return {
+                    name: p.name,
+                    natalHouse: p.house,
+                    rotatedHouse: newHouse,
+                    sign: SIGNS[planetSign],
+                    signIndex: planetSign
+                };
+            });
+
+            rotatedCharts.push({
+                chartNumber: h,
+                focusArea: focusSignification.name,
+                keywords: focusSignification.keywords,
+                rotatedAscendant: SIGNS[newAscSignIndex],
+                planets: rotatedPlanets,
+                analysis: analyzeRotatedChart(h, rotatedPlanets, newAscSignIndex)
+            });
+        }
+        return rotatedCharts;
+    }
+
+    function analyzeRotatedChart(chartNum, rotatedPlanets, newAscIndex) {
+        let summary = `Treating House ${chartNum} as Lagna. `;
+        const ascLord = SIGN_LORDS[newAscIndex];
+        const lordPos = rotatedPlanets.find(p => p.name === ascLord);
+        
+        if (lordPos) {
+            summary += `The lord of this area (${ascLord}) goes to the rotated ${lordPos.rotatedHouse}th house. `;
+            if ([6, 8, 12].includes(lordPos.rotatedHouse)) summary += `This brings struggle and transformation to this life area. `;
+            if ([1, 4, 7, 10, 5, 9].includes(lordPos.rotatedHouse)) summary += `This brings strength and natural growth to this area. `;
+        }
+        return summary;
+    }
     function getRotatedSignificance(baseHouse, rotatedHouse) {
         // The rotated house represents the same signification as that house number
         // but applied to the life area of the base house

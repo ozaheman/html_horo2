@@ -4,12 +4,15 @@
  * Khar Points (64th Navamsha, 22nd Drekkana), and Vish (Poisonous) Navamshas.
  */
 
-window.NAVAMSHA_ANALYSIS = {
-    SIGNS: ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'],
-    SIGN_LORDS: ['Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter'],
+/**
+ * navamsha_analysis.js
+ * Comprehensive logic for Navamsha (D9) insights, Jaimini Karakas, 
+ * Khar Points (64th Navamsha, 22nd Drekkana), and Vish (Poisonous) Navamshas.
+ */
 
+window.NAVAMSHA_ANALYSIS = {
     getSignLord: function(signIndex) {
-        return this.SIGN_LORDS[signIndex];
+        return window.ASTRO_CONSTANTS.SIGN_LORDS[signIndex];
     },
 
     /**
@@ -17,7 +20,7 @@ window.NAVAMSHA_ANALYSIS = {
      */
     calculateKarakas: function(planets) {
         let pArray = [];
-        const corePlanets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+        const corePlanets = window.ASTRO_CONSTANTS.PLANETS.slice(0, 7);
         
         corePlanets.forEach(p => {
             if (planets[p]) {
@@ -43,10 +46,6 @@ window.NAVAMSHA_ANALYSIS = {
     calculateArudha: function(houseIndex, lagnaSign) {
         let houseSign = (lagnaSign + houseIndex) % 12;
         let lord = this.getSignLord(houseSign);
-        
-        // Find lord's position
-        // This requires access to planet pos. 
-        // We'll pass it in from main calculate function.
         return { houseSign, lord };
     },
 
@@ -101,9 +100,8 @@ window.NAVAMSHA_ANALYSIS = {
         
         // Karakamsa
         if (karakas.AK) {
-            let akSignNum = Math.floor(karakas.AK.totalLon / 30);
-            let akD9 = window.getVargaSign ? window.getVargaSign(karakas.AK.degree, akSignNum, "D9-Navamsa") : 1;
-            results.KarakamsaSign = this.SIGNS[(akD9 - 1) % 12];
+            let akD9 = typeof getVargaData === 'function' ? getVargaData(karakas.AK.totalLon, 9).sign : 0;
+            results.KarakamsaSign = window.ASTRO_CONSTANTS.SIGNS[akD9];
         } else {
             results.KarakamsaSign = '-';
         }
@@ -112,62 +110,106 @@ window.NAVAMSHA_ANALYSIS = {
         let lagnaLord = this.getSignLord(ascSign);
         let lagnaLordPos = this.getLordSignPos(lagnaLord, planets);
         let AL_Sign = this.getPadSign(ascSign, lagnaLordPos);
-        results.ArudhaLagna = this.SIGNS[AL_Sign];
+        results.ArudhaLagna = window.ASTRO_CONSTANTS.SIGNS[AL_Sign];
 
         let twelfthSign = (ascSign + 11) % 12;
         let twelfthLord = this.getSignLord(twelfthSign);
         let twelfthLordPos = this.getLordSignPos(twelfthLord, planets);
         let UL_Sign = this.getPadSign(twelfthSign, twelfthLordPos);
-        results.UpapadaLagna = this.SIGNS[UL_Sign];
+        results.UpapadaLagna = window.ASTRO_CONSTANTS.SIGNS[UL_Sign];
 
         // 2. Khar Points
-        // 64th Navamsha (4th sign from Moon's Navamsha sign)
-        if (planets.Moon && window.getVargaSign) {
+        // 64th Navamsha = 210 degrees from Planet
+        if (planets.Moon && typeof getVargaData === 'function') {
             let moonLon = planets.Moon.longitude !== undefined ? planets.Moon.longitude : planets.Moon.sid;
-            let moonD9 = window.getVargaSign(moonLon % 30, Math.floor(moonLon / 30), "D9-Navamsa");
-            let navamsha64th = (moonD9 - 1 + 3) % 12; // 4th sign (index + 3)
+            let khar64Lon = (moonLon + 210) % 360;
+            let navamsha64th = getVargaData(khar64Lon, 9).sign;
             results.Khar64Lord = this.getSignLord(navamsha64th);
         } else {
             results.Khar64Lord = '-';
         }
 
-        // 22nd Drekkana (8th sign from Lagna's D3 sign)
-        if (window.getVargaSign) {
-            let lagnaD3 = window.getVargaSign(ascDeg, ascSign, "D3-Dreshkana");
-            let drekkana22nd = (lagnaD3 - 1 + 7) % 12; // 8th sign (index + 7)
+        // 64th Navamsha (4th sign from Ascendant's Navamsha sign)
+        if (typeof getVargaData === 'function') {
+            let khar64AscLon = (ascLon + 210) % 360;
+            let navamsha64th_asc = getVargaData(khar64AscLon, 9).sign;
+            results.Khar64Lord_Asc = this.getSignLord(navamsha64th_asc);
+        } else {
+            results.Khar64Lord_Asc = '-';
+        }
+
+        // 22nd Drekkana = 210 degrees from Ascendant
+        if (typeof getVargaData === 'function') {
+            let drekkana22Lon = (ascLon + 210) % 360;
+            let drekkana22nd = getVargaData(drekkana22Lon, 3).sign;
             results.Khar22Lord = this.getSignLord(drekkana22nd);
         } else {
             results.Khar22Lord = '-';
         }
+
+        // Step by Step 64th Navamsha Calculation array for all bodies
+        results.Khar64_AllBodies = [];
+        let rasiMultiplier = 30;
+        let navamsaLength = 3.3333333333333;
+
+        let calculate64thNav = (name, totalLon) => {
+             let kharPointLon = (totalLon + 210) % 360;
+             let signD1 = Math.floor(kharPointLon / rasiMultiplier);
+             let degInSign = kharPointLon % rasiMultiplier;
+             
+             let navIndex = Math.floor(degInSign / navamsaLength);
+             
+             let startDeg = (signD1 * rasiMultiplier) + (navIndex * navamsaLength);
+             let endDeg = startDeg + navamsaLength;
+             
+             let navamsa64Sign = typeof getVargaData === 'function' ? getVargaData(kharPointLon, 9).sign : 0;
+
+             return {
+                 name: name,
+                 rasi64: signD1,
+                 navamsa64Sign: navamsa64Sign,
+                 navamsa64Lord: this.getSignLord(navamsa64Sign),
+                 pointLon: parseFloat(kharPointLon.toFixed(4)),
+                 startDeg: parseFloat(startDeg.toFixed(4)),
+                 endDeg: parseFloat(endDeg.toFixed(4))
+             };
+        };
+
+        const allBodiesList = window.ASTRO_CONSTANTS.PLANETS;
+        results.Khar64_AllBodies.push(calculate64thNav('Lagna', ascLon));
+        allBodiesList.forEach(p => {
+             if (planets[p]) {
+                 let lon = planets[p].longitude !== undefined ? planets[p].longitude : planets[p].sid;
+                 results.Khar64_AllBodies.push(calculate64thNav(p, lon));
+             }
+        });
 
         results.DoubleKhar = (results.Khar64Lord !== '-' && results.Khar64Lord === results.Khar22Lord) ? results.Khar64Lord : 'None';
 
         // 3. Vish (Poisonous) Navamshas
         results.vishPlanets = [];
         
-        let groupA = [0, 1, 5, 8]; // Aries, Taurus, Virgo, Sagittarius
-        let groupB = [2, 4, 6, 10]; // Gemini, Leo, Libra, Aquarius
-        let groupC = [3, 7, 9, 11]; // Cancer, Scorpio, Capricorn, Pisces
+        let nav0_group = [0, 1, 5, 6, 7, 8]; 
+        let nav4_group = [2, 4, 10, 11];     
+        let nav8_group = [3, 9];             
 
-        let allPlanets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
-        allPlanets.forEach(p => {
+        allBodiesList.forEach(p => {
             if (planets[p]) {
                 let lon = planets[p].longitude !== undefined ? planets[p].longitude : planets[p].sid;
                 let sign = Math.floor(lon / 30);
                 let deg = lon % 30;
-                let navIndex = Math.floor(deg / (30/9)); // 0 to 8
+                let navIndex = Math.floor(deg / (30/9)); 
 
                 let isVish = false;
-                if (groupA.includes(sign) && navIndex === 0) isVish = true;
-                if (groupB.includes(sign) && navIndex === 4) isVish = true;
-                if (groupC.includes(sign) && navIndex === 8) isVish = true;
+                if (nav0_group.includes(sign) && navIndex === 0) isVish = true;
+                if (nav4_group.includes(sign) && navIndex === 4) isVish = true;
+                if (nav8_group.includes(sign) && navIndex === 8) isVish = true;
 
                 if (isVish) {
-                    // Check if in Sun's Hora (Leo = 5)
                     let isSunHora = false;
-                    if (window.getVargaSign) {
-                        let hora = window.getVargaSign(deg, sign, "D2-Hora");
-                        if (hora === 5) isSunHora = true;
+                    if (typeof getVargaData === 'function') {
+                        let hora = getVargaData(lon, 2).sign;
+                        if (hora === 4) isSunHora = true;
                     }
 
                     results.vishPlanets.push({

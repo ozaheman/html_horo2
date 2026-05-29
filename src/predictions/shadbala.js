@@ -4,6 +4,21 @@
  */
 
 window.SHADBALA = {
+    calculateAll: function(planets, ascLon) {
+        let results = {};
+        const planetList = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+        planetList.forEach(pName => {
+            if (planets[pName]) {
+                const res = this.calculate(pName, planets, ascLon);
+                results[pName] = {
+                    totalRupas: res.total, // Emitting 'totalRupas' as consumed by UI
+                    details: res
+                };
+            }
+        });
+        return results;
+    },
+
     /**
      * Calculates combined strength of a planet.
      * Returns a score object with components.

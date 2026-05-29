@@ -23,7 +23,7 @@ window.PREDICTION_ADVANCED = {
     if (!birthChart) return {};
     
     const khara = {};
-    const planetNames = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
+    const planetNames = window.ASTRO_CONSTANTS.PLANETS;
     
     planetNames.forEach(planetName => {
       const planet = birthChart[planetName];
@@ -81,9 +81,8 @@ window.PREDICTION_ADVANCED = {
       planets: {}
     };
     
-    const planetNames = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
-    const signNames = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
-                      'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+    const planetNames = window.ASTRO_CONSTANTS.PLANETS;
+    const signNames = window.ASTRO_CONSTANTS.SIGNS;
     
     planetNames.forEach(planetName => {
       const planet = window.BIRTH_PLANETS[planetName];
@@ -121,8 +120,7 @@ window.PREDICTION_ADVANCED = {
     
     if (!window.BIRTH_PLANETS) return null;
     
-    const signNames = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
-                      'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+    const signNames = window.ASTRO_CONSTANTS.SIGNS;
     
     const analysis = {
       divisor: '22nd House',
@@ -140,7 +138,7 @@ window.PREDICTION_ADVANCED = {
     analysis.lord = dekkana22Lord;
     analysis.position = signNames[dekkana22Sign % 12];
     
-    const planetNames = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
+    const planetNames = window.ASTRO_CONSTANTS.PLANETS;
     
     planetNames.forEach(planetName => {
       const planet = window.BIRTH_PLANETS[planetName];
@@ -172,8 +170,7 @@ window.PREDICTION_ADVANCED = {
     if (!window.BIRTH_ASC) return null;
     
     const cusps = [];
-    const signNames = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
-                      'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+    const signNames = window.ASTRO_CONSTANTS.SIGNS;
     
     const sensitiveHouses = [
       { house: 1, name: 'Ascendant (Lagna)', significance: 'Self, body, personality, life path' },
@@ -194,7 +191,7 @@ window.PREDICTION_ADVANCED = {
       
       // Find planets in this house
       const planetsInHouse = [];
-      ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'].forEach(p => {
+      window.ASTRO_CONSTANTS.PLANETS.forEach(p => {
         const planet = window.BIRTH_PLANETS[p];
         if (planet && planet.house === item.house) {
           planetsInHouse.push({
@@ -228,7 +225,7 @@ window.PREDICTION_ADVANCED = {
     if (!birthChart) return {};
     
     const analysis = {};
-    const planetNames = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+    const planetNames = window.ASTRO_CONSTANTS.PLANETS.slice(0, 7); // Main planets
     
     planetNames.forEach(planetName => {
       const planet = birthChart[planetName];
@@ -288,7 +285,7 @@ window.PREDICTION_ADVANCED = {
     const aspects = [];
     
     // In current dasha, these planet's aspects are considered more powerful
-    ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'].forEach(planet => {
+    window.ASTRO_CONSTANTS.PLANETS.slice(0, 7).forEach(planet => {
       if (window.BIRTH_PLANETS[planet]) {
         const isCurrentDashaLord = planet === mahaDasha || planet === antarDasha;
         
@@ -328,17 +325,11 @@ window.PREDICTION_ADVANCED = {
    * Estimate Navamsa dignity
    */
   estimateNavamsaDignity: function(planetName, navamsaSign) {
-    const ownSigns = {
-      'Sun': 4, 'Moon': 3, 'Mars': 0, 'Mercury': 5,
-      'Jupiter': 8, 'Venus': 6, 'Saturn': 1, 'Rahu': 5, 'Ketu': 11
-    };
-    const exaltSigns = {
-      'Sun': 9, 'Moon': 1, 'Mars': 9, 'Mercury': 5,
-      'Jupiter': 3, 'Venus': 11, 'Saturn': 6, 'Rahu': 2, 'Ketu': 10
-    };
-    
-    if (ownSigns[planetName] === navamsaSign) return 85;
-    if (exaltSigns[planetName] === navamsaSign) return 80;
+    const dData = window.ASTRO_CONSTANTS.DIGNITIES[planetName];
+    if (!dData) return 50;
+
+    if (dData.own.includes(navamsaSign)) return 85;
+    if (dData.exalt === navamsaSign) return 80;
     return 50;
   },
   
@@ -467,23 +458,78 @@ window.PREDICTION_ADVANCED = {
    * Get gemstone for planet
    */
   getGemstone: function(planetName) {
-    const gemstones = {
-      'Sun': 'Ruby', 'Moon': 'Pearl', 'Mars': 'Coral',
-      'Mercury': 'Emerald', 'Jupiter': 'Yellow Sapphire',
-      'Venus': 'Diamond', 'Saturn': 'Blue Sapphire'
-    };
-    return gemstones[planetName] || 'Recommended gemstone';
+    return window.ASTRO_CONSTANTS.GEMSTONES[planetName] || 'Recommended gemstone';
   },
   
   /**
    * Get sign lord
    */
   getSignLord: function(signName) {
-    const lords = {
-      'Aries': 'Mars', 'Taurus': 'Venus', 'Gemini': 'Mercury', 'Cancer': 'Moon',
-      'Leo': 'Sun', 'Virgo': 'Mercury', 'Libra': 'Venus', 'Scorpio': 'Mars',
-      'Sagittarius': 'Jupiter', 'Capricorn': 'Saturn', 'Aquarius': 'Saturn', 'Pisces': 'Jupiter'
-    };
-    return lords[signName] || 'Unknown';
+    const signIndex = window.ASTRO_CONSTANTS.SIGNS.indexOf(signName);
+    return window.ASTRO_CONSTANTS.SIGN_LORDS[signIndex] || 'Unknown';
+  },
+
+  /**
+   * Rashi Parivartan (Exchange Yoga) - 4 Secret Rules
+   */
+  analyzeParivartana: function(planets, ascendant) {
+      const exchanges = [];
+      const pNames = Object.keys(planets);
+      
+      for(let i=0; i<pNames.length; i++) {
+          for(let j=i+1; j<pNames.length; j++) {
+              const p1 = pNames[i];
+              const p2 = pNames[j];
+              const pd1 = planets[p1];
+              const pd2 = planets[p2];
+              
+              if (window.ASTRO_CONSTANTS.SIGN_LORDS[pd1.signIndex] === p2 && 
+                  window.ASTRO_CONSTANTS.SIGN_LORDS[pd2.signIndex] === p1) {
+                  
+                  const kp1 = window.ASTRO_CONSTANTS.SIGN_ATTRIBUTES[pd1.signIndex].kaalPurushHouse;
+                  const kp2 = window.ASTRO_CONSTANTS.SIGN_ATTRIBUTES[pd2.signIndex].kaalPurushHouse;
+
+                  exchanges.push({
+                      planets: [p1, p2],
+                      houses: [pd1.house, pd2.house],
+                      rules: [
+                          `1. Blended Natures: The inherent traits of ${p1} and ${p2} permanently influence each other.`,
+                          `2. Simultaneous Activation: When House ${pd1.house} is activated, House ${pd2.house} automatically activates.`,
+                          `3. Intense Relationship: This is stronger than a standard conjunction. The planets act as if they are in their own houses.`,
+                          `4. Kaal Purush Impact: The energies of Kaal Purush House ${kp1} and House ${kp2} are permanently intertwined in the native's destiny.`
+                      ]
+                  });
+              }
+          }
+      }
+      return exchanges;
+  },
+
+  /**
+   * Refined 64th Navamsha Logic (Addressing Exceptions)
+   */
+  evaluate64thNavamshaException: function(planetName, planets, ascendant) {
+      const p = planets[planetName];
+      if (!p) return null;
+
+      const isLagnaLord = window.ASTRO_CONSTANTS.SIGN_LORDS[ascendant.signIndex] === planetName;
+      const conjunctPlanets = Object.values(planets).filter(op => op.house === p.house && op.name !== planetName);
+      const hasBenefics = conjunctPlanets.some(op => window.ASTRO_CONSTANTS.BENEFICS.includes(op.name));
+
+      const dusthanaLords = [
+          window.ASTRO_CONSTANTS.SIGN_LORDS[(ascendant.signIndex + 5) % 12],
+          window.ASTRO_CONSTANTS.SIGN_LORDS[(ascendant.signIndex + 7) % 12],
+          window.ASTRO_CONSTANTS.SIGN_LORDS[(ascendant.signIndex + 11) % 12]
+      ];
+      const isVipareet = p.house === 8 && dusthanaLords.includes(planetName);
+
+      if (isLagnaLord || hasBenefics || isVipareet) {
+          return {
+              isException: true,
+              reason: `Though in the 64th Navamsha/8th House, the negativity is CANCELLED because ${isLagnaLord ? 'it is the Lagna Lord' : isVipareet ? 'it forms Vipareet Raj Yoga' : 'it is supported by benefics'}. The native gains through occult, research, or sudden positive transformations rather than suffering.`
+          };
+      }
+
+      return { isException: false, reason: "Operates as a standard 64th Navamsha malefic point." };
   }
 };

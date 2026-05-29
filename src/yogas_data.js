@@ -5,6 +5,13 @@
 // Element/Dosha Yogas, Spiritual Yogas, Kala Yogas
 // Each yoga includes: formation, effect, strength, remedies, mantras, deities
 
+// src/yogas_data.js
+// Comprehensive Vedic Astrology Yogas Database - All 90+ Yoga Types
+// Categories: Natal Yogas (~40+), Pancha Mahapurusha (5), Muhurta Yogas, Avatar Yogas (10),
+// Deity Yogas (35+), Nakshatra Yogas (27), Tithi/Vaar Yogas, Drishti Yogas, 
+// Element/Dosha Yogas, Spiritual Yogas, Kala Yogas
+// Each yoga includes: formation, effect, strength, remedies, mantras, deities
+
 window.YOGAS_DATA = [
   // ========== NATAL YOGAS - AUSPICIOUS ==========
   
@@ -23,7 +30,7 @@ window.YOGAS_DATA = [
     keywords: ['Power', 'Authority', 'Success', 'Status'],
     evaluate: (c) => {
       if (!c.planets || !c.asc) return false;
-      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
       const kendraHouses = [1, 4, 7, 10];
       const trikonaHouses = [1, 5, 9];
       const asnc = c.asc.sn || 0;
@@ -67,7 +74,7 @@ window.YOGAS_DATA = [
       if (!c.planets || !c.asc) return false;
       const wealthHouses = [2, 5, 9, 11];
       const asnc = c.asc.sn || 0;
-      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
       
       for(let i=0; i<wealthHouses.length; i++) {
         for(let j=i+1; j<wealthHouses.length; j++) {
@@ -1547,8 +1554,6 @@ window.YOGAS_DATA = [
 
 /**
  * Calculate all yogas present in a birth chart across all divisional charts
- * @param {Object} allVargas - Object with d1, d9, d24, d60 charts
- * @returns {Array} Array of detected yogas with strength scores and active charts
  */
 window.getAllYogas = function(allVargas) {
     const found = [];
@@ -1573,8 +1578,6 @@ window.getAllYogas = function(allVargas) {
 
 /**
  * Get a yoga by name for detail display
- * @param {String} yogaName - Name of the yoga
- * @returns {Object} Yoga object with all details
  */
 window.getYogaByName = function(yogaName) {
     if (!window.YOGAS_DATA) return null;
@@ -1583,8 +1586,6 @@ window.getYogaByName = function(yogaName) {
 
 /**
  * Get all yogas of a specific quality
- * @param {String} quality - Quality filter ('Positive', 'Negative', etc.)
- * @returns {Array} Filtered array of yogas
  */
 window.getYogasByQuality = function(quality) {
     if (!window.YOGAS_DATA) return [];
@@ -1593,8 +1594,6 @@ window.getYogasByQuality = function(quality) {
 
 /**
  * Get yogas by category
- * @param {String} category - Category name
- * @returns {Array} Filtered array of yogas
  */
 window.getYogasByCategory = function(category) {
     if (!window.YOGAS_DATA) return [];
@@ -1603,16 +1602,11 @@ window.getYogasByCategory = function(category) {
 
 /**
  * Calculate yoga strength based on supporting factors
- * @param {String} yogaName - Name of the yoga
- * @param {Object} chart - Birth chart object
- * @returns {Object} Strength assessment (Weak/Moderate/Strong/Very Strong)
  */
 window.calculateYogaStrength = function(yogaName, chart) {
     const yoga = window.getYogaByName(yogaName);
     if (!yoga) return { strength: 'Unknown', score: 0 };
     
-    // Placeholder for strength calculation logic
-    // This would check supporting factors like aspects, dignities, etc.
     return { 
         strength: yoga.strength || 'Moderate', 
         score: 50,
@@ -1622,8 +1616,6 @@ window.calculateYogaStrength = function(yogaName, chart) {
 
 /**
  * Get remedies for a specific yoga
- * @param {String} yogaName - Name of the yoga
- * @returns {Object} Remedies, mantras, and deities for the yoga
  */
 window.getYogaRemedies = function(yogaName) {
     const yoga = window.getYogaByName(yogaName);
@@ -1640,7 +1632,7 @@ window.getYogaRemedies = function(yogaName) {
 };
 
 /**
- * Export yogas data for UI rendering (filtered and organized)
+ * Export yogas data for UI rendering
  */
 window.getYogasForDisplay = function(detectedYogas) {
     if (!Array.isArray(detectedYogas)) return { positive: [], negative: [], special: [] };
@@ -1676,4 +1668,3 @@ window.getYogasForDisplay = function(detectedYogas) {
     
     return organized;
 };
-

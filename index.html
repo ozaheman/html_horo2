@@ -929,6 +929,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
       <div class="chk-group" style="padding:5px 0; display:flex; flex-direction:column; gap:5px;">
         <label><input type="checkbox" id="chkCalculateSahams"> <span style="color:var(--cyan)">Calculate Tajaka Sahams (Life Events)</span></label>
         <label><input type="checkbox" id="chkShowSahamsTransit"> <span style="color:var(--gold)">Sahams / Varshaphala (Transit Chart)</span></label>
+        <label><input type="checkbox" id="chkMarkKharDasha"> <span style="color:var(--rose)">Mark Khar/Ashtam in Dasha</span></label>
       </div>
     </div>
     <div id="pred-progress" style="display:none; margin-bottom:10px; padding:8px; border:1px solid var(--border); border-radius:4px; font-family:'Courier New',monospace; font-size:10px; color:var(--cyan); background:rgba(0,0,0,0.2);"></div>
@@ -1163,6 +1164,9 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
   });
 </script>
 
+<!-- Core ASTRO Constants -->
+<script src="./src/constant.js"></script>
+
 <!-- Yoga Analysis Files -->
 <script src="src/marriage.js"></script>
 <script src="./src/yogas_data.js"></script>
@@ -1197,8 +1201,8 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
 <script src="./src/predictions/kashyapa_nadi.js"></script>
 <script src="./src/predictions/Tushar_roy.js"></script>
 <script src="./src/predictions/sahams.js"></script>
-<script src="./src/predictions/varshaphala.js"></script>
 <script src="./src/predictions/shadbala.js"></script>
+<script src="./src/predictions/graha_maitri.js"></script>
 <script src="./src/business_tarachakra.js"></script>
 <script src="./src/predictions/hit_astrology.js"></script>
 <script src="./src/predictions/ap_prediction_day.js"></script>
@@ -4231,7 +4235,7 @@ function Writesvg(chartData, note, showAshtakavarga = false) {
     const cellTextCoords = [ null, 
       { rashiX: midX, rashiY: midY - 20, pX: midX, pY: midY - 40 },
       { rashiX: 40, rashiY: 40, pX: 40, pY: 20 },
-      { rashiX: 20, rashiY: midY, pX: 20, pY: midY - 15 },
+      { rashiX: 20, rashiY: midY - 40, pX: 20, pY: midY - 55 },
       { rashiX: 40, rashiY: H - 40, pX: 40, pY: H - 60 },
       { rashiX: midX, rashiY: H - 20, pX: midX, pY: H - 40 },
       { rashiX: W - 40, rashiY: H - 40, pX: W - 40, pY: H - 60 },
@@ -4239,7 +4243,7 @@ function Writesvg(chartData, note, showAshtakavarga = false) {
       { rashiX: W - 40, rashiY: 40, pX: W - 40, pY: 20 },
       { rashiX: midX - 40, rashiY: midY, pX: midX - 40, pY: midY + 15 },
       { rashiX: midX, rashiY: midY + 40, pX: midX, pY: midY + 55 },
-      { rashiX: midX + 40, rashiY: midY, pX: midX + 40, pY: midY + 15 },
+      { rashiX: midX + 40, rashiY: midY - 40, pX: midX + 40, pY: midY - 25 },
       { rashiX: midX, rashiY: midY - 40, pX: midX, pY: midY - 55 }
     ];
 
@@ -4250,9 +4254,12 @@ function Writesvg(chartData, note, showAshtakavarga = false) {
         svg += `<text x="${coord.rashiX}" y="${coord.rashiY}" class="rashi-num">${rashiNum}</text>`;
         
         let planetsInBhava = chartData.filter(p => p.bhava === bhavaNum);
+        const totalYSpace = (planetsInBhava.length - 1) * 10;
+        const startYOff = - (totalYSpace / 2);
+        
         planetsInBhava.forEach((p, idx) => {
-            const yOff = idx * 10;
-            const details = getPlanetDisplayDetails(p, chartData);
+            const yOff = startYOff + (idx * 10);
+            const details = (typeof getPlanetDisplayDetails === 'function') ? getPlanetDisplayDetails(p, chartData) : { symbolTspan: '', combustTspan: '', fontWeight: 'normal' };
             const fillColor = p.customColor ? `fill:${p.customColor};` : '';
             svg += `<text x="${coord.pX}" y="${coord.pY + yOff}" class="planet-text-symbol" style="font-weight:${details.fontWeight};${fillColor}">${p.tx}${details.symbolTspan}${details.combustTspan}</text>`;
         });

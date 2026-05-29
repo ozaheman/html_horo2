@@ -5,53 +5,23 @@
  * Verifies friendliness between the Sign Lord and User's Moon Lord.
  */
 
-window.SANKHYA_PRASNA = window.SANKHYA_PRASNA || {};
+/**
+ * Sankhya Prasna (Numerical Oracle) Logic
+ * Method: evaluates an input number from 1 to 108.
+ * Sign = N % 12 (if 0, Sign = 12).
+ * Verifies friendliness between the Sign Lord and User's Moon Lord.
+ */
 
-// Zodiac sign mapping (1=Aries ... 12=Pisces)
-const signLordsMap = [
-    null, // 0 buffer
-    "Mars",     // 1 Aries
-    "Venus",    // 2 Taurus
-    "Mercury",  // 3 Gemini
-    "Moon",     // 4 Cancer
-    "Sun",      // 5 Leo
-    "Mercury",  // 6 Virgo
-    "Venus",    // 7 Libra
-    "Mars",     // 8 Scorpio
-    "Jupiter",  // 9 Sagittarius
-    "Saturn",   // 10 Capricorn
-    "Saturn",   // 11 Aquarius
-    "Jupiter"   // 12 Pisces
-];
+window.SANKHYA_PRASNA = window.SANKHYA_PRASNA || {};
 
 // Determine Planetary Friendships (Basic traditional logic)
 function checkRelationship(lord1, lord2) {
     if (!lord1 || !lord2) return "Neutral";
     if (lord1 === lord2) return "Same Planet (Very Favorable)";
     
-    // Natural friendship table (simplified)
-    const friends = {
-        "Sun": ["Moon", "Mars", "Jupiter"],
-        "Moon": ["Sun", "Mercury"],
-        "Mars": ["Sun", "Moon", "Jupiter"],
-        "Mercury": ["Sun", "Venus"],
-        "Jupiter": ["Sun", "Moon", "Mars"],
-        "Venus": ["Mercury", "Saturn"],
-        "Saturn": ["Mercury", "Venus"]
-    };
-    
-    const enemies = {
-        "Sun": ["Venus", "Saturn"],
-        "Moon": ["Rahu", "Ketu"], // Normally Moon has no formal enemies besides nodes but treating generically
-        "Mars": ["Mercury"],
-        "Mercury": ["Moon"],
-        "Jupiter": ["Mercury", "Venus"],
-        "Venus": ["Sun", "Moon"],
-        "Saturn": ["Sun", "Moon", "Mars"]
-    };
-    
-    if (friends[lord1]?.includes(lord2)) return "Friendly";
-    if (enemies[lord1]?.includes(lord2)) return "Enemy";
+    const rel = window.ASTRO_CONSTANTS.NATURAL_RELATIONSHIPS[lord1]?.[lord2];
+    if (rel === 'Friend') return "Friendly";
+    if (rel === 'Enemy') return "Enemy";
     return "Neutral";
 }
 
@@ -64,11 +34,6 @@ window.SANKHYA_PRASNA.evaluate = function(number, userMoonSign) {
     if (signNum === 0) signNum = 12;
     
     // Outcome Logic
-    // 1, 5, 9 -> Fiery signs (Yes, highly favorable)
-    // 2, 6, 10 -> Earthy signs (Neutral/Favorable, requires hard work)
-    // 3, 7, 11 -> Airy signs (Success through help)
-    // 4, 8, 12 -> Watery signs (No / Difficult)
-    
     let outcome = "";
     let classification = "Neutral";
     let color = "white";
@@ -92,22 +57,20 @@ window.SANKHYA_PRASNA.evaluate = function(number, userMoonSign) {
     }
     
     // Lord validations
-    let targetLord = signLordsMap[signNum];
+    let targetLord = window.ASTRO_CONSTANTS.SIGN_LORDS[(signNum - 1) % 12];
     
     // Determine User Moon Lord
     let moonSignIdx = -1;
     let moonLord = "Unknown";
     
-    // userMoonSign usually comes as a string e.g., "Aries", or as an index 0-11
     if (typeof userMoonSign === 'number') {
-        moonSignIdx = (userMoonSign % 12) + 1; // 1-12
-        moonLord = signLordsMap[moonSignIdx];
+        moonSignIdx = userMoonSign % 12; 
+        moonLord = window.ASTRO_CONSTANTS.SIGN_LORDS[moonSignIdx];
     } else if (typeof userMoonSign === 'string') {
-        const signs = ["aries","taurus","gemini","cancer","leo","virgo","libra","scorpio","sagittarius","capricorn","aquarius","pisces"];
-        let idx = signs.indexOf(userMoonSign.toLowerCase());
+        let idx = window.ASTRO_CONSTANTS.SIGNS.findIndex(s => s.toLowerCase() === userMoonSign.toLowerCase());
         if (idx !== -1) {
-            moonSignIdx = idx + 1;
-            moonLord = signLordsMap[moonSignIdx];
+            moonSignIdx = idx;
+            moonLord = window.ASTRO_CONSTANTS.SIGN_LORDS[moonSignIdx];
         }
     }
     
@@ -134,8 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (btnRand) {
         btnRand.addEventListener('click', () => {
-            // Standard pseudo-random logic between 1 and 108
-            // Can be tied to Time MS as per astrology meditational methods
             const rand = Math.floor(Math.random() * 108) + 1;
             inputNum.value = rand;
         });
@@ -145,8 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnEval.addEventListener('click', () => {
             try {
                 let userMoon = window.BIRTH_PLANETS?.Moon?.sign || 0; 
-                // e.g. "Taurus" or an index depending on engine setup.
-                
                 let res = window.SANKHYA_PRASNA.evaluate(parseInt(inputNum.value), userMoon);
                 
                 const container = document.getElementById('sankhyaResultContainer');
@@ -173,3 +132,4 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+

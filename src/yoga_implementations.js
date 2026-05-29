@@ -6,16 +6,20 @@
  * Load this after yogas_data.js to automatically enhance yoga detection
  */
 
+/**
+ * Yoga Implementation Supplement
+ * Provides comprehensive evaluate() implementations for all yogas
+ * This file supplements yogas_data.js with working implementations
+ * 
+ * Load this after yogas_data.js to automatically enhance yoga detection
+ */
+
 window.YOGA_IMPLEMENTATIONS = window.YOGA_IMPLEMENTATIONS || {};
 
 // Helper function
 function getSignLord(signName) {
-  const lords = {
-    'Aries': 'Mars', 'Taurus': 'Venus', 'Gemini': 'Mercury', 'Cancer': 'Moon',
-    'Leo': 'Sun', 'Virgo': 'Mercury', 'Libra': 'Venus', 'Scorpio': 'Mars',
-    'Sagittarius': 'Jupiter', 'Capricorn': 'Saturn', 'Aquarius': 'Saturn', 'Pisces': 'Jupiter'
-  };
-  return lords[signName] || 'Unknown';
+  const signIndex = window.ASTRO_CONSTANTS.SIGNS.indexOf(signName);
+  return window.ASTRO_CONSTANTS.SIGN_LORDS[signIndex] || 'Unknown';
 }
 
 /**
@@ -30,7 +34,7 @@ function enhanceYogaImplementations() {
     "Dhana Yoga": (c) => {
       if (!c.planets || !c.asc) return { result: false };
       const ascSn = c.asc.sn || 0;
-      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
       const wealthHouses = [2, 5, 9, 11];
       
       const wealthLords = wealthHouses.map(h => ({
@@ -88,7 +92,7 @@ function enhanceYogaImplementations() {
     "Lakshmi Yoga": (c) => {
       if (!c.planets || !c.asc) return { result: false };
       const asnc = c.asc.sn || 0;
-      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
       const ninth9thSign = (asnc + 8) % 12;
       const lord9 = getSignLord(signNames[ninth9thSign]);
       const p9 = c.planets[lord9];
@@ -102,7 +106,7 @@ function enhanceYogaImplementations() {
     "Vasumati Yoga": (c) => {
       if (!c.planets || !c.asc) return { result: false };
       const asnc = c.asc.sn || 0;
-      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
       const sign2 = (asnc + 1) % 12;
       const sign5 = (asnc + 4) % 12;
       const lord2 = getSignLord(signNames[sign2]);
@@ -121,7 +125,7 @@ function enhanceYogaImplementations() {
     "Daridra Yoga": (c) => {
       if (!c.planets || !c.asc) return { result: false };
       const ascSn = c.asc.sn || 0;
-      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
       const sign11 = (ascSn + 10) % 12;
       const lord11 = getSignLord(signNames[sign11]);
       const p11 = c.planets[lord11];
@@ -168,7 +172,7 @@ function enhanceYogaImplementations() {
       if (!c.planets) return { result: false };
       const rahu = c.planets.Rahu, ketu = c.planets.Ketu;
       if (!rahu || !ketu) return { result: false };
-      const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+      const planets = window.ASTRO_CONSTANTS.PLANETS.slice(0, 7);
       const rahuDeg = (rahu.sn || 0) * 30 + (rahu.deg || 0);
       const ketuDeg = (ketu.sn || 0) * 30 + (ketu.deg || 0);
       const betweenCount = planets.filter(p => {
@@ -277,7 +281,7 @@ function enhanceYogaImplementations() {
     "Astangata Yoga": (c) => {
       if (!c.planets || !c.planets.Sun) return { result: false };
       const sun = c.planets.Sun;
-      const combustOrbs = {Mercury: 12, Venus: 10, Mars: 15, Jupiter: 15, Saturn: 15};
+      const combustOrbs = window.ASTRO_CONSTANTS.COMBUSTION_ORBS;
       const combust = Object.keys(combustOrbs).filter(p => {
         const planet = c.planets[p];
         if (!planet) return false;
@@ -293,7 +297,7 @@ function enhanceYogaImplementations() {
     // ========== HOUSE YOGA ==========
     "Papakartari Yoga": (c) => {
       if (!c.planets) return { result: false };
-      const malefics = ['Mars', 'Saturn', 'Rahu', 'Ketu'];
+      const malefics = window.ASTRO_CONSTANTS.MALEFICS;
       const details = [];
       for (let h = 1; h <= 12; h++) {
         const h2 = ((h - 1 + 1) % 12) + 1;
@@ -312,7 +316,7 @@ function enhanceYogaImplementations() {
     
     "Shubhakartari Yoga": (c) => {
       if (!c.planets) return { result: false };
-      const benefics = ['Jupiter', 'Venus', 'Mercury', 'Moon'];
+      const benefics = window.ASTRO_CONSTANTS.BENEFICS;
       const details = [];
       for (let h = 1; h <= 12; h++) {
         const h2 = ((h - 1 + 1) % 12) + 1;
@@ -337,8 +341,15 @@ function enhanceYogaImplementations() {
       );
       
       const exaltationLords = {
-        'Sun': 'Aries', 'Moon': 'Taurus', 'Mars': 'Capricorn', 'Mercury': 'Virgo',
-        'Jupiter': 'Cancer', 'Venus': 'Pisces', 'Saturn': 'Libra', 'Rahu': 'Gemini', 'Ketu': 'Virgo'
+        'Sun': window.ASTRO_CONSTANTS.SIGNS[0], 
+        'Moon': window.ASTRO_CONSTANTS.SIGNS[1], 
+        'Mars': window.ASTRO_CONSTANTS.SIGNS[9], 
+        'Mercury': window.ASTRO_CONSTANTS.SIGNS[5],
+        'Jupiter': window.ASTRO_CONSTANTS.SIGNS[3], 
+        'Venus': window.ASTRO_CONSTANTS.SIGNS[11], 
+        'Saturn': window.ASTRO_CONSTANTS.SIGNS[6], 
+        'Rahu': window.ASTRO_CONSTANTS.SIGNS[2], 
+        'Ketu': window.ASTRO_CONSTANTS.SIGNS[5]
       };
       
       let cancelReason = null;
@@ -367,7 +378,7 @@ function enhanceYogaImplementations() {
     "Vipareeta Raj Yoga": (c) => {
       if (!c.planets || !c.asc) return { result: false };
       const ascSn = c.asc.sn || 0;
-      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
       const difficult = [6, 8, 12];
       
       const findings = [];
@@ -404,7 +415,7 @@ function enhanceYogaImplementations() {
     "Bhava Shuddhi Yoga": (c) => {
       if (!c.planets || !c.asc) return { result: false };
       const ascSn = c.asc.sn || 0;
-      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
       const details = [];
       [1, 5, 9].forEach(house => {
         const lordSign = signNames[(ascSn + house - 1) % 12];
@@ -423,9 +434,8 @@ function enhanceYogaImplementations() {
     // ========== LAGNADHI YOGAS ==========
     "Lagnadhi Yoga": (c) => {
       if (!c.planets || !c.asc) return { result: false };
-      // Lagna lord with Jupiter in kendra
       const ascSn = c.asc.sn || 0;
-      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
       const lagnaLord = getSignLord(signNames[ascSn % 12]);
       
       const lagnaLordPlanet = c.planets[lagnaLord];
@@ -444,7 +454,7 @@ function enhanceYogaImplementations() {
     // ========== PARIVARTANA YOGA ==========
     "Parivartana Yoga": (c) => {
       if (!c.planets || !c.asc) return { result: false };
-      const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+      const planets = window.ASTRO_CONSTANTS.PLANETS.slice(0, 7);
       
       let findings = [];
       for (let i = 0; i < planets.length; i++) {
@@ -470,9 +480,8 @@ function enhanceYogaImplementations() {
     // ========== AYUSHI YOGA ==========
     "Ayushi Yoga": (c) => {
       if (!c.planets || !c.asc) return { result: false };
-      // 8th lord strong and well-placed = long life
       const ascSn = c.asc.sn || 0;
-      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
       const eighthSign = (ascSn + 7) % 12;
       const lord8 = getSignLord(signNames[eighthSign]);
       const lord8Planet = c.planets[lord8];
@@ -506,7 +515,6 @@ function enhanceYogaImplementations() {
     
     "Atma Karaka Yoga": (c) => {
       if (!c.planets) return { result: false };
-      // Retrograde planet in 1st house or with lagna lord
       const retrograde = Object.keys(c.planets).filter(p => 
         c.planets[p] && c.planets[p].retro
       );
@@ -521,7 +529,6 @@ function enhanceYogaImplementations() {
     // ========== MAHAPURUSHA YOGAS ==========
     "Ruchaka Yoga": (c) => {
       if (!c.planets) return { result: false };
-      // Mars in own/exalt sign in kendra
       const mars = c.planets.Mars;
       if (!mars) return false;
       const kendraHouses = [1, 4, 7, 10];
@@ -531,7 +538,6 @@ function enhanceYogaImplementations() {
     
     "Bhadra Yoga": (c) => {
       if (!c.planets) return false;
-      // Mercury in own/exalt sign in kendra
       const mercury = c.planets.Mercury;
       if (!mercury) return false;
       const kendraHouses = [1, 4, 7, 10];
@@ -541,7 +547,6 @@ function enhanceYogaImplementations() {
     
     "Hamsa Yoga": (c) => {
       if (!c.planets) return false;
-      // Jupiter in own/exalt sign in kendra
       const jupiter = c.planets.Jupiter;
       if (!jupiter) return false;
       const kendraHouses = [1, 4, 7, 10];
@@ -551,7 +556,6 @@ function enhanceYogaImplementations() {
     
     "Malavya Yoga": (c) => {
       if (!c.planets) return false;
-      // Venus in own/exalt sign in kendra
       const venus = c.planets.Venus;
       if (!venus) return false;
       const kendraHouses = [1, 4, 7, 10];
@@ -561,7 +565,6 @@ function enhanceYogaImplementations() {
     
     "Sasha Yoga": (c) => {
       if (!c.planets) return false;
-      // Saturn in own/exalt sign in kendra
       const saturn = c.planets.Saturn;
       if (!saturn) return false;
       const kendraHouses = [1, 4, 7, 10];
@@ -572,12 +575,10 @@ function enhanceYogaImplementations() {
     // ========== GAJA & RELATED ==========
     "Gajakesari Yoga": (c) => {
       if (!c.planets) return false;
-      // Jupiter in kendra from Moon
       const moon = c.planets.Moon;
       const jupiter = c.planets.Jupiter;
       if (!moon || !jupiter) return false;
       
-      const kendraFromMoon = [1, 4, 7, 10];
       const moonHouse = moon.house || 0;
       const jupiterHouse = jupiter.house || 0;
       const diff = Math.abs(jupiterHouse - moonHouse);
@@ -587,7 +588,6 @@ function enhanceYogaImplementations() {
     
     "Saraswati Yoga": (c) => {
       if (!c.planets || !c.asc) return false;
-      // Mercury, Venus, Jupiter in trikona
       const mercury = c.planets.Mercury;
       const venus = c.planets.Venus;
       const jupiter = c.planets.Jupiter;
@@ -603,7 +603,6 @@ function enhanceYogaImplementations() {
     // ========== SHAKATA & NEGATIVE ==========
     "Shakata Yoga": (c) => {
       if (!c.planets) return { result: false };
-      // Jupiter in 6/8/12 from Moon = challenges
       const moon = c.planets.Moon;
       const jupiter = c.planets.Jupiter;
       if (!moon || !jupiter) return { result: false };
@@ -658,8 +657,7 @@ function enhanceYogaImplementations() {
     // ========== ADVANCED STRENGTH YOGAS ==========
     "Pushpa Yoga": (c) => {
       if (!c.planets) return false;
-      // Benefics strong and well-placed
-      const benefics = ['Jupiter', 'Venus', 'Mercury', 'Moon'];
+      const benefics = window.ASTRO_CONSTANTS.BENEFICS;
       const strongBenefics = benefics.filter(b => {
         const planet = c.planets[b];
         return planet && (planet.status === 'Own' || planet.status === 'Exalt.' || [1, 5, 9, 10].includes(planet.house));
@@ -670,7 +668,6 @@ function enhanceYogaImplementations() {
     
     "Gada Yoga": (c) => {
       if (!c.planets) return false;
-      // Sun-Mercury conjunction with strength
       const sun = c.planets.Sun;
       const mercury = c.planets.Mercury;
       
@@ -684,9 +681,8 @@ function enhanceYogaImplementations() {
     
     "Chandamatha Yoga": (c) => {
       if (!c.planets || !c.asc) return { result: false };
-      // Moon with 9th lord or in 9th
       const ascSn = c.asc.sn || 0;
-      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
       const ninthSign = (ascSn + 8) % 12;
       const lord9 = getSignLord(signNames[ninthSign]);
       
@@ -704,9 +700,8 @@ function enhanceYogaImplementations() {
     
     "Chatushkona Yoga": (c) => {
       if (!c.planets) return { result: false };
-      // 4 planets, especially benefics, in kendra
       const kendraHouses = [1, 4, 7, 10];
-      const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+      const planets = window.ASTRO_CONSTANTS.PLANETS.slice(0, 7);
       
       const inKendra = planets.filter(p => {
         const planet = c.planets[p];
@@ -721,9 +716,8 @@ function enhanceYogaImplementations() {
     
     "Rajadhiyoga": (c) => {
       if (!c.planets || !c.asc) return { result: false };
-      // 9th lord in 10th or 10th lord in 9th
       const ascSn = c.asc.sn || 0;
-      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
       
       const ninth = (ascSn + 8) % 12;
       const tenth = (ascSn + 9) % 12;
@@ -749,7 +743,6 @@ function enhanceYogaImplementations() {
     
     "Panch Mahapurusha Yoga": (c) => {
       if (!c.planets) return { result: false };
-      // At least 3 of the 5 Mahapurusha yogas
       const mahapurushas = ['Ruchaka', 'Bhadra', 'Hamsa', 'Malavya', 'Sasha'];
       const kendraHouses = [1, 4, 7, 10];
       
@@ -778,9 +771,8 @@ function enhanceYogaImplementations() {
     
     "Amla Yoga": (c) => {
       if (!c.planets || !c.asc) return { result: false };
-      // 10th lord in 10th house with strength
       const ascSn = c.asc.sn || 0;
-      const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
       
       const tenth = (ascSn + 9) % 12;
       const lord10Sign = signNames[tenth];
@@ -794,12 +786,9 @@ function enhanceYogaImplementations() {
           result: isDet,
           rationale: isDet ? `It forms because the 10th Lord of career (${lord10}) is powerfully exalted or situated in its own sign precisely in the 10th house (${lord10Planet.sign}).` : ''
       };
-    },
-    
-    // ========== END OF IMPLEMENTATIONS ==========
+    }
   };
   
-  // Apply implementations to YOGAS_DATA
   Object.keys(implementations).forEach(yogaName => {
     const yoga = window.YOGAS_DATA.find(y => y.name === yogaName);
     if (yoga && implementations[yogaName]) {
@@ -811,7 +800,6 @@ function enhanceYogaImplementations() {
   return true;
 }
 
-// Auto-enhance when document is ready or when this script loads
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', enhanceYogaImplementations);
 } else {

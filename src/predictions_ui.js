@@ -447,6 +447,26 @@ async function updatePredictionsDisplay() {
 function renderCurrentDashaSection(dashaInfo) {
   if (!dashaInfo) return '';
   
+  const chkKhar = document.getElementById('chkMarkKharDasha');
+  const showKhar = chkKhar && chkKhar.checked;
+  let kharPlanets = [];
+  if (showKhar && window.NAVAMSHA_ANALYSIS && window.BIRTH_PLANETS && window.BIRTH_ASC) {
+      const nd = window.NAVAMSHA_ANALYSIS.calculate(window.BIRTH_PLANETS, window.BIRTH_ASC);
+      kharPlanets = [nd.Khar64Lord, nd.Khar64Lord_Asc, nd.Khar22Lord].filter(x => x);
+      const signLords = ['Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter'];
+      let ashtamSignIndex = (window.BIRTH_ASC.signIndex + 7) % 12;
+      let randhreshvara = signLords[ashtamSignIndex] || null;
+      if (randhreshvara) kharPlanets.push(randhreshvara);
+  }
+
+  const getKharBadge = (lord) => {
+      if (!lord || !showKhar) return '';
+      if (kharPlanets.includes(lord)) {
+          return ` <span style="background:#ff4757; color:white; font-size:7px; padding:1px 3px; border-radius:2px; vertical-align:middle; margin-left:3px;" title="Khar/Ashtam Planet Effect">⚠️ KHAR</span>`;
+      }
+      return '';
+  };
+
   const formatDays = (days) => {
     if (days === undefined || days === null) return 'N/A';
     if (days < 30) return `${days} days`;
@@ -472,25 +492,25 @@ function renderCurrentDashaSection(dashaInfo) {
       <div class="pred-title">📊 Current Dasha Status (Today)</div>
       <div class="pred-dasha">Vimshottari Cycle</div>
       <div class="pred-detail">
-        <strong>Mahadasha:</strong> ${dashaInfo.mahadasha?.lord || 'N/A'} 
+        <strong>Mahadasha:</strong> ${dashaInfo.mahadasha?.lord || 'N/A'} ${getKharBadge(dashaInfo.mahadasha?.lord)}
         <span style="float:right;font-family:'Courier New',monospace;font-size:9px;color:var(--muted);">
           ${formatDays(dashaInfo.daysRemainingInMD)} left
         </span>
       </div>
       <div class="pred-detail">
-        <strong>Antardasha:</strong> ${dashaInfo.antardasha?.lord || 'N/A'}
+        <strong>Antardasha:</strong> ${dashaInfo.antardasha?.lord || 'N/A'} ${getKharBadge(dashaInfo.antardasha?.lord)}
         <span style="float:right;font-family:'Courier New',monospace;font-size:9px;color:var(--muted);">
           ${formatDays(dashaInfo.daysRemainingInAD)} left
         </span>
       </div>
       <div class="pred-detail">
-        <strong>Pratyantar:</strong> ${dashaInfo.pratyantar?.lord || 'N/A'}
+        <strong>Pratyantar:</strong> ${dashaInfo.pratyantar?.lord || 'N/A'} ${getKharBadge(dashaInfo.pratyantar?.lord)}
       </div>
       <div class="pred-detail">
-        <strong>Sukshma:</strong> ${dashaInfo.sukshma?.lord || 'N/A'}
+        <strong>Sukshma:</strong> ${dashaInfo.sukshma?.lord || 'N/A'} ${getKharBadge(dashaInfo.sukshma?.lord)}
       </div>
       <div class="pred-detail">
-        <strong>Prana:</strong> ${dashaInfo.prana?.lord || 'N/A'}
+        <strong>Prana:</strong> ${dashaInfo.prana?.lord || 'N/A'} ${getKharBadge(dashaInfo.prana?.lord)}
       </div>
       ${dashaInfo.yogini ? `
         <div class="pred-dasha" style="margin-top:6px;">Yogini Dasha</div>
@@ -510,6 +530,26 @@ function renderDashaTimelineSection(timeline) {
     return `<div class="pred-item"><div class="pred-detail" style="color:var(--muted);">No dasha changes in selected period</div></div>`;
   }
   
+  const chkKhar = document.getElementById('chkMarkKharDasha');
+  const showKhar = chkKhar && chkKhar.checked;
+  let kharPlanets = [];
+  if (showKhar && window.NAVAMSHA_ANALYSIS && window.BIRTH_PLANETS && window.BIRTH_ASC) {
+      const nd = window.NAVAMSHA_ANALYSIS.calculate(window.BIRTH_PLANETS, window.BIRTH_ASC);
+      kharPlanets = [nd.Khar64Lord, nd.Khar64Lord_Asc, nd.Khar22Lord].filter(x => x);
+      const signLords = ['Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter'];
+      let ashtamSignIndex = (window.BIRTH_ASC.signIndex + 7) % 12;
+      let randhreshvara = signLords[ashtamSignIndex] || null;
+      if (randhreshvara) kharPlanets.push(randhreshvara);
+  }
+
+  const getKharBadge = (lord) => {
+      if (!lord || !showKhar) return '';
+      if (kharPlanets.includes(lord)) {
+          return ` <span style="background:#ff4757; color:white; font-size:7px; padding:1px 3px; border-radius:2px; vertical-align:top; margin-left:3px;" title="Khar/Ashtam Planet Effect">⚠️ KHAR</span>`;
+      }
+      return '';
+  };
+
   let html = '<div class="pred-item"><div class="pred-title">📅 Upcoming Dasha Changes</div>';
   
   timeline.slice(0, 8).forEach(event => {
@@ -522,7 +562,7 @@ function renderDashaTimelineSection(timeline) {
     html += `
       <div style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(155,111,255,.15);">
         <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-weight:700;font-size:10px;color:var(--text);">${title} ${event.lord}</span>
+          <span style="font-weight:700;font-size:10px;color:var(--text);">${title} ${event.lord}${getKharBadge(event.lord)}</span>
           <span class="pred-date">${dateStr}</span>
         </div>
         ${event.significance ? `<div style="font-size:9px;color:var(--muted);margin-top:2px;">${event.significance}</div>` : ''}

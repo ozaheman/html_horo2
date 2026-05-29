@@ -4,6 +4,12 @@
  * Reference: Tajaka Neelakanthi / Phala Deepika
  */
 
+/**
+ * Tajaka Sahams Calculations
+ * Important mathematical points in astrology for event prediction.
+ * Reference: Tajaka Neelakanthi / Phala Deepika
+ */
+
 window.SAHAMS = window.SAHAMS || {};
 
 /**
@@ -27,7 +33,6 @@ function isBetweenShortArc(b, c, a) {
   let start = b;
   let end = c;
   
-  // Normalize
   start = norm360(start);
   end = norm360(end);
   const valA = norm360(a);
@@ -41,18 +46,14 @@ function isBetweenShortArc(b, c, a) {
   const angDist = max - min;
   
   if (angDist <= 180) {
-    // Short arc is the literal range between min and max
     return valA >= min && valA <= max;
   } else {
-    // Short arc wraps around 0
     return valA >= max || valA <= min;
   }
 }
 
 /**
  * Calculates generic Saham based on formula.
- * Formula: Saham = C - B + A
- * If A is NOT on the shorter arc between B and C, add/subtract 30 degrees.
  */
 function calculateBasicSaham(a, b, c, nameA, nameB, nameC, isDayBirth) {
   let valA = norm360(a);
@@ -73,7 +74,6 @@ function calculateBasicSaham(a, b, c, nameA, nameB, nameC, isDayBirth) {
     }
   }
   
-  // Create readable formula string
   const baseFormula = `${nameC} - ${nameB} + ${nameA}`;
   const formulaWithExtra = baseFormula + extra;
   
@@ -104,15 +104,11 @@ window.CALCULATE_SAHAMS = function(planets, ascDegree, isDayBirth, houses) {
   const saturn = p('Saturn');
   const asc = ascDegree || 0;
   
-  const signNames = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
+  const signNames = window.ASTRO_CONSTANTS.SIGNS;
   
   const getLordDeg = (deg) => {
-    const signNum = Math.floor(deg / 30) + 1;
-    const signLordNames = {
-      1: 'Mars', 2: 'Venus', 3: 'Mercury', 4: 'Moon', 5: 'Sun', 6: 'Mercury',
-      7: 'Venus', 8: 'Mars', 9: 'Jupiter', 10: 'Saturn', 11: 'Saturn', 12: 'Jupiter'
-    };
-    const lordName = signLordNames[signNum];
+    const signNum = Math.floor(deg / 30);
+    const lordName = window.ASTRO_CONSTANTS.SIGN_LORDS[signNum];
     return { name: lordName, deg: p(lordName) };
   };
 
@@ -159,13 +155,9 @@ window.CALCULATE_SAHAMS = function(planets, ascDegree, isDayBirth, houses) {
     'Mahatmya (Greatness)': { topic: 'Core & Wellbeing', color: '#32CD32' }
   };
 
-  /**
-   * adds a saham following Formula = C - B + A
-   */
   const addS = (id, name, slug, A, B, C, nameA, nameB, nameC, isReversible = true) => {
     let valA = A, valB = B, valC = C, fA = nameA, fB = nameB, fC = nameC;
     
-    // Reverse B and C for Night Birth if applicable
     if (!isDayBirth && isReversible) {
        valB = C; valC = B;
        fB = nameC; fC = nameB;
@@ -195,112 +187,46 @@ window.CALCULATE_SAHAMS = function(planets, ascDegree, isDayBirth, houses) {
     return val;
   };
 
-
-  // 1 Punya: Moon - Sun + Asc
   const punya = addS(1, "Punya (Fortune)", "Pun", asc, sun, moon, "Asc", "Sun", "Moon");
-  
-  // 2 Yash: Jupiter - Punya + Asc
   const yash = addS(2, "Yash (Fame)", "Yas", asc, punya, jupiter, "Asc", "Punya", "Jupiter");
-  
-  // 3 Mahatmya: Punya - Mars + Asc
   const mahatmya = addS(3, "Mahatmya (Greatness)", "Mah", asc, mars, punya, "Asc", "Mars", "Punya");
-  
-  // 4 Rajya: Saturn - Sun + Asc
   addS(4, "Rajya (Power)", "Raj", asc, sun, saturn, "Asc", "Sun", "Saturn");
-  
-  // 5 Desire: Saturn - Venus + Asc
   addS(5, "Desire", "Des", asc, venus, saturn, "Asc", "Venus", "Saturn");
-  
-  // 6 Success: Lord(Sun) - Sun + Saturn
   const sLord = getLordDeg(sun);
-  addS(6, "Success", "Suc", saturn, sun, sLord.deg, "Saturn", "Sun", `Lord(${sLord.name})`); // Swapped B/C for night by default logic? Image says yes.
-  
-  // 7 Kali: Jupiter - Mars + Asc
+  addS(6, "Success", "Suc", saturn, sun, sLord.deg, "Saturn", "Sun", `Lord(${sLord.name})`);
   addS(7, "Kali (Strife)", "Kal", asc, mars, jupiter, "Asc", "Mars", "Jupiter");
-  
-  // 8 Pitru: Saturn - Sun + Asc
   addS(8, "Pitru (Father)", "Pit", asc, sun, saturn, "Asc", "Sun", "Saturn");
-  
-  // 9 Matru: Moon - Venus + Asc
   addS(9, "Matru (Mother)", "Mat", asc, venus, moon, "Asc", "Venus", "Moon");
-  
-  // 10 Putra: Jupiter - Moon + Asc (Non-reversible in image?)
   addS(10, "Putra (Children)", "Put", asc, moon, jupiter, "Asc", "Moon", "Jupiter", false);
-  
-  // 11 Jeeva: Saturn - Jupiter + Asc
   addS(11, "Jeeva (Life)", "Jee", asc, jupiter, saturn, "Asc", "Jupiter", "Saturn");
-  
-  // 12 Disease (Health): Saturn - Moon + Asc
   addS(12, "Disease (Health)", "Dis", asc, moon, saturn, "Asc", "Moon", "Saturn");
-  
-  // 13 Mrityu (Death): Cusp VIII - Moon + Saturn (Non-reversible)
   addS(13, "Mrityu (Death)", "Mri", saturn, moon, getCusp(8), "Saturn", "Moon", "Cusp VIII", false);
-  
-  // 14 Preeti (Love): Saturn - Punya + Asc
   addS(14, "Preeti (Love)", "Pre", asc, punya, saturn, "Asc", "Punya", "Saturn");
-  
-  // 15 Vivaha (Marriage): Venus - Saturn + Asc (Non-reversible)
   addS(15, "Vivaha (Marriage)", "Viv", asc, saturn, venus, "Asc", "Saturn", "Venus", false);
-  
-  // 16 Paradhara (Adultery): Venus - Sun + Asc (Non-reversible)
   addS(16, "Paradhara (Adultery)", "Par", asc, sun, venus, "Asc", "Sun", "Venus", false);
-  
-  // 17 Deshantar (Travel): Cusp IX - Lord(IX) + Asc
   const l9 = getLordDeg(getCusp(9));
   addS(17, "Deshantar (Travel)", "Des", asc, l9.deg, getCusp(9), "Asc", `Lord(${l9.name})`, "Cusp IX", false);
-  
-  // 18 Jalapathna: Cancer 15 - Saturn + Asc
   addS(18, "Jalapathna", "Jal", asc, saturn, 105, "Asc", "Saturn", "Can 15°");
-  
-  // 19 Artha (Wealth): Cusp II - Lord(II) + Asc
   const l2 = getLordDeg(getCusp(2));
   addS(19, "Artha (Wealth)", "Art", asc, l2.deg, getCusp(2), "Asc", `Lord(${l2.name})`, "Cusp II", false);
-  
-  // 20 Vyapara (Commerce): Mars - Mercury + Asc
   addS(20, "Vyapara (Commerce)", "Vya", asc, mercury, mars, "Asc", "Mercury", "Mars");
-  
-  // 21 Vanik (Trade): Moon - Mercury + Asc (Non-reversible)
   addS(21, "Vanik (Trade)", "Van", asc, mercury, moon, "Asc", "Mercury", "Moon", false);
-  
-  // 22 Shatru (Enemies): Mars - Saturn + Asc
   addS(22, "Shatru (Enemies)", "Sha", asc, saturn, mars, "Asc", "Saturn", "Mars");
-  
-  // 23 Bandhana: Punya - Saturn + Asc
   addS(23, "Bandhana", "Ban", asc, saturn, punya, "Asc", "Saturn", "Punya");
-  
-  // 24 Bandak (Imprisonment): Mercury - Moon + Asc
   addS(24, "Bandak (Imprisonment)", "Bak", asc, moon, mercury, "Asc", "Moon", "Mercury");
-  
-  // 25 Shastra (Scriptures): Jupiter - Saturn + Asc
   addS(25, "Shastra (Scriptures)", "Shs", asc, saturn, jupiter, "Asc", "Saturn", "Jupiter");
-  
-  // 26 Vidya (Knowledge): Sun - Moon + Asc
   addS(26, "Vidya (Knowledge)", "Vid", asc, moon, sun, "Asc", "Moon", "Sun");
-  
-  // 27 Apamrityu: Cusp VIII - Mars + Asc
   addS(27, "Apamrityu", "Apa", asc, mars, getCusp(8), "Asc", "Mars", "Cusp VIII");
-  
-  // 28 Karma (Profession): Mars - Mercury + Asc
   addS(28, "Karma (Profession)", "Kar", asc, mercury, mars, "Asc", "Mercury", "Mars");
-  
-  // 29 Bhatri (Brother): Jupiter - Saturn + Asc (Non-reversible)
   addS(29, "Bhatri (Brother)", "Bha", asc, saturn, jupiter, "Asc", "Saturn", "Jupiter", false);
-  
-  // 30 Labha (Gains): Cusp XI - Lord(XI) + Asc
   const l11 = getLordDeg(getCusp(11));
   addS(30, "Labha (Gains)", "Lab", asc, l11.deg, getCusp(11), "Asc", `Lord(${l11.name})`, "Cusp XI", false);
-  
-  // 31 Daridra (Poverty): Punya - Mercury + Asc
   addS(31, "Daridra (Poverty)", "Dar", asc, mercury, punya, "Asc", "Mercury", "Punya");
 
-  // 3. Calculate Activations (Next 90 Days)
-  // Find when transit Moon or Sun conjuncts each Saham
   const today = new Date();
   const results = sahams.map(s => {
     const activations = [];
     
-    // Check Moon activations (Moon moves ~13°/day, so it hits every degree once in ~27.3 days)
-    // We check every day for 30 days
     for (let i = 0; i < 30; i++) {
         const d = new Date(today);
         d.setDate(d.getDate() + i);
@@ -308,13 +234,12 @@ window.CALCULATE_SAHAMS = function(planets, ascDegree, isDayBirth, houses) {
         const mSid = window.moonLon ? window.moonLon(jdVal) : 0;
         
         const diff = Math.min(Math.abs(mSid - s.degree), 360 - Math.abs(mSid - s.degree));
-        if (diff <= 6.5) { // Moon moves 13 deg, so check if within half a day
+        if (diff <= 6.5) { 
             activations.push({ date: d.toISOString().split('T')[0], planet: 'Moon', deg: mSid });
             break; 
         }
     }
 
-    // Check Sun activations (Sun moves ~1°/day)
     for (let i = 0; i < 365; i++) {
         const d = new Date(today);
         d.setDate(d.getDate() + i);
@@ -336,14 +261,11 @@ window.CALCULATE_SAHAMS = function(planets, ascDegree, isDayBirth, houses) {
 
 /**
  * Estimates upcoming activation dates for a Saham point
- * (Uses Swiss Ephemeris logic via window.sunLon/moonLon if available)
  */
 window.GET_SAHAM_ACTIVATIONS = function(sahamDeg, fromDate = new Date()) {
   const activities = [];
   const startDate = new Date(fromDate);
   
-  // 1. Check Moon Transit (Monthly)
-  // Search window: 30 days
   for (let i = 0; i < 30; i++) {
     const d = new Date(startDate);
     d.setDate(d.getDate() + i);
@@ -351,14 +273,12 @@ window.GET_SAHAM_ACTIVATIONS = function(sahamDeg, fromDate = new Date()) {
     const mSid = window.moonLon ? window.moonLon(jdVal) : 0;
     
     const diff = Math.min(Math.abs(mSid - sahamDeg), 360 - Math.abs(mSid - sahamDeg));
-    if (diff <= 6.5) { // Moon moves ~13 deg/day
+    if (diff <= 6.5) { 
       activities.push({ body: 'Moon', date: d, diff: diff, type: 'Monthly Trigger' });
       break;
     }
   }
 
-  // 2. Check Sun Transit (Annual)
-  // Search window: 365 days
   for (let i = 0; i < 365; i++) {
     const d = new Date(startDate);
     d.setDate(d.getDate() + i);
@@ -366,7 +286,7 @@ window.GET_SAHAM_ACTIVATIONS = function(sahamDeg, fromDate = new Date()) {
     const sSid = window.sunLon ? window.sunLon(jdVal) : 0;
     
     const diff = Math.min(Math.abs(sSid - sahamDeg), 360 - Math.abs(sSid - sahamDeg));
-    if (diff <= 1.0) { // Sun moves ~1 deg/day
+    if (diff <= 1.0) { 
       activities.push({ body: 'Sun', date: d, diff: diff, type: 'Annual Trigger' });
       break;
     }
