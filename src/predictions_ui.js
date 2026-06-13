@@ -398,7 +398,195 @@ async function updatePredictionsDisplay() {
           }
         }
       }
+/**
+ * Analyze Rajyogas and Rajyoga Bhanga (Breakage)
+ * Based on Parashari principles (Kendra-Trikona lords, Neecha Bhanga, Kemadruma, etc.)
+ */
+function analyzeRajyogasAndBhanga(planets, ascendant) {
+  if (!planets || !ascendant) return '<div class="pred-item">Insufficient chart data for Yoga analysis.</div>';
+  
+  const ascSn = ascendant.sn !== undefined ? ascendant.sn : Math.floor(ascendant.longitude / 30);
+  const LORDS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGN_LORDS) 
+    ? window.ASTRO_CONSTANTS.SIGN_LORDS 
+    : ['Mars','Venus','Mercury','Moon','Sun','Mercury','Venus','Mars','Jupiter','Saturn','Saturn','Jupiter'];
+  const SIGNS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS)
+    ? window.ASTRO_CONSTANTS.SIGNS
+    : ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
 
+  // Helper: Get planet's sign index
+  const getSign = (p) => {
+    if (!planets[p]) return -1;
+    return planets[p].sn !== undefined ? planets[p].sn : Math.floor((planets[p].longitude || planets[p].sid) / 30);
+  };
+
+  // Helper: Get house of a planet
+  const getHouse = (p) => {
+    if (!planets[p]) return -1;
+    const pSn = getSign(p);
+    return ((pSn - ascSn + 12) % 12) + 1;
+  };
+
+  // 1. Identify Kendra (1,4,7,10) and Trikona (1,5,9) Lords
+  const kendraLords = [LORDS[ascSn], LORDS[(ascSn+3)%12], LORDS[(ascSn+6)%12], LORDS[(ascSn+9)%12]];
+  const trikonaLords = [LORDS[ascSn], LORDS[(ascSn+4)%12], LORDS[(ascSn+8)%12]];
+  
+  // Union of Kendra & Trikona lords (Rajyoga Lords)
+  const rajyogaLordSet = new Set([...kendraLords, ...trikonaLords]);
+  
+  // Check if Rajyoga Lords are in Kendra/Trikona or mutually aspecting each other
+  let rajyogas = [];
+  let rajyogaDetails = [];
+  
+  rajyogaLordSet.forEach(lord => {
+    const lordSign = getSign(lord);
+    const lordHouse = ((lordSign - ascSn + 12) % 12) + 1;
+    if (lordHouse === 1 || lordHouse === 4 || lordHouse === 5 || lordHouse === 7 || lordHouse === 9 || lordHouse === 10) {
+      rajyogas.push(`${lord} in H${lordHouse} (${SIGNS[lordSign]})`);
+      rajyogaDetails.push(`${lord} (${SIGNS[lordSign]}) in H${lordHouse} — forms a potent ${lordHouse === 1 ? 'Vimala' : lordHouse === 4 ? 'Shash' : lordHouse === 5 ? 'Bhadra' : 'Rajyoga'}`);
+    }
+  });
+
+  // Mutual aspect between Rajyoga Lords
+  const rajPairs = [];
+  const rajyogaLordArray = Array.from(rajyogaLordSet);
+  for (let i = 0; i < rajyogaLordArray.length; i++) {
+    for (let j = i+1; j < rajyogaLordArray.length; j++) {
+      const l1 = rajyogaLordArray[i], l2 = rajyogaLordArray[j];
+      const h1 = getHouse(l1), h2 = getHouse(l2);
+      if (h1 === 7 - h2 || Math.abs(h1 - h2) === 4 || Math.abs(h1 - h2) === 8) {
+        rajPairs.push(`${l1} (H${h1}) aspects ${l2} (H${h2})`);
+        rajyogaDetails.push(`Mutual aspect between Rajyoga Lords ${l1} and ${l2}: Creates a powerful Rajyoga.`);
+      }
+    }
+  }
+
+  // 2. Neecha Bhanga Rajayoga (Cancellation of Debilitation)
+  const exaltations = { Sun: 10, Moon: 33, Mars: 298, Mercury: 165, Jupiter: 95, Venus: 357, Saturn: 200 };
+  const debilitations = { Sun: 190, Moon: 213, Mars: 118, Mercury: 345, Jupiter: 275, Venus: 177, Saturn: 20 };
+  const signDegBounds = (deg) => {
+    const sign = Math.floor(deg / 30);
+    const d = deg % 30;
+    return { sign, d };
+  };
+
+  let neechaBhanga = [];
+  for (const [p, ex] of Object.entries(exaltations)) {
+    const pData = planets[p];
+    if (!pData) continue;
+    const pLon = pData.sid !== undefined ? pData.sid : pData.longitude;
+    const deb = debilitations[p];
+    const isDebilitated = Math.abs((pLon - deb + 360) % 360) < 1.5;
+    
+    if (isDebilitated) {
+      // Check if lord of sign where planet is debilitated is in Kendra/Trikona
+      const debSignIdx = Math.floor(pLon / 30);
+      const debSignLord = LORDS[debSignIdx];
+      const debLordPos = getSign(debSignLord);
+      const debLordHouse = ((deblordPos - ascSn + 12) % 12) + 1;
+      
+      if ([1,4,5,7,9,10].includes(deblordHouse)) {
+        neechaBhanga.push(`${p} debilitated but lord ${debSignLord} in H${deblordHouse} — Neecha Bhanga Rajyoga formed.`);
+      } else {
+        // Also check if planet conjuncts its exaltation lord
+        const exaltLord = LORDS[Math.floor(ex / 30)];
+        const exaltLordSign = getSign(exaltLord);
+        if (exaltLordSign === debSignIdx) {
+          neechaBhanga.push(`${p} debilitated but conjunct its exaltation lord ${exaltLord} — Neecha Bhanga Rajyoga formed.`);
+        } else {
+          neechaBhanga.push(`${p} debilitated: No Neecha Bhanga — permanent weakness.`);
+        }
+      }
+    }
+  }
+
+  // 3. Kemadruma Yoga & Bhanga
+  const moonSign = getSign('Moon');
+  const moonHouse = ((moonSign - ascSn + 12) % 12) + 1;
+  let planetsAdjacent = false;
+  const adjHouses = [((moonHouse - 2 + 12) % 12) + 1, ((moonHouse + 0) % 12) + 1, ((moonHouse + 2) % 12) + 1];
+  for (const p of ['Sun','Mars','Mercury','Jupiter','Venus','Saturn']) {
+    if (getHouse(p) !== -1 && adjHouses.includes(getHouse(p))) planetsAdjacent = true;
+  }
+  const kemadruma = !planetsAdjacent;
+  
+  let kemadrumaBhanga = false;
+  // Kemadruma Bhanga if Moon is with another planet or aspected by Jupiter/Venus
+  const moonConjunct = Object.keys(planets).some(p => p !== 'Moon' && getSign(p) === moonSign && getHouse(p) === moonHouse);
+  const jupiterAspect = Math.abs(getSign('Jupiter') - moonSign) % 12 === 4 || Math.abs(getSign('Jupiter') - moonSign) % 12 === 8;
+  const venusAspect = Math.abs(getSign('Venus') - moonSign) % 12 === 4 || Math.abs(getSign('Venus') - moonSign) % 12 === 8;
+  
+  if (kemadruma && (moonConjunct || jupiterAspect || venusAspect)) {
+    kemadrumaBhanga = true;
+  }
+
+  // 4. Raja Yoga Bhanga (Breakage) — Mainly due to malefic influence on Kendra/Trikona lords or their houses
+  let rajyogaBhanga = [];
+  rajyogaLordArray.forEach(lord => {
+    const lordHouse = getHouse(lord);
+    // If lord is in Dusthana (6,8,12)
+    if ([6,8,12].includes(lordHouse)) {
+      rajyogaBhanga.push(`${lord} in H${lordHouse} (Dusthana) — weakens/breaks the Rajyoga potential.`);
+    }
+    // If lord is combust (within 10° of Sun)
+    const lordLon = planets[lord] ? (planets[lord].sid || planets[lord].longitude) : 0;
+    const sunLon = planets.Sun ? (planets.Sun.sid || planets.Sun.longitude) : 0;
+    if (Math.abs((lordLon - sunLon + 360) % 360) < 10) {
+      rajyogaBhanga.push(`${lord} is combust — its power is diminished, breaking the Rajyoga.`);
+    }
+    // If lord is debilitated
+    const lordDeg = lordLon % 30;
+    const debDeg = debilitations[lord] % 30;
+    if (Math.abs(lordDeg - debDeg) < 1.5) {
+      rajyogaBhanga.push(`${lord} is debilitated — breaks the yoga.`);
+    }
+  });
+
+  // Also check if any house representing Kendra/Trikona is afflicted by malefics in Dusthana
+  const kendraHouses = [1,4,7,10];
+  const trikonaHouses = [1,5,9];
+  const dusthanaHouses = [6,8,12];
+  const malefics = ['Mars','Saturn','Rahu','Ketu','Sun'];
+  for (let h of [...kendraHouses, ...trikonaHouses]) {
+    const signIdx = (ascSn + h - 1) % 12;
+    const planetsInHouse = Object.keys(planets).filter(p => getSign(p) === signIdx);
+    const maleficsInHouse = planetsInHouse.filter(p => malefics.includes(p));
+    if (maleficsInHouse.length > 0) {
+      rajyogaBhanga.push(`Malefics (${maleficsInHouse.join(',')}) in H${h} (${SIGNS[signIdx]}) — weakens the Rajyoga of that house.`);
+    }
+  }
+
+  // 5. Build HTML Output
+  let html = `<div class="pred-item" style="border-left: 3px solid var(--gold); margin-top:20px;">
+    <div class="pred-title" style="color:var(--gold); font-size:14px; text-align:center;">👑 Rajyoga & Rajyoga Bhanga Analysis</div>
+    <div style="font-size:10px; color:var(--muted); text-align:center; margin-bottom:10px;">Classical Parashari Principles: Kendra-Trikona Lords, Neecha Bhanga, Kemadruma</div>
+  `;
+
+  // Rajyogas Found
+  html += `<div style="background:rgba(255,215,0,0.05); border:1px solid rgba(255,215,0,0.2); border-radius:8px; padding:10px; margin-bottom:15px;">
+    <div style="color:var(--gold); font-size:11px; font-weight:bold; margin-bottom:8px;">✨ Detected Rajyogas</div>`;
+  if (rajyogas.length === 0 && rajPairs.length === 0 && neechaBhanga.length === 0 && !kemadrumaBhanga) {
+    html += `<div style="font-size:10px; color:var(--muted);">No strong Rajyogas detected from Kendra-Trikona lords.</div>`;
+  } else {
+    if (rajyogas.length > 0) html += `<div style="margin-bottom:6px;"><strong>Kendra/Trikona Lords:</strong> ${rajyogas.join(', ')}</div>`;
+    if (rajPairs.length > 0) html += `<div style="margin-bottom:6px;"><strong>Mutual Aspects:</strong> ${rajPairs.join(', ')}</div>`;
+    if (neechaBhanga.length > 0) html += `<div style="margin-bottom:6px;"><strong>Neecha Bhanga Rajyoga:</strong><br/>${neechaBhanga.join('<br/>')}</div>`;
+    if (kemadrumaBhanga) html += `<div><strong>Kemadruma Bhanga:</strong> Kemadruma averted by conjunction/benefic aspect — Rajyoga potential activated.</div>`;
+  }
+  html += `</div>`;
+
+  // Rajyoga Bhanga (Breakage)
+  html += `<div style="background:rgba(255,68,68,0.05); border:1px solid rgba(255,68,68,0.2); border-radius:8px; padding:10px; margin-bottom:15px;">
+    <div style="color:var(--rose); font-size:11px; font-weight:bold; margin-bottom:8px;">⚠️ Rajyoga Bhanga (Breakage Factors)</div>`;
+  if (rajyogaBhanga.length === 0 && !kemadruma) {
+    html += `<div style="font-size:10px; color:var(--muted);">No significant breakage factors observed. Rajyogas are likely to manifest fully.</div>`;
+  } else {
+    if (rajyogaBhanga.length > 0) html += `<div>${rajyogaBhanga.join('<br/>')}</div>`;
+    if (kemadruma && !kemadrumaBhanga) html += `<div><strong>Kemadruma Yoga:</strong> Moon is isolated with no planets 2 houses away. This nullifies many Rajyogas.</div>`;
+  }
+  html += `</div></div>`;
+
+  return html;
+}
       // 6. SPECIALIZED KARRA ANALYSIS (Career & Marriage)
       if (window.KARRA_ANALYSIS) {
         await showProgress('Performing Specialized Predictions...');

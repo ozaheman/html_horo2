@@ -1,11 +1,9 @@
 /**
  * ASTRO_CONSTANTS
  * Global shared data dictionary for all Vedic Astrology prediction modules.
- * Centralizes signs, planets, dignities, houses, and nakshatras.
  */
 
-window.ASTRO_CONSTANTS = (function() {
-
+(function() {
     // ========== 1. CORE PLANETS & SIGNS ==========
 
     const PLANETS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
@@ -30,12 +28,10 @@ window.ASTRO_CONSTANTS = (function() {
 
     // ========== 2. DIGNITIES & STRENGTHS ==========
 
-    // Exact Exaltation Degrees
     const EXALTATION_DEGREES = {
         'Sun': 10, 'Moon': 3, 'Mars': 28, 'Mercury': 15, 'Jupiter': 5, 'Venus': 27, 'Saturn': 20
     };
 
-    // Exaltation, Debilitation, and Own Sign Indices
     const DIGNITIES = {
         'Sun':     { exalt: 0,  debilitation: 6,  own: [4] },
         'Moon':    { exalt: 1,  debilitation: 7,  own: [3] },
@@ -44,11 +40,10 @@ window.ASTRO_CONSTANTS = (function() {
         'Jupiter': { exalt: 3,  debilitation: 9,  own: [8, 11] },
         'Venus':   { exalt: 11, debilitation: 5,  own: [1, 6] },
         'Saturn':  { exalt: 6,  debilitation: 0,  own: [9, 10] },
-        'Rahu':    { exalt: 2,  debilitation: 8,  own: [10] }, // Secondary/Proxy rules
+        'Rahu':    { exalt: 2,  debilitation: 8,  own: [10] },
         'Ketu':    { exalt: 8,  debilitation: 2,  own: [7] }
     };
 
-    // Moolatrikona Degrees (Sign Index, Start Deg, End Deg)
     const MULATRIKONA = {
         'Sun':     { sign: 4,  start: 0,  end: 20 },
         'Moon':    { sign: 3,  start: 0,  end: 20 },
@@ -63,7 +58,6 @@ window.ASTRO_CONSTANTS = (function() {
         'Moon': 12, 'Mars': 17, 'Mercury': 14, 'Jupiter': 11, 'Venus': 10, 'Saturn': 15
     };
 
-    // Permanent Natural Friendships (Row: Base Planet, Column: Relationship towards target)
     const NATURAL_RELATIONSHIPS = {
         'Sun':     { 'Moon': 'Friend', 'Mars': 'Friend', 'Mercury': 'Neutral', 'Jupiter': 'Friend', 'Venus': 'Enemy',  'Saturn': 'Enemy',  'Rahu': 'Enemy',  'Ketu': 'Enemy' },
         'Moon':    { 'Sun': 'Friend',  'Mars': 'Neutral','Mercury': 'Friend',  'Jupiter': 'Neutral','Venus': 'Neutral','Saturn': 'Neutral','Rahu': 'Enemy',  'Ketu': 'Enemy' },
@@ -76,7 +70,6 @@ window.ASTRO_CONSTANTS = (function() {
         'Ketu':    { 'Sun': 'Enemy',   'Moon': 'Enemy',  'Mars': 'Friend',     'Mercury': 'Neutral','Jupiter': 'Neutral','Venus': 'Friend','Saturn': 'Enemy', 'Rahu': 'Enemy' }
     };
 
-    // Basic Gemstones Mapping
     const GEMSTONES = {
         'Sun': 'Ruby', 'Moon': 'Pearl', 'Mars': 'Coral',
         'Mercury': 'Emerald', 'Jupiter': 'Yellow Sapphire',
@@ -175,7 +168,24 @@ window.ASTRO_CONSTANTS = (function() {
           interpretation: "Completion, nourishment, protection, wealthy" }
     ];
 
-    return {
+    // ========== 5. SIGN ATTRIBUTES (LAGNA AKSHARA, COLORS & KAAL PURUSH) ==========
+    const SIGN_ATTRIBUTES = {
+        0: { sign: "Aries", akshara: ["A", "L", "E", "I", "O"], luckyColor: "Red, Coral", kaalPurushHouse: 1, element: "Fire" },
+        1: { sign: "Taurus", akshara: ["B", "V", "U", "W"], luckyColor: "White, Cream, Pink", kaalPurushHouse: 2, element: "Earth" },
+        2: { sign: "Gemini", akshara: ["K", "Ch", "Gh", "Q", "C"], luckyColor: "Green, Emerald", kaalPurushHouse: 3, element: "Air" },
+        3: { sign: "Cancer", akshara: ["D", "H"], luckyColor: "Milky White, Silver", kaalPurushHouse: 4, element: "Water" },
+        4: { sign: "Leo", akshara: ["M", "T"], luckyColor: "Gold, Orange, Ruby", kaalPurushHouse: 5, element: "Fire" },
+        5: { sign: "Virgo", akshara: ["P", "T", "N", "S"], luckyColor: "Green, Earthy tones", kaalPurushHouse: 6, element: "Earth" },
+        6: { sign: "Libra", akshara: ["R", "T"], luckyColor: "White, Light Blue", kaalPurushHouse: 7, element: "Air" },
+        7: { sign: "Scorpio", akshara: ["N", "Y"], luckyColor: "Dark Red, Maroon", kaalPurushHouse: 8, element: "Water" },
+        8: { sign: "Sagittarius", akshara: ["Bh", "F", "Dh", "Y"], luckyColor: "Yellow, Mustard", kaalPurushHouse: 9, element: "Fire" },
+        9: { sign: "Capricorn", akshara: ["Kh", "J"], luckyColor: "Navy Blue, Black", kaalPurushHouse: 10, element: "Earth" },
+        10: { sign: "Aquarius", akshara: ["G", "S", "Sh"], luckyColor: "Electric Blue, Grey", kaalPurushHouse: 11, element: "Air" },
+        11: { sign: "Pisces", akshara: ["D", "Ch", "Z", "Th"], luckyColor: "Sea Green, Yellow", kaalPurushHouse: 12, element: "Water" }
+    };
+
+    // Export to window
+    window.ASTRO_CONSTANTS = {
         PLANETS,
         BENEFICS,
         MALEFICS,
@@ -191,26 +201,11 @@ window.ASTRO_CONSTANTS = (function() {
         GEMSTONES,
         HOUSE_NATURE,
         HOUSE_SIGNIFICATIONS,
-        NAKSHATRAS
+        NAKSHATRAS,
+        SIGN_ATTRIBUTES
     };
 
 })();
-
- // ========== 5. LAGNA AKSHARA, COLORS & KAAL PURUSH ==========
-     const SIGN_ATTRIBUTES = {
-        0: { sign: "Aries", akshara: ["A", "L", "E", "I", "O"], luckyColor: "Red, Coral", kaalPurushHouse: 1, element: "Fire" },
-        1: { sign: "Taurus", akshara: ["B", "V", "U", "W"], luckyColor: "White, Cream, Pink", kaalPurushHouse: 2, element: "Earth" },
-        2: { sign: "Gemini", akshara: ["K", "Ch", "Gh", "Q", "C"], luckyColor: "Green, Emerald", kaalPurushHouse: 3, element: "Air" },
-        3: { sign: "Cancer", akshara: ["D", "H"], luckyColor: "Milky White, Silver", kaalPurushHouse: 4, element: "Water" },
-        4: { sign: "Leo", akshara: ["M", "T"], luckyColor: "Gold, Orange, Ruby", kaalPurushHouse: 5, element: "Fire" },
-        5: { sign: "Virgo", akshara: ["P", "T", "N", "S"], luckyColor: "Green, Earthy tones", kaalPurushHouse: 6, element: "Earth" },
-        6: { sign: "Libra", akshara: ["R", "T"], luckyColor: "White, Light Blue", kaalPurushHouse: 7, element: "Air" },
-        7: { sign: "Scorpio", akshara: ["N", "Y"], luckyColor: "Dark Red, Maroon", kaalPurushHouse: 8, element: "Water" },
-        8: { sign: "Sagittarius", akshara: ["Bh", "F", "Dh", "Y"], luckyColor: "Yellow, Mustard", kaalPurushHouse: 9, element: "Fire" },
-        9: { sign: "Capricorn", akshara: ["Kh", "J"], luckyColor: "Navy Blue, Black", kaalPurushHouse: 10, element: "Earth" },
-        10: { sign: "Aquarius", akshara: ["G", "S", "Sh"], luckyColor: "Electric Blue, Grey", kaalPurushHouse: 11, element: "Air" },
-        11: { sign: "Pisces", akshara: ["D", "Ch", "Z", "Th"], luckyColor: "Sea Green, Yellow", kaalPurushHouse: 12, element: "Water" }
-    };
 
 // Export for Node/CommonJS compatibility if needed
 if (typeof module !== 'undefined' && module.exports) {
