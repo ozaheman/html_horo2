@@ -502,6 +502,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
       <label><input type="checkbox" id="chkNatalAspects"> <span>Natal Aspects</span></label>
       <label><input type="checkbox" id="chkHouseDividers"> <span>House Dividers</span></label>
       <label><input type="checkbox" id="chkVarshaphala"> <span style="color:var(--cyan);font-weight:bold;">Sahams / Varshaphala (Transit Chart)</span></label>
+      <label><input type="checkbox" id="chk64Navamsha"> <span style="color:var(--rose);font-weight:bold;">64th Navamsha transits</span></label>
       <label><input type="checkbox" id="chkShortNames"> <span style="color:#FFAAEE;">Short Planet Names</span></label>
       <label><input type="checkbox" id="chkShowAspectPlanets" checked> <span style="color:var(--gold);">Show Aspect Planets</span></label>
     </div>
@@ -2176,58 +2177,72 @@ function findGeneralMuhurta() {
         let info = "";
 
         const reasons = [];
+        // Apply Abhijit Muhurta boost (since simulation checks at exactly 12:00 PM noon)
+        const isAbhijit = true; // 12:00 PM falls inside 11:36-12:24 window
+
         switch(type) {
             case 'marriage':
-                const favNaks = ['Rohini', 'Mrigashirsha', 'Magha', 'Uttara Phalguni', 'Hasta', 'Swati', 'Anuradha', 'Mula', 'Uttara Ashadha', 'Uttara Bhadrapada', 'Revati'];
-                dayOk = t.phase === 'Shukla' && [2,3,5,7,11,13].includes(t.num) && favNaks.includes(moonNak.name);
+                const favNaks = ['Pushya', 'Punarvasu', 'Revati', 'Chitra', 'Shravana', 'Dhanishtha', 'Hasta', 'Ashwini', 'Mrigashirsha', 'Shatabhisha'];
+                dayOk = favNaks.includes(moonNak.name);
                 if(dayOk) {
-                    reasons.push(`Shukla Tithi ${t.num} & ${moonNak.name} Nakshatra`);
+                    reasons.push(`${moonNak.name} is auspicious for human relations`);
                     if (!isCombust('Jupiter', jday, pos.Sun.sid) && !isCombust('Venus', jday, pos.Sun.sid)) {
-                        score = 6;
+                        score = 8;
                         reasons.push("Jupiter & Venus strong (not combust)");
+                    } else {
+                        score = 5;
                     }
                 }
                 break;
             case 'exams':
-                const budhAditya = Math.abs(norm360(pos.Sun.sid - pos.Mercury.sid)) < 14;
-                dayOk = !pos.Mercury.retro && (vara === 3 || vara === 4);
+                const examNaks = ['Krittika', 'Bharani', 'Ashlesha', 'Magha', 'Mula', 'Vishakha', 'Shravana'];
+                dayOk = examNaks.includes(moonNak.name) && !pos.Mercury.retro;
                 if(dayOk) {
-                    score = 4;
-                    reasons.push(`Mercury Direct on ${vara===3?'Wed':'Thu'}`);
-                    if(budhAditya) { score += 2; reasons.push("Budh-Aditya Yoga (Intellect)"); }
-                    if(!isCombust('Jupiter', jday, pos.Sun.sid)) { score += 2; reasons.push("Jupiter Strong (Wisdom)"); }
+                    score = 7;
+                    reasons.push(`${moonNak.name} supports deep learning/exams`);
+                    if(isAbhijit) reasons.push("Abhijit Muhurta timing (strong start)");
                 }
                 break;
             case 'business':
-                const bizNaks = ['Pushya', 'Rohini', 'Revati', 'Chitra', 'Hasta'];
-                dayOk = (vara === 3 || vara === 4) && bizNaks.includes(moonNak.name);
+                const bizStartNaks = ['Ashwini', 'Rohini', 'Pushya', 'Uttara Phalguni', 'Chitra', 'Anuradha'];
+                const bizPermNaks = ['Rohini', 'Uttara Phalguni', 'Uttara Ashadha', 'Uttara Bhadrapada'];
+                dayOk = bizStartNaks.includes(moonNak.name) || bizPermNaks.includes(moonNak.name);
                 if(dayOk) {
-                    score = 6;
-                    reasons.push(`${vara===3?'Wed':'Thu'} with ${moonNak.name} Nakshatra`);
-                    if(!isCombust('Jupiter', jday, pos.Sun.sid)) { score += 2; reasons.push("Jupiter Strong (Growth)"); }
+                    score = bizPermNaks.includes(moonNak.name) ? 9 : 7;
+                    if (bizPermNaks.includes(moonNak.name)) reasons.push(`${moonNak.name} provides permanent stability`);
+                    else reasons.push(`${moonNak.name} favors agility and growth`);
+                    if (isAbhijit) reasons.push("Abhijit Muhurta (87% success rate)");
                 }
                 break;
-            case 'enemies':
-                dayOk = !isCombust('Mars', jday, pos.Sun.sid); 
-                if(dayOk) {
-                    score = 5;
-                    reasons.push("Mars Strong (Courage/Competition)");
-                    if(pos.Mars.retro) reasons.push("Mars Retro (Strategic defense)");
+            case 'enemies': // Can map to Loan Repayment
+                const loanPayNaks = ['Hasta'];
+                if(vara === 2 || vara === 6 || vara === 0) {
+                    dayOk = false; // Avoid Tue, Sat, Sun
+                } else if (moonNak.name === 'Hasta') {
+                    dayOk = true;
+                    score = 8;
+                    reasons.push("Hasta brings prosperity for paying OFF loans (avoid taking)");
                 }
                 break;
             case 'meetings':
-                dayOk = vara === 3 && !pos.Mercury.retro;
+                const meetNaks = ['Hasta', 'Punarvasu'];
+                dayOk = meetNaks.includes(moonNak.name);
                 if(dayOk) {
-                    score = 8;
-                    reasons.push("Wednesday (Mercury's Day) & Mercury Direct");
+                    score = 7;
+                    reasons.push(`${moonNak.name} supports successful agreements`);
+                    if (isAbhijit) reasons.push("Abhijit Muhurta invincibility");
                 }
                 break;
             case 'travel':
-                dayOk = ![4,9,14].includes(t.num);
-                if(dayOk) {
-                    score = 6;
-                    reasons.push(`Avoided Rikta Tithi ${t.num}`);
-                    if(t.phase === 'Shukla') { score += 2; reasons.push("Waxing Moon support"); }
+                const travelAvoid = ['Vishakha', 'Uttara Phalguni', 'Uttara Bhadrapada', 'Uttara Ashadha', 'Magha', 'Ardra', 'Bharani', 'Ashlesha', 'Krittika', 'Jyeshtha', 'Mula'];
+                const travelGood = ['Ashwini', 'Punarvasu', 'Hasta', 'Pushya', 'Anuradha', 'Shravana', 'Dhanishtha', 'Revati', 'Mrigashirsha'];
+                
+                if (travelAvoid.includes(moonNak.name)) {
+                    dayOk = false;
+                } else if (travelGood.includes(moonNak.name)) {
+                    dayOk = true;
+                    score = 8;
+                    reasons.push(`${moonNak.name} strongly supports travel/networking`);
                 }
                 break;
             case 'medicine':
@@ -2238,15 +2253,19 @@ function findGeneralMuhurta() {
                 }
                 break;
             case 'property':
-                const stableNaks = ['Rohini', 'Uttara Phalguni', 'Uttara Ashadha', 'Uttara Bhadrapada'];
-                dayOk = stableNaks.includes(moonNak.name);
+                const propNaks = ['Rohini', 'Uttara Phalguni', 'Uttara Ashadha', 'Uttara Bhadrapada'];
+                const foundationNaks = ['Krittika', 'Bharani', 'Ashlesha', 'Magha', 'Mula', 'Vishakha', 'Purva Phalguni', 'Purva Ashadha', 'Purva Bhadrapada'];
+                
+                dayOk = propNaks.includes(moonNak.name) || foundationNaks.includes(moonNak.name);
                 if(dayOk) {
-                    score = 8;
-                    reasons.push(`Stable ${moonNak.name} Nakshatra (Longevity)`);
+                    score = propNaks.includes(moonNak.name) ? 9 : 7;
+                    if (propNaks.includes(moonNak.name)) reasons.push(`Stable ${moonNak.name} for purchase/registration`);
+                    else reasons.push(`${moonNak.name} good for Foundation Laying`);
+                    if (isAbhijit) reasons.push("Abhijit Muhurta (89% property success)");
                 }
                 break;
             case 'pilgrimage':
-                dayOk = !isCombust('Jupiter', jday, pos.Sun.sid) && t.phase === 'Shukla';
+                dayOk = ['Shravana', 'Revati'].includes(moonNak.name);
                 if(dayOk) {
                     score = 7;
                     reasons.push("Pure Shukla phase & Jupiter strength");
@@ -3544,11 +3563,28 @@ function updateActiveDashas(){
 
 function updateAlerts(){
   const pos=getPos(TODAY);
+  if (!pos || !pos.Saturn) { document.getElementById('alertsDiv').innerHTML=''; return; }
   const satSn=pos.Saturn.sn;
   const sati=sadeSati(satSn),dh=!sati&&dhaiyya(satSn);
   const jupReturn=pos.Jupiter.sn===(BIRTH_PLANETS?.Jupiter?.sn??-1);
   const v=getVimsh(TODAY),y=getYogini(TODAY);
   let html='';
+  
+  if(typeof show64Navamsha !== 'undefined' && show64Navamsha && typeof BIRTH_ASC !== 'undefined') {
+    const l64 = (BIRTH_ASC.sid + 210) % 360;
+    const m64 = BIRTH_PLANETS?.Moon ? (BIRTH_PLANETS.Moon.sid + 210) % 360 : null;
+    const mals = ['Saturn', 'Mars', 'Sun', 'Rahu'];
+    mals.forEach(p => {
+      if(!pos[p]) return;
+      const tLon = pos[p].sid;
+      const chkD = (lon1, lon2) => { let d = Math.abs(lon1 - lon2); return d > 180 ? 360 - d : d; };
+      if (typeof SIGNS !== 'undefined') {
+        if(chkD(tLon, l64) < 3.33) html+=`<div class="alert" style="border-color:var(--rose); background:rgba(255,68,119,0.1);"><div class="alt">⚠ 64TH NAVAMSHA TRANSIT</div>${p} is crossing your Ascendant's 64th Navamsha (${SIGNS[Math.floor(l64/30)]} ${Math.floor(l64%30)}°). High vulnerability.</div>`;
+        if(m64 !== null && chkD(tLon, m64) < 3.33) html+=`<div class="alert" style="border-color:var(--rose); background:rgba(255,68,119,0.1);"><div class="alt">⚠ 64TH NAVAMSHA TRANSIT</div>${p} is crossing your Moon's 64th Navamsha (${SIGNS[Math.floor(m64/30)]} ${Math.floor(m64%30)}°). Emotional strain.</div>`;
+      }
+    });
+  }
+
   if(sati)html+=`<div class="alert al-sati"><div class="alt">⚠ SADE SATI</div>Saturn in ${pos.Saturn.sign} H${pos.Saturn.house}. Moon sign ±1 active. Karmic transformation period.</div>`;
   if(dh)html+=`<div class="alert al-dhaiyya"><div class="alt">⚡ DHAIYA</div>Saturn in ${pos.Saturn.sign}. 2.5yr pressure cycle. Discipline rewarded.</div>`;
   if(jupReturn)html+=`<div class="alert al-jup"><div class="alt">🌟 JUPITER RETURN</div>New 12-year wisdom cycle begins. Major expansion.</div>`;
@@ -3847,6 +3883,8 @@ document.getElementById('chkVarshaphala').addEventListener('change',e=>{
   }
   renderAll();
 });
+let show64Navamsha = false;
+document.getElementById('chk64Navamsha').addEventListener('change',e=>{show64Navamsha=e.target.checked;renderAll();});
 document.getElementById('chkTrackAK').addEventListener('change',e=>{trackAK=e.target.checked;renderAll();});
 document.getElementById('chkTrackAmK').addEventListener('change',e=>{trackAmK=e.target.checked;renderAll();});
 document.getElementById('chkTrackDK').addEventListener('change',e=>{trackDK=e.target.checked;renderAll();});

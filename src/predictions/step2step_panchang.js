@@ -1438,13 +1438,119 @@ const requestedDivs = [
     html += `</div>`;
 
     // ============================================================
+    // 11b. TARA CHAKRA & MOOL TRIKONA POWER ANALYSIS
+    // ============================================================
+    html += buildTaraChakraAndMoolTrikonaSection(planets, ascendant, SIGNS, LORDS);
+
+    // ============================================================
     // 12. JAIMINI ANALYSIS — KARAKAS, ARGALA & VIPRIT ARGALA
     // ============================================================
     html += buildJaiminiSection(planets, ascSn, SIGNS, LORDS);
 
+    // ============================================================
+    // 13. RASHI PARIVARTAN & DUAL LORDSHIP PRIORITY
+    // ============================================================
+    html += buildParivartanAndDualLordshipSection(planets, ascendant, SIGNS, LORDS);
+
     return html;
   }
 };
+
+function buildParivartanAndDualLordshipSection(planets, ascSn, SIGNS, LORDS) {
+    let pList = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'];
+    
+    // 1. Dual Lordship Analysis
+    let html = `<div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:12px; margin-top:15px; margin-bottom:15px;">
+        <div style="color:var(--sky); font-size:11px; font-weight:bold; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px;">
+            ⚖ Dual Lordship Priority
+        </div>
+        <div style="font-size:9.5px; color:var(--muted); margin-bottom:8px;">Planets owning two houses will deliver results primarily based on their placement relative to the Ascendant (Trikona > Kendra > 2/11 > 3/6 > 8/12 rules).</div>
+        <table style="width:100%; font-size:9.5px; text-align:left; border-collapse:collapse;">
+            <tr><th style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1);">Planet</th><th style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1);">Owns Houses</th><th style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1);">Priority Result</th></tr>`;
+
+    let lordMap = {};
+    for(let i=0; i<12; i++) {
+        let lord = LORDS[SIGNS[i]];
+        if (!lordMap[lord]) lordMap[lord] = [];
+        lordMap[lord].push((i - ascSn + 12) % 12 + 1);
+    }
+
+    pList.forEach(p => {
+        if (!lordMap[p] || lordMap[p].length < 2) return;
+        let pLon = planets[p]?.sid || planets[p]?.longitude;
+        if (pLon === undefined) return;
+        let pSn = Math.floor(pLon / 30);
+        let occHouse = ((pSn - ascSn + 12) % 12) + 1;
+        let ownA = lordMap[p][0];
+        let ownB = lordMap[p][1];
+
+        // Mool Trikona sign
+        let mtSign = '';
+        if (p==='Mars') mtSign=0; if (p==='Mercury') mtSign=5; if (p==='Jupiter') mtSign=8; if (p==='Venus') mtSign=6; if (p==='Saturn') mtSign=10;
+        let mtHouse = ((mtSign - ascSn + 12) % 12) + 1;
+        
+        // Let's determine priority simply by Kendra/Trikona value of the two owned houses?
+        // Actually user states "gives priority over its Mool Trikona house depending on standard rules (Trikona > Kendra > 2/11 > etc)"
+        let scoreA = [1,5,9].includes(ownA) ? 5 : [4,7,10].includes(ownA) ? 4 : [2,11].includes(ownA) ? 3 : [3,6].includes(ownA) ? 2 : 1;
+        let scoreB = [1,5,9].includes(ownB) ? 5 : [4,7,10].includes(ownB) ? 4 : [2,11].includes(ownB) ? 3 : [3,6].includes(ownB) ? 2 : 1;
+        
+        let dominant = scoreA > scoreB ? ownA : scoreB > scoreA ? ownB : mtHouse;
+        let msg = dominant === mtHouse ? `Focuses on its Mool Trikona (House ${mtHouse})` : `Focuses heavily on House ${dominant} due to strong Kendra/Trikona geometry`;
+
+        html += `<tr>
+            <td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.05); color:var(--gold); font-weight:bold;">${p}</td>
+            <td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.05);">${ownA} and ${ownB}</td>
+            <td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.05); color:var(--text);">${msg}</td>
+        </tr>`;
+    });
+    html += `</table></div>`;
+
+    // 2. Parivartan Yoga
+    html += `<div style="background:rgba(255,68,119,0.05); border:1px solid rgba(255,68,119,0.2); border-radius:8px; padding:12px; margin-bottom:15px;">
+        <div style="color:var(--rose); font-size:11px; font-weight:bold; margin-bottom:8px; border-bottom:1px solid rgba(255,68,119,0.2); padding-bottom:4px;">
+            ♋ Rashi Parivartan (Exchange Yoga)
+        </div>`;
+    
+    let exchanges = [];
+    for(let i=0; i<pList.length; i++) {
+        for(let j=i+1; j<pList.length; j++) {
+            let p1 = pList[i], p2 = pList[j];
+            if (!planets[p1] || !planets[p2]) continue;
+            let p1Sn = Math.floor((planets[p1].sid||planets[p1].longitude) / 30);
+            let p2Sn = Math.floor((planets[p2].sid||planets[p2].longitude) / 30);
+
+            let disp1 = LORDS[SIGNS[p1Sn]];
+            let disp2 = LORDS[SIGNS[p2Sn]];
+
+            if (disp1 === p2 && disp2 === p1) exchanges.push([p1, p2, p1Sn, p2Sn]);
+        }
+    }
+
+    if (exchanges.length === 0) {
+        html += `<div style="font-size:9.5px; color:var(--muted); font-style:italic;">No planetary exchanges present in the natal chart.</div>`;
+    } else {
+        html += `<div style="font-size:9.5px; color:var(--text); margin-bottom:10px;">When planets exchange signs, an unbreakable lifelong link is established between their significations and their Kalapurusha houses.</div>`;
+        exchanges.forEach(ex => {
+            let p1 = ex[0], p2 = ex[1];
+            let h1 = ((ex[2] - ascSn + 12) % 12) + 1;
+            let h2 = ((ex[3] - ascSn + 12) % 12) + 1;
+            let kp1 = ex[2] + 1; // Kalapurusha house = sign index + 1
+            let kp2 = ex[3] + 1;
+
+            html += `<div style="padding:8px; background:rgba(0,0,0,0.2); border:1px dashed var(--rose); border-radius:4px; margin-bottom:6px;">
+                <div style="color:var(--gold); font-size:10px; font-weight:bold;">${p1} in H${h1} ⟷ ${p2} in H${h2}</div>
+                <ul style="margin:4px 0 0 16px; font-size:9px; color:var(--text);">
+                    <li style="margin-bottom:2px;"><strong>Automatic Activation:</strong> Activating ${p1}'s energy automatically activates ${p2}'s significations.</li>
+                    <li style="margin-bottom:2px;"><strong>Kalapurusha Imprint:</strong> Involves the natural energies of the <strong>${kp1}th</strong> and <strong>${kp2}th</strong> houses of the zodiac.</li>
+                    <li><strong>Synthesis:</strong> The native experiences a fusion between the house matters of H${h1} and H${h2}, operating as a single unit in life.</li>
+                </ul>
+            </div>`;
+        });
+    }
+    html += `</div>`;
+    
+    return html;
+}
 
 // ==============================================================
 // JAIMINI ANALYSIS ENGINE (Append to step2step_panchang.js)
@@ -1638,6 +1744,70 @@ function buildJaiminiSection(planets, ascSn, SIGNS, LORDS) {
 
   html += `</div></div>`;
 
+  // ─── SECTION A-2: JAIMINI RAJYOGA (ATMAKARAKA LINKAGES) ───
+  function hasJaiminiAspect(s1, s2) {
+    if (s1 === s2) return false;
+    const t1 = getSignType(s1);
+    const t2 = getSignType(s2);
+    if (t1 === 'dual' && t2 === 'dual') return true;
+    if (t1 === 'movable' && t2 === 'fixed') {
+      if ((s1 + 1) % 12 === s2) return false;
+      return true;
+    }
+    if (t1 === 'fixed' && t2 === 'movable') {
+      if ((s1 + 11) % 12 === s2) return false;
+      return true;
+    }
+    return false;
+  }
+
+  let ak = karakas.find(k => k.role.startsWith('AK'));
+  if (ak && planets[ak.planet]) {
+    const akSn = Math.floor((planets[ak.planet].sid || planets[ak.planet].longitude) / 30);
+    const yogas = [];
+    let isBhanga = false;
+    let bhangaBy = [];
+
+    karakas.forEach(k => {
+      if (k.planet === ak.planet) return;
+      if (!planets[k.planet]) return;
+      const kSn = Math.floor((planets[k.planet].sid || planets[k.planet].longitude) / 30);
+      const isConjunct = (kSn === akSn);
+      const isAspected = hasJaiminiAspect(kSn, akSn) || hasJaiminiAspect(akSn, kSn);
+
+      if (isConjunct || isAspected) {
+        if (k.role.startsWith('BK') || k.role.startsWith('GK')) {
+          isBhanga = true;
+          bhangaBy.push(k.role.split(' ')[0] + ` (${k.planet})`);
+        } else if (k.role.startsWith('AmK') || k.role.startsWith('MK') || k.role.startsWith('PK') || k.role.startsWith('DK')) {
+          yogas.push({ karaka: k.role.split(' ')[0], planet: k.planet, type: isConjunct ? 'Conjunction' : 'Rashi Drishti' });
+        }
+      }
+    });
+
+    html += `<div style="background:rgba(200,168,75,0.06); border:1px solid rgba(200,168,75,0.25); border-radius:8px; padding:12px; margin-bottom:15px;">
+      <div style="color:var(--gold2); font-size:11px; font-weight:bold; margin-bottom:10px; border-bottom:1px solid rgba(200,168,75,0.2); padding-bottom:4px;">
+        👑 Jaimini Rajyogas (Atmakaraka Links)
+      </div>`;
+    
+    if (yogas.length > 0) {
+      if (isBhanga) {
+        html += `<div style="color:var(--rose); font-size:10.5px; font-weight:bold; margin-bottom:6px;">Result: RAJYOGA CANCELLED (Bhanga)</div>
+                 <div style="font-size:9.5px; color:var(--text); margin-bottom:6px;">Although AK links with benefic Karakas, the Rajyoga is destroyed because it receives aspect/conjunction from ${bhangaBy.join(' and ')}.</div>`;
+      } else {
+        html += `<div style="color:#00ff88; font-size:10.5px; font-weight:bold; margin-bottom:6px;">Result: POWERFUL RAJYOGA CONFIRMED ✨</div>
+                 <div style="font-size:9.5px; color:var(--text); margin-bottom:6px;">The soul's purpose (AK) is fully supported by beneficial significators without malefic (BK/GK) interference!</div>`;
+      }
+      yogas.forEach(y => {
+        html += `<div style="font-size:9.5px; color:var(--gold); margin-bottom:4px;">➤ <strong>AK (${ak.planet})</strong> + <strong>${y.karaka} (${y.planet})</strong> via ${y.type}</div>`;
+      });
+    } else {
+      let bMsg = isBhanga ? ` However, AK is negatively afflicted by ${bhangaBy.join(', ')}.` : '';
+      html += `<div style="font-size:9.5px; color:var(--muted); font-style:italic;">No primary Jaimini Rajyogas formed by AK-benefic aspect.${bMsg}</div>`;
+    }
+    html += `</div>`;
+  }
+
   // ─── SECTION B: Argala on Key Houses ───
   html += `<div style="background:rgba(0,206,201,0.05); border:1px solid rgba(0,206,201,0.2); border-radius:8px; padding:12px; margin-bottom:15px;">
     <div style="color:#00cec9; font-size:11px; font-weight:bold; margin-bottom:6px; border-bottom:1px solid rgba(0,206,201,0.2); padding-bottom:4px;">
@@ -1777,4 +1947,227 @@ function getHouseKeywords(h) {
     12:'Losses, spirituality, foreign lands, moksha'
   };
   return kw[h] || 'Life significations';
+}
+
+// ==============================================================
+// TARA CHAKRA & MOOL TRIKONA ENGINE
+// ==============================================================
+function buildTaraChakraAndMoolTrikonaSection(planets, ascendant, SIGNS, LORDS) {
+  let html = `<div class="pred-item" style="border-left: 3px solid #ff9f43; margin-top:20px;">
+        <div class="pred-title" style="color:#ff9f43; font-size:14px; text-align:center;">✨ Navatara (Tara Chakra) Analysis</div>
+        <div style="font-size:10px; color:var(--muted); text-align:center; margin-bottom:15px;">Planetary manifestation modifiers based on Moon's Nakshatra</div>`;
+
+  const pNames = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
+  
+  // 1. Get Moon's Nakshatra
+  const moonLon = planets.Moon ? (planets.Moon.sid !== undefined ? planets.Moon.sid : planets.Moon.longitude) : null;
+  if (moonLon === null) {
+      return html + `<div style="color:var(--rose);">Moon position missing. Cannot calculate Tara Chakra.</div></div>`;
+  }
+  
+  const moonNakIdx = Math.floor(moonLon * 27 / 360);
+  
+  const taraNames = [
+      { name: "Janma (Birth)", effect: "Mix/Good", desc: "Body, physical self, new beginnings." },
+      { name: "Sampat (Wealth)", effect: "Very Good", desc: "Prosperity, resources, asset creation." },
+      { name: "Vipat (Danger)", effect: "Struggle", desc: "Creating one's own obstacles, learning through mistakes before succeeding." },
+      { name: "Kshema (Wellbeing)", effect: "Good", desc: "Comfort, safety, consolidation of gains." },
+      { name: "Pratyari (Obstacles)", effect: "Competitive", desc: "Enemies, intense competition, success after fighting odd conditions." },
+      { name: "Sadhaka (Achievement)", effect: "Very Good", desc: "Accomplishment, fulfilling desires smoothly." },
+      { name: "Vadha (Transformation)", effect: "Transformative", desc: "Major breakdown of ego, testing, success post deep transformation/learning." },
+      { name: "Mitra (Friend)", effect: "Good", desc: "Supportive, collaborative, friendly environment." },
+      { name: "Ati-Mitra (Intimate Friend)", effect: "Very Good", desc: "Highly supportive, intimate alliances, deep comfort." }
+  ];
+
+  html += `<table style="width:100%; font-size:10px; color:var(--text); text-align:left; border-collapse: collapse; margin-bottom:15px;">
+        <tr style="color:var(--cyan); border-bottom:1px solid var(--border2);">
+            <th style="padding:4px;">Planet</th>
+            <th style="padding:4px;">Nakshatra (Pada)</th>
+            <th style="padding:4px;">Tara (1-9)</th>
+            <th style="padding:4px;">Name</th>
+            <th style="padding:4px;">Experience Modifier</th>
+        </tr>`;
+
+  let taraMap = {};
+  pNames.forEach(p => {
+      if(planets[p]) {
+          let lon = planets[p].sid !== undefined ? planets[p].sid : planets[p].longitude;
+          let pNakIdx = Math.floor(lon * 27 / 360);
+          let taraNum = ((pNakIdx - moonNakIdx + 27) % 27) + 1;
+          let category = ((taraNum - 1) % 9) + 1; // 1 to 9
+          
+          let nakInfoLocal = (typeof window.determineNakshatra === 'function') ? window.determineNakshatra(lon) : {name:'-', pada:'-', lord:'-'};
+          if (nakInfoLocal.name === '-') {
+            nakInfoLocal = window.getNakshatra ? window.getNakshatra(lon) : {name:'-', pada:'-', lord:'-'};
+          }
+
+          const tInfo = taraNames[category - 1];
+          taraMap[p] = { category: category, info: tInfo };
+          
+          let color = ["#ff4757", "#ffa0a0"].includes(category) ? "var(--rose)" : "var(--text)"; 
+          if (category === 3 || category === 5 || category === 7) color = "var(--amber)";
+          else if (category === 2 || category === 6 || category === 9) color = "#00ff88"; // very good
+          
+          html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+              <td style="padding:4px; font-weight:bold;">${p}</td>
+              <td style="padding:4px;">${nakInfoLocal.name} (${nakInfoLocal.pada})</td>
+              <td style="padding:4px; color:${color}; font-weight:bold;">${category}</td>
+              <td style="padding:4px; color:${color};">${tInfo.name}</td>
+              <td style="padding:4px;" title="${tInfo.desc}">${tInfo.effect}</td>
+          </tr>`;
+      }
+  });
+  html += `</table>`;
+
+  // Special Highlight Analysis
+  const ascSn = ascendant.sn !== undefined ? ascendant.sn : Math.floor((ascendant.sid || ascendant.longitude) / 30);
+  const ascLord = LORDS[ascSn];
+  const lord9Sn = (ascSn + 8) % 12;
+  const lord9 = LORDS[lord9Sn];
+  const lord5Sn = (ascSn + 4) % 12;
+  const lord5 = LORDS[lord5Sn];
+
+  html += `<div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px;">
+    <div style="color:var(--gold); font-size:11px; margin-bottom:8px; font-weight:bold; border-bottom:1px solid var(--border2); padding-bottom:4px;">🎯 Key Lords Experience Profile</div>`;
+  
+  html += renderLordTaraAnalysis("Ascendant Lord", ascLord, taraMap);
+  html += renderLordTaraAnalysis("5th Lord (Intellect/Children)", lord5, taraMap);
+  html += renderLordTaraAnalysis("9th Lord (Bhagya/Luck)", lord9, taraMap);
+  html += `</div>`;
+
+  // -------------------------------------------------------------
+  // NAKSHATRA MAITRI (TARA MATRIX)
+  // -------------------------------------------------------------
+  html += `<div style="margin-top:15px;">
+    <div style="color:var(--violet); font-size:11px; margin-bottom:8px; font-weight:bold; border-bottom:1px solid var(--border2); padding-bottom:4px;">🌌 Nakshatra Maitri (Tara Interaction Matrix)</div>
+    <div style="font-size:9.5px; color:var(--muted); margin-bottom:8px;">Read Row (From) to Col (To). Shows how Planet A experiences Planet B based on relative Nakshatras.</div>
+    <div style="overflow-x:auto;">
+    <table style="width:100%; font-size:9px; text-align:center; border-collapse:collapse;">
+      <tr style="background:rgba(255,255,255,0.03);">
+        <th style="padding:4px; border:1px solid var(--border2); color:var(--cyan);">From \\ To</th>`;
+  
+  pNames.forEach(pBtn => { html += `<th style="padding:4px; border:1px solid var(--border2); color:var(--gold2);">${pBtn.substring(0,3)}</th>`; });
+  html += `</tr>`;
+
+  pNames.forEach(pRow => {
+      html += `<tr><td style="padding:4px; border:1px solid var(--border2); font-weight:bold; color:var(--gold2);">${pRow.substring(0,3)}</td>`;
+      pNames.forEach(pCol => {
+          if (pRow === pCol) {
+              html += `<td style="padding:4px; border:1px solid var(--border2); background:rgba(255,255,255,0.05); color:var(--muted);">-</td>`;
+              return;
+          }
+          if (!planets[pRow] || !planets[pCol]) {
+              html += `<td style="padding:4px; border:1px solid var(--border2);">-</td>`;
+              return;
+          }
+          let lonFrom = planets[pRow].sid !== undefined ? planets[pRow].sid : planets[pRow].longitude;
+          let lonTo = planets[pCol].sid !== undefined ? planets[pCol].sid : planets[pCol].longitude;
+          let idxFrom = Math.floor(lonFrom * 27 / 360);
+          let idxTo = Math.floor(lonTo * 27 / 360);
+          
+          let taraVal = ((idxTo - idxFrom + 27) % 27) + 1;
+          let cat = ((taraVal - 1) % 9) + 1;
+          
+          let color = ["#ff4757", "#ffa0a0"].includes(cat) ? "var(--rose)" : "var(--text)"; 
+          if (cat === 3 || cat === 5 || cat === 7) color = "var(--rose)";
+          else if (cat === 2 || cat === 6 || cat === 9) color = "#00ff88";
+          else if (cat === 1 || cat === 4 || cat === 8) color = "var(--cyan)";
+
+          let symbol = cat === 7 ? "⚔" : cat === 5 ? "⚡" : cat === 3 ? "⚠" : cat === 2 ? "💰" : cat === 6 ? "🏆" : cat === 9 ? "♥" : "✨";
+          
+          html += `<td style="padding:4px; border:1px solid var(--border2); color:${color};" title="${pRow} towards ${pCol} is Tara ${cat} (${taraNames[cat-1].name})">
+            ${cat}<br/><span style="font-size:8px;">${symbol}</span>
+          </td>`;
+      });
+      html += `</tr>`;
+  });
+  html += `</table></div></div></div>`;
+
+  // -------------------------------------------------------------
+  // MOOL TRIKONA Power Chart
+  // -------------------------------------------------------------
+  html += `<div class="pred-item" style="border-left: 3px solid #ff9f43; margin-top:20px;">
+        <div class="pred-title" style="color:#ff9f43; font-size:14px; text-align:center;">🔥 Mool Trikona Power Analysis</div>
+        <div style="font-size:10px; color:var(--muted); text-align:center; margin-bottom:15px;">Evaluates true strength (recognition/appreciation) when Bhava, Lord, or Karaka are linked to MT signs.</div>`;
+
+  function isMoolTrikonaSign(signNum) {
+      // Aries(0), Taurus(1), Leo(4), Virgo(5), Libra(6), Sagittarius(8), Aquarius(10)
+      return [0, 1, 4, 5, 6, 8, 10].includes(signNum);
+  }
+
+  function isPlanetInItsMTClass(planetName) {
+      if (!planets[planetName]) return false;
+      const lon = planets[planetName].sid !== undefined ? planets[planetName].sid : planets[planetName].longitude;
+      const sn = Math.floor(lon / 30);
+      return isMoolTrikonaSign(sn);
+  }
+
+  // Karakas based on parashari assignment usually:
+  // 1: Sun, 2: Jupiter, 3: Mars, 4: Moon, 5: Jupiter, 6: Mars, 7: Venus, 8: Saturn, 9: Jupiter, 10: Saturn, 11: Jupiter, 12: Saturn
+  const houseKarakas = [
+      'Sun', 'Jupiter', 'Mars', 'Moon', 'Jupiter', 'Mars', 'Venus', 'Saturn', 'Jupiter', 'Saturn', 'Jupiter', 'Saturn'
+  ];
+
+  html += `<table style="width:100%; font-size:10px; color:var(--text); text-align:left; border-collapse: collapse;">
+      <tr style="color:var(--cyan); border-bottom:1px solid var(--border2);">
+          <th style="padding:4px;">House</th>
+          <th style="padding:4px;" title="Is the House sign an MT sign?">Bhava in MT</th>
+          <th style="padding:4px;" title="Is the House Lord placed in an MT sign?">Bhava Lord in MT</th>
+          <th style="padding:4px;" title="Is the House Karaka placed in an MT sign?">Karaka in MT</th>
+          <th style="padding:4px;">Power Result</th>
+      </tr>`;
+
+  for (let i = 0; i < 12; i++) {
+      const bhavaSign = (ascSn + i) % 12;
+      const bhavaLord = LORDS[bhavaSign];
+      const karaka = houseKarakas[i];
+
+      const bhavaMT = isMoolTrikonaSign(bhavaSign) ? "MT" : "NMT";
+      const bhavaLordMT = isPlanetInItsMTClass(bhavaLord) ? "MT" : "NMT";
+      const karakaMT = isPlanetInItsMTClass(karaka) ? "MT" : "NMT";
+
+      let scoreCount = 0;
+      if (bhavaMT === "MT") scoreCount++;
+      if (bhavaLordMT === "MT") scoreCount++;
+      if (karakaMT === "MT") scoreCount++;
+
+      let resultPct = "0%";
+      let colorClass = "var(--rose)";
+      if (scoreCount === 1) { resultPct = "33.33%"; colorClass = "var(--amber)"; }
+      else if (scoreCount === 2) { resultPct = "66.66%"; colorClass = "var(--gold)"; }
+      else if (scoreCount === 3) { resultPct = "100%"; colorClass = "#00ff88"; }
+
+      html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <td style="padding:4px;">${i + 1}${['st','nd','rd'][i] || 'th'} House</td>
+          <td style="padding:4px; color:${bhavaMT === 'MT' ? '#00ff88' : 'var(--muted)'};">${bhavaMT}</td>
+          <td style="padding:4px; color:${bhavaLordMT === 'MT' ? '#00ff88' : 'var(--muted)'};">${bhavaLordMT}</td>
+          <td style="padding:4px; color:${karakaMT === 'MT' ? '#00ff88' : 'var(--muted)'};">${karakaMT}</td>
+          <td style="padding:4px; font-weight:bold; color:${colorClass};">${resultPct}</td>
+      </tr>`;
+  }
+  html += `</table></div>`;
+
+  return html;
+}
+
+function renderLordTaraAnalysis(title, lord, taraMap) {
+    if (!taraMap[lord]) return ``;
+    const data = taraMap[lord];
+    const cat = data.category;
+    let message = "";
+    if (cat === 7) { 
+        message = `Strong transformation phase. Results (like success or luck) are achievable but ONLY after significant trials, breaking of ego, and learning from major failures. Not an outright denial!`;
+    } else if (cat === 5) { 
+        message = `Intense competition. The outcomes belonging to this house demand fighting against odds. Expect enemies/competitors, but consistent effort brings the prize.`;
+    } else if (cat === 3) { 
+        message = `Self-created hurdles. You might initially experience struggles or make mistakes related to this domain, but it serves as a crucial learning curve leading to eventual stability.`;
+    } else {
+        message = `Experiences related to this lord will generally manifest through ${data.info.desc.toLowerCase()}`;
+    }
+
+    return `<div style="font-size:9.5px; margin-bottom:8px; line-height:1.4;">
+        <span style="color:var(--cyan); font-weight:bold;">${title} (${lord}):</span> 
+        Sitting in <strong>${data.info.name} (Tara ${cat})</strong><br/>
+        <span style="color:var(--text);">${message}</span>
+    </div>`;
 }
