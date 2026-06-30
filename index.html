@@ -1036,6 +1036,9 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
           <option value="industrialist">Industrialist</option>
           <option value="inventor">Inventor</option>
           <option value="presenter">Presenter</option>
+           <option value="scientist">Scientist</option>
+          <option value="singer">Singer</option>
+          <option value="writer">Writer</option>
         </select>
       </div>
       <div class="fg">
@@ -3448,7 +3451,69 @@ function fmtDeg(decDeg){
   const s=Math.round((mAll-m)*60);
   return d+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
 }
+// ── KP Sub-Lord & Sub-Sub Lord live calculator ──────────────────────────────
+// Computes Nakshatra lord (NL), Sub lord (SL), and Sub-Sub lord (SSL) from
+// a raw sidereal longitude, always fresh — never relying on cached pd.nl/pd.sl.
+function getKPLords(sidLon) {
+  const dashaSeq  = ['Ketu','Venus','Sun','Moon','Mars','Rahu','Jupiter','Saturn','Mercury'];
+  const dashaYrs  = [7, 20, 6, 10, 7, 18, 16, 19, 17]; // total = 120
+  const nakSize   = 360 / 27;                 // 13.3333…°
 
+  const lon = ((sidLon % 360) + 360) % 360;  // normalise
+  const nakIdx = Math.floor(lon / nakSize);   // 0-26
+  // Nakshatra lord index = nakIdx % 9 in Vimshottari sequence starting Ketu
+  const nlIdx   = nakIdx % 9;
+  const nakLord = dashaSeq[nlIdx];
+
+  const degInNak = lon % nakSize;             // 0 – 13.333°
+
+  // ── Sub lord ──────────────────────────────
+  let acc = 0, slIdx = -1;
+  for (let i = 0; i < 9; i++) {
+    const ci = (nlIdx + i) % 9;
+    acc += (dashaYrs[ci] / 120) * nakSize;
+    if (degInNak < acc - 1e-9) { slIdx = ci; break; }
+  }
+  if (slIdx === -1) slIdx = (nlIdx + 8) % 9; // edge: last sub
+  const subLord = dashaSeq[slIdx];
+
+  // ── Sub-Sub lord ──────────────────────────
+  // Find start of this sub-division within the nakshatra
+  let subStart = 0;
+  for (let i = 0; i < 9; i++) {
+    const ci = (nlIdx + i) % 9;
+    const subSize = (dashaYrs[ci] / 120) * nakSize;
+    if (ci === slIdx) break;
+    subStart += subSize;
+  }
+  const subSize = (dashaYrs[slIdx] / 120) * nakSize;
+  const degInSub = degInNak - subStart;       // position within sub-division
+  let sslIdx = -1, acc2 = 0;
+  for (let i = 0; i < 9; i++) {
+    const ci = (slIdx + i) % 9;
+    acc2 += (dashaYrs[ci] / 120) * subSize;
+    if (degInSub < acc2 - 1e-9) { sslIdx = ci; break; }
+  }
+  if (sslIdx === -1) sslIdx = (slIdx + 8) % 9;
+  const subSubLord = dashaSeq[sslIdx];
+
+  return { nakLord, subLord, subSubLord };
+}
+
+// Tiny helper: abbreviate planet name to 2-char for compact cells
+function _pAbbr(name) {
+  const MAP = {Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke'};
+  return MAP[name] || (name||'').substring(0,2);
+}
+// Colour of a planet name for lord cells
+function _pCol(name) {
+  return PCFG[name]?.color || 'var(--muted)';
+}
+// Render a lord badge: abbrev in planet colour with full name tooltip
+function _lordCell(name, extraStyle='') {
+  if (!name) return `<td class="ph-sign"></td>`;
+  return `<td class="ph-sign" title="${name}" style="font-size:9px;color:${_pCol(name)};font-weight:700;${extraStyle}">${_pAbbr(name)}</td>`;
+}
 function updatePlanetTable(){
   const tbl=document.getElementById('planetTbl');tbl.innerHTML='';
   const dchartName=DCHART_TYPES.find(x=>x.d===CURRENT_DIV)?.name||'D1';
@@ -3456,13 +3521,13 @@ function updatePlanetTable(){
 
   // Chart header
   const hdr=document.createElement('tr');
-  hdr.innerHTML=`<td colspan="12" style="font-family:Courier New,monospace;font-size:9px;color:var(--muted);padding-bottom:4px;letter-spacing:1px;">${dchartName} \u00B7 ${BIRTH_ASC?.sign||'?'} ASCENDANT \u00B7 ${BIRTH.city}</td>`;
+  hdr.innerHTML=`<td colspan="13" style="font-family:Courier New,monospace;font-size:9px;color:var(--muted);padding-bottom:4px;letter-spacing:1px;">${dchartName} \u00B7 ${BIRTH_ASC?.sign||'?'} ASCENDANT \u00B7 ${BIRTH.city}</td>`;
   tbl.appendChild(hdr);
 
   // Column headers
   const ch=document.createElement('tr');
   ch.style.cssText='border-bottom:1px solid rgba(40,40,100,.6);';
-  ['','Planet','Sign & Deg','Nakshatra/Pd','RL','NL','SL','H','Sts','SB','K'].forEach(h=>{
+  ['','Planet','Sign & Deg','Nakshatra/Pd','RL','NL','SL','SSL','H','Sts','SB','K'].forEach(h=>{
     const td=document.createElement('td');
     td.style.cssText='font-family:Courier New,monospace;font-size:8px;color:var(--muted);padding:1px 3px;white-space:nowrap;';
     td.textContent=h;ch.appendChild(td);
@@ -3471,16 +3536,23 @@ function updatePlanetTable(){
 
   // ASC row
   if(BIRTH_ASC){
+   // Always compute fresh from sidereal longitude
+    const ascSid = BIRTH_ASC.sid != null ? BIRTH_ASC.sid
+                 : (BIRTH_ASC.sn||0)*30 + parseFloat(BIRTH_ASC.deg||0);
+    const ascNak  = determineNakshatra(ascSid);
+    const ascKP   = getKPLords(ascSid);
+    const ascRL   = BIRTH_ASC.rl || (typeof getSignLord==='function' ? getSignLord(BIRTH_ASC.sign) : '');
     const r=document.createElement('tr');
     r.style.cssText='border-bottom:1px solid rgba(20,20,60,.5);';
     r.innerHTML=`
       <td><span class="ph-dot" style="background:#3AF0FF;border:1px solid #3AF0FF44;"></span></td>
-      <td style="color:#3AF0FF;font-weight:700;font-size:10.5px;white-space:nowrap;">Lagna</td>
+      <td style="color:#3AF0FF;font-weight:700;font-size:10.5px;white-space:nowrap;">Lg Lagna</td>
       <td style="font-family:Courier New,monospace;font-size:9px;white-space:nowrap;color:#3AF0FF">${BIRTH_ASC.sign.substring(0,3)} ${fmtDeg(parseFloat(BIRTH_ASC.deg))}</td>
-      <td style="font-family:Courier New,monospace;font-size:9px;color:var(--muted);white-space:nowrap;">${BIRTH_ASC.nak||'Ardra'}/P${BIRTH_ASC.pada||4}</td>
-      <td class="ph-sign">${BIRTH_ASC.rl||'Me'}</td>
-      <td class="ph-sign">${BIRTH_ASC.nl||'Ra'}</td>
-      <td class="ph-sign">${BIRTH_ASC.sl||'Ve'}</td>
+      <td style="font-family:Courier New,monospace;font-size:8.5px;color:var(--muted);white-space:nowrap;">${ascNak.name||BIRTH_ASC.nak||''}<span style="color:rgba(100,100,160,.6)">/P${ascNak.pada||BIRTH_ASC.pada||''}</span></td>
+      <td class="ph-sign" title="${ascRL}" style="font-size:9px;color:${_pCol(ascRL)};font-weight:700;">${_pAbbr(ascRL)}</td>
+      ${_lordCell(ascKP.nakLord)}
+      ${_lordCell(ascKP.subLord)}
+      ${_lordCell(ascKP.subSubLord,'opacity:.8;')}
       <td><span class="ph-badge">H1</span></td>
       <td></td><td></td><td></td>`;
     tbl.appendChild(r);
@@ -3496,10 +3568,22 @@ function updatePlanetTable(){
     const isRetro=pd.retro||(pd.speed!=null&&pd.speed<0);
     const sym=cfg?.sym||p.substring(0,2);
 
-    const stsColor=pd.status==='Enemy'?'#FF5555':pd.status==='Own'?'#00FF88':pd.status==='Exalt.'?'#FFD700':pd.status==='Debil.'?'#FF6633':pd.status==='Neutr.'?'#AAAACC':'#888';
+    // ── Always compute NL / SL / SSL live from sidereal longitude ──────────
+    const sid = pd.sid != null ? pd.sid : (pd.sn||0)*30 + parseFloat(pd.deg||0);
+    const kp  = getKPLords(sid);
+    // Also recompute nakshatra/pada in case not populated
+    const nakInfo = (pd.nak) ? { name: pd.nak, pada: pd.pada } : determineNakshatra(sid);
 
-    const combMark=pd.combust?'<span title="Combust" style="color:#FF7700;font-size:8px;font-weight:900"> C</span>':'';
-    const retMark=isRetro?'<span title="Retrograde" style="color:#FF9933;font-size:8px;font-weight:900"> R</span>':'';
+    const stsColor = pd.status==='Enemy'  ? '#FF5555'
+                   : pd.status==='Own'    ? '#00FF88'
+                   : pd.status==='Exalt.' ? '#FFD700'
+                   : pd.status==='Debil.' ? '#FF6633'
+                   : pd.status==='Neutr.' ? '#AAAACC' : '#888';
+
+    const combMark = pd.combust ? '<span title="Combust"    style="color:#FF7700;font-size:8px;font-weight:900"> ☌</span>' : '';
+    const retMark  = isRetro    ? '<span title="Retrograde" style="color:#FF9933;font-size:8px;font-weight:900"> ℞</span>' : '';
+
+    const rl = pd.rl || '';
 
     const r=document.createElement('tr');
     r.style.cssText=`border-bottom:1px solid rgba(20,20,60,.4);${isOuter?'opacity:.45;':''}`;
@@ -3507,10 +3591,11 @@ function updatePlanetTable(){
       <td><span class="ph-dot" style="background:${col};${pd.combust?'border:1.5px solid #FF7700;':''}${isRetro?'box-shadow:0 0 4px #FF9933;':''}"></span></td>
       <td style="color:${col};font-weight:700;font-size:10.5px;white-space:nowrap;">${sym} ${p}${retMark}${combMark}</td>
       <td style="font-family:Courier New,monospace;font-size:9px;white-space:nowrap;color:${col}99">${pd.sign.substring(0,3)} ${fmtDeg(parseFloat(pd.deg))}</td>
-      <td style="font-family:Courier New,monospace;font-size:8.5px;color:var(--muted);white-space:nowrap;">${pd.nak||''}<span style="color:rgba(100,100,160,.6)">${pd.pada?'/P'+pd.pada:''}</span></td>
-      <td class="ph-sign" style="font-size:9px;">${pd.rl||''}</td>
-      <td class="ph-sign" style="font-size:9px;">${pd.nl||''}</td>
-      <td class="ph-sign" style="font-size:9px;">${pd.sl||''}</td>
+     <td style="font-family:Courier New,monospace;font-size:8.5px;color:var(--muted);white-space:nowrap;">${nakInfo.name}<span style="color:rgba(100,100,160,.6)">/P${nakInfo.pada||''}</span></td>
+      <td class="ph-sign" title="${rl}" style="font-size:9px;color:${_pCol(rl)};font-weight:700;">${_pAbbr(rl)}</td>
+      ${_lordCell(kp.nakLord)}
+      ${_lordCell(kp.subLord)}
+      ${_lordCell(kp.subSubLord,'opacity:.8;')}
       <td><span class="ph-badge" style="font-size:8px;">H${pd.house}</span></td>
       <td style="font-size:9px;font-weight:700;color:${stsColor};white-space:nowrap;">${pd.status||''}</td>
       <td style="font-family:Courier New,monospace;font-size:9px;color:var(--gold);font-weight:600;">${pd.sb!=null?pd.sb.toFixed(2):''}</td>
@@ -3527,14 +3612,18 @@ function updateCurrentTbl(){
   if(!pos)return;
   for(const[p,pd]of Object.entries(pos)){
     const cfg=PCFG[p];if(!cfg)continue;
-    const retMark=pd.retro&&showRetro?'<span style="color:#FF9933;font-size:8px"> R</span>':'';
+   const retMark=pd.retro&&showRetro?'<span style="color:#FF9933;font-size:8px"> ℞</span>':'';
+
+    // Live KP lords from sidereal longitude
+    const sid = pd.sid != null ? pd.sid : (pd.sn||0)*30 + parseFloat(pd.deg||0);
+    const kp  = getKPLords(sid);
     const r=document.createElement('tr');
     r.innerHTML=`<td><span class="ph-dot" style="background:${cfg.color}"></span></td>
       <td style="color:${cfg.color};font-weight:700;font-size:10.5px;white-space:nowrap;">${cfg.sym} ${p}${retMark}</td>
       <td style="font-family:Courier New,monospace;font-size:9px;color:${cfg.color}99">${pd.sign.substring(0,3)} ${pd.deg}°</td>
       <td style="font-family:Courier New,monospace;font-size:8.5px;color:var(--muted);white-space:nowrap;">${pd.nak||''}<span style="color:rgba(100,100,160,.6)">${pd.pada?'/P'+pd.pada:''}</span></td>
-      <td class="ph-sign" style="font-size:8px;">${pd.nl||''}</td>
-      <td class="ph-sign" style="font-size:8px;">${pd.sl||''}</td>
+      ${_lordCell(kp.nakLord)}
+      ${_lordCell(kp.subLord)}
       <td><span class="ph-badge">H${pd.house}</span></td>`;
     tbl.appendChild(r);
   }

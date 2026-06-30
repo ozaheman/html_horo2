@@ -11,15 +11,22 @@
 function analyzeYogasAcrossDivisionalCharts(birthChart) {
   if (!birthChart || !birthChart.planets) return null;
   
-  // Key divisional charts for yogas
+  // Key divisional charts for yogas (matches the full Varga set defined in index.html)
   const divisionalCharts = [
     { divisor: 1, name: 'D1 - Rashi (Birth Chart)', purpose: 'Overall Personality & Destiny' },
     { divisor: 2, name: 'D2 - Hora (Wealth)', purpose: 'Financial Matters' },
     { divisor: 3, name: 'D3 - Drekkana (Siblings)', purpose: 'Siblings & Co-borns' },
     { divisor: 4, name: 'D4 - Chaturthamsa (Property)', purpose: 'Real Estate & Property' },
+    { divisor: 7, name: 'D7 - Saptamsa (Children)', purpose: 'Children & Progeny' },
     { divisor: 9, name: 'D9 - Navamsa (Spouse)', purpose: 'Marriage & Partnership' },
     { divisor: 10, name: 'D10 - Dasamsa (Career)', purpose: 'Career & Profession' },
-    { divisor: 12, name: 'D12 - Dwadasamsa (Parents)', purpose: 'Parental Matters' }
+    { divisor: 12, name: 'D12 - Dwadasamsa (Parents)', purpose: 'Parental Matters' },
+    { divisor: 16, name: 'D16 - Shodasamsa (Vehicles)', purpose: 'Vehicles & Comforts' },
+    { divisor: 20, name: 'D20 - Vimshamsa (Spirituality)', purpose: 'Spiritual Progress' },
+    { divisor: 24, name: 'D24 - Siddhamsa (Education)', purpose: 'Education & Learning' },
+    { divisor: 27, name: 'D27 - Nakshatramsa (Strengths)', purpose: 'General Strengths & Weaknesses' },
+    { divisor: 30, name: 'D30 - Trimshamsa (Misfortune)', purpose: 'Misfortunes & Evils' },
+    { divisor: 60, name: 'D60 - Shashtiamsa (Past Karma)', purpose: 'Past-Life Karma' }
   ];
   
   const yogaFormations = {};
@@ -373,7 +380,7 @@ function generateDivisionalYogaDisplay(yogaFormations) {
   `;
   
   // Sort by divisor order
-  const sortedDivisors = [1, 2, 3, 4, 9, 10, 12].filter(d => yogaFormations[d]);
+  const sortedDivisors = [1, 2, 3, 4, 7, 9, 10, 12, 16, 20, 24, 27, 30, 60].filter(d => yogaFormations[d]);
   
   sortedDivisors.forEach(divisor => {
     const formation = yogaFormations[divisor];
@@ -429,9 +436,16 @@ function generateDivisionalYogaDisplay(yogaFormations) {
         • <strong>D2 (Hora)</strong>: Wealth, finances, and material resources<br/>
         • <strong>D3 (Drekkana)</strong>: Siblings, co-borns, courage, and efforts<br/>
         • <strong>D4 (Chaturthamsa)</strong>: Real estate, property, land, and fixed assets<br/>
+        • <strong>D7 (Saptamsa)</strong>: Children, progeny, and creative legacy<br/>
         • <strong>D9 (Navamsa)</strong>: Marriage, partnership, relationships, and spiritual life<br/>
         • <strong>D10 (Dasamsa)</strong>: Career, profession, reputation, and public image<br/>
-        • <strong>D12 (Dwadasamsa)</strong>: Parents, ancestors, inheritance, and legacy
+        • <strong>D12 (Dwadasamsa)</strong>: Parents, ancestors, inheritance, and legacy<br/>
+        • <strong>D16 (Shodasamsa)</strong>: Vehicles, comforts, and general happiness<br/>
+        • <strong>D20 (Vimshamsa)</strong>: Spiritual progress, worship, and devotion<br/>
+        • <strong>D24 (Siddhamsa)</strong>: Education, learning, and academic achievement<br/>
+        • <strong>D27 (Nakshatramsa)</strong>: General strengths, weaknesses, and resilience<br/>
+        • <strong>D30 (Trimshamsa)</strong>: Misfortunes, evils, and hidden weaknesses<br/>
+        • <strong>D60 (Shashtiamsa)</strong>: Past-life karma and overall life fruits
       </div>
     </div>
   `;
@@ -453,7 +467,7 @@ function showDivisionalYogaAnalysis(yogaFormations) {
   console.log('%c🧘 YOGA FORMATIONS ACROSS DIVISIONAL CHARTS', 'color: #8B4513; font-size: 16px; font-weight: bold;');
   console.log('═'.repeat(80));
   
-  const sortedDivisors = [1, 2, 3, 4, 9, 10, 12].filter(d => yogaFormations[d]);
+  const sortedDivisors = [1, 2, 3, 4, 7, 9, 10, 12, 16, 20, 24, 27, 30, 60].filter(d => yogaFormations[d]);
   
   sortedDivisors.forEach(divisor => {
     const formation = yogaFormations[divisor];

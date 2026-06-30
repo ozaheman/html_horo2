@@ -137,5 +137,92 @@ window.CELEBRITY_DATABASE = {
     { name: "Chetan Bhagat", date: "1974-04-22", time: "14:10", city: "New Delhi", lat: 28.61, lon: 77.20, utcOff: 5.5, ayan: "lahiri" },
     { name: "J.K. Rowling", date: "1965-07-31", time: "21:10", city: "Yate, UK", lat: 51.54, lon: -2.40, utcOff: 1, ayan: "lahiri" },
     { name: "Ernest Hemingway", date: "1899-07-21", time: "08:00", city: "Oak Park, IL", lat: 41.88, lon: -87.79, utcOff: -6, ayan: "lahiri" }
+  ],
+  "criminal": [
+    { name: "Pablo Escobar", date: "1949-12-01", time: "12:00", city: "Rionegro, Colombia", lat: 6.15, lon: -75.43, utcOff: -5, ayan: "lahiri" },
+    { name: "Al Capone", date: "1899-01-17", time: "12:00", city: "Brooklyn, NY", lat: 40.67, lon: -73.94, utcOff: -5, ayan: "lahiri" },
+    { name: "Charles Manson", date: "1934-11-12", time: "12:00", city: "Cincinnati, OH", lat: 39.10, lon: -84.51, utcOff: -5, ayan: "lahiri" },
+    { name: "Dawood Ibrahim", date: "1955-12-26", time: "12:00", city: "Ratnagiri, MH", lat: 16.99, lon: 73.31, utcOff: 5.5, ayan: "lahiri" }
+  ],
+  "judge": [
+    { name: "Ruth Bader Ginsburg", date: "1933-03-15", time: "12:00", city: "Brooklyn, NY", lat: 40.67, lon: -73.94, utcOff: -5, ayan: "lahiri" },
+    { name: "Sandra Day O'Connor", date: "1930-03-26", time: "12:00", city: "El Paso, TX", lat: 31.76, lon: -106.49, utcOff: -7, ayan: "lahiri" },
+    { name: "John Roberts", date: "1955-01-27", time: "12:00", city: "Buffalo, NY", lat: 42.89, lon: -78.88, utcOff: -5, ayan: "lahiri" },
+    { name: "P. N. Bhagwati", date: "1921-12-21", time: "12:00", city: "Ahmedabad, GJ", lat: 23.02, lon: 72.57, utcOff: 5.5, ayan: "lahiri" }
+  ],
+  "architect": [
+    { name: "Frank Lloyd Wright", date: "1867-06-08", time: "12:00", city: "Richland Center, WI", lat: 43.34, lon: -90.38, utcOff: -6, ayan: "lahiri" },
+    { name: "Zaha Hadid", date: "1950-10-31", time: "12:00", city: "Baghdad, Iraq", lat: 33.32, lon: 44.36, utcOff: 3, ayan: "lahiri" },
+    { name: "Le Corbusier", date: "1887-10-06", time: "12:00", city: "La Chaux-de-Fonds, Switzerland", lat: 47.10, lon: 6.83, utcOff: 1, ayan: "lahiri" },
+    { name: "I. M. Pei", date: "1917-04-26", time: "12:00", city: "Guangzhou, China", lat: 23.13, lon: 113.26, utcOff: 8, ayan: "lahiri" },
+    { name: "Charles Correa", date: "1930-09-01", time: "12:00", city: "Secunderabad, TS", lat: 17.45, lon: 78.50, utcOff: 5.5, ayan: "lahiri" }
+  ],
+  "interior designer": [
+    { name: "Kelly Hoppen", date: "1957-05-27", time: "12:00", city: "Paddington, London, UK", lat: 51.52, lon: -0.18, utcOff: 1, ayan: "lahiri" },
+    { name: "Kelly Wearstler", date: "1967-06-21", time: "12:00", city: "Myrtle Beach, SC", lat: 33.69, lon: -78.89, utcOff: -4, ayan: "lahiri" },
+    { name: "Sussanne Khan", date: "1976-11-20", time: "12:00", city: "New Delhi", lat: 28.61, lon: 77.20, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Nate Berkus", date: "1971-08-04", time: "12:00", city: "Oak Park, IL", lat: 41.88, lon: -87.79, utcOff: -5, ayan: "lahiri" }
+  ],
+  "king": [
+    { name: "King Charles III", date: "1948-11-14", time: "21:14", city: "London, UK", lat: 51.51, lon: -0.13, utcOff: 0, ayan: "lahiri" },
+    { name: "King Bhumibol Adulyadej", date: "1927-12-05", time: "08:45", city: "Cambridge, MA", lat: 42.37, lon: -71.11, utcOff: -5, ayan: "lahiri" },
+    { name: "King Abdullah II of Jordan", date: "1962-01-30", time: "12:00", city: "Amman, Jordan", lat: 31.95, lon: 35.93, utcOff: 2, ayan: "lahiri" },
+    { name: "Maharaja Ranjit Singh", date: "1780-11-13", time: "12:00", city: "Gujranwala, Pakistan", lat: 32.16, lon: 74.19, utcOff: 5.5, ayan: "lahiri" }
+  ],
+  "gay": [
+    { name: "Elton John", date: "1947-03-25", time: "12:00", city: "Pinner, London, UK", lat: 51.59, lon: -0.38, utcOff: 0, ayan: "lahiri" },
+    { name: "Ricky Martin", date: "1971-12-24", time: "12:00", city: "San Juan, Puerto Rico", lat: 18.47, lon: -66.11, utcOff: -4, ayan: "lahiri" },
+    { name: "Anderson Cooper", date: "1967-06-03", time: "12:00", city: "New York, NY", lat: 40.71, lon: -74.01, utcOff: -4, ayan: "lahiri" },
+    { name: "Ian McKellen", date: "1939-05-25", time: "12:00", city: "Burnley, UK", lat: 53.79, lon: -2.25, utcOff: 0, ayan: "lahiri" }
+  ],
+  "lesbian": [
+    { name: "Ellen DeGeneres", date: "1958-01-26", time: "12:00", city: "Metairie, LA", lat: 29.98, lon: -90.15, utcOff: -6, ayan: "lahiri" },
+    { name: "Wanda Sykes", date: "1964-03-07", time: "12:00", city: "Portsmouth, VA", lat: 36.84, lon: -76.30, utcOff: -5, ayan: "lahiri" },
+    { name: "Rosie O'Donnell", date: "1962-03-21", time: "12:00", city: "Commack, NY", lat: 40.84, lon: -73.29, utcOff: -5, ayan: "lahiri" },
+    { name: "Cynthia Nixon", date: "1966-04-09", time: "12:00", city: "New York, NY", lat: 40.71, lon: -74.01, utcOff: -5, ayan: "lahiri" }
+  ],
+  "widow": [
+    { name: "Jacqueline Kennedy Onassis", date: "1929-07-28", time: "14:30", city: "Southampton, NY", lat: 40.88, lon: -72.39, utcOff: -4, ayan: "lahiri" },
+    { name: "Coretta Scott King", date: "1927-04-27", time: "12:00", city: "Marion, AL", lat: 32.63, lon: -87.32, utcOff: -6, ayan: "lahiri" },
+    { name: "Yoko Ono", date: "1933-02-18", time: "02:30", city: "Tokyo, Japan", lat: 35.68, lon: 139.65, utcOff: 9, ayan: "lahiri" }
+  ],
+  "pope": [
+    { name: "Pope Francis", date: "1936-12-17", time: "21:00", city: "Buenos Aires, Argentina", lat: -34.60, lon: -58.38, utcOff: -4, ayan: "lahiri" },
+    { name: "Pope John Paul II", date: "1920-05-18", time: "12:00", city: "Wadowice, Poland", lat: 49.88, lon: 19.49, utcOff: 1, ayan: "lahiri" },
+    { name: "Pope Benedict XVI", date: "1927-04-16", time: "04:15", city: "Marktl, Germany", lat: 48.25, lon: 12.85, utcOff: 1, ayan: "lahiri" }
+  ],
+  "influencer": [
+    { name: "MrBeast (Jimmy Donaldson)", date: "1998-05-07", time: "12:00", city: "Wichita, KS", lat: 37.69, lon: -97.34, utcOff: -6, ayan: "lahiri" },
+    { name: "PewDiePie (Felix Kjellberg)", date: "1989-10-24", time: "12:00", city: "Gothenburg, Sweden", lat: 57.71, lon: 11.97, utcOff: 1, ayan: "lahiri" },
+    { name: "Kylie Jenner", date: "1997-08-10", time: "07:06", city: "Los Angeles, CA", lat: 34.05, lon: -118.24, utcOff: -7, ayan: "lahiri" },
+    { name: "Bhuvan Bam", date: "1994-01-22", time: "12:00", city: "New Delhi", lat: 28.61, lon: 77.20, utcOff: 5.5, ayan: "lahiri" }
+  ],
+  "motivational": [
+    { name: "Tony Robbins", date: "1960-02-29", time: "12:00", city: "North Hollywood, CA", lat: 34.17, lon: -118.38, utcOff: -8, ayan: "lahiri" },
+    { name: "Sandeep Maheshwari", date: "1980-09-28", time: "12:00", city: "New Delhi", lat: 28.61, lon: 77.20, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Robin Sharma", date: "1964-06-16", time: "12:00", city: "Hamilton, Canada", lat: 43.26, lon: -79.87, utcOff: -5, ayan: "lahiri" }
+  ],
+  "goons": [
+    { name: "John Gotti", date: "1940-10-27", time: "12:00", city: "Bronx, NY", lat: 40.84, lon: -73.86, utcOff: -5, ayan: "lahiri" },
+    { name: "Chhota Shakeel", date: "1960-04-01", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Abu Salem", date: "1962-01-12", time: "12:00", city: "Azamgarh, UP", lat: 26.07, lon: 83.18, utcOff: 5.5, ayan: "lahiri" }
+  ],
+  "rich person": [
+    { name: "Bernard Arnault", date: "1949-03-05", time: "12:00", city: "Roubaix, France", lat: 50.69, lon: 3.18, utcOff: 1, ayan: "lahiri" },
+    { name: "Carlos Slim", date: "1940-01-28", time: "12:00", city: "Mexico City, Mexico", lat: 19.43, lon: -99.13, utcOff: -6, ayan: "lahiri" },
+    { name: "Larry Ellison", date: "1944-08-17", time: "12:00", city: "New York, NY", lat: 40.71, lon: -74.01, utcOff: -5, ayan: "lahiri" },
+    { name: "Larry Page", date: "1973-03-26", time: "12:00", city: "East Lansing, MI", lat: 42.74, lon: -84.48, utcOff: -5, ayan: "lahiri" }
+  ],
+  "inventor": [
+    { name: "Thomas Edison", date: "1847-02-11", time: "12:00", city: "Milan, OH", lat: 41.30, lon: -82.60, utcOff: -6, ayan: "lahiri" },
+    { name: "Nikola Tesla", date: "1856-07-10", time: "00:00", city: "Smiljan, Croatia", lat: 44.36, lon: 15.32, utcOff: 1, ayan: "lahiri" },
+    { name: "Alexander Graham Bell", date: "1847-03-03", time: "12:00", city: "Edinburgh, UK", lat: 55.95, lon: -3.19, utcOff: 0, ayan: "lahiri" },
+    { name: "Jagadish Chandra Bose", date: "1858-11-30", time: "12:00", city: "Mymensingh, Bangladesh", lat: 24.75, lon: 90.40, utcOff: 5.8, ayan: "lahiri" }
+  ],
+  "presenter": [
+    { name: "Oprah Winfrey", date: "1954-01-29", time: "04:30", city: "Kosciusko, MS", lat: 33.06, lon: -89.59, utcOff: -6, ayan: "lahiri" },
+    { name: "Jimmy Fallon", date: "1974-09-19", time: "12:00", city: "Brooklyn, NY", lat: 40.67, lon: -73.94, utcOff: -5, ayan: "lahiri" },
+    { name: "David Letterman", date: "1947-04-12", time: "12:00", city: "Indianapolis, IN", lat: 39.77, lon: -86.16, utcOff: -6, ayan: "lahiri" },
+    { name: "Karan Johar", date: "1972-05-25", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" }
   ]
 };
