@@ -567,6 +567,12 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
         <div class="dasha-lbl">YOGINI</div>
         <div style="flex:1;"><canvas id="yoginiBar" height="26"></canvas></div>
       </div>
+        <div class="dasha-row" id="dashaTransitRow" style="align-items:flex-start;">
+        <div class="dasha-lbl">
+          <button id="btnDashaTransitFX" class="btn" style="font-size:9px;padding:3px 6px;">TRANSIT FX</button>
+        </div>
+        <div id="dashaTransitPanel" style="flex:1;display:none;"></div>
+      </div>
     </div>
     <div class="kleg">
       <span class="lbl" style="font-size:8px;">KNOT:</span>
@@ -1207,6 +1213,7 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
 <script src="./src/predictions/sahams.js"></script>
 <script src="./src/predictions/shadbala.js"></script>
 <script src="./src/predictions/graha_maitri.js"></script>
+<script src="./src/predictions/dasha_transit_relations.js"></script>
 <script src="./src/business_tarachakra.js"></script>
 <script src="./src/predictions/hit_astrology.js"></script>
 <script src="./src/predictions/ap_prediction_day.js"></script>
@@ -3193,7 +3200,56 @@ function drawMainChart(){
       }
     }
   }
+ // ═══════════════════════════════════════════════════════════
+  // 64TH NAVAMSHA (KHAR64) KRURA GRAHA TRANSIT INDICATOR
+  // Point = natal Lagna / natal Moon longitude + 210° (8th from Rasi,
+  // matching the existing "64th Navamsha" alert logic in updateAlerts()).
+  // Reuses the existing chk64Navamsha checkbox / show64Navamsha flag.
+  // ═══════════════════════════════════════════════════════════
+  if(typeof show64Navamsha !== 'undefined' && show64Navamsha && BIRTH_ASC){
+    const l64 = (BIRTH_ASC.sid + 210) % 360;
+    const m64 = BIRTH_PLANETS?.Moon ? (BIRTH_PLANETS.Moon.sid + 210) % 360 : null;
+    const ORB = 30/9; // one navamsa-pada width (~3.33°), matches updateAlerts()
+    const krurGrahas = ['Sun','Mars','Saturn','Rahu','Ketu']; // krura (malefic) grahas
 
+    const khar64Points = [
+      { label: '64° from Lagna', deg: l64, color: '#FF4477' },
+      { label: '64° from Moon',  deg: m64, color: '#FF9F43' }
+    ].filter(pt => pt.deg !== null && !isNaN(pt.deg));
+
+    khar64Points.forEach(pt => {
+      const houseVal = s2h(Math.floor(pt.deg/30), BIRTH_ASC.sn);
+      const y = toY(useNakAxis ? (pt.deg/(360/27)) : houseVal);
+
+      // Static reference line across the whole chart
+      ctx.beginPath();ctx.moveTo(PAD.left,y);ctx.lineTo(PAD.left+CW,y);
+      ctx.strokeStyle=pt.color+'99';ctx.lineWidth=1.3;ctx.setLineDash([7,4]);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=pt.color;ctx.font='bold 8px Courier New';
+      ctx.fillText('⚠ '+pt.label+' ('+(SIGNS[Math.floor(pt.deg/30)]||'?')+' '+Math.floor(pt.deg%30)+'°)', PAD.left+4, y-3);
+
+      // Activation markers: any krura graha transiting within orb of this point
+      ctx.textAlign='center';
+      krurGrahas.forEach(p => {
+        if(!activePlanets.has(p)) return;
+        const tSids = data.sids[p], tHouses = data.positions[p];
+        if(!tSids) return;
+        for(let t=0;t<N;t+=Math.max(1,Math.floor(N/300))){
+          const diff = Math.abs(norm360(tSids[t]-pt.deg));
+          const d2 = diff>180?360-diff:diff;
+          if(d2 < ORB){
+            const x=toX(data.dates[t]);
+            const yMark=toY(useNakAxis?(tSids[t]/(360/27)):tHouses[t]);
+            ctx.beginPath();ctx.arc(x,yMark,4,0,Math.PI*2);
+            ctx.fillStyle=pt.color;ctx.globalAlpha=0.85;ctx.shadowBlur=8;ctx.shadowColor=pt.color;
+            ctx.fill();ctx.shadowBlur=0;ctx.globalAlpha=1;
+            ctx.fillStyle=pt.color;ctx.font='bold 9px Arial';
+            ctx.fillText('⚠'+_pAbbr(p),x,yMark-7);
+          }
+        }
+      });
+      ctx.textAlign='left';
+    });
+  }
   // Natal house dots overlay on transit chart
   if(showNatal&&BIRTH_PLANETS){
     for(const[planet,pd]of Object.entries(BIRTH_PLANETS)){
@@ -3649,7 +3705,40 @@ function updateActiveDashas(){
     ${pdHtml}
     <div class="ditem cur" style="margin-top:3px"><span class="di-l" style="color:${YCOL[y.lord]}">☽ ${y.lord} (${y.planet})</span><span class="di-d">ends ${fmtD(y.end)} (${yR}y)</span></div>`;
 }
+function renderDashaTransitPanel(){
+  const panelEl = document.getElementById('dashaTransitPanel');
+  if(!panelEl || panelEl.style.display==='none') return;
+  if(!window.DASHA_TRANSIT_RELATIONS || !BIRTH_PLANETS || !BIRTH_ASC){ panelEl.innerHTML=''; return; }
 
+  const refDate = (typeof centerDate !== 'undefined' && centerDate) ? centerDate : TODAY;
+  const v = getVimsh(refDate), y = getYogini(refDate);
+  let ad = null, pd = null;
+  if(v && v.subs){
+    ad = v.subs.find(s => refDate >= s.start && refDate < s.end) || null;
+    if(ad && ad.subs) pd = ad.subs.find(s => refDate >= s.start && refDate < s.end) || null;
+  }
+
+  const transitPlanetsMap = getPos(refDate);
+
+  const analysis = window.DASHA_TRANSIT_RELATIONS.analyze({
+    md: v, ad: ad, pd: pd, yogini: y,
+    yoginiPlanetMap: (typeof YPLANET !== 'undefined') ? YPLANET : null,
+    transitPlanetsMap: transitPlanetsMap,
+    natalPlanetsMap: BIRTH_PLANETS,
+    natalAscSid: BIRTH_ASC.sid
+  });
+
+  panelEl.innerHTML = window.DASHA_TRANSIT_RELATIONS.renderHTML(analysis);
+}
+
+document.getElementById('btnDashaTransitFX')?.addEventListener('click', ()=>{
+  const panelEl = document.getElementById('dashaTransitPanel');
+  const btn = document.getElementById('btnDashaTransitFX');
+  const showing = panelEl.style.display !== 'none';
+  panelEl.style.display = showing ? 'none' : 'block';
+  btn.classList.toggle('active', !showing);
+  if(!showing) renderDashaTransitPanel();
+});
 function updateAlerts(){
   const pos=getPos(TODAY);
   if (!pos || !pos.Saturn) { document.getElementById('alertsDiv').innerHTML=''; return; }
@@ -4487,6 +4576,7 @@ function renderAll(){
   } else if(useSvgChart) renderSvgChart();
   else drawDChart('dchartCanvas');
   drawMainChart();
+  renderDashaTransitPanel();
   
   // ═══ YOGA ANALYSIS ═══
   // Calculate and display all yogas in the birth chart (D1)

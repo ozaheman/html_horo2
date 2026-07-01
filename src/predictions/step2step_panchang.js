@@ -16,6 +16,47 @@ const getPlanetSafe = (name) => {
     if (!name) return null;
     return planets[name] || planets[name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()] || null;
 };
+  // ------------------------------------------------------------
+    // Normalize `ascendant`: callers sometimes pass a raw sidereal
+    // longitude number (e.g. window.CURRENT_ASCENDANT = BIRTH_ASC.sid)
+    // instead of an {sn, deg, sid, sign} object. Every block below
+    // expects the object shape, so coerce it once, here, up front.
+    // This is what was causing "Lagna: undefined at NaN°" on the
+    // D1 / D9 / D10 / Arudha charts (Indu Lagna doesn't read
+    // `ascendant` directly, which is why it alone rendered fine).
+    // ------------------------------------------------------------
+    (function normalizeAscendant() {
+      const _SIGNS_NORM = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS)
+        ? window.ASTRO_CONSTANTS.SIGNS
+        : ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+
+      let absLon;
+      if (typeof ascendant === 'number') {
+        absLon = ascendant;
+      } else if (ascendant && typeof ascendant === 'object') {
+        absLon = ascendant.sid !== undefined ? ascendant.sid
+               : ascendant.longitude !== undefined ? ascendant.longitude
+               : ascendant.dlon !== undefined ? ascendant.dlon
+               : (ascendant.sn !== undefined ? (ascendant.sn * 30 + (ascendant.deg || 0)) : undefined);
+      }
+
+      if (absLon === undefined || isNaN(absLon)) {
+        // Last-resort fallback so charts still render instead of showing NaN/undefined
+        absLon = 0;
+      }
+      absLon = ((absLon % 360) + 360) % 360;
+
+      const sn = Math.floor(absLon / 30);
+      const deg = absLon % 30;
+
+      ascendant = {
+        sn: sn,
+        deg: deg,
+        sid: absLon,
+        longitude: absLon,
+        sign: _SIGNS_NORM[sn]
+      };
+    })();
     // ============================================================
     // 2. BIRTH DETAILS EXTRACTION
     // ============================================================
