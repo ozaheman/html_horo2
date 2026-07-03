@@ -120,12 +120,60 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 .al-dhaiyya{border-color:var(--amber);background:rgba(255,155,58,.07);}
 .al-yogini{border-color:var(--teal);background:rgba(42,255,204,.05);}
 
-/* ── DASHA LIST ── */
-.ditem{display:flex;justify-content:space-between;align-items:center;padding:3px 4px;border-radius:2px;font-size:10.5px;border-bottom:1px solid rgba(20,20,58,.5);}
-.ditem:last-child{border-bottom:none;}
-.ditem.cur{background:rgba(155,111,255,.1);}
-.di-l{font-weight:700;}
-.di-d{font-family:'Courier New',monospace;font-size:8.5px;color:var(--muted);}
+/* ── DASHA PANEL ── */
+#dashaPanel{position:fixed;right:0;top:0;bottom:0;width:420px;background:rgba(4,4,18,.98);
+  border-left:1px solid var(--border2);z-index:200;transform:translateX(100%);
+  transition:transform .3s cubic-bezier(.25,.46,.45,.94);overflow-y:auto;backdrop-filter:blur(12px);}
+#dashaPanel.open{transform:translateX(0);}
+
+/* Dasha tree */
+.dasha-tree{padding:6px 10px;}
+.dt-md{margin-bottom:4px;border-radius:3px;overflow:hidden;}
+.dt-md-hdr{display:flex;align-items:center;gap:6px;padding:5px 8px;cursor:pointer;
+  border-left:3px solid;transition:background .15s;font-size:11px;font-weight:700;}
+.dt-md-hdr:hover{filter:brightness(1.2);}
+.dt-md-hdr.active{background:rgba(155,111,255,.12);}
+.dt-md-dates{font-family:'Courier New',monospace;font-size:8.5px;color:var(--muted);margin-left:auto;white-space:nowrap;}
+.dt-md-body{display:none;padding-left:10px;border-left:1px solid rgba(80,80,140,.3);margin-left:10px;}
+.dt-md-body.open{display:block;}
+.dt-ad{margin:2px 0;}
+.dt-ad-hdr{display:flex;align-items:center;gap:5px;padding:3px 6px;cursor:pointer;border-radius:2px;font-size:10.5px;}
+.dt-ad-hdr:hover{background:rgba(255,255,255,.04);}
+.dt-ad-hdr.active{background:rgba(155,111,255,.1);font-weight:700;}
+.dt-ad-body{display:none;padding-left:8px;border-left:1px solid rgba(60,60,120,.3);margin-left:8px;}
+.dt-ad-body.open{display:block;}
+.dt-pd{display:flex;align-items:center;gap:4px;padding:2px 5px;font-size:10px;cursor:pointer;border-radius:2px;}
+.dt-pd:hover{background:rgba(255,255,255,.03);}
+.dt-pd.active{background:rgba(58,240,255,.08);font-weight:700;}
+.dt-pd-body{display:none;padding-left:8px;border-left:1px solid rgba(40,40,100,.3);margin-left:8px;}
+.dt-pd-body.open{display:block;}
+.dt-sd{display:flex;align-items:center;gap:4px;padding:2px 5px;font-size:9.5px;cursor:pointer;border-radius:2px;}
+.dt-sd:hover{background:rgba(255,255,255,.03);}
+.dt-sd.active{background:rgba(200,168,75,.08);font-weight:700;}
+.dt-sd-body{display:none;padding-left:8px;border-left:1px solid rgba(40,40,80,.3);margin-left:8px;}
+.dt-sd-body.open{display:block;}
+.dt-prana{display:flex;align-items:center;gap:4px;padding:1px 5px;font-size:9px;}
+.dt-prana.active{color:var(--gold);font-weight:700;}
+.dt-dates{font-family:'Courier New',monospace;font-size:7.5px;color:var(--muted);margin-left:auto;white-space:nowrap;}
+.dt-dur{font-family:'Courier New',monospace;font-size:7px;color:rgba(80,80,140,.9);margin-left:4px;}
+.dt-section{padding:8px 10px 4px;font-family:'Courier New',monospace;font-size:8px;color:var(--gold);
+  letter-spacing:2px;border-bottom:1px solid rgba(200,168,75,.12);margin-bottom:4px;}
+.dt-yogini{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:2px;cursor:pointer;font-size:10.5px;}
+.dt-yogini:hover{background:rgba(42,255,204,.05);}
+.dt-yogini.active{background:rgba(42,255,204,.08);font-weight:700;}
+.dt-yogini-body{display:none;padding-left:10px;border-left:1px solid rgba(42,255,204,.2);margin-left:8px;}
+.dt-yogini-body.open{display:block;}
+.dt-ysub{display:flex;align-items:center;gap:4px;padding:2px 5px;font-size:9.5px;border-radius:2px;}
+.dt-ysub.active{font-weight:700;color:var(--teal);}
+
+/* Active dasha compact display */
+.ad-block{padding:5px 8px;border-radius:3px;border-left:3px solid;margin-bottom:4px;}
+.ad-level{font-family:'Courier New',monospace;font-size:7.5px;color:var(--muted);letter-spacing:1px;margin-bottom:1px;}
+.ad-lord{font-size:12px;font-weight:900;}
+.ad-dates{font-family:'Courier New',monospace;font-size:8px;color:var(--muted);}
+.ad-bar{height:3px;border-radius:2px;margin-top:4px;background:rgba(80,80,140,.3);overflow:hidden;}
+.ad-bar-fill{height:100%;border-radius:2px;transition:width .4s;}
+
 
 /* ── FULL SCREEN ── */
 .app.fs { grid-template-rows: auto 1fr; }
@@ -362,7 +410,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
   
   .range-pill { min-width: 140px; }
   
-  #conjPanel, #activatedPanel, #predictionsPanel, #bizPanel, #marriagePanel, #prashnaPanel {
+#conjPanel, #activatedPanel, #predictionsPanel, #bizPanel, #marriagePanel, #prashnaPanel, #dashaPanel {
     width: 100% !important;
   }
   
@@ -442,6 +490,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
     <div class="sep"></div>
     <button class="btn violet" id="btnVimsh">⊙ VIMSHOTTARI</button>
     <button class="btn" id="btnYogini" style="border-color:rgba(42,255,204,.3);color:rgba(42,255,204,.5);">☽ YOGINI</button>
+        <button class="btn" id="btnDashaExplorer" title="Full Dasha Explorer — all 5 Vimshottari levels + Yogini" style="border-color:rgba(155,111,255,.5);color:rgba(200,150,255,.8);">⊛ DASHAS</button>
     <div class="sep"></div>
     <button class="btn rose" id="btnConj">⊕ CONJUNCTIONS</button>
     <button class="btn rose" id="btnNakConj" style="display:none;border-color:rgba(255,100,100,.5);color:#FFAAEE;">🌟 NAK CONJUNCTIONS</button>
@@ -646,7 +695,17 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
   </div>
   <div id="conjList" style="padding-bottom:20px;"></div>
 </div>
-
+<!-- DASHA EXPLORER PANEL -->
+<div id="dashaPanel">
+  <div class="conj-hdr" style="border-bottom-color:rgba(155,111,255,.3);">
+    <h2 style="color:var(--violet);">⊛ DASHA EXPLORER</h2>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span id="dashaPanelDate" style="font-family:'Courier New',monospace;font-size:9px;color:var(--muted);"></span>
+      <button class="close-btn" id="closeDasha">✕</button>
+    </div>
+  </div>
+  <div id="dashaPanelContent" style="padding-bottom:30px;"></div>
+</div>
 <!-- ACTIVATED HOUSE PANEL -->
 <div id="activatedPanel">
   <div class="conj-hdr">
@@ -3684,27 +3743,273 @@ function updateCurrentTbl(){
     tbl.appendChild(r);
   }
 }
-
-function updateActiveDashas(){
-  const v=getVimsh(TODAY),y=getYogini(TODAY);
-  const vR=Math.round((v.end-TODAY)/864e5/365.25*10)/10;
-  const yR=Math.round((y.end-TODAY)/864e5/365.25*10)/10;
-  let pdHtml = '';
-  if(v && v.subs){
-    const ad = v.subs.find(s => TODAY >= s.start && TODAY < s.end);
-    if(ad && ad.subs) {
-      const pd = ad.subs.find(s => TODAY >= s.start && TODAY < s.end);
-      if(pd) {
-        const pdDur = Math.round((pd.end - pd.start) / 864e5);
-        pdHtml = `<div class="ditem cur" style="margin-top:3px"><span class="di-l" style="color:${VCOL[pd.lord]}">● PD: ${pd.lord}</span><span class="di-d">${fmtCompact(pd.start)} to ${fmtCompact(pd.end)} (${pdDur}d)</span></div>`;
-      }
-    }
+// ═══════════════════════════════════════════════════════════
+//  YOGINI SUB-DASHA BUILDER
+// ═══════════════════════════════════════════════════════════
+function buildYoginiSubs(parentStart, parentEnd, parentLord) {
+  // Total Yogini cycle = 36 years. Sub proportions = each lord's years / 36
+  const totalYoginiCycle = 36;
+  const list = [];
+  const duration = parentEnd - parentStart;
+  const startIdx = YORD.indexOf(parentLord);
+  let s = new Date(parentStart);
+  for (let i = 0; i < 8; i++) {
+    const idx = (startIdx + i) % 8;
+    const yl = YORD[idx];
+    const subDur = (YYRS[yl] / totalYoginiCycle) * duration;
+    const e = new Date(s.getTime() + subDur);
+    list.push({ lord: yl, planet: YPLANET[yl], start: new Date(s), end: new Date(e), years: YYRS[yl] });
+    s = e;
   }
-  document.getElementById('activeDashas').innerHTML=`
-    <div class="ditem cur"><span class="di-l" style="color:${VCOL[v.lord]}">⊙ ${v.lord}</span><span class="di-d">ends ${fmtD(v.end)} (${vR}y)</span></div>
-    ${pdHtml}
-    <div class="ditem cur" style="margin-top:3px"><span class="di-l" style="color:${YCOL[y.lord]}">☽ ${y.lord} (${y.planet})</span><span class="di-d">ends ${fmtD(y.end)} (${yR}y)</span></div>`;
+  return list;
 }
+
+// ═══════════════════════════════════════════════════════════
+//  HELPER: progress bar % for a dasha period
+// ═══════════════════════════════════════════════════════════
+function _dashaPct(d, refDate) {
+  const total = d.end - d.start, elapsed = refDate - d.start;
+  return Math.min(100, Math.max(0, Math.round(elapsed / total * 100)));
+}
+function _fmtDur(ms) {
+  const days = Math.round(ms / 864e5);
+  if (days < 30)  return days + 'd';
+  if (days < 365) return Math.round(days/30.44) + 'm';
+  const y = days / 365.25; return (y < 10 ? y.toFixed(1) : Math.round(y)) + 'y';
+}
+function _fmtShort(d) {
+  return d.toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'});
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ACTIVE DASHAS — full 5-level Vimshottari + Yogini
+// ═══════════════════════════════════════════════════════════
+function updateActiveDashas(){
+  const ref = TODAY;
+  const v = getVimsh(ref), y = getYogini(ref);
+  if (!v) return;
+
+  // Walk down Vimshottari tree
+  const ad  = v.subs?.find(s => ref >= s.start && ref < s.end) || null;
+  const pd  = ad?.subs?.find(s => ref >= s.start && ref < s.end) || null;
+  const sd  = pd?.subs?.find(s => ref >= s.start && ref < s.end) || null;  // Sukshma
+  const pra = sd?.subs?.find(s => ref >= s.start && ref < s.end) || null;  // Prana
+
+  // Yogini sub-dasha
+  const ySubs = buildYoginiSubs(y.start, y.end, y.lord);
+  const ySub  = ySubs.find(s => ref >= s.start && ref < s.end) || null;
+
+  function adBlock(level, label, d, col) {
+    if (!d) return '';
+    const pct  = _dashaPct(d, ref);
+    const rem  = _fmtDur(d.end - ref);
+    const tot  = _fmtDur(d.end - d.start);
+    return `<div class="ad-block" style="border-color:${col}22;background:${col}0A;">
+      <div class="ad-level">${level}</div>
+      <div style="display:flex;align-items:baseline;gap:6px;">
+        <span class="ad-lord" style="color:${col};">${label}</span>
+        <span class="ad-dates">${_fmtShort(d.start)} → ${_fmtShort(d.end)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:1px;">
+        <span class="ad-dates">${pct}% elapsed · ${rem} remaining of ${tot}</span>
+      </div>
+      <div class="ad-bar"><div class="ad-bar-fill" style="width:${pct}%;background:${col};"></div></div>
+    </div>`;
+  }
+
+  const mdCol  = VCOL[v.lord]  || '#9B6FFF';
+  const adCol  = ad  ? (VCOL[ad.lord]  || '#888') : '#888';
+  const pdCol  = pd  ? (VCOL[pd.lord]  || '#888') : '#888';
+  const sdCol  = sd  ? (VCOL[sd.lord]  || '#888') : '#888';
+  const praCol = pra ? (VCOL[pra.lord] || '#888') : '#888';
+  const yCol   = YCOL[y.lord]  || '#2AFFCC';
+  const ysCol  = ySub ? (YCOL[ySub.lord] || '#2AFFCC') : '#2AFFCC';
+
+  document.getElementById('activeDashas').innerHTML = `
+    <div style="margin-bottom:6px;">
+      ${adBlock('MAHADASHA (MD)', v.lord, v, mdCol)}
+      ${ad  ? adBlock('ANTARDASHA (AD)', ad.lord, ad, adCol) : ''}
+      ${pd  ? adBlock('PRATYANTAR (PAD)', pd.lord, pd, pdCol) : ''}
+      ${sd  ? adBlock('SUKSHMA (SD)', sd.lord, sd, sdCol) : ''}
+      ${pra ? adBlock('PRANA (PD)', pra.lord, pra, praCol) : ''}
+    </div>
+    <div style="border-top:1px solid rgba(42,255,204,.15);padding-top:5px;">
+      ${adBlock('YOGINI MD', y.lord + ' · ' + y.planet, y, yCol)}
+      ${ySub ? adBlock('YOGINI AD', ySub.lord + ' · ' + ySub.planet, ySub, ysCol) : ''}
+    </div>
+    <div style="text-align:right;margin-top:4px;">
+      <button onclick="openDashaPanel()" class="btn" style="font-size:8px;padding:2px 8px;border-color:rgba(155,111,255,.4);color:rgba(155,111,255,.8);">⊛ Full Dasha Tree</button>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DASHA EXPLORER PANEL — full hierarchical tree
+// ═══════════════════════════════════════════════════════════
+function openDashaPanel() {
+  document.getElementById('dashaPanel').classList.add('open');
+  renderDashaPanel();
+}
+document.getElementById('closeDasha')?.addEventListener('click', () => {
+  document.getElementById('dashaPanel').classList.remove('open');
+});
+
+function renderDashaPanel() {
+  const ref = (typeof centerDate !== 'undefined' && centerDate) ? centerDate : TODAY;
+  const refV = getVimsh(ref), refAD = refV?.subs?.find(s=>ref>=s.start&&ref<s.end);
+  const refPD = refAD?.subs?.find(s=>ref>=s.start&&ref<s.end);
+  const refSD = refPD?.subs?.find(s=>ref>=s.start&&ref<s.end);
+  const refPra = refSD?.subs?.find(s=>ref>=s.start&&ref<s.end);
+
+  document.getElementById('dashaPanelDate').textContent = _fmtShort(ref);
+
+  const c = document.getElementById('dashaPanelContent');
+  let html = '';
+
+  // ── VIMSHOTTARI SECTION ─────────────────────────────────
+  html += `<div class="dt-section">VIMSHOTTARI · 120-YEAR CYCLE</div>
+  <div class="dasha-tree">`;
+
+  const filteredMD = VIMSH.filter(d => d.end > new Date(2000,0,1) && d.start < new Date(2080,0,1));
+
+  filteredMD.forEach(md => {
+    const isMDActive = md === refV;
+    const mdCol = VCOL[md.lord] || '#9B6FFF';
+    const mdPct = isMDActive ? _dashaPct(md, ref) : null;
+    const mdId  = 'md_' + md.lord + '_' + md.start.getFullYear();
+
+    html += `<div class="dt-md">
+      <div class="dt-md-hdr ${isMDActive?'active':''}" style="border-color:${mdCol};background:${mdCol}${isMDActive?'18':'0A'};"
+           onclick="toggleDTree('${mdId}')">
+        <span style="width:8px;height:8px;border-radius:50%;background:${mdCol};display:inline-block;flex-shrink:0;"></span>
+        <span style="color:${mdCol};font-weight:900;">${md.lord}</span>
+        <span style="font-size:8.5px;color:var(--muted);font-family:'Courier New',monospace;font-weight:400;">${md.years.toFixed(1)}y</span>
+        ${isMDActive ? `<span style="font-size:8px;color:${mdCol};margin-left:2px;">▶ ${mdPct}%</span>` : ''}
+        <span class="dt-md-dates">${_fmtShort(md.start)} → ${_fmtShort(md.end)}</span>
+      </div>
+      <div class="dt-md-body ${isMDActive?'open':''}" id="${mdId}">`;
+
+    // Antardasha rows
+    (md.subs||[]).forEach(ad => {
+      const isADActive = isMDActive && (ad === refAD);
+      const adCol = VCOL[ad.lord] || '#888';
+      const adId  = mdId + '_ad_' + ad.lord + '_' + ad.start.getTime();
+
+      html += `<div class="dt-ad">
+        <div class="dt-ad-hdr ${isADActive?'active':''}" onclick="toggleDTree('${adId}')">
+          <span style="width:6px;height:6px;border-radius:50%;background:${adCol};display:inline-block;flex-shrink:0;"></span>
+          <span style="color:${adCol};">${ad.lord}</span>
+          <span class="dt-dur">${_fmtDur(ad.end - ad.start)}</span>
+          ${isADActive ? `<span style="font-size:7.5px;color:${adCol};margin-left:2px;">▶ ${_dashaPct(ad,ref)}%</span>` : ''}
+          <span class="dt-dates">${_fmtShort(ad.start)} → ${_fmtShort(ad.end)}</span>
+        </div>
+        <div class="dt-ad-body ${isADActive?'open':''}" id="${adId}">`;
+
+      // Pratyantar rows
+      (ad.subs||[]).forEach(pd => {
+        const isPDActive = isADActive && (pd === refPD);
+        const pdCol = VCOL[pd.lord] || '#888';
+        const pdId  = adId + '_pd_' + pd.lord + '_' + pd.start.getTime();
+
+        html += `<div class="dt-pd ${isPDActive?'active':''}" onclick="toggleDTree('${pdId}')">
+          <span style="width:5px;height:5px;border-radius:50%;background:${pdCol};display:inline-block;flex-shrink:0;"></span>
+          <span style="color:${pdCol};font-size:10px;">${pd.lord}</span>
+          <span class="dt-dur">${_fmtDur(pd.end - pd.start)}</span>
+          ${isPDActive ? `<span style="font-size:7px;color:${pdCol};">▶ ${_dashaPct(pd,ref)}%</span>` : ''}
+          <span class="dt-dates">${_fmtShort(pd.start)} → ${_fmtShort(pd.end)}</span>
+        </div>
+        <div class="dt-pd-body ${isPDActive?'open':''}" id="${pdId}">`;
+
+        // Sukshma rows
+        (pd.subs||[]).forEach(sd => {
+          const isSDActive = isPDActive && (sd === refSD);
+          const sdCol = VCOL[sd.lord] || '#888';
+          const sdId  = pdId + '_sd_' + sd.lord + '_' + sd.start.getTime();
+
+          html += `<div class="dt-sd ${isSDActive?'active':''}" onclick="toggleDTree('${sdId}')">
+            <span style="width:4px;height:4px;border-radius:50%;background:${sdCol};display:inline-block;flex-shrink:0;"></span>
+            <span style="color:${sdCol};font-size:9px;">${sd.lord}</span>
+            <span class="dt-dur">${_fmtDur(sd.end - sd.start)}</span>
+            ${isSDActive ? `<span style="font-size:7px;color:${sdCol};">▶ ${_dashaPct(sd,ref)}%</span>` : ''}
+            <span class="dt-dates" style="font-size:7px;">${_fmtShort(sd.start)} → ${_fmtShort(sd.end)}</span>
+          </div>
+          <div class="dt-sd-body ${isSDActive?'open':''}" id="${sdId}">`;
+
+          // Prana rows
+          (sd.subs||[]).forEach(pra => {
+            const isPraActive = isSDActive && (pra === refPra);
+            const praCol = VCOL[pra.lord] || '#888';
+            html += `<div class="dt-prana ${isPraActive?'active':''}">
+              <span style="width:3px;height:3px;border-radius:50%;background:${praCol};display:inline-block;flex-shrink:0;"></span>
+              <span style="color:${praCol};font-size:8.5px;">${pra.lord}</span>
+              <span class="dt-dur">${_fmtDur(pra.end - pra.start)}</span>
+              ${isPraActive ? `<span style="font-size:7px;color:${praCol};">▶</span>` : ''}
+              <span class="dt-dates" style="font-size:7px;">${_fmtShort(pra.start)} → ${_fmtShort(pra.end)}</span>
+            </div>`;
+          });
+
+          html += `</div>`; // dt-sd-body
+        });
+
+        html += `</div>`; // dt-pd-body
+      });
+
+      html += `</div></div>`; // dt-ad-body, dt-ad
+    });
+
+    html += `</div></div>`; // dt-md-body, dt-md
+  });
+
+  html += `</div>`; // dasha-tree
+
+  // ── YOGINI SECTION ──────────────────────────────────────
+  const curY = getYogini(ref);
+  html += `<div class="dt-section" style="margin-top:8px;">YOGINI DASHA · 36-YEAR CYCLE</div>
+  <div class="dasha-tree">`;
+
+  YOGINI.filter(y => y.end > new Date(2000,0,1) && y.start < new Date(2080,0,1)).forEach(y => {
+    const isYActive = y === curY;
+    const yCol = YCOL[y.lord] || '#2AFFCC';
+    const yId  = 'yd_' + y.lord + '_' + y.start.getFullYear();
+    const ySubs = buildYoginiSubs(y.start, y.end, y.lord);
+    const curYSub = isYActive ? ySubs.find(s => ref >= s.start && ref < s.end) : null;
+
+    html += `<div class="dt-yogini ${isYActive?'active':''}" onclick="toggleDTree('${yId}')"
+               style="border-left:3px solid ${yCol};background:${yCol}${isYActive?'12':'06'};">
+      <span style="width:7px;height:7px;border-radius:50%;background:${yCol};display:inline-block;flex-shrink:0;"></span>
+      <span style="color:${yCol};font-weight:700;">${y.lord}</span>
+      <span style="font-size:9px;color:var(--muted);">(${y.planet})</span>
+      <span class="dt-dur">${y.years}y</span>
+      ${isYActive ? `<span style="font-size:8px;color:${yCol};">▶ ${_dashaPct(y,ref)}%</span>` : ''}
+      <span class="dt-dates">${_fmtShort(y.start)} → ${_fmtShort(y.end)}</span>
+    </div>
+    <div class="dt-yogini-body ${isYActive?'open':''}" id="${yId}">`;
+
+    ySubs.forEach(ys => {
+      const isYSActive = isYActive && (ys === curYSub);
+      const ysCol = YCOL[ys.lord] || '#2AFFCC';
+      html += `<div class="dt-ysub ${isYSActive?'active':''}">
+        <span style="width:5px;height:5px;border-radius:50%;background:${ysCol};display:inline-block;flex-shrink:0;"></span>
+        <span style="color:${ysCol};">${ys.lord}</span>
+        <span style="font-size:8.5px;color:var(--muted);">(${ys.planet})</span>
+        <span class="dt-dur">${_fmtDur(ys.end - ys.start)}</span>
+        ${isYSActive ? `<span style="font-size:7px;color:${ysCol};">▶ ${_dashaPct(ys,ref)}%</span>` : ''}
+        <span class="dt-dates">${_fmtShort(ys.start)} → ${_fmtShort(ys.end)}</span>
+      </div>`;
+    });
+
+    html += `</div>`; // dt-yogini-body
+  });
+
+  html += `</div>`; // dasha-tree
+
+  c.innerHTML = html;
+}
+
+window.toggleDTree = function(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('open');
+};
 function renderDashaTransitPanel(){
   const panelEl = document.getElementById('dashaTransitPanel');
   if(!panelEl || panelEl.style.display==='none') return;
@@ -3774,28 +4079,85 @@ function updateAlerts(){
 function getDashDesc(l){const d={Sun:'Authority, govt, father.',Moon:'Emotions, public, mother.',Mars:'Action, property, siblings.',Mercury:'Communication, business.',Jupiter:'Wisdom, dharma, expansion.',Venus:'Love, luxury, arts.',Saturn:'Discipline, karma, delays.',Rahu:'Ambition, foreign, unconventional.',Ketu:'Spirituality, detachment.'};return d[l]||'';}
 
 function updateDashaList(){
-  const el=document.getElementById('dashaList'),cur=getVimsh(TODAY);
-  el.innerHTML='';
-  VIMSH.filter(d=>d.end>new Date(2015,0,1)&&d.start<new Date(2065,0,1)).forEach(d=>{
-    const isA=d===cur;
-    const item=document.createElement('div');item.className='ditem'+(isA?' cur':'');
-    item.innerHTML=`<span class="di-l" style="color:${VCOL[d.lord]}">${isA?'▶ ':''}${d.lord}</span><span class="di-d">${fmtD(d.start)}→${fmtD(d.end)}</span>`;
+  const el = document.getElementById('dashaList'), ref = TODAY;
+  const curV = getVimsh(ref);
+  el.innerHTML = '';
+
+  VIMSH.filter(d => d.end > new Date(2015,0,1) && d.start < new Date(2065,0,1)).forEach(md => {
+    const isMD = md === curV;
+    const mdCol = VCOL[md.lord] || '#9B6FFF';
+
+    const item = document.createElement('div');
+    item.className = 'ditem' + (isMD ? ' cur' : '');
+    item.style.cssText = `border-left:2px solid ${mdCol}${isMD?'':'44'};padding-left:6px;flex-direction:column;align-items:flex-start;gap:1px;`;
+    item.innerHTML = `
+      <div style="display:flex;width:100%;justify-content:space-between;align-items:center;">
+        <span style="font-weight:700;color:${mdCol};font-size:11px;">${isMD?'▶ ':''}${md.lord}</span>
+        <span style="font-family:'Courier New',monospace;font-size:8px;color:var(--muted);">${_fmtShort(md.start)} → ${_fmtShort(md.end)}</span>
+      </div>`;
+
+    // If current MD, show its Antardashas
+    if (isMD && md.subs) {
+      const adWrap = document.createElement('div');
+      adWrap.style.cssText = 'padding-left:8px;width:100%;border-left:1px solid rgba(80,80,140,.3);margin:2px 0;';
+      const curAD = md.subs.find(s => ref >= s.start && ref < s.end);
+      md.subs.forEach(ad => {
+        const isAD = ad === curAD;
+        const adCol = VCOL[ad.lord] || '#888';
+        const adRow = document.createElement('div');
+        adRow.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:1px 2px;border-radius:2px;${isAD?`background:${adCol}15;font-weight:700;`:''}`
+        adRow.innerHTML = `
+          <span style="font-size:9.5px;color:${adCol};">${isAD?'▸ ':''}${ad.lord}</span>
+          <span style="font-family:'Courier New',monospace;font-size:7.5px;color:var(--muted);">${_fmtShort(ad.start)} → ${_fmtShort(ad.end)}</span>`;
+        adWrap.appendChild(adRow);
+      });
+      item.appendChild(adWrap);
+    }
+
     el.appendChild(item);
   });
 }
 
 function updateYoginiList(){
-  const el=document.getElementById('yoginiList'),cur=getYogini(TODAY);
-  el.innerHTML='';
-  YOGINI.filter(d=>d.end>new Date(2015,0,1)&&d.start<new Date(2060,0,1)).forEach(d=>{
-    const isA=d===cur;
-    const item=document.createElement('div');item.className='ditem'+(isA?' cur':'');
-    item.innerHTML=`<span class="di-l" style="color:${YCOL[d.lord]}">${isA?'▶ ':''}${d.lord} <span style="color:var(--muted);font-size:9px">(${d.planet})</span></span><span class="di-d">${fmtD(d.start)}→${fmtD(d.end)}</span>`;
+  const el = document.getElementById('yoginiList'), ref = TODAY;
+  const curY = getYogini(ref);
+  el.innerHTML = '';
+
+  YOGINI.filter(d => d.end > new Date(2015,0,1) && d.start < new Date(2060,0,1)).forEach(y => {
+    const isY = y === curY;
+    const yCol = YCOL[y.lord] || '#2AFFCC';
+    const ySubs = buildYoginiSubs(y.start, y.end, y.lord);
+    const curYS = isY ? ySubs.find(s => ref >= s.start && ref < s.end) : null;
+
+    const item = document.createElement('div');
+    item.className = 'ditem' + (isY ? ' cur' : '');
+    item.style.cssText = `border-left:2px solid ${yCol}${isY?'':'44'};padding-left:6px;flex-direction:column;align-items:flex-start;gap:1px;`;
+    item.innerHTML = `
+      <div style="display:flex;width:100%;justify-content:space-between;align-items:center;">
+        <span style="font-weight:700;color:${yCol};font-size:11px;">${isY?'▶ ':''}${y.lord} <span style="font-weight:400;font-size:9px;color:var(--muted);">(${y.planet})</span></span>
+        <span style="font-family:'Courier New',monospace;font-size:8px;color:var(--muted);">${_fmtShort(y.start)} → ${_fmtShort(y.end)}</span>
+      </div>`;
+
+    if (isY) {
+      const ysWrap = document.createElement('div');
+      ysWrap.style.cssText = 'padding-left:8px;width:100%;border-left:1px solid rgba(42,255,204,.2);margin:2px 0;';
+      ySubs.forEach(ys => {
+        const isYS = ys === curYS;
+        const ysCol = YCOL[ys.lord] || '#2AFFCC';
+        const ysRow = document.createElement('div');
+        ysRow.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:1px 2px;border-radius:2px;${isYS?`background:${ysCol}12;font-weight:700;`:''}`;
+        ysRow.innerHTML = `
+          <span style="font-size:9.5px;color:${ysCol};">${isYS?'▸ ':''}${ys.lord} <span style="font-size:8px;color:var(--muted);">(${ys.planet})</span></span>
+          <span style="font-family:'Courier New',monospace;font-size:7.5px;color:var(--muted);">${_fmtShort(ys.start)} → ${_fmtShort(ys.end)}</span>`;
+        ysWrap.appendChild(ysRow);
+      });
+      item.appendChild(ysWrap);
+    }
     el.appendChild(item);
   });
 }
 
-// ═══════════════════════════════════════════════════════════
+//═══════════════════════════════════════════════════════════
 //  CONJUNCTION PANEL
 // ═══════════════════════════════════════════════════════════
 function openConjPanel(byNak=false){
@@ -4047,7 +4409,12 @@ btnV.addEventListener('click',()=>{showVimsh=!showVimsh;btnV.classList.toggle('a
 btnY.addEventListener('click',()=>{showYogini=!showYogini;btnY.classList.toggle('active',showYogini);document.getElementById('yoginiRow').style.display=showYogini?'flex':'none';if(showYogini)drawDashaBar('yoginiBar',YOGINI,YCOL);});
 btnC.addEventListener('click',()=>{showConj=!showConj;btnC.classList.toggle('active',showConj);if(showConj)openConjPanel();else{document.getElementById('conjPanel').classList.remove('open');conjOpen=false;}renderAll();});
 btnO.addEventListener('click',()=>{/* could expand overlay panel here */renderAll();});
-
+document.getElementById('btnDashaExplorer')?.addEventListener('click', () => {
+  const panel = document.getElementById('dashaPanel');
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) { panel.classList.remove('open'); document.getElementById('btnDashaExplorer').classList.remove('active'); }
+  else { panel.classList.add('open'); document.getElementById('btnDashaExplorer').classList.add('active'); renderDashaPanel(); }
+});
 // Checkboxes
 document.getElementById('chkNatal').addEventListener('change',e=>{showNatal=e.target.checked;renderAll();});
 document.getElementById('chkAspects').addEventListener('change',e=>{showAspects=e.target.checked;renderAll();});
