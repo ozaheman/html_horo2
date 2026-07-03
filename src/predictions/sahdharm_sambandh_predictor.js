@@ -81,18 +81,25 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
         trik:    'Trik/Dushtana (6-8-12) — obstacle, loss, affliction'
     },
 
-    TARA_SEQUENCE: ['Janma', 'Sampat', 'Vipat', 'Kshema', 'Pratyak', 'Sadhaka', 'Vadha', 'Mitra', 'Parama Mitra'],
+    TARA_SEQUENCE: ['Janma', 'Sampat', 'Vipat', 'Kshem', 'Pratyari', 'Saadhak', 'Vadha', 'Maitri', 'Ati-Maitri'],
 
+    // Position (1-9) that a count/remainder maps to — kept 0-indexed internally,
+    // shown 1-indexed ("number") in the UI so results can be rechecked by hand
+    // against the classical count: Ashwini,Bharani,Kritika,Rohini,Mrigashira,
+    // Ardra,Punarvasu,Pushya,Ashlesha,Magha,Purva Phalguni,Uttara Phalguni,
+    // Hasta,Chitra,Swati,Vishakha,Anuradha,Jyeshtha,Moola,Purva Ashadha,
+    // Uttara Ashadha,Shravana,Dhanishta,Shatabhisha,Purva Bhadrapada,
+    // Uttara Bhadrapada,Revati.
     TARA_MEANING: {
-        'Janma':        { nature: 'caution', label: 'Janma (Birth Star)',        desc: 'Self-referential; identity/health focus, mildly cautionary.' },
-        'Sampat':       { nature: 'good',    label: 'Sampat (Prosperity)',       desc: 'Wealth, gain, favourable material outcomes.' },
-        'Vipat':        { nature: 'bad',     label: 'Vipat (Danger)',            desc: 'Obstacles, setbacks; avoid new ventures.' },
-        'Kshema':       { nature: 'good',    label: 'Kshema (Wellbeing)',        desc: 'Safety, comfort, steady favourable results.' },
-        'Pratyak':      { nature: 'bad',     label: 'Pratyak/Pratyari (Adversity)', desc: 'Opposition, conflict, delays.' },
-        'Sadhaka':      { nature: 'good',    label: 'Sadhaka (Fulfilment)',      desc: 'Goals accomplished; favourable for objectives.' },
-        'Vadha':        { nature: 'bad',     label: 'Vadha/Naidhana (Destructive)', desc: 'Most inauspicious; loss, harm, endings.' },
-        'Mitra':        { nature: 'good',    label: 'Mitra (Friend)',            desc: 'Supportive, harmonious, cooperative results.' },
-        'Parama Mitra': { nature: 'good',    label: 'Parama Mitra (Best Friend)', desc: 'Highly auspicious, best supportive results.' }
+        'Janma':      { nature: 'caution', label: 'Janma (Tara #1) — Birth Star',        desc: 'Self-referential; result matches your own karma/effort — good if you have worked, flat if you have not.' },
+        'Sampat':     { nature: 'good',    label: 'Sampat (Tara #2) — Prosperity',        desc: 'Wealth, gain, and favourable material outcomes.' },
+        'Vipat':      { nature: 'bad',     label: 'Vipat (Tara #3) — Danger/Obstruction', desc: 'Whatever result comes will be achieved only with obstruction/struggle.' },
+        'Kshem':      { nature: 'good',    label: 'Kshem (Tara #4) — Wellbeing',          desc: 'Safety, comfort, steady favourable results (welfare/kalyan).' },
+        'Pratyari':   { nature: 'bad',     label: 'Pratyari (Tara #5) — Adversity',       desc: 'Opposition, conflict, delays; an unfavourable/enemy-like tara.' },
+        'Saadhak':    { nature: 'good',    label: 'Saadhak (Tara #6) — Fulfilment',       desc: 'Objectives get accomplished; favourable for completing a venture.' },
+        'Vadha':      { nature: 'bad',     label: 'Vadha / Ved (Tara #7) — Ending',       desc: 'Whatever was running either completes or winds up — a closure-tara, not literally destructive.' },
+        'Maitri':     { nature: 'good',    label: 'Maitri (Tara #8) — Friend',            desc: 'Supportive, favourable conditions are waiting for you.' },
+        'Ati-Maitri': { nature: 'good',    label: 'Ati-Maitri (Tara #9) — Best Friend',   desc: 'Highly auspicious, best supportive results; remainder 0 also falls here.' }
     },
 
     // ===================== SMALL HELPERS =====================
@@ -273,6 +280,9 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
     /**
      * Counted from senior lord's (e.g. MD) NATAL nakshatra to junior
      * lord's (e.g. AD) NATAL nakshatra — classical 9-fold Tara cycle.
+     * `count` (1-27, inclusive both ends, e.g. Ashwini->Rohini = 4) and
+     * `remainder` (count mod 9, 0 shown as 9) are exposed explicitly so
+     * the result can be rechecked by hand against the classical method.
      */
     getTaraMilan: function (lordA, lordB, natalPlanetsMap, nakNamesArr) {
         const pa = natalPlanetsMap && natalPlanetsMap[lordA];
@@ -281,12 +291,39 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
         const nakA = this._getNakIndex(pa.sid);
         const nakB = this._getNakIndex(pb.sid);
         const diff = ((nakB - nakA) % 27 + 27) % 27;
+        const count = diff + 1; // 1-indexed inclusive count, as counted by hand
+        const remainder = ((count % 9) === 0) ? 9 : (count % 9);
         const taraIdx = diff % 9;
         const name = this.TARA_SEQUENCE[taraIdx];
         const meta = this.TARA_MEANING[name];
         return {
             fromNak: this._nakName(nakA, nakNamesArr), toNak: this._nakName(nakB, nakNamesArr),
-            nakDiff: diff + 1, name: name, nature: meta.nature, label: meta.label, desc: meta.desc
+            nakDiff: count, count: count, remainder: remainder, taraNumber: taraIdx + 1,
+            name: name, nature: meta.nature, label: meta.label, desc: meta.desc
+        };
+    },
+
+    /**
+     * A dasha lord's OWN Tara counted from the native's JANMA NAKSHATRA
+     * (natal Moon's nakshatra) to that lord's NATAL nakshatra — this is
+     * the "Tara from birth star" check (separate from, and supplementary
+     * to, the senior->junior lord-to-lord Tara Milan above).
+     */
+    getJanmaTaraForLord: function (lordPlanet, janmaNakIdx, natalPlanetsMap, nakNamesArr) {
+        const p = natalPlanetsMap && natalPlanetsMap[lordPlanet];
+        if (!p || p.sid === undefined || janmaNakIdx === undefined || janmaNakIdx === null) return null;
+        const nakL = this._getNakIndex(p.sid);
+        const diff = ((nakL - janmaNakIdx) % 27 + 27) % 27;
+        const count = diff + 1;
+        const remainder = ((count % 9) === 0) ? 9 : (count % 9);
+        const taraIdx = diff % 9;
+        const name = this.TARA_SEQUENCE[taraIdx];
+        const meta = this.TARA_MEANING[name];
+        return {
+            lord: lordPlanet,
+            fromNak: this._nakName(janmaNakIdx, nakNamesArr), toNak: this._nakName(nakL, nakNamesArr),
+            count: count, remainder: remainder, taraNumber: taraIdx + 1,
+            name: name, nature: meta.nature, label: meta.label, desc: meta.desc
         };
     },
 
@@ -342,7 +379,7 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
         } else {
             narrative += `No sambandh data available — `;
         }
-        if (tara) narrative += `and the natal Tara from ${lordA} to ${lordB} is ${tara.label}, ${tara.nature === 'bad' ? 'reinforcing caution' : tara.nature === 'good' ? 'reinforcing support' : 'a mild, self-referential influence'}.`;
+        if (tara) narrative += `and the natal Tara from ${lordA} to ${lordB} is ${tara.label} [${lordA}'s ${tara.fromNak} → ${lordB}'s ${tara.toNak}, count=${tara.count}, count mod 9=${tara.remainder}], ${tara.nature === 'bad' ? 'reinforcing caution' : tara.nature === 'good' ? 'reinforcing support' : 'a mild, self-referential influence'}.`;
         if (sahdharm.isRajYogaCandidate && sambandh.level !== 'none') narrative += ` ⚑ Classical Raj-Yoga-Karaka dasha pattern (Trikona↔Kendra lords in sambandh).`;
 
         return {
@@ -377,10 +414,34 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
         if (clean.length >= 3) {
             overview = this.predictPair(clean[0].label, clean[0].lord, clean[clean.length-1].label, clean[clean.length-1].lord, ascSignNum, natalPlanetsMap, lords, nakNamesArr);
         }
-        return { levels: clean, pairs: pairs, overview: overview };
+
+        // Supplementary: each level's OWN Tara counted from the native's
+        // Janma Nakshatra (birth Moon's nakshatra) to that lord's natal
+        // nakshatra. Distinct from (and in addition to) the lord-to-lord
+        // Tara Milan used inside each pair above.
+        let janmaTaraChecks = [];
+        const moonP = natalPlanetsMap && natalPlanetsMap.Moon;
+        if (moonP && moonP.sid !== undefined) {
+            const janmaNakIdx = this._getNakIndex(moonP.sid);
+            const janmaNakName = this._nakName(janmaNakIdx, nakNamesArr);
+            janmaTaraChecks = clean.map(l => {
+                const t = this.getJanmaTaraForLord(l.lord, janmaNakIdx, natalPlanetsMap, nakNamesArr);
+                return t ? Object.assign({ level: l.label }, t) : null;
+            }).filter(Boolean);
+            janmaTaraChecks.janmaNakName = janmaNakName;
+        }
+
+        return { levels: clean, pairs: pairs, overview: overview, janmaTaraChecks: janmaTaraChecks };
     },
 
     // ===================== 6. HTML RENDERING =====================
+
+    _natureColor: function (nature) {
+        if (nature === 'good') return '#00DD77';
+        if (nature === 'bad') return '#FF4477';
+        if (nature === 'caution') return '#FFA500';
+        return '#8888AA';
+    },
 
     _renderChip: function (text, color) {
         return `<span style="display:inline-block;margin:2px 4px 0 0;padding:2px 6px;border-radius:4px;background:${color}22;color:${color};font-size:9px;font-weight:bold;">${text}</span>`;
@@ -396,7 +457,7 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
             ? sb.details.map(d => this._renderChip(d.label, '#66CCFF')).join('')
             : `<span style="color:var(--muted);font-size:9px;">no sambandh (yuti/drishti/parivartan)</span>`;
         const taraBlock = tr
-            ? `<div style="margin-top:3px;font-size:9px;color:var(--muted);">Tara Milan (${p.lordA}→${p.lordB}, natal): <b style="color:${tr.nature==='good'?'#00DD77':tr.nature==='bad'?'#FF4477':'#FFA500'};">${tr.label}</b> — ${tr.desc}</div>`
+            ? `<div style="margin-top:3px;font-size:9px;color:var(--muted);">Tara Milan (${p.lordA}→${p.lordB}, natal): <b style="color:${tr.nature==='good'?'#00DD77':tr.nature==='bad'?'#FF4477':'#FFA500'};">${tr.label}</b> — ${tr.desc}<br><span style="opacity:.85;">${tr.fromNak} → ${tr.toNak} · count=${tr.count} (mod 9 = ${tr.remainder}) → Tara #${tr.taraNumber}</span></div>`
             : '';
         const rajFlag = sh.isRajYogaCandidate && sb.level !== 'none'
             ? `<div style="margin-top:3px;font-size:9.5px;color:#FFD700;font-weight:bold;">⚑ Raj-Yoga-Karaka pattern (Trikona ↔ Kendra, in sambandh)</div>` : '';
@@ -414,6 +475,22 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
                 </div>`;
     },
 
+    _renderJanmaTaraChecks: function (checks) {
+        if (!checks || !checks.length) return '';
+        const rows = checks.map(t => {
+            const c = this._natureColor(t.nature);
+            return `<div style="display:flex;justify-content:space-between;gap:6px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:9px;">
+                      <span style="color:var(--muted);min-width:110px;">${t.level} (${t.lord})</span>
+                      <span style="flex:1;color:var(--muted);">${t.fromNak} → ${t.toNak} · count=${t.count} (mod 9=${t.remainder})</span>
+                      <span style="color:${c};font-weight:bold;">Tara #${t.taraNumber} ${t.name}</span>
+                    </div>`;
+        }).join('');
+        return `<div style="margin-top:10px;padding-top:6px;border-top:1px dashed rgba(255,215,0,.3);">
+                  <div style="font-size:9.5px;font-weight:bold;color:#FFD700;margin-bottom:2px;">TARA-FROM-JANMA-NAKSHATRA CHECK (birth Moon nakshatra: ${checks.janmaNakName || '?'}) — each running lord's own Tara from the birth star, supplementary to the lord-to-lord Tara Milan above:</div>
+                  ${rows}
+                </div>`;
+    },
+
     renderHTML: function (analysis) {
         if (!analysis || !analysis.pairs || !analysis.pairs.length) {
             return `<div class="pred-item">Not enough active dasha levels to judge Sah-Dharm/Sambandh (need at least MD+AD).</div>`;
@@ -428,6 +505,7 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
                         ${this._renderPair(analysis.overview)}
                       </div>`;
         }
+        html += this._renderJanmaTaraChecks(analysis.janmaTaraChecks);
         html += `</div>`;
         return html;
     }

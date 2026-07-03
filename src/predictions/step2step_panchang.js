@@ -608,11 +608,23 @@ const requestedDivs = [
 
     html += `</div></div>`;
 
-    // Draw key charts
-    setTimeout(function() {
-      chartIds.forEach(function(chartInfo) {
-        const canvas = document.getElementById(chartInfo.id);
-        if (canvas && typeof window.drawDChart === 'function') {
+    // Draw key charts. Uses a small bounded retry loop (instead of a single
+    // fixed-delay setTimeout) because the HTML returned by this function is
+    // assigned into the DOM by the caller — if that assignment happens even
+    // slightly later than expected (e.g. batched with other prediction
+    // sections, or behind a loading-spinner delay), a single 100ms attempt
+    // can fire before the canvases exist and silently draw nothing.
+    (function scheduleKeyChartDraw() {
+      let attempts = 0;
+      const maxAttempts = 30; // ~3s worth of retries at 100ms apart
+      function tryDraw() {
+        attempts++;
+        let allFound = true;
+        chartIds.forEach(function(chartInfo) {
+          const canvas = document.getElementById(chartInfo.id);
+          if (!canvas) { allFound = false; return; }
+          if (canvas.dataset.drawn === '1') return; // already drawn, don't redraw every retry
+          if (typeof window.drawDChart !== 'function') { allFound = false; return; }
           try {
             const customData = {
               planets: chartInfo.data.planets,
@@ -620,12 +632,20 @@ const requestedDivs = [
               showAspects: true
             };
             window.drawDChart(chartInfo.id, customData);
-          } catch(e) {
+            canvas.dataset.drawn = '1';
+          } catch (e) {
             console.error(`Error drawing ${chartInfo.data.name}:`, e);
+            canvas.dataset.drawn = '1'; // don't retry a chart that threw — data issue, not a timing issue
           }
+        });
+        if (!allFound && attempts < maxAttempts) {
+          setTimeout(tryDraw, 100);
+        } else if (!allFound) {
+          console.warn('STEP2STEP_PANCHANG: some key chart canvases never appeared in the DOM after', maxAttempts, 'attempts — check that the returned HTML was actually inserted.');
         }
-      });
-    }, 100);
+      }
+      setTimeout(tryDraw, 100);
+    })();
     // ============================================================
     // 9. ANALYSIS SECTION FOR KEY CHARTS
     // ============================================================
@@ -2158,6 +2178,8 @@ function buildTaraChakraAndMoolTrikonaSection(planets, ascendant, SIGNS, LORDS) 
           <th style="padding:4px;">Power Result</th>
       </tr>`;
 
+  let totalPowerResult = 0; // sum of each house's fractional score (0, 1/3, 2/3, 1) — max possible = 12
+
   for (let i = 0; i < 12; i++) {
       const bhavaSign = (ascSn + i) % 12;
       const bhavaLord = LORDS[bhavaSign];
@@ -2178,6 +2200,8 @@ function buildTaraChakraAndMoolTrikonaSection(planets, ascendant, SIGNS, LORDS) 
       else if (scoreCount === 2) { resultPct = "66.66%"; colorClass = "var(--gold)"; }
       else if (scoreCount === 3) { resultPct = "100%"; colorClass = "#00ff88"; }
 
+      totalPowerResult += scoreCount / 3;
+
       html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
           <td style="padding:4px;">${i + 1}${['st','nd','rd'][i] || 'th'} House</td>
           <td style="padding:4px; color:${bhavaMT === 'MT' ? '#00ff88' : 'var(--muted)'};">${bhavaMT}</td>
@@ -2186,7 +2210,26 @@ function buildTaraChakraAndMoolTrikonaSection(planets, ascendant, SIGNS, LORDS) 
           <td style="padding:4px; font-weight:bold; color:${colorClass};">${resultPct}</td>
       </tr>`;
   }
-  html += `</table></div>`;
+
+  const overallPct = (totalPowerResult / 12) * 100;
+  const overallColor = overallPct >= 66.66 ? '#00ff88' : overallPct >= 33.33 ? 'var(--gold)' : overallPct > 0 ? 'var(--amber)' : 'var(--rose)';
+
+  html += `<tr style="border-top:2px solid var(--border2);">
+      <td colspan="4" style="padding:6px 4px; text-align:right; font-weight:bold; color:var(--cyan);">Total Power Result (Σ house scores, max 12):</td>
+      <td style="padding:6px 4px; font-weight:bold; color:${overallColor};">${totalPowerResult.toFixed(2)} / 12</td>
+  </tr>
+  <tr>
+      <td colspan="4" style="padding:6px 4px; text-align:right; font-weight:bold; color:var(--cyan);">Overall Mool Trikona Strength — (Total ÷ 12) × 100:</td>
+      <td style="padding:6px 4px; font-weight:bold; color:${overallColor};">${overallPct.toFixed(2)}%</td>
+  </tr>`;
+
+  html += `</table>
+      <div style="margin-top:10px; padding:8px 10px; border-radius:6px; background:${overallColor}18; border:1px solid ${overallColor}55; text-align:center;">
+        <span style="font-size:10px; color:var(--muted);">OVERALL CHART POWER (Mool Trikona) </span>
+        <span style="font-size:15px; font-weight:bold; color:${overallColor};">${overallPct.toFixed(2)}%</span>
+        <span style="font-size:9px; color:var(--muted);"> &nbsp;(Total ${totalPowerResult.toFixed(2)} / 12 houses × 100)</span>
+      </div>
+  </div>`;
 
   return html;
 }
