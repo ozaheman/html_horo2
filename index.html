@@ -622,6 +622,12 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
         </div>
         <div id="dashaTransitPanel" style="flex:1;display:none;"></div>
       </div>
+         <div class="dasha-row" id="sahdharmRow" style="align-items:flex-start;">
+        <div class="dasha-lbl">
+          <button id="btnSahdharmFX" class="btn" style="font-size:9px;padding:3px 6px;">SAH-DHARM+SAMBANDH</button>
+        </div>
+        <div id="sahdharmPanel" style="flex:1;display:none;"></div>
+      </div>
     </div>
     <div class="kleg">
       <span class="lbl" style="font-size:8px;">KNOT:</span>
@@ -1273,6 +1279,7 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
 <script src="./src/predictions/shadbala.js"></script>
 <script src="./src/predictions/graha_maitri.js"></script>
 <script src="./src/predictions/dasha_transit_relations.js"></script>
+<script src="./src/predictions/sahdharm_sambandh_predictor.js"></script>
 <script src="./src/business_tarachakra.js"></script>
 <script src="./src/predictions/hit_astrology.js"></script>
 <script src="./src/predictions/ap_prediction_day.js"></script>
@@ -1338,7 +1345,8 @@ var HORA_ACTIVITIES = {
 //  NAKSHATRA LOOKUP
 // ═══════════════════════════════════════════════════════════
 const NAK_NAMES=['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha','Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha','Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishta','Shatabhisha','Purva Bhadra','Uttara Bhadra','Revati'];
-
+// Nakshatra lords (Vimshottari order), exposed globally so prediction engines can look up nakshatra rulership.
+window.NAK_LORDS=['Ketu','Venus','Sun','Moon','Mars','Rahu','Jupiter','Saturn','Mercury','Ketu','Venus','Sun','Moon','Mars','Rahu','Jupiter','Saturn','Mercury','Ketu','Venus','Sun','Moon','Mars','Rahu','Jupiter','Saturn','Mercury'];
 const P_YOGAS = [
  {n:"Vishkumbha", t:"Inauspicious", m:"Obstacles"}, {n:"Preeti", t:"Auspicious", m:"Love, affection"}, {n:"Ayushman", t:"Auspicious", m:"Longevity"},
  {n:"Saubhagya", t:"Auspicious", m:"Good fortune"}, {n:"Shobhana", t:"Auspicious", m:"Beauty, splendor"}, {n:"Atiganda", t:"Inauspicious", m:"Danger"},
@@ -4035,7 +4043,42 @@ function renderDashaTransitPanel(){
 
   panelEl.innerHTML = window.DASHA_TRANSIT_RELATIONS.renderHTML(analysis);
 }
+function renderSahdharmPanel(){
+  const panelEl = document.getElementById('sahdharmPanel');
+  if(!panelEl || panelEl.style.display==='none') return;
+  if(!window.SAHDHARM_SAMBANDH_PREDICTOR || !BIRTH_PLANETS || !BIRTH_ASC){ panelEl.innerHTML=''; return; }
 
+  const refDate = (typeof centerDate !== 'undefined' && centerDate) ? centerDate : TODAY;
+  const v = getVimsh(refDate);
+  if(!v){ panelEl.innerHTML=''; return; }
+  const ad  = v.subs?.find(s => refDate >= s.start && refDate < s.end) || null;
+  const pd  = ad?.subs?.find(s => refDate >= s.start && refDate < s.end) || null;
+  const sd  = pd?.subs?.find(s => refDate >= s.start && refDate < s.end) || null;
+  const pra = sd?.subs?.find(s => refDate >= s.start && refDate < s.end) || null;
+
+  const levels = [
+    { label: 'MAHADASHA',       lord: v.lord },
+    ad  ? { label: 'ANTARDASHA',       lord: ad.lord }  : null,
+    pd  ? { label: 'PRATYANTARDASHA',  lord: pd.lord }  : null,
+    sd  ? { label: 'SUKSHMA',          lord: sd.lord }  : null,
+    pra ? { label: 'PRANA',            lord: pra.lord } : null
+  ];
+
+  const analysis = window.SAHDHARM_SAMBANDH_PREDICTOR.analyzeChain(
+    levels, BIRTH_ASC.sn, BIRTH_PLANETS, LORDS, NAK_NAMES
+  );
+
+  panelEl.innerHTML = window.SAHDHARM_SAMBANDH_PREDICTOR.renderHTML(analysis);
+}
+
+document.getElementById('btnSahdharmFX')?.addEventListener('click', ()=>{
+  const panelEl = document.getElementById('sahdharmPanel');
+  const btn = document.getElementById('btnSahdharmFX');
+  const showing = panelEl.style.display !== 'none';
+  panelEl.style.display = showing ? 'none' : 'block';
+  btn.classList.toggle('active', !showing);
+  if(!showing) renderSahdharmPanel();
+});
 document.getElementById('btnDashaTransitFX')?.addEventListener('click', ()=>{
   const panelEl = document.getElementById('dashaTransitPanel');
   const btn = document.getElementById('btnDashaTransitFX');
@@ -4944,6 +4987,7 @@ function renderAll(){
   else drawDChart('dchartCanvas');
   drawMainChart();
   renderDashaTransitPanel();
+    renderSahdharmPanel();
   
   // ═══ YOGA ANALYSIS ═══
   // Calculate and display all yogas in the birth chart (D1)
