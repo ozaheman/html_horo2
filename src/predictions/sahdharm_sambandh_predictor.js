@@ -102,6 +102,61 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
         'Ati-Maitri': { nature: 'good',    label: 'Ati-Maitri (Tara #9) — Best Friend',   desc: 'Highly auspicious, best supportive results; remainder 0 also falls here.' }
     },
 
+    /**
+     * HIGH-IMPACT ABSOLUTE NAKSHATRA COUNTS (1-27, NOT reduced mod 9).
+     * These are specific counts classically flagged as carrying unusually
+     * strong (near-always negative) impact — some coincide with the
+     * ordinary bad taras (3=Vipat, 5=Pratyari, 7=Vadha/Ved recur every
+     * 9 counts), but three of them (10=Karma, 19=Aadhan, 22=Vainashak)
+     * are special EXCEPTION counts that override the plain mod-9 reading
+     * even when that reading would otherwise be neutral or good (e.g.
+     * count 22 reduces to Tara #4 "Kshem", normally good — but count 22
+     * itself is specifically flagged Vainashak/"destructive" and treated
+     * as a strong negative, per the source teaching that these six counts
+     * "have more impact" than the general 9-fold pattern). All six are
+     * treated as bad and heavier-weighted than an ordinary bad tara.
+     */
+    HIGH_IMPACT_COUNTS: {
+        3:  'Vipat',
+        5:  'Pratyari',
+        7:  'Vadha / Ved',
+        10: 'Karma',
+        19: 'Aadhan',
+        22: 'Vainashak'
+    },
+
+    /**
+     * Resolve the full Tara reading for an absolute 1-27 nakshatra count:
+     * the ordinary mod-9 tara PLUS the high-impact override/flag when the
+     * count is one of HIGH_IMPACT_COUNTS.
+     */
+    resolveTaraForCount: function (count) {
+        const taraIdx = (count - 1) % 9;
+        const baseName = this.TARA_SEQUENCE[taraIdx];
+        const baseMeta = this.TARA_MEANING[baseName];
+        const hiLabel = this.HIGH_IMPACT_COUNTS[count];
+        if (hiLabel) {
+            return {
+                name: hiLabel,
+                nature: 'bad',
+                highImpact: true,
+                label: `${hiLabel} (count=${count}, Tara #${taraIdx + 1}) — High-Impact Malefic Count`,
+                desc: `Classically flagged as an especially strong/impactful negative count (count=${count}); this overrides the plain 9-fold reading (which alone would read "${baseMeta.label.split(' (')[0]}").`
+            };
+        }
+        return {
+            name: baseName, nature: baseMeta.nature, highImpact: false,
+            label: baseMeta.label, desc: baseMeta.desc
+        };
+    },
+
+    /** good=+1 / caution=0 / bad=-1, doubled in magnitude when high-impact-flagged. */
+    _taraScoreValue: function (taraInfo) {
+        if (!taraInfo) return 0;
+        const base = taraInfo.nature === 'good' ? 1 : taraInfo.nature === 'bad' ? -1 : 0;
+        return taraInfo.highImpact ? base * 2 || -2 : base;
+    },
+
     // ===================== SMALL HELPERS =====================
 
     _getNakIndex: function (sidLon) {
@@ -293,13 +348,12 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
         const diff = ((nakB - nakA) % 27 + 27) % 27;
         const count = diff + 1; // 1-indexed inclusive count, as counted by hand
         const remainder = ((count % 9) === 0) ? 9 : (count % 9);
-        const taraIdx = diff % 9;
-        const name = this.TARA_SEQUENCE[taraIdx];
-        const meta = this.TARA_MEANING[name];
+        const resolved = this.resolveTaraForCount(count);
         return {
             fromNak: this._nakName(nakA, nakNamesArr), toNak: this._nakName(nakB, nakNamesArr),
-            nakDiff: count, count: count, remainder: remainder, taraNumber: taraIdx + 1,
-            name: name, nature: meta.nature, label: meta.label, desc: meta.desc
+            nakDiff: count, count: count, remainder: remainder, taraNumber: ((count - 1) % 9) + 1,
+            name: resolved.name, nature: resolved.nature, label: resolved.label, desc: resolved.desc,
+            highImpact: resolved.highImpact
         };
     },
 
@@ -316,14 +370,13 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
         const diff = ((nakL - janmaNakIdx) % 27 + 27) % 27;
         const count = diff + 1;
         const remainder = ((count % 9) === 0) ? 9 : (count % 9);
-        const taraIdx = diff % 9;
-        const name = this.TARA_SEQUENCE[taraIdx];
-        const meta = this.TARA_MEANING[name];
+        const resolved = this.resolveTaraForCount(count);
         return {
             lord: lordPlanet,
             fromNak: this._nakName(janmaNakIdx, nakNamesArr), toNak: this._nakName(nakL, nakNamesArr),
-            count: count, remainder: remainder, taraNumber: taraIdx + 1,
-            name: name, nature: meta.nature, label: meta.label, desc: meta.desc
+            count: count, remainder: remainder, taraNumber: ((count - 1) % 9) + 1,
+            name: resolved.name, nature: resolved.nature, label: resolved.label, desc: resolved.desc,
+            highImpact: resolved.highImpact
         };
     },
 
@@ -379,8 +432,18 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
         } else {
             narrative += `No sambandh data available — `;
         }
-        if (tara) narrative += `and the natal Tara from ${lordA} to ${lordB} is ${tara.label} [${lordA}'s ${tara.fromNak} → ${lordB}'s ${tara.toNak}, count=${tara.count}, count mod 9=${tara.remainder}], ${tara.nature === 'bad' ? 'reinforcing caution' : tara.nature === 'good' ? 'reinforcing support' : 'a mild, self-referential influence'}.`;
+        if (tara) {
+            narrative += `and the natal Tara from ${lordA} to ${lordB} is ${tara.label} [${lordA}'s ${tara.fromNak} → ${lordB}'s ${tara.toNak}, count=${tara.count}, count mod 9=${tara.remainder}], ${tara.nature === 'bad' ? 'reinforcing caution' : tara.nature === 'good' ? 'reinforcing support' : 'a mild, self-referential influence'}.`;
+            if (tara.highImpact) narrative += ` ⚠ This is one of the six specially-flagged high-impact counts (3=Vipat, 5=Pratyari, 7=Vadha/Ved, 10=Karma, 19=Aadhan, 22=Vainashak) — treat this pairing's negative side as stronger than usual.`;
+        }
         if (sahdharm.isRajYogaCandidate && sambandh.level !== 'none') narrative += ` ⚑ Classical Raj-Yoga-Karaka dasha pattern (Trikona↔Kendra lords in sambandh).`;
+
+        // Explicit numeric score: sah-dharm score amplified by sambandh
+        // strength, plus the (high-impact-aware) tara score.
+        const sambandhAmp = sambandh.level === 'strong' ? 1.5 : sambandh.level === 'medium' ? 1.2 : sambandh.level === 'weak' ? 1.05 : 1.0;
+        const taraScoreValue = this._taraScoreValue(tara);
+        const numericScore = Math.round((sahdharm.netScore * sambandhAmp + taraScoreValue) * 10) / 10;
+        const scoreVerdict = numericScore > 0.5 ? 'Positive' : numericScore < -0.5 ? 'Negative' : 'Neutral/Mixed';
 
         return {
             seniorLabel: seniorLabel, lordA: lordA,
@@ -388,8 +451,21 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
             sahdharm: sahdharm, sambandh: sambandh, tara: tara,
             finalNature: finalNature, intensity: intensity,
             verdictLabel: verdictLabel, verdictColor: verdictColor,
+            numericScore: numericScore, scoreVerdict: scoreVerdict, taraScoreValue: taraScoreValue,
             narrative: narrative
         };
+    },
+
+    /**
+     * A single planet's OWN sah-dharm score from its house-lordships alone
+     * (no pairing) — used to score the top-level Mahadasha, which has no
+     * senior dasha-lord above it to be paired against.
+     */
+    getStandaloneSahdharmScore: function (planet, ascSignNum, lords) {
+        const tags = this.getGroupTags(planet, ascSignNum, lords).tags;
+        let score = 0;
+        Object.keys(tags).forEach(g => { score += this.GROUP_WEIGHT[g]; });
+        return Math.round(score * 10) / 10;
     },
 
     // ===================== 5. FULL CHAIN ANALYSIS =====================
@@ -431,7 +507,35 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
             janmaTaraChecks.janmaNakName = janmaNakName;
         }
 
-        return { levels: clean, pairs: pairs, overview: overview, janmaTaraChecks: janmaTaraChecks };
+        // ===== Per-level POSITIVE/NEGATIVE score (what the user actually
+        // wants displayed): Mahadasha is scored standalone (house-lordship
+        // sah-dharm + its own Tara-from-Janma-Nakshatra); every deeper
+        // level (Antardasha, Pratyantardasha, Sukshma, Prana) is scored
+        // from its pair-verdict against the level immediately above it,
+        // which is how the classical method actually judges a running
+        // sub-period. =====
+        const levelScores = clean.map((lvl, i) => {
+            const taraInfo = janmaTaraChecks.find ? janmaTaraChecks.find(t => t.level === lvl.label) : null;
+            if (i === 0) {
+                const sahdharmScore = this.getStandaloneSahdharmScore(lvl.lord, ascSignNum, lords);
+                const taraScoreValue = this._taraScoreValue(taraInfo);
+                const totalScore = Math.round((sahdharmScore + taraScoreValue) * 10) / 10;
+                return {
+                    level: lvl.label, lord: lvl.lord, basis: 'standalone house-lordship (no senior lord above it)',
+                    sahdharmScore: sahdharmScore, sambandh: null, tara: taraInfo, taraScoreValue: taraScoreValue,
+                    totalScore: totalScore, verdict: totalScore > 0.5 ? 'Positive' : totalScore < -0.5 ? 'Negative' : 'Neutral/Mixed'
+                };
+            }
+            const pair = pairs[i - 1]; // levels[i-1] -> levels[i]
+            return {
+                level: lvl.label, lord: lvl.lord, basis: `${clean[i - 1].label} ${clean[i - 1].lord} → ${lvl.label} ${lvl.lord}`,
+                sahdharmScore: pair ? pair.sahdharm.netScore : 0, sambandh: pair ? pair.sambandh : null,
+                tara: pair ? pair.tara : taraInfo, taraScoreValue: pair ? pair.taraScoreValue : this._taraScoreValue(taraInfo),
+                totalScore: pair ? pair.numericScore : 0, verdict: pair ? pair.scoreVerdict : 'Neutral/Mixed'
+            };
+        });
+
+        return { levels: clean, pairs: pairs, overview: overview, janmaTaraChecks: janmaTaraChecks, levelScores: levelScores };
     },
 
     // ===================== 6. HTML RENDERING =====================
@@ -457,7 +561,7 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
             ? sb.details.map(d => this._renderChip(d.label, '#66CCFF')).join('')
             : `<span style="color:var(--muted);font-size:9px;">no sambandh (yuti/drishti/parivartan)</span>`;
         const taraBlock = tr
-            ? `<div style="margin-top:3px;font-size:9px;color:var(--muted);">Tara Milan (${p.lordA}→${p.lordB}, natal): <b style="color:${tr.nature==='good'?'#00DD77':tr.nature==='bad'?'#FF4477':'#FFA500'};">${tr.label}</b> — ${tr.desc}<br><span style="opacity:.85;">${tr.fromNak} → ${tr.toNak} · count=${tr.count} (mod 9 = ${tr.remainder}) → Tara #${tr.taraNumber}</span></div>`
+            ? `<div style="margin-top:3px;font-size:9px;color:var(--muted);">Tara Milan (${p.lordA}→${p.lordB}, natal): <b style="color:${tr.nature==='good'?'#00DD77':tr.nature==='bad'?'#FF4477':'#FFA500'};">${tr.label}</b> — ${tr.desc}<br><span style="opacity:.85;">${tr.fromNak} → ${tr.toNak} · count=${tr.count} (mod 9 = ${tr.remainder}) → Tara #${tr.taraNumber}</span>${tr.highImpact ? '<br><span style="color:#FF4477;font-weight:bold;">⚠ HIGH-IMPACT COUNT (' + tr.name + ', count=' + tr.count + ')</span>' : ''}</div>`
             : '';
         const rajFlag = sh.isRajYogaCandidate && sb.level !== 'none'
             ? `<div style="margin-top:3px;font-size:9.5px;color:#FFD700;font-weight:bold;">⚑ Raj-Yoga-Karaka pattern (Trikona ↔ Kendra, in sambandh)</div>` : '';
@@ -491,6 +595,23 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
                 </div>`;
     },
 
+    _renderScoreSummary: function (levelScores) {
+        if (!levelScores || !levelScores.length) return '';
+        const rows = levelScores.map(s => {
+            const color = s.verdict === 'Positive' ? '#00DD77' : s.verdict === 'Negative' ? '#FF4477' : '#FFD700';
+            const hi = s.tara && s.tara.highImpact ? ` <span style="color:#FF4477;font-weight:bold;">⚠${s.tara.name}(${s.tara.count})</span>` : '';
+            return `<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+                      <span style="font-size:9.5px;color:var(--muted);min-width:120px;">${s.level} <b style="color:var(--fg);">${s.lord}</b></span>
+                      <span style="flex:1;font-size:8.5px;color:var(--muted);">${s.basis}${hi}</span>
+                      <span style="font-size:11px;font-weight:bold;color:${color};">${s.totalScore > 0 ? '+' : ''}${s.totalScore} → ${s.verdict}</span>
+                    </div>`;
+        }).join('');
+        return `<div style="margin-bottom:8px;padding:7px 8px;border-radius:6px;background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.25);">
+                  <div style="font-size:9.5px;font-weight:bold;color:#FFD700;margin-bottom:3px;">SCORE PER DASHA LEVEL (sah-dharm + sambandh-amplification + high-impact-aware Tara):</div>
+                  ${rows}
+                </div>`;
+    },
+
     renderHTML: function (analysis) {
         if (!analysis || !analysis.pairs || !analysis.pairs.length) {
             return `<div class="pred-item">Not enough active dasha levels to judge Sah-Dharm/Sambandh (need at least MD+AD).</div>`;
@@ -498,6 +619,7 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
         let html = `<div class="pred-item" style="border-left:3px solid #FFD700;">
                        <div class="pred-title" style="color:#FFD700;">📜 Sah-Dharm × Sambandh × Tara-Milan — Dasha Prediction (Laghu Parashari)</div>
                        <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">Judges each running dasha pair by shared house-agenda of the two lords (सहधर्म), any real chart relationship between them (सम्बन्ध), and natal-to-natal Tara Milan.</div>`;
+        html += this._renderScoreSummary(analysis.levelScores);
         analysis.pairs.forEach(p => { html += this._renderPair(p); });
         if (analysis.overview) {
             html += `<div style="margin-top:10px;padding-top:6px;border-top:1px dashed rgba(255,215,0,.3);">
