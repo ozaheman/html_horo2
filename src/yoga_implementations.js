@@ -336,41 +336,127 @@ function enhanceYogaImplementations() {
     // ========== NEECHA BHANGA YOGAS ==========
     "Neecha Bhanga Raj Yoga": (c) => {
       if (!c.planets) return { result: false };
-      const debilitatedPlanets = Object.keys(c.planets).filter(p => 
-        c.planets[p] && c.planets[p].status === 'Deb.'
-      );
-      
-      const exaltationLords = {
-        'Sun': window.ASTRO_CONSTANTS.SIGNS[0], 
-        'Moon': window.ASTRO_CONSTANTS.SIGNS[1], 
-        'Mars': window.ASTRO_CONSTANTS.SIGNS[9], 
-        'Mercury': window.ASTRO_CONSTANTS.SIGNS[5],
-        'Jupiter': window.ASTRO_CONSTANTS.SIGNS[3], 
-        'Venus': window.ASTRO_CONSTANTS.SIGNS[11], 
-        'Saturn': window.ASTRO_CONSTANTS.SIGNS[6], 
-        'Rahu': window.ASTRO_CONSTANTS.SIGNS[2], 
-        'Ketu': window.ASTRO_CONSTANTS.SIGNS[5]
+      const DIGN = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.DIGNITIES) || {};
+      const SIGNS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) || [];
+      const kendraFromLagna = [1, 4, 7, 10];
+      const classicalPlanets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
+      const moon = c.planets.Moon;
+      const moonSn = moon ? moon.sn : null;
+
+      const houseDistance = (fromSn, toSn) => ((toSn - fromSn + 12) % 12) + 1;
+      const isExalted = (pname) => { const p = c.planets[pname], d = DIGN[pname]; return !!(p && d && p.sn === d.exalt); };
+      const isOwnSign = (pname) => { const p = c.planets[pname], d = DIGN[pname]; return !!(p && d && d.own && d.own.includes(p.sn)); };
+      const isStrong = (pname) => {
+        const p = c.planets[pname];
+        if (!p) return false;
+        if (isExalted(pname) || isOwnSign(pname)) return true;
+        return kendraFromLagna.includes(p.house);
       };
-      
-      let cancelReason = null;
-      const isDetected = debilitatedPlanets.some(planet => {
-        const exaltationSign = exaltationLords[planet];
-        const exaltationLordPlanetName = typeof getSignLord === 'function' ? getSignLord(exaltationSign) : null;
-        
-        if (exaltationLordPlanetName && c.planets[exaltationLordPlanetName]) {
-          const rulerPlanet = c.planets[exaltationLordPlanetName];
-          const kendraTrikonaHouses = [1, 4, 5, 7, 9, 10];
-          if (kendraTrikonaHouses.includes(rulerPlanet.house)) {
-            cancelReason = `the deep debilitation of ${planet} (in ${c.planets[planet].sign}, H${c.planets[planet].house}) is miraculously cancelled and reversed by its exaltation lord ${exaltationLordPlanetName} sitting powerfully in H${rulerPlanet.house} (${rulerPlanet.sign})`;
-            return true;
+      const aspectsSign = (pname, targetSn) => {
+        const p = c.planets[pname];
+        if (!p) return false;
+        const dist = houseDistance(p.sn, targetSn);
+        if (dist === 7) return true;
+        if (pname === 'Mars' && (dist === 4 || dist === 8)) return true;
+        if (pname === 'Jupiter' && (dist === 5 || dist === 9)) return true;
+        if (pname === 'Saturn' && (dist === 3 || dist === 10)) return true;
+        return false;
+      };
+
+      const findings = [];
+
+      classicalPlanets.forEach(pname => {
+        const p = c.planets[pname];
+        const d = DIGN[pname];
+        if (!p || !d || d.debilitation === undefined) return;
+        const isDebilitated = (p.sn === d.debilitation) || (p.status === 'Deb.');
+        if (!isDebilitated) return;
+
+        const debilSignLord = (typeof getSignLord === 'function') ? getSignLord(SIGNS[d.debilitation]) : null;
+        const exaltSignLord = (typeof getSignLord === 'function') ? getSignLord(SIGNS[d.exalt]) : null;
+        const reasons = [];
+
+        // 1) Dispositor of the debilitation sign is in Kendra from the Moon
+        if (debilSignLord && moonSn !== null && c.planets[debilSignLord]) {
+          const dist = houseDistance(moonSn, c.planets[debilSignLord].sn);
+          if (kendraFromLagna.includes(dist)) {
+            reasons.push({ channel: 'house', dispositor: debilSignLord,
+              text: `${debilSignLord} (lord of ${SIGNS[d.debilitation]}, the sign ${pname} is debilitated in) is in Kendra (house ${dist} counted from the Moon)` });
           }
         }
-        return false;
+        // 2) Dispositor of the debilitation sign aspects the debilitated planet, and is itself strong
+        if (debilSignLord && debilSignLord !== pname && c.planets[debilSignLord] && aspectsSign(debilSignLord, p.sn) && isStrong(debilSignLord)) {
+          reasons.push({ channel: 'house', dispositor: debilSignLord,
+            text: `${debilSignLord} (lord of ${SIGNS[d.debilitation]}) casts its aspect on ${pname} and is itself strong (own sign / exalted / Kendra from Lagna)` });
+        }
+        // 3) Dispositor of the debilitation sign is itself exalted anywhere in the chart
+        if (debilSignLord && debilSignLord !== pname && isExalted(debilSignLord)) {
+          reasons.push({ channel: 'house', dispositor: debilSignLord,
+            text: `${debilSignLord} (lord of ${SIGNS[d.debilitation]}) is itself exalted, in ${SIGNS[c.planets[debilSignLord].sn]}` });
+        }
+        // 4) Lord of the planet's own EXALTATION sign is in Kendra from the Moon
+        if (exaltSignLord && moonSn !== null && c.planets[exaltSignLord]) {
+          const dist = houseDistance(moonSn, c.planets[exaltSignLord].sn);
+          if (kendraFromLagna.includes(dist)) {
+            reasons.push({ channel: 'naisargik', dispositor: exaltSignLord,
+              text: `${exaltSignLord} (lord of ${SIGNS[d.exalt]}, where ${pname} would be exalted) is in Kendra (house ${dist} counted from the Moon)` });
+          }
+        }
+        // 5) Conjunct with any planet that is presently exalted (overrides natural friendship, e.g. Sun-Saturn)
+        const conjunctExalted = classicalPlanets.filter(op => op !== pname && c.planets[op] && c.planets[op].sn === p.sn && isExalted(op));
+        if (conjunctExalted.length) {
+          reasons.push({ channel: 'both', dispositor: conjunctExalted[0],
+            text: `${pname} is conjunct ${conjunctExalted.join(', ')} — exalted in this very sign (${SIGNS[p.sn]}); a connection with an exalted planet cancels debilitation regardless of natural friendship/enmity between the two` });
+        }
+        // 6) Retrograde (vakri) — classically behaves as if exalted
+        if (p.retro || p.isRetrograde) {
+          reasons.push({ channel: 'both', dispositor: pname,
+            text: `${pname} is retrograde (vakri) while debilitated, which classically makes it act as if exalted` });
+        }
+        // 7) Debilitated in Rashi (D1) but exalted in Navamsha (D9)
+        let d9Sign = null;
+        try {
+          if (typeof getChartPlanetsForDiv === 'function') {
+            const d9 = getChartPlanetsForDiv(9);
+            if (d9 && d9.planets && d9.planets[pname]) d9Sign = d9.planets[pname].sn;
+          } else if (typeof window.getVargaData === 'function') {
+            const lon = p.sid !== undefined ? p.sid : p.longitude;
+            if (lon !== undefined) d9Sign = window.getVargaData(lon, 9).sign;
+          }
+        } catch (e) { /* varga helper unavailable — skip this condition */ }
+        if (d9Sign !== null && d9Sign === d.exalt) {
+          reasons.push({ channel: 'partial', dispositor: pname,
+            text: `${pname} is exalted in the Navamsha (D9) — ${SIGNS[d9Sign]} — despite its Rashi (D1) debilitation (Vimshopaka Bala gives Navamsha ~4.5 of 20 points, a real but partial strengthening)` });
+        }
+
+        if (reasons.length) {
+          findings.push({ planet: pname, sign: SIGNS[p.sn], house: p.house, reasons, inDusthana: [6, 8, 12].includes(p.house) });
+        }
       });
 
+      if (!findings.length) {
+        return { result: false, rationale: "No debilitated planet in this chart currently meets a classical Neecha Bhanga (cancellation) condition." };
+      }
+
+      const channelLabel = (ch) => ch === 'house'
+        ? 'the benefit flows mainly to the HOUSE owned by the cancelling planet (it secures its own house first, then passes on some strength)'
+        : ch === 'naisargik'
+        ? "the cancellation mainly reduces this planet's own natural/karaka weakness rather than boosting a specific house"
+        : ch === 'partial'
+        ? 'this is a real but PARTIAL strengthening, not a full cancellation'
+        : 'the benefit flows to both the house significations and this planet\'s natural/karaka significations';
+
+      const blocks = findings.map(f => {
+        const causeLines = f.reasons.map(r => `• ${r.text} → <b>${channelLabel(r.channel)}</b>.`).join('<br>');
+        const dusthanaNote = f.inDusthana
+          ? `<br><span style="color:#FFA500;">⚠ ${f.planet} sits in a dusthana (house ${f.house}, one of 6/8/12) — the intensity of this cancellation is reduced, since that house is inherently difficult regardless.</span>`
+          : '';
+        return `<u>${f.planet}</u> is debilitated in ${f.sign} (H${f.house}), but Neecha Bhanga is triggered because:<br>${causeLines}${dusthanaNote}`;
+      }).join('<br><br>');
+
       return {
-        result: isDetected,
-        rationale: isDetected ? `It forms because ${cancelReason}, creating an unexpected rise to power after initial adversity.` : "No debilitated planets found or their cancellation lords are not in key houses."
+        result: true,
+        rationale: blocks + '<br><br><i>Caveat: the cancelling planet must itself be genuinely strong for this to have real force — a technically-qualifying but weak canceller gives only a weak cancellation.</i>'
       };
     },
     

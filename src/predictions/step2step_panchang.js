@@ -1015,7 +1015,55 @@ const requestedDivs = [
         stepHtml += `The Navamsha of this point falls in ${SIGNS[a64D9Sn]}.<br>`;
         stepHtml += `${SIGNS[a64D9Sn]} is ruled by ${a64Lord}.<br>`;
         stepHtml += `<strong style="color:var(--cyan);">✓ Therefore: 64th Navamsha from Ascendant = ${a64Lord}</strong></div>`;
+// Step 9: Badhakesh (Obstructor Lord)
+        // Chara (movable) lagnas -> 11th lord; Sthira (fixed) lagnas -> 9th lord; Dwiswabhava (dual) lagnas -> 7th lord.
+        // Classically, this lord only obstructs when it SITS IN THE LAGNA — and in every one of the 12 lagnas this
+        // coincides with that planet's own debilitation there (Capricorn/Mars being the sole exception: Mars is
+        // exalted, but Capricorn is ruled by Saturn, with whom Mars has no natural friendship, so it still behaves
+        // adversely toward that lagna).
+        stepHtml += `<div style="color:var(--gold2); font-weight:bold; margin-bottom:6px; font-size:12px;">9. Badhakesh (Obstructor Lord)</div>`;
+        stepHtml += `<div style="margin-bottom:15px; padding-left:12px; border-left:2px solid rgba(255,255,255,0.1);">`;
+        const CHARA_LAGNAS = [0, 3, 6, 9];   // Aries, Cancer, Libra, Capricorn
+        const STHIRA_LAGNAS = [1, 4, 7, 10]; // Taurus, Leo, Scorpio, Aquarius
+        // Dwiswabhava (dual) lagnas: Gemini, Virgo, Sagittarius, Pisces -> [2,5,8,11]
+        let badhakHouseNum, lagnaTypeName;
+        if (CHARA_LAGNAS.includes(natalAscSn)) { badhakHouseNum = 11; lagnaTypeName = 'Chara (Movable)'; }
+        else if (STHIRA_LAGNAS.includes(natalAscSn)) { badhakHouseNum = 9; lagnaTypeName = 'Sthira (Fixed)'; }
+        else { badhakHouseNum = 7; lagnaTypeName = 'Dwiswabhava (Dual)'; }
+        const badhakSn = (natalAscSn + badhakHouseNum - 1) % 12;
+        const badhakesh = LORDS[badhakSn];
+        const badhakeshPos = planets[badhakesh];
 
+        stepHtml += `${SIGNS[natalAscSn]} is a ${lagnaTypeName} sign, so the Badhakesh is the lord of house ${badhakHouseNum}.<br>`;
+        stepHtml += `House ${badhakHouseNum} from ${SIGNS[natalAscSn]} is ${SIGNS[badhakSn]}, ruled by ${badhakesh}.<br>`;
+        stepHtml += `<strong style="color:var(--cyan);">✓ Therefore: Badhakesh = ${badhakesh}</strong><br><br>`;
+
+        if (badhakeshPos) {
+          const badhakeshHouse = badhakeshPos.house;
+          stepHtml += `${badhakesh} is currently placed in house ${badhakeshHouse} (${badhakeshPos.sign || SIGNS[Math.floor((badhakeshPos.sid||badhakeshPos.longitude||0)/30)]}).<br>`;
+          if (badhakeshHouse === 1) {
+            const DIGN = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.DIGNITIES) || {};
+            const bd = DIGN[badhakesh];
+            const isDebil = bd && bd.debilitation === natalAscSn;
+            const isExalt = bd && bd.exalt === natalAscSn;
+            stepHtml += `<span style="color:var(--rose);">⚠ Badhakesh is sitting in the Lagna itself — classically this is the ONLY placement where it actually obstructs.</span><br>`;
+            if (isDebil) {
+              stepHtml += `Cause: ${badhakesh} is also DEBILITATED in ${SIGNS[natalAscSn]} — this is the normal case (in most lagnas, the badhakesh happens to be debilitated in that very lagna sign), so the obstruction is expected and fairly direct.<br>`;
+            } else if (isExalt) {
+              const exaltLord = LORDS[natalAscSn];
+              stepHtml += `Cause: ${badhakesh} is technically EXALTED in ${SIGNS[natalAscSn]}, so this looks like it should help rather than obstruct — but ${SIGNS[natalAscSn]} is ruled by ${exaltLord}, with whom ${badhakesh} shares no natural friendship. Even in exaltation, sitting in a non-friend's sign as Badhakesh still gives obstruction/struggle rather than clean exaltation results (the classic Capricorn-lagna-Mars exception).<br>`;
+            } else {
+              stepHtml += `Effect: obstruction/hurdles in matters of the Lagna (self, health, overall life direction) — expect the "Badha" to show up as recurring delay or struggle rather than outright failure.<br>`;
+            }
+            stepHtml += `<strong style="color:var(--cyan);">✓ Therefore: Badhak Yoga is ACTIVE — expect obstruction/struggle in Lagna-related matters, especially in ${badhakesh}'s Mahadasha/Antardasha.</strong>`;
+          } else {
+            stepHtml += `<span style="color:var(--green);">Badhakesh is NOT in the Lagna, so the badhak-obstruction rule does not apply here.</span> Per this method, only judge ${badhakesh}'s placement in house ${badhakeshHouse} by its normal house-lordship nature (it will act as the lord of house ${badhakHouseNum} would ordinarily act from house ${badhakeshHouse}) — no special obstruction is indicated.<br>`;
+            stepHtml += `<strong style="color:var(--cyan);">✓ Therefore: Badhak Yoga is NOT triggered.</strong>`;
+          }
+        } else {
+          stepHtml += `${badhakesh}'s position is unavailable.`;
+        }
+        stepHtml += `</div>`;
         // Final Summary
         stepHtml += `<div style="color:var(--gold2); font-weight:bold; margin-top:20px; margin-bottom:6px; font-size:12px;">📊 Final Summary Table</div>`;
         stepHtml += `<table style="width:100%; max-width:450px; color:var(--text); border-collapse:collapse; text-align:left; border:1px solid rgba(255,255,255,0.1);">`;
@@ -1027,10 +1075,13 @@ const requestedDivs = [
         stepHtml += `<tr><td style="padding:6px 8px; border:1px solid rgba(255,255,255,0.1);">Kharesha (22nd Drek Lord)</td><td style="padding:6px 8px; border:1px solid rgba(255,255,255,0.1); font-weight:bold; color:var(--rose);">${kharesha}</td></tr>`;
         stepHtml += `<tr><td style="padding:6px 8px; border:1px solid rgba(255,255,255,0.1);">64th Navamsha from Moon</td><td style="padding:6px 8px; border:1px solid rgba(255,255,255,0.1); font-weight:bold; color:var(--rose);">${m64Lord}</td></tr>`;
         stepHtml += `<tr><td style="padding:6px 8px; border:1px solid rgba(255,255,255,0.1);">64th Navamsha from Ascendant</td><td style="padding:6px 8px; border:1px solid rgba(255,255,255,0.1); font-weight:bold; color:var(--rose);">${a64Lord}</td></tr>`;
+        const badhakActive = badhakeshPos && badhakeshPos.house === 1;
+        stepHtml += `<tr><td style="padding:6px 8px; border:1px solid rgba(255,255,255,0.1);">Badhakesh (Obstructor Lord)</td><td style="padding:6px 8px; border:1px solid rgba(255,255,255,0.1); font-weight:bold; color:${badhakActive ? 'var(--rose)' : 'var(--green)'};">${badhakesh}${badhakActive ? ' (ACTIVE — in Lagna)' : ' (inactive — not in Lagna)'}</td></tr>`;
         stepHtml += `</table>`;
 
         // Karmic activation summary
         let karmicSet = new Set([h8Lord, ...occ8, ...asp8, ...yuti8, kharesha, m64Lord, a64Lord]);
+         if (badhakActive) karmicSet.add(badhakesh);
         karmicSet.delete('None');
         karmicSet.delete('-');
         

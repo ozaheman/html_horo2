@@ -160,7 +160,10 @@ function analyzeSagesMethodology(planets, asc) {
   const hits = [];
   const tPos = getPos(new Date()); 
   if (!tPos || !planets) return [];
-
+  // D9 (Navamsha) chart — needed by the BPHS/Parashara D9 rules below.
+  // Falls back gracefully (all d9Chart-dependent rules become inert, not throw)
+  // if the divisional-chart helper isn't available for some reason.
+  const d9Chart = (typeof getChartPlanetsForDiv === 'function') ? getChartPlanetsForDiv(9) : null;
   const h7Sign = (asc.sn + 6) % 12, h7Lord = LORDS[h7Sign];
   const h2Sign = (asc.sn + 1) % 12, h2Lord = LORDS[h2Sign];
   const h9Sign = (asc.sn + 8) % 12, h9Lord = LORDS[h9Sign];

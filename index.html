@@ -1280,6 +1280,8 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
 <script src="./src/predictions/graha_maitri.js"></script>
 <script src="./src/predictions/dasha_transit_relations.js"></script>
 <script src="./src/predictions/sahdharm_sambandh_predictor.js"></script>
+<script src="./src/predictions/panchang_engine.js"></script>
+<script src="./src/predictions/business_muhurta_calendar.js"></script>
 <script src="./src/business_tarachakra.js"></script>
 <script src="./src/predictions/hit_astrology.js"></script>
 <script src="./src/predictions/ap_prediction_day.js"></script>
@@ -5546,7 +5548,18 @@ function runBusinessAnalysis() {
       console.log('TARA CHAKRA RENDERED for nakIdx:', moonNakIdx);
     }
   } catch(e) { console.error('TARA CHAKRA FAIL', e); }
-
+// 1.65 PANCHANG + BUSINESS MUHURTA + AUSPICIOUS CALENDAR GENERATOR
+  try {
+    if (window.PANCHANG_ENGINE && window.BUSINESS_MUHURTA && window.BIRTH) {
+      var bmPanchang = window.PANCHANG_ENGINE.compute(new Date(), window.BIRTH.lat, window.BIRTH.lon, window.BIRTH.utcOff);
+      el.innerHTML += window.BUSINESS_MUHURTA.renderPanchangPanel(bmPanchang);
+      el.innerHTML += window.BUSINESS_MUHURTA.renderBusinessMuhurtaPanel(bmPanchang);
+      el.innerHTML += window.BUSINESS_MUHURTA.renderCalendarGeneratorUI();
+      // Buttons only exist in the DOM now that the HTML above has been inserted, so wire them up here.
+      window.BUSINESS_MUHURTA.wireCalendarGenerator({ lat: window.BIRTH.lat, lon: window.BIRTH.lon, utcOffsetHours: window.BIRTH.utcOff });
+      console.log('PANCHANG / BUSINESS MUHURTA / CALENDAR GENERATOR RENDERED');
+    }
+  } catch(e) { console.error('BUSINESS MUHURTA FAIL', e); }
   // 1.5 ADVANCED BNN & JAIMINI ANALYSIS (NEW)
   try {
     const advancedBNN = generateAdvancedReport('business', BIRTH_PLANETS, BIRTH_ASC);
