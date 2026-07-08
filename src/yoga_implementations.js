@@ -336,127 +336,41 @@ function enhanceYogaImplementations() {
     // ========== NEECHA BHANGA YOGAS ==========
     "Neecha Bhanga Raj Yoga": (c) => {
       if (!c.planets) return { result: false };
-      const DIGN = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.DIGNITIES) || {};
-      const SIGNS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) || [];
-      const kendraFromLagna = [1, 4, 7, 10];
-      const classicalPlanets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
-      const moon = c.planets.Moon;
-      const moonSn = moon ? moon.sn : null;
-
-      const houseDistance = (fromSn, toSn) => ((toSn - fromSn + 12) % 12) + 1;
-      const isExalted = (pname) => { const p = c.planets[pname], d = DIGN[pname]; return !!(p && d && p.sn === d.exalt); };
-      const isOwnSign = (pname) => { const p = c.planets[pname], d = DIGN[pname]; return !!(p && d && d.own && d.own.includes(p.sn)); };
-      const isStrong = (pname) => {
-        const p = c.planets[pname];
-        if (!p) return false;
-        if (isExalted(pname) || isOwnSign(pname)) return true;
-        return kendraFromLagna.includes(p.house);
+      const debilitatedPlanets = Object.keys(c.planets).filter(p => 
+        c.planets[p] && c.planets[p].status === 'Deb.'
+      );
+      
+      const exaltationLords = {
+        'Sun': window.ASTRO_CONSTANTS.SIGNS[0], 
+        'Moon': window.ASTRO_CONSTANTS.SIGNS[1], 
+        'Mars': window.ASTRO_CONSTANTS.SIGNS[9], 
+        'Mercury': window.ASTRO_CONSTANTS.SIGNS[5],
+        'Jupiter': window.ASTRO_CONSTANTS.SIGNS[3], 
+        'Venus': window.ASTRO_CONSTANTS.SIGNS[11], 
+        'Saturn': window.ASTRO_CONSTANTS.SIGNS[6], 
+        'Rahu': window.ASTRO_CONSTANTS.SIGNS[2], 
+        'Ketu': window.ASTRO_CONSTANTS.SIGNS[5]
       };
-      const aspectsSign = (pname, targetSn) => {
-        const p = c.planets[pname];
-        if (!p) return false;
-        const dist = houseDistance(p.sn, targetSn);
-        if (dist === 7) return true;
-        if (pname === 'Mars' && (dist === 4 || dist === 8)) return true;
-        if (pname === 'Jupiter' && (dist === 5 || dist === 9)) return true;
-        if (pname === 'Saturn' && (dist === 3 || dist === 10)) return true;
+      
+      let cancelReason = null;
+      const isDetected = debilitatedPlanets.some(planet => {
+        const exaltationSign = exaltationLords[planet];
+        const exaltationLordPlanetName = typeof getSignLord === 'function' ? getSignLord(exaltationSign) : null;
+        
+        if (exaltationLordPlanetName && c.planets[exaltationLordPlanetName]) {
+          const rulerPlanet = c.planets[exaltationLordPlanetName];
+          const kendraTrikonaHouses = [1, 4, 5, 7, 9, 10];
+          if (kendraTrikonaHouses.includes(rulerPlanet.house)) {
+            cancelReason = `the deep debilitation of ${planet} (in ${c.planets[planet].sign}, H${c.planets[planet].house}) is miraculously cancelled and reversed by its exaltation lord ${exaltationLordPlanetName} sitting powerfully in H${rulerPlanet.house} (${rulerPlanet.sign})`;
+            return true;
+          }
+        }
         return false;
-      };
-
-      const findings = [];
-
-      classicalPlanets.forEach(pname => {
-        const p = c.planets[pname];
-        const d = DIGN[pname];
-        if (!p || !d || d.debilitation === undefined) return;
-        const isDebilitated = (p.sn === d.debilitation) || (p.status === 'Deb.');
-        if (!isDebilitated) return;
-
-        const debilSignLord = (typeof getSignLord === 'function') ? getSignLord(SIGNS[d.debilitation]) : null;
-        const exaltSignLord = (typeof getSignLord === 'function') ? getSignLord(SIGNS[d.exalt]) : null;
-        const reasons = [];
-
-        // 1) Dispositor of the debilitation sign is in Kendra from the Moon
-        if (debilSignLord && moonSn !== null && c.planets[debilSignLord]) {
-          const dist = houseDistance(moonSn, c.planets[debilSignLord].sn);
-          if (kendraFromLagna.includes(dist)) {
-            reasons.push({ channel: 'house', dispositor: debilSignLord,
-              text: `${debilSignLord} (lord of ${SIGNS[d.debilitation]}, the sign ${pname} is debilitated in) is in Kendra (house ${dist} counted from the Moon)` });
-          }
-        }
-        // 2) Dispositor of the debilitation sign aspects the debilitated planet, and is itself strong
-        if (debilSignLord && debilSignLord !== pname && c.planets[debilSignLord] && aspectsSign(debilSignLord, p.sn) && isStrong(debilSignLord)) {
-          reasons.push({ channel: 'house', dispositor: debilSignLord,
-            text: `${debilSignLord} (lord of ${SIGNS[d.debilitation]}) casts its aspect on ${pname} and is itself strong (own sign / exalted / Kendra from Lagna)` });
-        }
-        // 3) Dispositor of the debilitation sign is itself exalted anywhere in the chart
-        if (debilSignLord && debilSignLord !== pname && isExalted(debilSignLord)) {
-          reasons.push({ channel: 'house', dispositor: debilSignLord,
-            text: `${debilSignLord} (lord of ${SIGNS[d.debilitation]}) is itself exalted, in ${SIGNS[c.planets[debilSignLord].sn]}` });
-        }
-        // 4) Lord of the planet's own EXALTATION sign is in Kendra from the Moon
-        if (exaltSignLord && moonSn !== null && c.planets[exaltSignLord]) {
-          const dist = houseDistance(moonSn, c.planets[exaltSignLord].sn);
-          if (kendraFromLagna.includes(dist)) {
-            reasons.push({ channel: 'naisargik', dispositor: exaltSignLord,
-              text: `${exaltSignLord} (lord of ${SIGNS[d.exalt]}, where ${pname} would be exalted) is in Kendra (house ${dist} counted from the Moon)` });
-          }
-        }
-        // 5) Conjunct with any planet that is presently exalted (overrides natural friendship, e.g. Sun-Saturn)
-        const conjunctExalted = classicalPlanets.filter(op => op !== pname && c.planets[op] && c.planets[op].sn === p.sn && isExalted(op));
-        if (conjunctExalted.length) {
-          reasons.push({ channel: 'both', dispositor: conjunctExalted[0],
-            text: `${pname} is conjunct ${conjunctExalted.join(', ')} — exalted in this very sign (${SIGNS[p.sn]}); a connection with an exalted planet cancels debilitation regardless of natural friendship/enmity between the two` });
-        }
-        // 6) Retrograde (vakri) — classically behaves as if exalted
-        if (p.retro || p.isRetrograde) {
-          reasons.push({ channel: 'both', dispositor: pname,
-            text: `${pname} is retrograde (vakri) while debilitated, which classically makes it act as if exalted` });
-        }
-        // 7) Debilitated in Rashi (D1) but exalted in Navamsha (D9)
-        let d9Sign = null;
-        try {
-          if (typeof getChartPlanetsForDiv === 'function') {
-            const d9 = getChartPlanetsForDiv(9);
-            if (d9 && d9.planets && d9.planets[pname]) d9Sign = d9.planets[pname].sn;
-          } else if (typeof window.getVargaData === 'function') {
-            const lon = p.sid !== undefined ? p.sid : p.longitude;
-            if (lon !== undefined) d9Sign = window.getVargaData(lon, 9).sign;
-          }
-        } catch (e) { /* varga helper unavailable — skip this condition */ }
-        if (d9Sign !== null && d9Sign === d.exalt) {
-          reasons.push({ channel: 'partial', dispositor: pname,
-            text: `${pname} is exalted in the Navamsha (D9) — ${SIGNS[d9Sign]} — despite its Rashi (D1) debilitation (Vimshopaka Bala gives Navamsha ~4.5 of 20 points, a real but partial strengthening)` });
-        }
-
-        if (reasons.length) {
-          findings.push({ planet: pname, sign: SIGNS[p.sn], house: p.house, reasons, inDusthana: [6, 8, 12].includes(p.house) });
-        }
       });
 
-      if (!findings.length) {
-        return { result: false, rationale: "No debilitated planet in this chart currently meets a classical Neecha Bhanga (cancellation) condition." };
-      }
-
-      const channelLabel = (ch) => ch === 'house'
-        ? 'the benefit flows mainly to the HOUSE owned by the cancelling planet (it secures its own house first, then passes on some strength)'
-        : ch === 'naisargik'
-        ? "the cancellation mainly reduces this planet's own natural/karaka weakness rather than boosting a specific house"
-        : ch === 'partial'
-        ? 'this is a real but PARTIAL strengthening, not a full cancellation'
-        : 'the benefit flows to both the house significations and this planet\'s natural/karaka significations';
-
-      const blocks = findings.map(f => {
-        const causeLines = f.reasons.map(r => `• ${r.text} → <b>${channelLabel(r.channel)}</b>.`).join('<br>');
-        const dusthanaNote = f.inDusthana
-          ? `<br><span style="color:#FFA500;">⚠ ${f.planet} sits in a dusthana (house ${f.house}, one of 6/8/12) — the intensity of this cancellation is reduced, since that house is inherently difficult regardless.</span>`
-          : '';
-        return `<u>${f.planet}</u> is debilitated in ${f.sign} (H${f.house}), but Neecha Bhanga is triggered because:<br>${causeLines}${dusthanaNote}`;
-      }).join('<br><br>');
-
       return {
-        result: true,
-        rationale: blocks + '<br><br><i>Caveat: the cancelling planet must itself be genuinely strong for this to have real force — a technically-qualifying but weak canceller gives only a weak cancellation.</i>'
+        result: isDetected,
+        rationale: isDetected ? `It forms because ${cancelReason}, creating an unexpected rise to power after initial adversity.` : "No debilitated planets found or their cancellation lords are not in key houses."
       };
     },
     
@@ -692,17 +606,129 @@ function enhanceYogaImplementations() {
       const moon = c.planets.Moon;
       const jupiter = c.planets.Jupiter;
       if (!moon || !jupiter) return { result: false };
-      
-      const moonHouse = moon.house || 0;
-      const jupiterHouse = jupiter.house || 0;
-      const diff = Math.abs(jupiterHouse - moonHouse);
-      
-      const isDet = (diff === 5 || diff === 7 || diff === 11);  // Houses 6, 8, 12 from moon
-      return { 
-          result: isDet, 
-          rationale: isDet ? `It forms because Jupiter (H${jupiterHouse}, ${jupiter.sign}) is placed in a difficult 6th, 8th or 12th position from the Moon (H${moonHouse}, ${moon.sign}), causing fluctuating fortunes.` : '' 
+
+      const moonHouse = moon.house || 1;
+      const jupiterHouse = jupiter.house || 1;
+      // Correct wraparound-safe "Nth house counted from the Moon" (1-12).
+      const houseFromMoon = ((jupiterHouse - moonHouse + 12) % 12) + 1;
+      const isBaseFormed = [6, 8, 12].includes(houseFromMoon);
+
+      if (!isBaseFormed) return { result: false };
+
+      const reasons = [];       // things that CANCEL/reduce it
+      let nullified = false;    // fully cancelled
+      let reduced = false;      // still present but softened
+
+      // ---- 1) Mutual degree difference (>15° cancels it entirely) ----
+      // Per the teaching, this depends ONLY on the two planets' own
+      // in-sign degrees (Bhogamsa) — independent of Lagna, and independent
+      // of Rashi vs. Bhava-Chalit charts.
+      const moonDeg = parseFloat(moon.deg);
+      const jupiterDeg = parseFloat(jupiter.deg);
+      let degDiff = null;
+      if (!isNaN(moonDeg) && !isNaN(jupiterDeg)) {
+        degDiff = Math.abs(jupiterDeg - moonDeg);
+        if (degDiff > 15) {
+          nullified = true;
+          reasons.push(`Mutual degree gap is ${degDiff.toFixed(1)}° (Moon ${moonDeg.toFixed(1)}°, Jupiter ${jupiterDeg.toFixed(1)}°) — over the 15° threshold, so the yoga is BROKEN even though Jupiter sits in house ${houseFromMoon} from the Moon by whole-sign counting.`);
+        }
+      }
+
+      // ---- 2) Jupiter in Kendra FROM LAGNA (the teacher's own refined rule,
+      // which he found more reliable in practice than Phaladeepika's
+      // Moon-in-Kendra-from-Lagna cancellation rule) ----
+      if (!nullified && [1, 4, 7, 10].includes(jupiterHouse)) {
+        nullified = true;
+        reasons.push(`Jupiter itself is in a Kendra from the Lagna (house ${jupiterHouse}) — per direct observational refinement of this yoga (distinct from the classical Phaladeepika rule, which instead looks at the Moon's Kendra position), this cancels the negative Shakata effect.`);
+      }
+
+      // ---- 3) Adhi Yoga override: benefics (Jupiter/Mercury/Venus) across
+      // 6th/7th/8th from the Moon — a bigger, 3-planet-based yoga takes
+      // precedence over this 2-planet combination ----
+      if (!nullified) {
+        const benefics = ['Jupiter', 'Mercury', 'Venus'];
+        const adhiHouses = [6, 7, 8];
+        const occupantsFound = [];
+        adhiHouses.forEach(h => {
+          benefics.forEach(bp => {
+            const bpos = c.planets[bp];
+            if (!bpos) return;
+            const hFromMoon = ((bpos.house - moonHouse + 12) % 12) + 1;
+            if (hFromMoon === h) occupantsFound.push(`${bp} (H${h} from Moon)`);
+          });
+        });
+        if (occupantsFound.length >= 2) {
+          reduced = true;
+          reasons.push(`Adhi Yoga is also present (${occupantsFound.join(', ')}) — with three planets now involved instead of two, the larger combination takes precedence and the Shakata result is superseded/greatly reduced rather than fully expressed.`);
+        }
+      }
+
+      // ---- 4) Benefic aspect on Lagnesh or Atmakaraka mitigates fear of
+      // this yoga ----
+      if (!nullified) {
+        const lagnesh = c.asc ? (typeof getSignLord === 'function' ? getSignLord(c.asc.sign) : null) : null;
+        // Atmakaraka: classically the planet (of the 7 classical grahas) with the highest degree within its own sign.
+        const classicalGrahas = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+        let atmakaraka = null, maxDeg = -1;
+        classicalGrahas.forEach(p => {
+          const pos = c.planets[p];
+          if (!pos) return;
+          const dg = parseFloat(pos.deg);
+          if (!isNaN(dg) && dg > maxDeg) { maxDeg = dg; atmakaraka = p; }
+        });
+        const targets = new Set();
+        if (lagnesh && c.planets[lagnesh]) targets.add(lagnesh);
+        if (atmakaraka && c.planets[atmakaraka]) targets.add(atmakaraka);
+
+        const aspectsHouse = (fromHouse, toHouse) => {
+          const dist = ((toHouse - fromHouse + 12) % 12) + 1;
+          if (dist === 7) return true;                 // universal 7th aspect
+          if (dist === 5 || dist === 9) return true;    // Jupiter's special aspects
+          return false;
+        };
+        const jHouse = jupiterHouse;
+        const aspectedTargets = Array.from(targets).filter(t => aspectsHouse(jHouse, c.planets[t].house));
+        if (aspectedTargets.length) {
+          reduced = true;
+          reasons.push(`Jupiter's aspect falls on ${aspectedTargets.map(t => t === atmakaraka ? `${t} (Atmakaraka)` : `${t} (Lagnesh)`).join(' and ')} — a benefic aspect on these key significators further mitigates the fear of this yoga.`);
+        }
+      }
+
+      // ---- 5) Presence of a Pancha Mahapurusha Yoga (Ruchaka/Bhadra/Hamsa/
+      // Malavya/Sasa) reduces — but does not eliminate — the negative effect,
+      // per the teacher's Shah Rukh Khan chart example (Mars own-sign Kendra
+      // = Ruchaka; Saturn own-sign 7th = Shasha) ----
+      if (!nullified) {
+        const DIGN = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.DIGNITIES) || {};
+        const mahapurushaPlanets = ['Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+        const found = [];
+        mahapurushaPlanets.forEach(p => {
+          const pos = c.planets[p];
+          const d = DIGN[p];
+          if (!pos || !d || !d.own) return;
+          const strong = pos.sn === d.exalt || d.own.includes(pos.sn);
+          if (strong && [1, 4, 7, 10].includes(pos.house)) found.push(p);
+        });
+        if (found.length) {
+          reduced = true;
+          reasons.push(`A Pancha Mahapurusha Yoga is present (${found.join(', ')} strong in a Kendra) — this doesn't cancel Shakata outright, but a chart's result is never decided by just two planets; strong Kendra placements like this reduce the intensity of the negative effect.`);
+        }
+      }
+
+      let verdict;
+      if (nullified) verdict = `<b style="color:#00DD77;">NULLIFIED</b> — despite the raw placement, the classical negative effects (instability, ups-and-downs, financial setbacks) should NOT manifest.`;
+      else if (reduced) verdict = `<b style="color:#FFD700;">REDUCED</b> — the yoga is technically active, but its negative intensity is softened by the factor(s) below rather than fully cancelled.`;
+      else verdict = `<b style="color:#FF4477;">ACTIVE</b> — none of the classical cancellation/mitigation factors were found; expect the instability/ups-and-downs this yoga signifies.`;
+
+      const baseCause = `Jupiter (H${jupiterHouse}, ${jupiter.sign || ''}) sits in house ${houseFromMoon} counted from the Moon (H${moonHouse}, ${moon.sign || ''}) — the classical Shakata configuration.`;
+      const reasonBlock = reasons.length ? reasons.map(r => `• ${r}`).join('<br>') : 'No cancellation or mitigation factor was found in this chart.';
+
+      return {
+        result: true,
+        rationale: `${baseCause}<br>${reasonBlock}<br><br>Verdict: ${verdict}`
       };
     },
+
     
     "Kemadruma Yoga": (c) => {
       if (!c.planets) return { result: false };

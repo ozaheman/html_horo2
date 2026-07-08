@@ -551,6 +551,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
       <label><input type="checkbox" id="chkNatalAspects"> <span>Natal Aspects</span></label>
       <label><input type="checkbox" id="chkHouseDividers"> <span>House Dividers</span></label>
       <label><input type="checkbox" id="chkVarshaphala"> <span style="color:var(--cyan);font-weight:bold;">Sahams / Varshaphala (Transit Chart)</span></label>
+      <label><input type="checkbox" id="chkMoneyGainTrail"> <span style="color:var(--gold);font-weight:bold;">💰 Money Gain Trail (Jupiter Dhanagam Yoga)</span></label>
       <label><input type="checkbox" id="chk64Navamsha"> <span style="color:var(--rose);font-weight:bold;">64th Navamsha transits</span></label>
       <label><input type="checkbox" id="chkShortNames"> <span style="color:#FFAAEE;">Short Planet Names</span></label>
       <label><input type="checkbox" id="chkShowAspectPlanets" checked> <span style="color:var(--gold);">Show Aspect Planets</span></label>
@@ -622,6 +623,8 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
         </div>
         <div id="dashaTransitPanel" style="flex:1;display:none;"></div>
       </div>
+        <!-- moneyGain content now lives in the floating panel (#moneyGainFloat) defined near the end of body -->
+
          <div class="dasha-row" id="sahdharmRow" style="align-items:flex-start;">
         <div class="dasha-lbl">
           <button id="btnSahdharmFX" class="btn" style="font-size:9px;padding:3px 6px;">SAH-DHARM+SAMBANDH</button>
@@ -806,6 +809,16 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 </div>
 
 <!-- LAL KITAB PANEL -->
+<div id="moneyGainFloat" style="display:none;position:fixed;top:90px;right:24px;width:380px;max-width:92vw;max-height:70vh;background:rgba(4,4,18,.98);border:1px solid rgba(255,215,0,.35);border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.6);backdrop-filter:blur(12px);z-index:250;flex-direction:column;overflow:hidden;">
+  <div id="moneyGainFloatHeader" style="cursor:grab;padding:8px 10px;background:rgba(255,215,0,.08);border-bottom:1px solid rgba(255,215,0,.25);display:flex;justify-content:space-between;align-items:center;user-select:none;">
+    <span style="font-size:10px;font-weight:bold;color:var(--gold,#FFD700);">💰 Dhanagam Yoga — Money Gain</span>
+    <button id="moneyGainFloatClose" title="Close" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;">✕</button>
+  </div>
+  <div style="padding:8px 10px;overflow-y:auto;flex:1;">
+    <div id="moneyGainStatus" style="margin-bottom:4px;"></div>
+    <div id="moneyGainExplainer"></div>
+  </div>
+</div>
 <div id="lalKitabPanel" style="position:fixed;right:0;top:0;bottom:0;width:480px;max-width:100vw;background:rgba(4,4,18,.98);border-left:1px solid var(--border2);z-index:200;transform:translateX(100%);transition:transform .3s cubic-bezier(.25,.46,.45,.94);overflow-y:auto;backdrop-filter:blur(12px);">
   <div class="conj-hdr">
     <h2 style="color:#FF4444">🔴 LAL KITAB ANALYSIS</h2>
@@ -1282,6 +1295,7 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
 <script src="./src/predictions/sahdharm_sambandh_predictor.js"></script>
 <script src="./src/predictions/panchang_engine.js"></script>
 <script src="./src/predictions/business_muhurta_calendar.js"></script>
+<script src="./src/predictions/guru_trikona_dhanagam.js?v=2"></script>
 <script src="./src/business_tarachakra.js"></script>
 <script src="./src/predictions/hit_astrology.js"></script>
 <script src="./src/predictions/ap_prediction_day.js"></script>
@@ -3110,6 +3124,41 @@ function drawMainChart(){
     }else if(pos.Jupiter.sn!==BIRTH_PLANETS?.Jupiter?.sn)inJR=false;
   }
 
+  // Dhanagam Yoga (Jupiter Transit Money-Gain Window) shading — direct on-chart indication
+  if(document.getElementById('chkMoneyGainTrail')?.checked && window.GURU_TRIKONA_DHANAGAM && BIRTH_PLANETS && BIRTH_ASC){
+    const dgSets = getMoneyGainSets();
+    if(dgSets){
+      const gainSignSet = new Set();
+      dgSets.sets.forEach(set => set.signs.forEach(s => gainSignSet.add(s.sign)));
+      const peakMarkers = [];
+      let gStart=null, gStartSign=null;
+      const paintBand=(x1,x2,signIdx)=>{
+        ctx.fillStyle='rgba(255,215,0,.10)';ctx.fillRect(x1,PAD.top,x2-x1,CH);
+        ctx.strokeStyle='rgba(255,215,0,.35)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+        ctx.beginPath();ctx.moveTo(x1,PAD.top);ctx.lineTo(x1,PAD.top+CH);ctx.moveTo(x2,PAD.top);ctx.lineTo(x2,PAD.top+CH);ctx.stroke();ctx.setLineDash([]);
+        if(x2-x1>36){ctx.fillStyle='rgba(255,215,0,.7)';ctx.font='bold 7px Courier New';ctx.fillText('💰 GAIN ('+SIGNS[signIdx]+')',x1+3,PAD.top+18);}
+      };
+      for(let i=0;i<N;i++){
+        const pos=getPos(data.dates[i]);
+        const jSn=pos.Jupiter.sn;
+        const inGain=gainSignSet.has(jSn);
+        if(inGain && gStart===null){gStart=data.dates[i];gStartSign=jSn;}
+        else if(!inGain && gStart!==null){paintBand(toX(gStart),toX(data.dates[i]),gStartSign);gStart=null;}
+        if(inGain){
+          const evalNow=window.GURU_TRIKONA_DHANAGAM.evaluateMoment(dgSets,{sn:jSn,deg:parseFloat(pos.Jupiter.deg),retro:!!pos.Jupiter.retro});
+          if(evalNow.matches.some(m=>m.isPeak))peakMarkers.push(data.dates[i]);
+        }
+      }
+      if(gStart!==null)paintBand(toX(gStart),toX(data.dates[N-1]),gStartSign);
+      peakMarkers.forEach(pd=>{
+        const x=toX(pd);
+        ctx.beginPath();ctx.moveTo(x,PAD.top);ctx.lineTo(x,PAD.top+CH);
+        ctx.strokeStyle='rgba(0,221,119,.55)';ctx.lineWidth=1;ctx.setLineDash([2,3]);ctx.stroke();ctx.setLineDash([]);
+        ctx.fillStyle='#00DD77';ctx.font='bold 9px Trebuchet MS';ctx.fillText('⭐',x-4,PAD.top+CH-4);
+      });
+    }
+  }
+
   // 3D HORA BANDS
   if (winDays === 3) {
     const startJD = jd(sd.getFullYear(), sd.getMonth()+1, sd.getDate(), sd.getHours()+sd.getMinutes()/60);
@@ -4089,6 +4138,77 @@ document.getElementById('btnDashaTransitFX')?.addEventListener('click', ()=>{
   btn.classList.toggle('active', !showing);
   if(!showing) renderDashaTransitPanel();
 });
+
+// ═══ JUPITER TRANSIT "DHANAGAM YOGA" MONEY-GAIN TRAIL ═══
+let _moneyGainSetsCache = null, _moneyGainCacheKey = null;
+function getMoneyGainSets(){
+  if(!BIRTH_PLANETS || !BIRTH_ASC || !window.GURU_TRIKONA_DHANAGAM) return null;
+  const key = BIRTH_ASC.sn + '|' + (BIRTH?.date ? BIRTH.date.getTime() : '');
+  if(_moneyGainSetsCache && _moneyGainCacheKey === key) return _moneyGainSetsCache;
+  _moneyGainSetsCache = window.GURU_TRIKONA_DHANAGAM.computeDhanagamSets(BIRTH_PLANETS, BIRTH_ASC.sn);
+  _moneyGainCacheKey = key;
+  return _moneyGainSetsCache;
+}
+function renderMoneyGainTrail(){
+  const chk = document.getElementById('chkMoneyGainTrail');
+  const floatEl = document.getElementById('moneyGainFloat');
+  const statusEl = document.getElementById('moneyGainStatus');
+  const explEl = document.getElementById('moneyGainExplainer');
+  if(!chk?.checked){ if(floatEl) floatEl.style.display='none'; return; }
+  if(!window.GURU_TRIKONA_DHANAGAM || !BIRTH_PLANETS || !BIRTH_ASC) return;
+
+  const sets = getMoneyGainSets();
+  if(!sets) return;
+
+  floatEl.style.display='flex';
+  explEl.innerHTML = window.GURU_TRIKONA_DHANAGAM.renderExplainerPanel(sets);
+
+  // Current status — Jupiter's position right now (the app's viewing date, centerDate),
+  // shown as a clear badge. The actual "background" visual (shaded gain windows across
+  // the visible range) is painted directly inside drawMainChart() itself, on the same
+  // canvas — a separate layered canvas can't show through mainChart's own opaque
+  // background fill, so this is done as an in-canvas background layer instead.
+  const nowPos = getPos(centerDate);
+  if(nowPos && nowPos.Jupiter){
+    const transitNow = { sn: nowPos.Jupiter.sn, deg: parseFloat(nowPos.Jupiter.deg), retro: !!nowPos.Jupiter.retro };
+    const evalNow = window.GURU_TRIKONA_DHANAGAM.evaluateMoment(sets, transitNow);
+    statusEl.innerHTML = `<div style="font-size:9px;font-weight:bold;color:var(--gold,#FFD700);margin-bottom:2px;">📍 Current Status (${centerDate.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}) — Jupiter in ${SIGNS[transitNow.sn]}</div>` + window.GURU_TRIKONA_DHANAGAM.renderMomentBadge(evalNow);
+  }
+}
+document.getElementById('chkMoneyGainTrail')?.addEventListener('change', ()=>{ renderMoneyGainTrail(); drawMainChart(); });
+
+// Floating panel: drag by header, close button unchecks the source checkbox too
+(function initMoneyGainFloatDrag(){
+  const floatEl = document.getElementById('moneyGainFloat');
+  const header = document.getElementById('moneyGainFloatHeader');
+  const closeBtn = document.getElementById('moneyGainFloatClose');
+  if(!floatEl || !header) return;
+  let dragging=false, offX=0, offY=0;
+  header.addEventListener('mousedown', e=>{
+    dragging=true;
+    const rect=floatEl.getBoundingClientRect();
+    offX = e.clientX - rect.left;
+    offY = e.clientY - rect.top;
+    floatEl.style.left = rect.left+'px';
+    floatEl.style.top = rect.top+'px';
+    floatEl.style.right='auto';
+    header.style.cursor='grabbing';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e=>{
+    if(!dragging) return;
+    const maxX = window.innerWidth - floatEl.offsetWidth - 4;
+    const maxY = window.innerHeight - 40;
+    floatEl.style.left = Math.max(4, Math.min(maxX, e.clientX-offX))+'px';
+    floatEl.style.top = Math.max(4, Math.min(maxY, e.clientY-offY))+'px';
+  });
+  document.addEventListener('mouseup', ()=>{ dragging=false; header.style.cursor='grab'; });
+  closeBtn?.addEventListener('click', ()=>{
+    floatEl.style.display='none';
+    const chk=document.getElementById('chkMoneyGainTrail');
+    if(chk && chk.checked){ chk.checked=false; drawMainChart(); }
+  });
+})();
 function updateAlerts(){
   const pos=getPos(TODAY);
   if (!pos || !pos.Saturn) { document.getElementById('alertsDiv').innerHTML=''; return; }
@@ -4990,6 +5110,7 @@ function renderAll(){
   drawMainChart();
   renderDashaTransitPanel();
     renderSahdharmPanel();
+  renderMoneyGainTrail();
   
   // ═══ YOGA ANALYSIS ═══
   // Calculate and display all yogas in the birth chart (D1)

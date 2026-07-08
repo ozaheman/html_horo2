@@ -300,12 +300,15 @@ window.BUSINESS_MUHURTA = {
         const options = this.SCENARIOS.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
         return `<div class="pred-item" style="border-left:3px solid var(--cyan);">
           <div class="pred-title" style="color:var(--cyan);">📅 Auspicious Calendar Generator</div>
-          <div style="font-size:8.5px;color:var(--muted);margin-bottom:6px;">Pick a date range and a work type — every day is scored, and you can download the auspicious ones as an .ics file to import into any calendar app.</div>
+          <div style="font-size:8.5px;color:var(--muted);margin-bottom:6px;">Pick a date range and a work type (or "All Business Events" to scan every type at once) — every day is scored, and you can download the auspicious ones as an .ics file to import into any calendar app.</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px;">
             <label style="font-size:9px;color:var(--muted);">From <input type="date" id="bmCalStart" style="background:var(--bg3,#111);color:var(--text);border:1px solid var(--border,#333);border-radius:2px;padding:3px 5px;font-size:9px;"></label>
             <label style="font-size:9px;color:var(--muted);">To <input type="date" id="bmCalEnd" style="background:var(--bg3,#111);color:var(--text);border:1px solid var(--border,#333);border-radius:2px;padding:3px 5px;font-size:9px;"></label>
           </div>
-          <select id="bmCalScenario" style="width:100%;background:var(--bg3,#111);color:var(--text);border:1px solid var(--border,#333);border-radius:2px;padding:4px;font-size:9px;margin-bottom:6px;">${options}</select>
+          <select id="bmCalScenario" style="width:100%;background:var(--bg3,#111);color:var(--text);border:1px solid var(--border,#333);border-radius:2px;padding:4px;font-size:9px;margin-bottom:6px;">
+            <option value="__ALL__">⭐ All Business Events (scan every type at once)</option>
+            ${options}
+          </select>
           <button id="bmCalGenerate" class="btn" style="font-size:9px;padding:4px 8px;">GENERATE</button>
           <button id="bmCalDownload" class="btn gold" style="font-size:9px;padding:4px 8px;display:none;">⬇ DOWNLOAD .ICS</button>
           <div id="bmCalResults" style="margin-top:8px;max-height:260px;overflow-y:auto;"></div>
@@ -336,18 +339,32 @@ window.BUSINESS_MUHURTA = {
             const spanDays = Math.round((end - start) / 86400000) + 1;
             if (spanDays > 730) { resultsEl.innerHTML = '<div style="color:var(--rose);font-size:9px;">Please keep ranges to 2 years or less.</div>'; return; }
 
-            lastResults = window.BUSINESS_MUHURTA.scanRange(start, end, scenarioId, opts.lat, opts.lon, opts.utcOffsetHours);
-            const good = lastResults.filter(r => r.score >= 2).sort((a, b) => a.date - b.date);
             const E = window.PANCHANG_ENGINE;
+            let good;
+
+            if (scenarioId === '__ALL__') {
+                // Scan every scenario across the range; a day can appear once per
+                // qualifying scenario, so a single "good" day for two different
+                // event types shows up as two separate rows/events.
+                lastResults = [];
+                window.BUSINESS_MUHURTA.SCENARIOS.forEach(s => {
+                    lastResults = lastResults.concat(window.BUSINESS_MUHURTA.scanRange(start, end, s.id, opts.lat, opts.lon, opts.utcOffsetHours));
+                });
+                good = lastResults.filter(r => r.score >= 2).sort((a, b) => a.date - b.date || a.scenario.label.localeCompare(b.scenario.label));
+            } else {
+                lastResults = window.BUSINESS_MUHURTA.scanRange(start, end, scenarioId, opts.lat, opts.lon, opts.utcOffsetHours);
+                good = lastResults.filter(r => r.score >= 2).sort((a, b) => a.date - b.date);
+            }
 
             if (!good.length) {
-                resultsEl.innerHTML = `<div style="font-size:9px;color:var(--amber);">No day scored "Good" or better in this range for that work type. Best available: ${lastResults[0] ? E.fmtDate(lastResults[0].date) + ' (' + lastResults[0].verdict + ', ' + lastResults[0].score + ')' : 'n/a'}.</div>`;
+                const fallback = lastResults.slice().sort((a, b) => b.score - a.score)[0];
+                resultsEl.innerHTML = `<div style="font-size:9px;color:var(--amber);">No day scored "Good" or better in this range${scenarioId === '__ALL__' ? ' for any business event type' : ' for that work type'}. Best available: ${fallback ? E.fmtDate(fallback.date) + ' (' + fallback.scenario.label + ', ' + fallback.verdict + ', ' + fallback.score + ')' : 'n/a'}.</div>`;
                 dlBtn.style.display = 'none';
                 return;
             }
-            resultsEl.innerHTML = `<div style="font-size:9px;color:var(--green);margin-bottom:4px;">${good.length} auspicious day(s) found:</div>` +
+            resultsEl.innerHTML = `<div style="font-size:9px;color:var(--green);margin-bottom:4px;">${good.length} auspicious day(s)${scenarioId === '__ALL__' ? ' across all event types' : ''} found:</div>` +
                 good.map(r => `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:9px;">
-                    <span>${E.fmtDate(r.date)}</span>
+                    <span>${E.fmtDate(r.date)}${scenarioId === '__ALL__' ? ' — ' + r.scenario.label : ''}</span>
                     <span style="color:var(--muted);">${r.panchang.nakshatra.name} · ${r.panchang.tithi.group} · ${r.panchang.vara.name}</span>
                     <span style="color:${window.BUSINESS_MUHURTA._verdictColor(r.verdict)};font-weight:bold;">${r.verdict} (+${r.score})</span>
                   </div>`).join('');
@@ -355,16 +372,16 @@ window.BUSINESS_MUHURTA = {
         });
 
         dlBtn.addEventListener('click', () => {
+            const scenarioId = document.getElementById('bmCalScenario').value;
             const good = lastResults.filter(r => r.score >= 2).sort((a, b) => a.date - b.date);
             if (!good.length) return;
-            const scenario = good[0].scenario;
             const events = good.map(r => ({
                 date: r.date,
-                summary: `Auspicious: ${scenario.label.replace(/^[^\w]+/, '')}`,
-                description: `${scenario.rationale} | ${r.verdict} (score ${r.score}) | Nakshatra: ${r.panchang.nakshatra.name}, Tithi: ${r.panchang.tithi.ofPaksha} ${r.panchang.tithi.paksha} (${r.panchang.tithi.group}), Vara: ${r.panchang.vara.name}, Yoga: ${r.panchang.yoga.name}, Karana: ${r.panchang.karana.name} | Reasons: ${r.reasons.join(' ')}`
+                summary: `Auspicious: ${r.scenario.label.replace(/^[^\w]+/, '')}`,
+                description: `${r.scenario.rationale} | ${r.verdict} (score ${r.score}) | Nakshatra: ${r.panchang.nakshatra.name}, Tithi: ${r.panchang.tithi.ofPaksha} ${r.panchang.tithi.paksha} (${r.panchang.tithi.group}), Vara: ${r.panchang.vara.name}, Yoga: ${r.panchang.yoga.name}, Karana: ${r.panchang.karana.name} | Reasons: ${r.reasons.join(' ')}`
             }));
             const ics = window.BUSINESS_MUHURTA.buildICS(events);
-            window.BUSINESS_MUHURTA.downloadICS(ics, `muhurta-${scenario.id}.ics`);
+            window.BUSINESS_MUHURTA.downloadICS(ics, scenarioId === '__ALL__' ? 'muhurta-all-business-events.ics' : `muhurta-${scenarioId}.ics`);
         });
     },
 
