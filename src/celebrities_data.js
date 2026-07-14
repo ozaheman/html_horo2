@@ -224,5 +224,90 @@ window.CELEBRITY_DATABASE = {
     { name: "Jimmy Fallon", date: "1974-09-19", time: "12:00", city: "Brooklyn, NY", lat: 40.67, lon: -73.94, utcOff: -5, ayan: "lahiri" },
     { name: "David Letterman", date: "1947-04-12", time: "12:00", city: "Indianapolis, IN", lat: 39.77, lon: -86.16, utcOff: -6, ayan: "lahiri" },
     { name: "Karan Johar", date: "1972-05-25", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" }
+  ],
+
+  // ── NEW CATEGORIES ────────────────────────────────────────────
+
+  "rich kids": [
+    { name: "Anant Ambani", date: "1995-04-10", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Isha Ambani", date: "1991-10-23", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Akash Ambani", date: "1991-10-23", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Sanjana Sanghi", date: "1996-09-10", time: "12:00", city: "New Delhi", lat: 28.61, lon: 77.20, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Paris Hilton", date: "1981-02-17", time: "02:30", city: "New York, NY", lat: 40.71, lon: -74.01, utcOff: -5, ayan: "lahiri" },
+    { name: "Kim Kardashian", date: "1980-10-21", time: "10:46", city: "Los Angeles, CA", lat: 34.05, lon: -118.24, utcOff: -8, ayan: "lahiri" },
+    { name: "Brooklyn Beckham", date: "1999-03-04", time: "12:00", city: "London, UK", lat: 51.51, lon: -0.13, utcOff: 0, ayan: "lahiri" },
+    { name: "Apple Martin (Gwyneth Paltrow's daughter)", date: "2004-05-14", time: "12:00", city: "London, UK", lat: 51.51, lon: -0.13, utcOff: 1, ayan: "lahiri" },
+    { name: "Romeo Beckham", date: "2002-09-01", time: "12:00", city: "London, UK", lat: 51.51, lon: -0.13, utcOff: 1, ayan: "lahiri" },
+    { name: "Shiloh Jolie-Pitt", date: "2006-05-27", time: "09:08", city: "Swakopmund, Namibia", lat: -22.67, lon: 14.53, utcOff: 2, ayan: "lahiri" },
+    { name: "Jaden Smith", date: "1998-07-08", time: "12:00", city: "Malibu, CA", lat: 34.03, lon: -118.77, utcOff: -7, ayan: "lahiri" },
+    { name: "Naazneen Dutt (Sanjay Dutt's daughter)", date: "2000-08-21", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" }
+  ],
+
+  "psychopath": [
+    { name: "Jeffrey Epstein", date: "1953-01-20", time: "12:00", city: "Brooklyn, NY", lat: 40.67, lon: -73.94, utcOff: -5, ayan: "lahiri" },
+    { name: "Ghislaine Maxwell", date: "1961-12-25", time: "12:00", city: "Maisons-Laffitte, France", lat: 48.95, lon: 2.14, utcOff: 1, ayan: "lahiri" },
+    { name: "Ted Bundy", date: "1946-11-24", time: "22:35", city: "Burlington, VT", lat: 44.47, lon: -73.21, utcOff: -5, ayan: "lahiri" },
+    { name: "Jeffrey Dahmer", date: "1960-05-21", time: "16:34", city: "Milwaukee, WI", lat: 43.04, lon: -87.90, utcOff: -6, ayan: "lahiri" },
+    { name: "John Wayne Gacy", date: "1942-03-17", time: "00:29", city: "Chicago, IL", lat: 41.85, lon: -87.65, utcOff: -6, ayan: "lahiri" },
+    { name: "Dennis Rader (BTK Killer)", date: "1945-03-09", time: "12:00", city: "Pittsburg, KS", lat: 37.41, lon: -94.70, utcOff: -6, ayan: "lahiri" },
+    { name: "Aileen Wuornos", date: "1956-02-29", time: "12:00", city: "Troy, MI", lat: 42.60, lon: -83.14, utcOff: -5, ayan: "lahiri" },
+    { name: "Harold Shipman", date: "1946-01-14", time: "12:00", city: "Nottingham, UK", lat: 52.95, lon: -1.15, utcOff: 0, ayan: "lahiri" },
+    { name: "Peter Scully", date: "1963-12-13", time: "12:00", city: "Melbourne, Australia", lat: -37.81, lon: 144.96, utcOff: 10, ayan: "lahiri" },
+    { name: "Scott Peterson", date: "1972-10-24", time: "12:00", city: "San Diego, CA", lat: 32.72, lon: -117.15, utcOff: -8, ayan: "lahiri" }
+  ],
+
+  "terrorist": [
+    { name: "Osama Bin Laden", date: "1957-03-10", time: "07:30", city: "Riyadh, Saudi Arabia", lat: 24.68, lon: 46.72, utcOff: 3, ayan: "lahiri" },
+    { name: "Yasser Arafat", date: "1929-08-04", time: "02:00", city: "Cairo, Egypt", lat: 30.06, lon: 31.24, utcOff: 2, ayan: "lahiri" },
+    { name: "Abu Bakr al-Baghdadi", date: "1971-07-28", time: "12:00", city: "Samarra, Iraq", lat: 34.20, lon: 43.87, utcOff: 3, ayan: "lahiri" },
+    { name: "Yakub Memon", date: "1962-07-30", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Ajmal Kasab", date: "1987-07-13", time: "12:00", city: "Faridkot, PB (Pakistan)", lat: 30.67, lon: 74.75, utcOff: 5, ayan: "lahiri" },
+    { name: "Anders Breivik", date: "1979-02-13", time: "09:15", city: "Oslo, Norway", lat: 59.91, lon: 10.75, utcOff: 1, ayan: "lahiri" },
+    { name: "Timothy McVeigh", date: "1968-04-23", time: "08:19", city: "Lockport, NY", lat: 43.16, lon: -78.69, utcOff: -5, ayan: "lahiri" },
+    { name: "Dylann Roof", date: "1994-04-03", time: "12:00", city: "Columbia, SC", lat: 34.00, lon: -81.03, utcOff: -5, ayan: "lahiri" },
+    { name: "Hafiz Saeed", date: "1950-06-05", time: "12:00", city: "Sargodha, Pakistan", lat: 32.08, lon: 72.66, utcOff: 5, ayan: "lahiri" },
+    { name: "Masood Azhar", date: "1968-07-10", time: "12:00", city: "Bahawalpur, Pakistan", lat: 29.39, lon: 71.68, utcOff: 5, ayan: "lahiri" }
+  ],
+
+  "freedom fighter": [
+    { name: "Mahatma Gandhi", date: "1869-10-02", time: "07:45", city: "Porbandar, GJ", lat: 21.64, lon: 69.61, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Subhas Chandra Bose", date: "1897-01-23", time: "12:15", city: "Cuttack, OD", lat: 20.46, lon: 85.88, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Bhagat Singh", date: "1907-09-28", time: "09:00", city: "Banga, PB", lat: 31.18, lon: 76.01, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Bal Gangadhar Tilak", date: "1856-07-23", time: "06:00", city: "Ratnagiri, MH", lat: 16.99, lon: 73.31, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Sardar Vallabhbhai Patel", date: "1875-10-31", time: "09:00", city: "Nadiad, GJ", lat: 22.69, lon: 72.86, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Lala Lajpat Rai", date: "1865-01-28", time: "12:00", city: "Dhudike, PB", lat: 30.72, lon: 75.40, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Chandra Shekhar Azad", date: "1906-07-23", time: "12:00", city: "Bhabra, MP", lat: 22.42, lon: 74.33, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Sukhdev Thapar", date: "1907-05-15", time: "12:00", city: "Ludhiana, PB", lat: 30.90, lon: 75.85, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Ram Prasad Bismil", date: "1897-06-11", time: "12:00", city: "Shahjahanpur, UP", lat: 27.88, lon: 79.91, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Annie Besant", date: "1847-10-01", time: "22:00", city: "London, UK", lat: 51.51, lon: -0.13, utcOff: 0, ayan: "lahiri" },
+    { name: "Bipin Chandra Pal", date: "1858-11-07", time: "12:00", city: "Poil, Bangladesh", lat: 24.10, lon: 91.50, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Maulana Abul Kalam Azad", date: "1888-11-11", time: "06:30", city: "Mecca, Saudi Arabia", lat: 21.42, lon: 39.82, utcOff: 3, ayan: "lahiri" }
+  ],
+
+  "luckiest": [
+    { name: "Warren Buffett", date: "1930-08-30", time: "15:00", city: "Omaha, NE", lat: 41.25, lon: -95.93, utcOff: -6, ayan: "lahiri" },
+    { name: "Frane Selak", date: "1929-06-14", time: "12:00", city: "Petrinja, Croatia", lat: 45.44, lon: 16.28, utcOff: 1, ayan: "lahiri" },
+    { name: "Bill Morgan (Lottery winner)", date: "1954-09-20", time: "12:00", city: "Melbourne, Australia", lat: -37.81, lon: 144.96, utcOff: 10, ayan: "lahiri" },
+    { name: "Roy Sullivan (Lightning survivor)", date: "1912-02-07", time: "12:00", city: "Greene County, VA", lat: 38.30, lon: -78.45, utcOff: -5, ayan: "lahiri" },
+    { name: "Tsutomu Yamaguchi (Double atom bomb survivor)", date: "1916-03-16", time: "12:00", city: "Nagasaki, Japan", lat: 32.74, lon: 129.87, utcOff: 9, ayan: "lahiri" },
+    { name: "Violet Jessop (Titanic & Britannic survivor)", date: "1887-10-02", time: "12:00", city: "Bahia Blanca, Argentina", lat: -38.72, lon: -62.27, utcOff: -4, ayan: "lahiri" },
+    { name: "Joan Ginther (4x lottery winner)", date: "1947-06-05", time: "12:00", city: "Bishop, TX", lat: 27.59, lon: -97.80, utcOff: -6, ayan: "lahiri" },
+    { name: "Manoj Bhargava (5-Hour Energy billionaire)", date: "1953-06-19", time: "12:00", city: "Lucknow, UP", lat: 26.84, lon: 80.94, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Dhirubhai Ambani", date: "1932-12-28", time: "07:00", city: "Chorwad, GJ", lat: 21.15, lon: 70.22, utcOff: 5.5, ayan: "lahiri" }
+  ],
+
+  "unluckiest": [
+    { name: "Job (Biblical figure analogy — Joseph Stalin victim)", date: "1878-12-18", time: "12:00", city: "Gori, Georgia", lat: 41.98, lon: 44.10, utcOff: 3, ayan: "lahiri" },
+    { name: "Sanjay Gandhi (died in plane crash aged 33)", date: "1946-12-14", time: "17:00", city: "New Delhi", lat: 28.61, lon: 77.20, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Sylvia Plath", date: "1932-10-27", time: "14:10", city: "Boston, MA", lat: 42.36, lon: -71.05, utcOff: -5, ayan: "lahiri" },
+    { name: "Nick Leeson (Barings Bank crash)", date: "1967-02-25", time: "12:00", city: "Watford, UK", lat: 51.65, lon: -0.39, utcOff: 0, ayan: "lahiri" },
+    { name: "Vincent van Gogh", date: "1853-03-30", time: "11:00", city: "Groot Zundert, NL", lat: 51.47, lon: 4.66, utcOff: 0.19, ayan: "lahiri" },
+    { name: "Nikola Tesla", date: "1856-07-10", time: "00:00", city: "Smiljan, Croatia", lat: 44.36, lon: 15.32, utcOff: 1, ayan: "lahiri" },
+    { name: "Princess Diana", date: "1961-07-01", time: "19:45", city: "Sandringham, UK", lat: 52.83, lon: 0.51, utcOff: 1, ayan: "lahiri" },
+    { name: "Edgar Allan Poe", date: "1809-01-19", time: "12:00", city: "Boston, MA", lat: 42.36, lon: -71.05, utcOff: -5, ayan: "lahiri" },
+    { name: "Marilyn Monroe", date: "1926-06-01", time: "09:30", city: "Los Angeles, CA", lat: 34.05, lon: -118.24, utcOff: -8, ayan: "lahiri" },
+    { name: "Oscar Wilde", date: "1854-10-16", time: "03:00", city: "Dublin, Ireland", lat: 53.33, lon: -6.24, utcOff: 0, ayan: "lahiri" },
+    { name: "Evel Knievel", date: "1938-10-17", time: "12:00", city: "Butte, MT", lat: 46.00, lon: -112.53, utcOff: -7, ayan: "lahiri" },
+    { name: "Layne Staley (Alice in Chains)", date: "1967-08-22", time: "12:00", city: "Kirkland, WA", lat: 47.68, lon: -122.21, utcOff: -8, ayan: "lahiri" }
   ]
 };

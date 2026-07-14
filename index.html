@@ -109,7 +109,26 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 .ph-badge{font-family:'Courier New',monospace;font-size:9px;padding:1px 5px;border-radius:2px;background:rgba(20,20,58,.8);color:var(--cyan);}
 .ph-sign{font-family:'Courier New',monospace;font-size:9px;color:var(--muted);}
 .ph-deg{font-family:'Courier New',monospace;font-size:9px;color:var(--muted);}
-
+/* ── KAAL PURUSH TRANSIT PANEL ── */
+.kp-panel{padding:4px 2px;border-top:1px solid rgba(200,168,75,.15);margin-top:4px;}
+.kp-title{font-family:'Courier New',monospace;font-size:7.5px;color:var(--gold);letter-spacing:2px;padding:3px 4px 4px;text-transform:uppercase;cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
+.kp-row{display:flex;align-items:flex-start;gap:4px;padding:2px 3px;border-radius:2px;border-bottom:1px solid rgba(30,30,70,.4);}
+.kp-row.has-transit{background:rgba(155,111,255,.05);}
+.kp-row.kp-khar{background:rgba(255,68,119,.1);border-left:2px solid rgba(255,68,119,.7);}
+.kp-house{font-family:'Courier New',monospace;font-size:8px;color:var(--gold);width:20px;flex-shrink:0;padding-top:2px;font-weight:700;}
+.kp-content{flex:1;min-width:0;}
+.kp-sig{font-size:8px;color:var(--muted);line-height:1.3;}
+.kp-karakas{font-size:7px;color:rgba(68,200,255,.6);font-family:'Courier New',monospace;margin-top:1px;}
+.kp-transiting{display:flex;flex-wrap:wrap;gap:2px;margin-top:2px;}
+.kp-planet-tag{font-size:7.5px;font-weight:700;padding:1px 4px;border-radius:2px;white-space:nowrap;border:1px solid;font-family:'Courier New',monospace;}
+.kp-planet-tag.khar64{border-color:rgba(255,68,119,.9)!important;background:rgba(255,68,119,.18)!important;}
+.kp-planet-tag.khar64.krura-combo{animation:kharPulse 1.4s ease-in-out infinite;}
+@keyframes kharPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,68,119,.25);}50%{box-shadow:0 0 5px 2px rgba(255,68,119,.5);}}
+.kp-planet-tag.krura{background:rgba(255,80,30,.1);}
+.kp-planet-tag.soumya{background:rgba(68,255,136,.08);}
+.kp-khar-label{font-size:7px;color:var(--rose);font-weight:700;display:inline-flex;align-items:center;gap:2px;margin-top:1px;}
+.kp-combo-badge{font-size:6.5px;background:rgba(255,68,119,.25);color:var(--rose);border:1px solid rgba(255,68,119,.5);border-radius:2px;padding:0 3px;vertical-align:middle;margin-left:2px;}
+.kp-empty-row{opacity:.35;}
 /* ── ALERTS ── */
 .alert{padding:6px 9px;border-radius:2px;border-left:3px solid;font-size:10.5px;line-height:1.5;margin-bottom:5px;}
 .alert:last-child{margin-bottom:0;}
@@ -508,6 +527,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
     <button class="btn violet" id="btnPredictions" title="Show Predictions & Forecasts">🔮 PREDICTIONS</button>
     <button class="btn" id="btnNumerology" title="Numerology (Lo Shu Grid) Analysis" style="border-color:rgba(0,191,255,.4);color:rgba(0,191,255,.6);">🔢 NUMEROLOGY</button>
     <button class="btn" id="btnLalKitab" title="Lal Kitab Remedies & Predictions" style="border-color:rgba(255,68,68,.4);color:rgba(255,68,68,.6);">🔴 LAL KITAB</button>
+    <button class="btn" id="btnAshtakvarga" title="Ashtakavarga (Bhinnashtaka + Sarvashtaka) Analysis" style="border-color:rgba(0,221,119,.4);color:rgba(0,221,119,.7);">🎯 ASHTAKVARGA</button>
     <button class="btn" id="btnCuspChart" title="Bhava Chalit / Cusp Chart" style="border-color:rgba(255,255,255,.4);color:white;">◬ CUSP CHART</button>
     <button class="btn" id="btnMatching" title="Chart Matching / Synastry (Ashtakoota)" style="border-color:rgba(255,20,147,.4);color:#ff1493;">💞 MATCHING</button>
     <button class="btn" id="btnFullScreen" title="View Transit Chart Full Screen" style="border-color:rgba(58,240,255,.4);color:#3AF0FF;">⛶ FULL SCREEN</button>
@@ -553,6 +573,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
       <label><input type="checkbox" id="chkVarshaphala"> <span style="color:var(--cyan);font-weight:bold;">Sahams / Varshaphala (Transit Chart)</span></label>
       <label><input type="checkbox" id="chkMoneyGainTrail"> <span style="color:var(--gold);font-weight:bold;">💰 Money Gain Trail (Jupiter Dhanagam Yoga)</span></label>
       <label><input type="checkbox" id="chk64Navamsha"> <span style="color:var(--rose);font-weight:bold;">64th Navamsha transits</span></label>
+      <label><input type="checkbox" id="chkKaalPurush" checked> <span style="color:var(--gold);font-weight:bold;">⚖ Kaal Purush Karaka Panel</span></label>
       <label><input type="checkbox" id="chkShortNames"> <span style="color:#FFAAEE;">Short Planet Names</span></label>
       <label><input type="checkbox" id="chkShowAspectPlanets" checked> <span style="color:var(--gold);">Show Aspect Planets</span></label>
     </div>
@@ -621,7 +642,6 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
         <div class="dasha-lbl">
           <button id="btnDashaTransitFX" class="btn" style="font-size:9px;padding:3px 6px;">TRANSIT FX</button>
         </div>
-        <div id="dashaTransitPanel" style="flex:1;display:none;"></div>
       </div>
         <!-- moneyGain content now lives in the floating panel (#moneyGainFloat) defined near the end of body -->
 
@@ -629,7 +649,6 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
         <div class="dasha-lbl">
           <button id="btnSahdharmFX" class="btn" style="font-size:9px;padding:3px 6px;">SAH-DHARM+SAMBANDH</button>
         </div>
-        <div id="sahdharmPanel" style="flex:1;display:none;"></div>
       </div>
     </div>
     <div class="kleg">
@@ -675,6 +694,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
         </thead>
         <tbody></tbody>
       </table>
+       <div id="kaalPurushPanel"></div>
     </div>
     <div class="sec">
       <div class="sec-title">Active Dashas</div>
@@ -809,7 +829,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 </div>
 
 <!-- LAL KITAB PANEL -->
-<div id="moneyGainFloat" style="display:none;position:fixed;top:90px;right:24px;width:380px;max-width:92vw;max-height:70vh;background:rgba(4,4,18,.98);border:1px solid rgba(255,215,0,.35);border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.6);backdrop-filter:blur(12px);z-index:250;flex-direction:column;overflow:hidden;">
+<div id="moneyGainFloat" style="display:none;position:fixed;top:90px;right:24px;width:380px;max-width:92vw;max-height:70vh;background:rgba(4,4,18,.98);border:1px solid rgba(255,215,0,.35);border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.6);backdrop-filter:blur(12px);z-index:1010;flex-direction:column;overflow:hidden;">
   <div id="moneyGainFloatHeader" style="cursor:grab;padding:8px 10px;background:rgba(255,215,0,.08);border-bottom:1px solid rgba(255,215,0,.25);display:flex;justify-content:space-between;align-items:center;user-select:none;">
     <span style="font-size:10px;font-weight:bold;color:var(--gold,#FFD700);">💰 Dhanagam Yoga — Money Gain</span>
     <button id="moneyGainFloatClose" title="Close" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;">✕</button>
@@ -818,6 +838,31 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
     <div id="moneyGainStatus" style="margin-bottom:4px;"></div>
     <div id="moneyGainExplainer"></div>
   </div>
+</div>
+<div id="dashaTransitFloat" style="display:none;position:fixed;top:110px;right:44px;width:380px;max-width:92vw;max-height:70vh;background:rgba(4,4,18,.98);border:1px solid rgba(155,111,255,.35);border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.6);backdrop-filter:blur(12px);z-index:1010;flex-direction:column;overflow:hidden;">
+  <div id="dashaTransitFloatHeader" style="cursor:grab;padding:8px 10px;background:rgba(155,111,255,.08);border-bottom:1px solid rgba(155,111,255,.25);display:flex;justify-content:space-between;align-items:center;user-select:none;">
+    <span style="font-size:10px;font-weight:bold;color:rgba(200,150,255,.9);">⊛ Dasha Transit FX</span>
+    <button id="dashaTransitFloatClose" title="Close" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;">✕</button>
+  </div>
+  <div style="padding:8px 10px;overflow-y:auto;flex:1;">
+    <div id="dashaTransitPanel"></div>
+  </div>
+</div>
+<div id="sahdharmFloat" style="display:none;position:fixed;top:130px;right:64px;width:380px;max-width:92vw;max-height:70vh;background:rgba(4,4,18,.98);border:1px solid rgba(255,215,0,.35);border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.6);backdrop-filter:blur(12px);z-index:1010;flex-direction:column;overflow:hidden;">
+  <div id="sahdharmFloatHeader" style="cursor:grab;padding:8px 10px;background:rgba(255,215,0,.08);border-bottom:1px solid rgba(255,215,0,.25);display:flex;justify-content:space-between;align-items:center;user-select:none;">
+    <span style="font-size:10px;font-weight:bold;color:var(--gold,#FFD700);">📜 Sah-Dharm + Sambandh</span>
+    <button id="sahdharmFloatClose" title="Close" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;">✕</button>
+  </div>
+  <div style="padding:8px 10px;overflow-y:auto;flex:1;">
+    <div id="sahdharmPanel"></div>
+  </div>
+</div>
+<div id="ashtakvargaPanel" style="position:fixed;right:0;top:0;bottom:0;width:520px;max-width:100vw;background:rgba(4,4,18,.98);border-left:1px solid var(--border2);z-index:200;transform:translateX(100%);transition:transform .3s cubic-bezier(.25,.46,.45,.94);overflow-y:auto;backdrop-filter:blur(12px);">
+  <div style="position:sticky;top:0;background:rgba(4,4,18,.98);padding:10px 14px;border-bottom:1px solid rgba(0,221,119,.25);display:flex;justify-content:space-between;align-items:center;z-index:1;">
+    <span style="font-size:12px;font-weight:bold;color:rgba(0,221,119,.9);">🎯 Ashtakavarga Analysis</span>
+    <button id="closeAshtakvarga" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">✕</button>
+  </div>
+  <div id="ashtakvargaContent" style="padding:10px 14px;"></div>
 </div>
 <div id="lalKitabPanel" style="position:fixed;right:0;top:0;bottom:0;width:480px;max-width:100vw;background:rgba(4,4,18,.98);border-left:1px solid var(--border2);z-index:200;transform:translateX(100%);transition:transform .3s cubic-bezier(.25,.46,.45,.94);overflow-y:auto;backdrop-filter:blur(12px);">
   <div class="conj-hdr">
@@ -1120,6 +1165,12 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
           <option value="industrialist">Industrialist</option>
           <option value="inventor">Inventor</option>
           <option value="presenter">Presenter</option>
+          <option value="rich kids">Rich Kids</option>
+          <option value="psychopath">Psychopath</option>
+          <option value="terrorist">Terrorist</option>
+          <option value="freedom fighter">Freedom Fighter (Indian)</option>
+          <option value="luckiest">Luckiest Persons</option>
+          <option value="unluckiest">Unluckiest Persons</option>
            <option value="scientist">Scientist</option>
           <option value="singer">Singer</option>
           <option value="writer">Writer</option>
@@ -1256,7 +1307,7 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
 <script src="./src/constant.js"></script>
 
 <!-- Yoga Analysis Files -->
-<script src="src/marriage.js"></script>
+<script src="./src/marriage.js"></script>
 <script src="./src/yogas_data.js"></script>
 <script src="./src/yoga_engine.js"></script>
 <script src="./src/yoga_display.js"></script>
@@ -1266,6 +1317,8 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
 
 <!-- Prediction System Files -->
 <script src="./src/predictions/analysis.js"></script>
+<script src="./src/predictions/ashtakvarga_core.js"></script>
+<script src="./src/predictions/ashtakvarga_display.js"></script>
 <script src="./src/predictions/forecasting.js"></script>
 <script src="./src/predictions/advanced_analysis.js"></script>
 <script src="./src/predictions/phaladeepika.js"></script>
@@ -3675,6 +3728,40 @@ function getKPLords(sidLon) {
 }
 
 // Tiny helper: abbreviate planet name to 2-char for compact cells
+// ── 4-char nakshatra abbreviation map ───────────────────────────────────────
+const _NAK4 = {
+  'Ashwini':'Aswi','Bharani':'Bhar','Krittika':'Krit','Rohini':'Rohi',
+  'Mrigashira':'Mrig','Ardra':'Ardr','Punarvasu':'Puna','Pushya':'Push',
+  'Ashlesha':'Ashl','Magha':'Magh','Purva Phalguni':'PPha','Uttara Phalguni':'UPha',
+  'Hasta':'Hast','Chitra':'Chit','Swati':'Swat','Vishakha':'Vish',
+  'Anuradha':'Anur','Jyeshtha':'Jyes','Mula':'Mula','Purva Ashadha':'PAsh',
+  'Uttara Ashadha':'UAsh','Shravana':'Shra','Dhanishta':'Dhan','Shatabhisha':'Shat',
+  'Purva Bhadrapada':'PBha','Uttara Bhadrapada':'UBha','Revati':'Reva'
+};
+
+// Get the nakshatra name + pada of a lord planet from a supplied chart object.
+// Falls back to BIRTH_PLANETS, then transit pos if chart not given.
+function _lordNakPada(lordName, chart) {
+  const src = chart || window.BIRTH_PLANETS;
+  if (!lordName || !src) return null;
+  const pd = src[lordName];
+  if (!pd) return null;
+  if (pd.nak && pd.pada) return { nak: pd.nak, pada: pd.pada };
+  // Compute on the fly from sidereal longitude
+  const sid = pd.sid != null ? pd.sid : (pd.sn||0)*30 + parseFloat(pd.deg||0);
+  if (!sid && sid !== 0) return null;
+  const info = (typeof determineNakshatra === 'function') ? determineNakshatra(sid)
+             : (typeof getNakshatra === 'function')       ? getNakshatra(sid)
+             : null;
+  return info ? { nak: info.name, pada: info.pada } : null;
+}
+
+// Charan = pada (same concept, different name). Charan label helper.
+function _charanLabel(pada) {
+  if (!pada) return '';
+  const ROM = ['','I','II','III','IV'];
+  return ROM[pada] || pada;
+}
 function _pAbbr(name) {
   const MAP = {Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke'};
   return MAP[name] || (name||'').substring(0,2);
@@ -3684,9 +3771,26 @@ function _pCol(name) {
   return PCFG[name]?.color || 'var(--muted)';
 }
 // Render a lord badge: abbrev in planet colour with full name tooltip
-function _lordCell(name, extraStyle='') {
+function _lordCellx(name, extraStyle='') {
   if (!name) return `<td class="ph-sign"></td>`;
   return `<td class="ph-sign" title="${name}" style="font-size:9px;color:${_pCol(name)};font-weight:700;${extraStyle}">${_pAbbr(name)}</td>`;
+}
+// Render a lord cell with: planet abbr + its own nakshatra (4-char) + charan (pada)
+// chart = the planet chart to look up the lord's own position (birth or transit)
+function _lordCell(name, extraStyle='', chart) {
+  if (!name) return `<td class="ph-sign" style="vertical-align:top;"></td>`;
+  const col  = _pCol(name);
+  const abbr = _pAbbr(name);
+  const np   = _lordNakPada(name, chart);
+  const nak4 = np ? (_NAK4[np.nak] || np.nak.substring(0,4)) : '';
+  const char = np ? _charanLabel(np.pada) : '';
+  const tip  = np ? `${name} · ${np.nak} Charan ${np.pada} (Pada ${np.pada})` : name;
+  const subLine = nak4
+    ? `<div style="font-size:6.5px;color:var(--muted);font-family:'Courier New',monospace;letter-spacing:.2px;line-height:1;margin-top:1px;">${nak4}·${char}</div>`
+    : '';
+  return `<td class="ph-sign" title="${tip}" style="font-size:9px;color:${col};font-weight:700;vertical-align:top;padding-top:2px;${extraStyle}">
+    ${abbr}${subLine}
+  </td>`;
 }
 function updatePlanetTable(){
   const tbl=document.getElementById('planetTbl');tbl.innerHTML='';
@@ -3701,10 +3805,25 @@ function updatePlanetTable(){
   // Column headers
   const ch=document.createElement('tr');
   ch.style.cssText='border-bottom:1px solid rgba(40,40,100,.6);';
-  ['','Planet','Sign & Deg','Nakshatra/Pd','RL','NL','SL','SSL','H','Sts','SB','K'].forEach(h=>{
+
+  [
+    {h:'',       tip:''},
+    {h:'Planet', tip:''},
+    {h:'Sign·Deg',tip:''},
+    {h:'Nak / Charan', tip:'Nakshatra name · Charan (Pada = quarter of nakshatra)'},
+    {h:'RL',     tip:'Rashi (Sign) Lord'},
+    {h:'NL·Nak·Ch', tip:'Nakshatra Lord · their own Nakshatra & Charan'},
+    {h:'SL·Nak·Ch', tip:'Sub Lord · their own Nakshatra & Charan'},
+    {h:'SSL·Nak·Ch',tip:'Sub-Sub Lord · their own Nakshatra & Charan'},
+    {h:'H',      tip:'House'},
+    {h:'Sts',    tip:'Status'},
+    {h:'SB',     tip:'Shadbala'},
+    {h:'K',      tip:'Karaka'}
+  ].forEach(({h,tip})=>{
     const td=document.createElement('td');
-    td.style.cssText='font-family:Courier New,monospace;font-size:8px;color:var(--muted);padding:1px 3px;white-space:nowrap;';
-    td.textContent=h;ch.appendChild(td);
+    td.style.cssText='font-family:Courier New,monospace;font-size:7.5px;color:var(--muted);padding:1px 3px;white-space:nowrap;';
+    if(tip) td.title=tip;
+    td.textContent=h; ch.appendChild(td);
   });
   tbl.appendChild(ch);
 
@@ -3716,17 +3835,23 @@ function updatePlanetTable(){
     const ascNak  = determineNakshatra(ascSid);
     const ascKP   = getKPLords(ascSid);
     const ascRL   = BIRTH_ASC.rl || (typeof getSignLord==='function' ? getSignLord(BIRTH_ASC.sign) : '');
+     const ascNakName = ascNak.name || BIRTH_ASC.nak || '';
+    const ascPada    = ascNak.pada || BIRTH_ASC.pada || '';
+    const ascNak4    = _NAK4[ascNakName] || ascNakName.substring(0,4);
     const r=document.createElement('tr');
     r.style.cssText='border-bottom:1px solid rgba(20,20,60,.5);';
     r.innerHTML=`
       <td><span class="ph-dot" style="background:#3AF0FF;border:1px solid #3AF0FF44;"></span></td>
       <td style="color:#3AF0FF;font-weight:700;font-size:10.5px;white-space:nowrap;">Lg Lagna</td>
       <td style="font-family:Courier New,monospace;font-size:9px;white-space:nowrap;color:#3AF0FF">${BIRTH_ASC.sign.substring(0,3)} ${fmtDeg(parseFloat(BIRTH_ASC.deg))}</td>
-      <td style="font-family:Courier New,monospace;font-size:8.5px;color:var(--muted);white-space:nowrap;">${ascNak.name||BIRTH_ASC.nak||''}<span style="color:rgba(100,100,160,.6)">/P${ascNak.pada||BIRTH_ASC.pada||''}</span></td>
+   
+       <td style="font-family:Courier New,monospace;font-size:8.5px;color:var(--muted);white-space:nowrap;" title="${ascNakName} · Charan ${ascPada} (Pada ${ascPada})">
+        ${ascNak4}<span style="color:rgba(100,100,160,.7)">·Ch${ascPada}</span>
+      </td>
       <td class="ph-sign" title="${ascRL}" style="font-size:9px;color:${_pCol(ascRL)};font-weight:700;">${_pAbbr(ascRL)}</td>
-      ${_lordCell(ascKP.nakLord)}
-      ${_lordCell(ascKP.subLord)}
-      ${_lordCell(ascKP.subSubLord,'opacity:.8;')}
+     ${_lordCell(ascKP.nakLord,'',BIRTH_PLANETS)}
+      ${_lordCell(ascKP.subLord,'',BIRTH_PLANETS)}
+      ${_lordCell(ascKP.subSubLord,'opacity:.8;',BIRTH_PLANETS)}
       <td><span class="ph-badge">H1</span></td>
       <td></td><td></td><td></td>`;
     tbl.appendChild(r);
@@ -3747,7 +3872,10 @@ function updatePlanetTable(){
     const kp  = getKPLords(sid);
     // Also recompute nakshatra/pada in case not populated
     const nakInfo = (pd.nak) ? { name: pd.nak, pada: pd.pada } : determineNakshatra(sid);
-
+// Nakshatra + Charan display for this planet
+    const nakName = nakInfo.name || '';
+    const pada    = nakInfo.pada || '';
+    const nak4    = _NAK4[nakName] || nakName.substring(0,4);
     const stsColor = pd.status==='Enemy'  ? '#FF5555'
                    : pd.status==='Own'    ? '#00FF88'
                    : pd.status==='Exalt.' ? '#FFD700'
@@ -3765,11 +3893,13 @@ function updatePlanetTable(){
       <td><span class="ph-dot" style="background:${col};${pd.combust?'border:1.5px solid #FF7700;':''}${isRetro?'box-shadow:0 0 4px #FF9933;':''}"></span></td>
       <td style="color:${col};font-weight:700;font-size:10.5px;white-space:nowrap;">${sym} ${p}${retMark}${combMark}</td>
       <td style="font-family:Courier New,monospace;font-size:9px;white-space:nowrap;color:${col}99">${pd.sign.substring(0,3)} ${fmtDeg(parseFloat(pd.deg))}</td>
-     <td style="font-family:Courier New,monospace;font-size:8.5px;color:var(--muted);white-space:nowrap;">${nakInfo.name}<span style="color:rgba(100,100,160,.6)">/P${nakInfo.pada||''}</span></td>
+      <td style="font-family:Courier New,monospace;font-size:8.5px;color:var(--muted);white-space:nowrap;" title="${nakName} · Charan ${pada} (Pada ${pada})">
+        ${nak4}<span style="color:rgba(100,100,160,.7)">·Ch${pada}</span>
+      </td>
       <td class="ph-sign" title="${rl}" style="font-size:9px;color:${_pCol(rl)};font-weight:700;">${_pAbbr(rl)}</td>
-      ${_lordCell(kp.nakLord)}
-      ${_lordCell(kp.subLord)}
-      ${_lordCell(kp.subSubLord,'opacity:.8;')}
+     ${_lordCell(kp.nakLord,'',BIRTH_PLANETS)}
+      ${_lordCell(kp.subLord,'',BIRTH_PLANETS)}
+      ${_lordCell(kp.subSubLord,'opacity:.8;',BIRTH_PLANETS)}
       <td><span class="ph-badge" style="font-size:8px;">H${pd.house}</span></td>
       <td style="font-size:9px;font-weight:700;color:${stsColor};white-space:nowrap;">${pd.status||''}</td>
       <td style="font-family:Courier New,monospace;font-size:9px;color:var(--gold);font-weight:600;">${pd.sb!=null?pd.sb.toFixed(2):''}</td>
@@ -3791,20 +3921,234 @@ function updateCurrentTbl(){
     // Live KP lords from sidereal longitude
     const sid = pd.sid != null ? pd.sid : (pd.sn||0)*30 + parseFloat(pd.deg||0);
     const kp  = getKPLords(sid);
+    // Nakshatra + Charan for this transit planet
+    const nakName = pd.nak || '';
+    const pada    = pd.pada || '';
+    const nak4    = _NAK4[nakName] || nakName.substring(0,4);
     const r=document.createElement('tr');
     r.innerHTML=`<td><span class="ph-dot" style="background:${cfg.color}"></span></td>
       <td style="color:${cfg.color};font-weight:700;font-size:10.5px;white-space:nowrap;">${cfg.sym} ${p}${retMark}</td>
       <td style="font-family:Courier New,monospace;font-size:9px;color:${cfg.color}99">${pd.sign.substring(0,3)} ${pd.deg}°</td>
-      <td style="font-family:Courier New,monospace;font-size:8.5px;color:var(--muted);white-space:nowrap;">${pd.nak||''}<span style="color:rgba(100,100,160,.6)">${pd.pada?'/P'+pd.pada:''}</span></td>
-      ${_lordCell(kp.nakLord)}
-      ${_lordCell(kp.subLord)}
+      <td style="font-family:Courier New,monospace;font-size:8.5px;color:var(--muted);white-space:nowrap;" title="${nakName} · Charan ${pada}">
+        ${nak4}<span style="color:rgba(100,100,160,.7)">${pada?'·Ch'+pada:''}</span>
+      </td>
+      ${_lordCell(kp.nakLord,'',pos)}
+      ${_lordCell(kp.subLord,'',pos)}
       <td><span class="ph-badge">H${pd.house}</span></td>`;
     tbl.appendChild(r);
   }
 }
 // ═══════════════════════════════════════════════════════════
 //  YOGINI SUB-DASHA BUILDER
+//  KAAL PURUSH TRANSIT PANEL
+//  Shows all 12 houses with their physical Karakas (Bhava Karakas),
+//  which transit planets are currently in each house, 64th Navamsha
+//  indicators, and Krura Graha combination warnings.
 // ═══════════════════════════════════════════════════════════
+// Bhava Karaka definitions per Kaal Purush (natural zodiac)
+const KAAL_PURUSH_KARAKAS = {
+  1:  { sig:'Body, self, head, vitality',        karakas:['Sun'],               obj:'Bones, head, overall physical frame' },
+  2:  { sig:'Wealth, family, speech, eyes',      karakas:['Venus','Jupiter'],   obj:'Jewels, precious metals, cash, treasury, stored wealth' },
+  3:  { sig:'Effort, siblings, courage, media',  karakas:['Mercury','Mars'],    obj:'Books, contracts, writing tools, weapons, machinery' },
+  4:  { sig:'Property, mother, home, vehicles',  karakas:['Mars','Venus'],      obj:'Land, buildings, real estate; vehicles, furniture, comforts' },
+  5:  { sig:'Knowledge, children, intellect',    karakas:['Mercury','Jupiter'], obj:'Textbooks, intellectual works, holy scriptures, religious texts' },
+  6:  { sig:'Service, disease, enemies, debts',  karakas:['Saturn','Mars'],     obj:'Daily work equipment, tools; surgical instruments, fire, sharp metals' },
+  7:  { sig:'Partnership, marriage, trade',      karakas:['Venus','Jupiter'],   obj:'Marriage bed, perfumes, cosmetics; partnership deeds, legal documents' },
+  8:  { sig:'Hidden, transformation, longevity', karakas:['Saturn','Rahu'],     obj:'Underground resources, mines, antiques; poisons, chemicals, hidden treasures' },
+  9:  { sig:'Fortune, father, religion, law',    karakas:['Jupiter','Sun'],     obj:'Temple idols, yantras, religious paraphernalia; royal emblems, govt property' },
+  10: { sig:'Career, status, authority, trade',  karakas:['Saturn','Mercury'],  obj:'Infrastructure, steel, iron; trade goods, commerce products, paperwork' },
+  11: { sig:'Gains, income, ambitions, friends', karakas:['Jupiter','Venus'],   obj:'Harvested crops, stored grains; luxury items, art, decorative objects' },
+  12: { sig:'Loss, moksha, foreign, hospital',   karakas:['Saturn','Ketu'],     obj:'Old/broken items, ruins; ash, renounced possessions, mystical objects' }
+};
+
+// Krura (cruel/malefic) planets — a planet is krura if it's one of these
+const KRURA_PLANETS = new Set(['Sun','Mars','Saturn','Rahu','Ketu']);
+
+// Soumya (benefic) planets
+const SOUMYA_PLANETS = new Set(['Moon','Mercury','Jupiter','Venus']);
+
+// Cruel combos — any of these combos transiting the SAME house = amplified bad effect
+const KRURA_COMBOS = [
+  { planets:['Saturn','Rahu'],  label:'Śani+Rāhu (Pīḍā Yoga)',    color:'#FF2255' },
+  { planets:['Saturn','Mars'],  label:'Śani+Maṅgal (War Yoga)',   color:'#FF5500' },
+  { planets:['Sun','Rahu'],     label:'Sūrya+Rāhu (Grahan Yoga)', color:'#FF3300' },
+  { planets:['Mars','Rahu'],    label:'Maṅgal+Rāhu (Chaos)',      color:'#FF6622' },
+  { planets:['Sun','Saturn'],   label:'Sūrya+Śani (Shatru Yoga)',  color:'#CC3300' },
+  { planets:['Mars','Saturn'],  label:'Kuja+Śani (Distress)',      color:'#FF4400' },
+  { planets:['Sun','Mars'],     label:'Sūrya+Kuja (Fire Yoga)',    color:'#FF7700' },
+];
+
+function _getPlanetColor(name) {
+  return PCFG[name]?.color || '#888';
+}
+
+function updateKaalPurushPanel() {
+  const el = document.getElementById('kaalPurushPanel');
+  if (!el) return;
+
+  // Respect the checkbox
+  const showKP = document.getElementById('chkKaalPurush')?.checked !== false;
+  if (!showKP || !BIRTH_ASC) { el.innerHTML = ''; return; }
+
+  const pos    = getPos(TODAY);
+  if (!pos) { el.innerHTML = ''; return; }
+
+  // ── Compute the 64th Navamsha sensitive points ────────────────────────────
+  // 64th Navamsha = natal longitude + 210° (mod 360)
+  // One navamsha = 3.333°. Orb = half a navamsha = 1.666°
+  const ORB_64  = 30 / 9 / 2; // ~1.67°
+  const l64Sid  = BIRTH_ASC.sid != null
+                  ? (BIRTH_ASC.sid + 210) % 360
+                  : ((BIRTH_ASC.sn||0)*30 + parseFloat(BIRTH_ASC.deg||0) + 210) % 360;
+  const mSid    = BIRTH_PLANETS?.Moon
+                  ? (BIRTH_PLANETS.Moon.sid != null ? BIRTH_PLANETS.Moon.sid
+                    : (BIRTH_PLANETS.Moon.sn||0)*30 + parseFloat(BIRTH_PLANETS.Moon.deg||0))
+                  : null;
+  const m64Sid  = mSid !== null ? (mSid + 210) % 360 : null;
+
+  // Also include 64th navamsha points for every natal planet
+  const allKhar64 = [
+    { label: 'Lagna', sid: l64Sid, color: '#FF4477' },
+    ...(m64Sid !== null ? [{ label: 'Moon', sid: m64Sid, color: '#FF9F43' }] : []),
+    ...['Sun','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'].map(p => {
+      if (!BIRTH_PLANETS?.[p]) return null;
+      const pSid = BIRTH_PLANETS[p].sid != null ? BIRTH_PLANETS[p].sid
+                 : (BIRTH_PLANETS[p].sn||0)*30 + parseFloat(BIRTH_PLANETS[p].deg||0);
+      return { label: p, sid: (pSid + 210) % 360, color: _getPlanetColor(p) };
+    }).filter(Boolean)
+  ];
+
+  function chkDiff(lon1, lon2) {
+    let d = Math.abs(lon1 - lon2); return d > 180 ? 360 - d : d;
+  }
+
+  // ── Build house → transiting planets map ─────────────────────────────────
+  // House is relative to natal Ascendant (Kaal Purush uses natural houses 1-12)
+  const houseMap = {}; // house(1-12) → array of planet names
+  for (let h = 1; h <= 12; h++) houseMap[h] = [];
+
+  const PORDER_TRANSIT = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
+  for (const p of PORDER_TRANSIT) {
+    const pd = pos[p]; if (!pd) continue;
+    const house = pd.house || s2h(pd.sn, BIRTH_ASC.sn);
+    if (house >= 1 && house <= 12) houseMap[house].push(p);
+  }
+
+  // ── Detect which transit planets are on any 64th Navamsha point ───────────
+  // khar64Map: planet name → array of { label, color } of khar points it's crossing
+  const khar64Map = {};
+  for (const p of PORDER_TRANSIT) {
+    const pd = pos[p]; if (!pd) continue;
+    const tSid = pd.sid != null ? pd.sid : (pd.sn||0)*30 + parseFloat(pd.deg||0);
+    khar64Map[p] = allKhar64.filter(k => chkDiff(tSid, k.sid) <= ORB_64);
+  }
+
+  // ── Build the HTML ─────────────────────────────────────────────────────────
+  const SIGN_NAMES = typeof SIGNS !== 'undefined' ? SIGNS
+    : ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+
+  let html = `<div class="kp-panel">
+    <div class="kp-title" onclick="toggleKPPanel()">
+      <span>⚖ KAAL PURUSH BHAVA KARAKAS</span>
+      <span id="kpToggleArrow">▲</span>
+    </div>
+    <div id="kpBody">`;
+
+  for (let h = 1; h <= 12; h++) {
+    const kp    = KAAL_PURUSH_KARAKAS[h];
+    const trans = houseMap[h];                      // planets in this house
+    const hasT  = trans.length > 0;
+
+    // Natural sign for this house (Kaal Purush: H1=Aries, H2=Taurus, etc.)
+    const naturalSign = SIGN_NAMES[h - 1] || `H${h}`;
+
+    // Detect Krura combos in this house
+    const krurasHere = trans.filter(p => KRURA_PLANETS.has(p));
+    const activeCombos = KRURA_COMBOS.filter(c =>
+      c.planets.every(cp => trans.includes(cp))
+    );
+    const isComboAlert = activeCombos.length > 0;
+
+    // Check if any planet here is crossing a 64th Navamsha point
+    const khar64InHouse = trans.filter(p => khar64Map[p]?.length > 0);
+    const isKhar64 = khar64InHouse.length > 0;
+
+    // Determine row class
+    const rowCls = [
+      hasT ? 'has-transit' : 'kp-empty-row',
+      isKhar64 && KRURA_PLANETS.has(khar64InHouse[0]) ? 'kp-khar' : ''
+    ].filter(Boolean).join(' ');
+
+    html += `<div class="kp-row ${rowCls}">
+      <div class="kp-house" title="${naturalSign}">${h}</div>
+      <div class="kp-content">
+        <div class="kp-sig">${kp.sig}</div>
+        <div class="kp-karakas">♦ ${kp.karakas.join(' · ')}</div>`;
+
+    if (hasT) {
+      html += `<div class="kp-transiting">`;
+      for (const p of trans) {
+        const isKrura  = KRURA_PLANETS.has(p);
+        const isSoumya = SOUMYA_PLANETS.has(p);
+        const onKhar   = khar64Map[p]?.length > 0;
+        const kharLabels = khar64Map[p]?.map(k => k.label).join('+') || '';
+        const isKruraCombo = isKrura && isComboAlert;
+
+        let tagCls = `kp-planet-tag ${isKrura?'krura':''} ${isSoumya?'soumya':''} ${onKhar?'khar64':''} ${onKhar&&isKrura?'krura-combo':''}`;
+        const pCol = _getPlanetColor(p);
+        const pd   = pos[p];
+        const retR = pd?.retro ? ' ℞' : '';
+
+        html += `<span class="${tagCls.trim()}"
+          style="color:${pCol};border-color:${pCol}44;"
+          title="${p}${retR} in H${h} · ${naturalSign}${onKhar?' | ⚠ 64th Navamsha of '+kharLabels:''}${isKruraCombo?' | KRURA COMBO ACTIVE':''}">
+          ${_pAbbr(p)}${retR}${onKhar?'<span style="font-size:6px;color:var(--rose);vertical-align:super">⚠</span>':''}
+        </span>`;
+      }
+      html += `</div>`; // kp-transiting
+
+      // Combo warnings
+      if (activeCombos.length > 0) {
+        activeCombos.forEach(c => {
+          html += `<div class="kp-khar-label">⚠ ${c.label}<span class="kp-combo-badge">KRURA</span></div>`;
+        });
+      }
+
+      // 64th Navamsha details
+      if (khar64InHouse.length > 0) {
+        khar64InHouse.forEach(p => {
+          const pts = khar64Map[p];
+          const isKrura = KRURA_PLANETS.has(p);
+          pts.forEach(pt => {
+            html += `<div class="kp-khar-label" style="color:${isKrura?'var(--rose)':'var(--gold)'};">
+              ⚠ ${p} crosses 64th Nav of <strong>${pt.label}</strong>
+              ${isKrura ? '<span class="kp-combo-badge">MALEFIC</span>' : ''}
+              ${isKrura && activeCombos.length > 0 ? '<span class="kp-combo-badge">COMBO</span>' : ''}
+            </div>`;
+          });
+        });
+      }
+    }
+
+    html += `</div></div>`; // kp-content, kp-row
+  }
+
+  html += `</div></div>`; // kpBody, kp-panel
+  el.innerHTML = html;
+}
+
+// Toggle the Kaal Purush panel body
+window.toggleKPPanel = function() {
+  const body  = document.getElementById('kpBody');
+  const arrow = document.getElementById('kpToggleArrow');
+  if (!body) return;
+  const hidden = body.style.display === 'none';
+  body.style.display  = hidden ? '' : 'none';
+  if (arrow) arrow.textContent = hidden ? '▲' : '▼';
+};
+
+// Wire checkbox
+document.getElementById('chkKaalPurush')?.addEventListener('change', updateKaalPurushPanel);
 function buildYoginiSubs(parentStart, parentEnd, parentLord) {
   // Total Yogini cycle = 36 years. Sub proportions = each lord's years / 36
   const totalYoginiCycle = 36;
@@ -4071,7 +4415,8 @@ window.toggleDTree = function(id) {
 };
 function renderDashaTransitPanel(){
   const panelEl = document.getElementById('dashaTransitPanel');
-  if(!panelEl || panelEl.style.display==='none') return;
+  const floatEl = document.getElementById('dashaTransitFloat');
+  if(!panelEl || !floatEl || floatEl.style.display==='none') return;
   if(!window.DASHA_TRANSIT_RELATIONS || !BIRTH_PLANETS || !BIRTH_ASC){ panelEl.innerHTML=''; return; }
 
   const refDate = (typeof centerDate !== 'undefined' && centerDate) ? centerDate : TODAY;
@@ -4096,7 +4441,8 @@ function renderDashaTransitPanel(){
 }
 function renderSahdharmPanel(){
   const panelEl = document.getElementById('sahdharmPanel');
-  if(!panelEl || panelEl.style.display==='none') return;
+  const floatEl = document.getElementById('sahdharmFloat');
+  if(!panelEl || !floatEl || floatEl.style.display==='none') return;
   if(!window.SAHDHARM_SAMBANDH_PREDICTOR || !BIRTH_PLANETS || !BIRTH_ASC){ panelEl.innerHTML=''; return; }
 
   const refDate = (typeof centerDate !== 'undefined' && centerDate) ? centerDate : TODAY;
@@ -4123,18 +4469,18 @@ function renderSahdharmPanel(){
 }
 
 document.getElementById('btnSahdharmFX')?.addEventListener('click', ()=>{
-  const panelEl = document.getElementById('sahdharmPanel');
+  const floatEl = document.getElementById('sahdharmFloat');
   const btn = document.getElementById('btnSahdharmFX');
-  const showing = panelEl.style.display !== 'none';
-  panelEl.style.display = showing ? 'none' : 'block';
+  const showing = floatEl.style.display !== 'none';
+  floatEl.style.display = showing ? 'none' : 'flex';
   btn.classList.toggle('active', !showing);
   if(!showing) renderSahdharmPanel();
 });
 document.getElementById('btnDashaTransitFX')?.addEventListener('click', ()=>{
-  const panelEl = document.getElementById('dashaTransitPanel');
+  const floatEl = document.getElementById('dashaTransitFloat');
   const btn = document.getElementById('btnDashaTransitFX');
-  const showing = panelEl.style.display !== 'none';
-  panelEl.style.display = showing ? 'none' : 'block';
+  const showing = floatEl.style.display !== 'none';
+  floatEl.style.display = showing ? 'none' : 'flex';
   btn.classList.toggle('active', !showing);
   if(!showing) renderDashaTransitPanel();
 });
@@ -4178,10 +4524,13 @@ function renderMoneyGainTrail(){
 document.getElementById('chkMoneyGainTrail')?.addEventListener('change', ()=>{ renderMoneyGainTrail(); drawMainChart(); });
 
 // Floating panel: drag by header, close button unchecks the source checkbox too
-(function initMoneyGainFloatDrag(){
-  const floatEl = document.getElementById('moneyGainFloat');
-  const header = document.getElementById('moneyGainFloatHeader');
-  const closeBtn = document.getElementById('moneyGainFloatClose');
+// Generic draggable floating-panel helper. prefix -> expects #{prefix}Float,
+// #{prefix}FloatHeader, #{prefix}FloatClose in the DOM. onClose (optional)
+// runs extra cleanup (e.g. unchecking a source checkbox) after hiding.
+function initFloatingPanelDrag(prefix, onClose){
+  const floatEl = document.getElementById(prefix+'Float');
+  const header = document.getElementById(prefix+'FloatHeader');
+  const closeBtn = document.getElementById(prefix+'FloatClose');
   if(!floatEl || !header) return;
   let dragging=false, offX=0, offY=0;
   header.addEventListener('mousedown', e=>{
@@ -4205,10 +4554,19 @@ document.getElementById('chkMoneyGainTrail')?.addEventListener('change', ()=>{ r
   document.addEventListener('mouseup', ()=>{ dragging=false; header.style.cursor='grab'; });
   closeBtn?.addEventListener('click', ()=>{
     floatEl.style.display='none';
-    const chk=document.getElementById('chkMoneyGainTrail');
-    if(chk && chk.checked){ chk.checked=false; drawMainChart(); }
+    if(typeof onClose === 'function') onClose();
   });
-})();
+}
+initFloatingPanelDrag('moneyGain', ()=>{
+  const chk=document.getElementById('chkMoneyGainTrail');
+  if(chk && chk.checked){ chk.checked=false; drawMainChart(); }
+});
+initFloatingPanelDrag('dashaTransit', ()=>{
+  document.getElementById('btnDashaTransitFX')?.classList.remove('active');
+});
+initFloatingPanelDrag('sahdharm', ()=>{
+  document.getElementById('btnSahdharmFX')?.classList.remove('active');
+});
 function updateAlerts(){
   const pos=getPos(TODAY);
   if (!pos || !pos.Saturn) { document.getElementById('alertsDiv').innerHTML=''; return; }
@@ -5190,6 +5548,7 @@ function renderAll(){
   if(showYogini) drawDashaBar('yoginiBar', YOGINI, YCOL);
   updatePlanetTable();
   updateCurrentTbl();
+   updateKaalPurushPanel();
   updateActiveDashas();
   updateAlerts();
   updateDashaList();
@@ -6372,7 +6731,10 @@ document.getElementById('closeConj').addEventListener('click', () => { document.
 
 document.getElementById('btnBizAnalysis').addEventListener('click', runBusinessAnalysis);
 document.getElementById('closeBiz').addEventListener('click', function() { document.getElementById('bizPanel').classList.remove('open'); });
-document.getElementById('btnMarriageAnalysis').addEventListener('click', runMarriageAnalysis);
+document.getElementById('btnMarriageAnalysis')?.addEventListener('click', ()=>{
+  if (typeof runMarriageAnalysis === 'function') runMarriageAnalysis();
+  else console.error('runMarriageAnalysis is not defined — src/marriage.js failed to load (check the file exists at that path and the browser console/network tab for a 404).');
+});
 document.getElementById('closeMarriage').addEventListener('click', function() { document.getElementById('marriagePanel').classList.remove('open'); });
 document.getElementById('closeMatching')?.addEventListener('click', function() { document.getElementById('matchingPanel').classList.remove('open'); });
 
@@ -6992,6 +7354,35 @@ if(typeof renderAll === 'function') renderAll();
   document.getElementById('closeLalKitab')?.addEventListener('click', () => {
     document.getElementById('lalKitabPanel').style.transform = 'translateX(100%)';
   });
+  document.getElementById('btnAshtakvarga')?.addEventListener('click', () => {
+    document.getElementById('ashtakvargaPanel').style.transform = 'translateX(0)';
+    renderAshtakvargaPanel();
+  });
+  document.getElementById('closeAshtakvarga')?.addEventListener('click', () => {
+    document.getElementById('ashtakvargaPanel').style.transform = 'translateX(100%)';
+  });
+  function renderAshtakvargaPanel(){
+    const el = document.getElementById('ashtakvargaContent');
+    if(!el) return;
+    if(!window.ASHTAKVARGA_DISPLAY || !window.ASHTAKVARGA || !BIRTH_PLANETS || !BIRTH_ASC){
+      el.innerHTML = '<div class="pred-item" style="color:var(--rose)">Ashtakavarga engine or birth chart not loaded.</div>';
+      return;
+    }
+    try {
+      const refDate = (typeof centerDate !== 'undefined' && centerDate) ? centerDate : TODAY;
+      const v = getVimsh(refDate);
+      const ad = v?.subs?.find(s => refDate >= s.start && refDate < s.end) || null;
+      const transitPlanets = getPos(new Date());
+      el.innerHTML = window.ASHTAKVARGA_DISPLAY.renderFullPanel({
+        natalPlanets: BIRTH_PLANETS, ascSignNum: BIRTH_ASC.sn, ascDeg: parseFloat(BIRTH_ASC.deg) || 0,
+        lords: LORDS, transitPlanets: transitPlanets,
+        mdLord: v?.lord, adLord: ad?.lord
+      });
+    } catch(e) {
+      console.error('Ashtakvarga render failed:', e);
+      el.innerHTML = '<div class="pred-item" style="color:var(--rose)">Error rendering Ashtakavarga analysis — see console.</div>';
+    }
+  }
   document.getElementById('btnGenerateLalKitab')?.addEventListener('click', () => {
     if(!window.LAL_KITAB || !window.BIRTH_PLANETS) return;
     
