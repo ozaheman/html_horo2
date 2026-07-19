@@ -185,8 +185,8 @@ function analyzeSagesMethodology(planets, asc) {
   
   // Patel's Rule: Devout and Faithful Wife (Page 75)
 // 7th Lord in an Angle (Kendra) conjunct a benefic OR in a benefic Navamsa
-  if (d9 && d9.planets[h7Lord]) {
-    const l7Nav = d9.planets[h7Lord];
+ if (d9Chart && d9Chart.planets[h7Lord]) {
+    const l7Nav = d9Chart.planets[h7Lord];
     const isBeneficNav = [2, 3, 8, 11].includes(l7Nav.sn); // Merc/Moon/Jup signs
    // Update "Devout Spouse" to include the effect
 if ([1, 4, 7, 10].includes(planets[h7Lord].house) && isBeneficNav) {
@@ -421,9 +421,8 @@ if (maleficSigns.includes(h7Sign)) {
   }
 
   // --- 5. PHALADEEPIKA (Timing Slokas) ---
-  const d9 = getChartPlanetsForDiv(9);
-  if (d9 && d9.planets && d9.planets.Venus) {
-    const vD9Sign = d9.planets.Venus.sn;
+ if (d9Chart && d9Chart.planets && d9Chart.planets.Venus) {
+    const vD9Sign = d9Chart.planets.Venus.sn;
     const trines = [vD9Sign, (vD9Sign+4)%12, (vD9Sign+8)%12];
     if (trines.includes(tPos.Jupiter.sn)) {
       addHit("Phaladeepika", "D9 Trine Activation", "Transit Jupiter in Trine to Navamsa (D9) Venus", "Expansion of the subtle marriage fruits", "Most auspicious time for actual wedding ceremony", "Next 12 months", "Major");
@@ -889,6 +888,13 @@ function runMarriageAnalysis() {
   
   // 2. Generate Refined Research-Based Report (Sections 1-8)
   el.innerHTML += generateRefinedResearchReport(BIRTH_PLANETS, BIRTH_ASC);
+  // 2.5 Ashtakavarga Marriage Harmony Secrets (Moon/Sun/Venus bindu-based compatibility)
+  try {
+    if (window.ASHTAKVARGA_SECRETS_DISPLAY && window.ASHTAKVARGA && BIRTH_PLANETS && BIRTH_ASC) {
+      el.innerHTML += window.ASHTAKVARGA_SECRETS_DISPLAY.renderForMarriagePanel(BIRTH_PLANETS, BIRTH_ASC.sn, parseFloat(BIRTH_ASC.deg) || 0);
+      console.log('ASHTAKAVARGA MARRIAGE HARMONY SECRETS RENDERED');
+    }
+  } catch (e) { console.error('ASHTAKAVARGA MARRIAGE HARMONY SECRETS FAIL', e); }
   
   // 3. Precision Month-by-Month Scanner UI
   const sahamDeg = calculateVivahaSaham();

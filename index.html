@@ -1318,6 +1318,7 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
 <!-- Prediction System Files -->
 <script src="./src/predictions/analysis.js"></script>
 <script src="./src/predictions/ashtakvarga_core.js"></script>
+<script src="./src/predictions/ashtakvarga_secrets.js"></script>
 <script src="./src/predictions/ashtakvarga_display.js"></script>
 <script src="./src/predictions/forecasting.js"></script>
 <script src="./src/predictions/advanced_analysis.js"></script>
@@ -6100,6 +6101,13 @@ function runBusinessAnalysis() {
       console.log('D9 BUSINESS TYPE RENDERED');
     }
   } catch(e) { console.error('D9 BUSINESS TYPE FAIL', e); }
+  // 1.63 ASHTAKAVARGA BUSINESS SECRETS (Poshak Khanda, effort-vs-income, work rhythm, savings vs investment, rivals vs growth)
+  try {
+    if (BIRTH_PLANETS && BIRTH_ASC && window.ASHTAKVARGA_SECRETS_DISPLAY && window.ASHTAKVARGA) {
+      el.innerHTML += window.ASHTAKVARGA_SECRETS_DISPLAY.renderForBusinessPanel(BIRTH_PLANETS, BIRTH_ASC.sn, parseFloat(BIRTH_ASC.deg) || 0, LORDS);
+      console.log('ASHTAKAVARGA BUSINESS SECRETS RENDERED');
+    }
+  } catch(e) { console.error('ASHTAKAVARGA BUSINESS SECRETS FAIL', e); }
 // 1.65 PANCHANG + BUSINESS MUHURTA + AUSPICIOUS CALENDAR GENERATOR
   try {
     if (window.PANCHANG_ENGINE && window.BUSINESS_MUHURTA && window.BIRTH) {

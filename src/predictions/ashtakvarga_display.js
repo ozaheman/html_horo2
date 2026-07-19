@@ -293,6 +293,16 @@ window.ASHTAKVARGA_DISPLAY = {
 
         if (allBAV.Venus) html += this.renderMarriageAnalysis(allBAV.Venus, ascSignNum);
         html += this.renderBusinessAnalysis(allBAV, ascSignNum, lords);
+        // Ashtakavarga Secrets (four Khandas, marriage harmony, business ratios, transit secrets)
+        try {
+            if (window.ASHTAKVARGA_SECRETS_DISPLAY && A.SECRETS) {
+                html += window.ASHTAKVARGA_SECRETS_DISPLAY.renderAllSecretsForAshtakvargaPanel({
+                    natalPlanets: natalPlanets, ascSignNum: ascSignNum, ascDeg: ascDeg,
+                    allBAV: allBAV, sav: sav, transitPlanets: transitPlanets,
+                    birthDate: opts.birthDate instanceof Date ? opts.birthDate : (window.BIRTH && window.BIRTH.date instanceof Date ? window.BIRTH.date : null)
+                });
+            }
+        } catch (e) { console.error('Ashtakavarga Secrets section failed:', e); }
 
         html += `<details style="margin-top:8px;"><summary style="cursor:pointer;font-size:9px;color:var(--cyan);">All 7 Bhinnashtakavarga Grids</summary>${this.renderAllBAVGrids(allBAV)}</details>`;
         html += `</div>`;

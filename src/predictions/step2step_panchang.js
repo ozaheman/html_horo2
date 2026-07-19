@@ -239,7 +239,20 @@ const requestedDivs = [
     const cont = document.getElementById('predictionsContent');
     if (cont) {
       cont.innerHTML = html;
-
+// ── ASHTAKAVARGA SECRETS (Four Khandas, personality ratios, Sun/Jupiter/Moon transit secrets, Sadhe Sati, Varshaphal) ──
+      try {
+        if (window.ASHTAKVARGA_SECRETS_DISPLAY && window.ASHTAKVARGA && planets && ascendant) {
+          const transitNow = (typeof getPos === 'function') ? getPos(new Date()) : null;
+          const bDate = (birthConfig && birthConfig.date instanceof Date) ? birthConfig.date : null;
+          const secretsHTML = window.ASHTAKVARGA_SECRETS_DISPLAY.renderForStep2Step(planets, ascendant.sn, ascendant.deg, transitNow, bDate);
+          if (secretsHTML) {
+            cont.innerHTML += `<div class="pred-item" style="border-left:3px solid var(--gold,#FFD700);margin-top:16px;">
+              <div class="pred-title" style="color:var(--gold,#FFD700);font-size:14px;text-align:center;">✨ Ashtakavarga Secrets</div>
+              ${secretsHTML}
+            </div>`;
+          }
+        }
+      } catch (e) { console.error('STEP2STEP Ashtakavarga Secrets FAIL', e); }
       // ============================================================
       // EXECUTE CANVAS DRAWING + PLANET INFO TABLE (after DOM injection)
       // ============================================================
