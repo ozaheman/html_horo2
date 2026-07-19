@@ -1,1 +1,1 @@
-\d+:\d+\s+(?:\d*\s*(?:minutes|minutes?|min)\s*(?:,?\s*\d*\s*(?:second|seconds?))?|\d*\s*(?:second|seconds?))
+\d+:\d+\s+(?:\d*\s*(?:minutes|minute?|min)\s*(?:,?\s*\d*\s*(?:second|seconds?))?|\d*\s*(?:seconds|second?))

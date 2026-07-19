@@ -182,6 +182,37 @@ function analyzeSagesMethodology(planets, asc) {
   
   // Rule 1: Moon in 3,5,7,10,11 + Jup transit aspect
   const naradaH = [3, 5, 7, 10, 11];
+  
+  // Patel's Rule: Devout and Faithful Wife (Page 75)
+// 7th Lord in an Angle (Kendra) conjunct a benefic OR in a benefic Navamsa
+  if (d9 && d9.planets[h7Lord]) {
+    const l7Nav = d9.planets[h7Lord];
+    const isBeneficNav = [2, 3, 8, 11].includes(l7Nav.sn); // Merc/Moon/Jup signs
+   // Update "Devout Spouse" to include the effect
+if ([1, 4, 7, 10].includes(planets[h7Lord].house) && isBeneficNav) {
+    addHit("C.S. Patel", "Devout Spouse", 
+        "7th Lord in Kendra and Benefic Navamsa", 
+        "The internal character of the spouse is pure and supportive.", 
+        "Spouse acts as a 'Lakshmi' or 'Vishnu' figure, bringing luck to the native.", 
+        "Remedy: Maintain respect for the spouse to keep this blessing active.", 
+        "Natal");
+}
+}
+
+// Patel's Rule: Challenging Disposition (Page 75)
+// 7th House falls in a sign of Mars or Saturn and aspected by malefics
+const maleficSigns = [0, 7, 9, 10]; // Mars/Saturn signs
+if (maleficSigns.includes(h7Sign)) {
+    const maleficAspect = ['Mars', 'Saturn', 'Rahu'].some(m => checkVedicAspect(planets[m], {house: 7}));
+ if (maleficAspect) {
+    addHit("C.S. Patel", "Spousal Friction", 
+        "7th House in Malefic Sign with Malefic Aspect", 
+        "Indicates internal friction in marriage or a spouse with a demanding nature.", 
+        "Requires conscious communication and patience during Mars/Saturn transits.", 
+        "Remedy: Donate white sweets on Fridays; Perform Gauri-Shankar Puja for harmony.", 
+        "Yoga");
+}
+}
   if (naradaH.includes(planets.Moon.house)) {
     if (checkVedicAspect(tPos.Jupiter, planets.Moon) || checkVedicAspect(tPos.Jupiter, planets[h7Lord])) {
       addHit("Narada", "Celestial Union", "Moon in 3/5/7/10/11 House + Transit Jupiter Activation", "Activation of Lunar sub-conscious and 7th Lord", "High probability of marriage proposal/meeting", "Ongoing (Next 3-6 months)", "Transit");

@@ -3770,11 +3770,7 @@ function _pAbbr(name) {
 function _pCol(name) {
   return PCFG[name]?.color || 'var(--muted)';
 }
-// Render a lord badge: abbrev in planet colour with full name tooltip
-function _lordCellx(name, extraStyle='') {
-  if (!name) return `<td class="ph-sign"></td>`;
-  return `<td class="ph-sign" title="${name}" style="font-size:9px;color:${_pCol(name)};font-weight:700;${extraStyle}">${_pAbbr(name)}</td>`;
-}
+
 // Render a lord cell with: planet abbr + its own nakshatra (4-char) + charan (pada)
 // chart = the planet chart to look up the lord's own position (birth or transit)
 function _lordCell(name, extraStyle='', chart) {
@@ -4404,6 +4400,74 @@ function renderDashaPanel() {
   });
 
   html += `</div>`; // dasha-tree
+
+  // ── FAVORABLE TRANSIT PREDICTION + HOUSE ACTIVATION (for current MD) ──
+  try {
+    if (BIRTH_PLANETS && BIRTH_ASC && refV) {
+      const mdLord = refV.lord, adLord = refAD?.lord;
+      const ascSn = BIRTH_ASC.sn;
+
+      // 1. House Activation: houses owned + natally placed in + aspected, by the MD lord.
+      const ownedHouses = [];
+      for (let h = 1; h <= 12; h++) { if (LORDS[(ascSn + h - 1) % 12] === mdLord) ownedHouses.push(h); }
+      const mdPos = BIRTH_PLANETS[mdLord];
+      const placedHouse = mdPos ? mdPos.house : null;
+      const aspectedHouses = [];
+      if (placedHouse) {
+        aspectedHouses.push(((placedHouse + 6 - 1) % 12) + 1); // universal 7th
+        if (mdLord === 'Mars') aspectedHouses.push(((placedHouse+3-1)%12)+1, ((placedHouse+7-1)%12)+1);
+        if (mdLord === 'Jupiter') aspectedHouses.push(((placedHouse+4-1)%12)+1, ((placedHouse+8-1)%12)+1);
+        if (mdLord === 'Saturn') aspectedHouses.push(((placedHouse+2-1)%12)+1, ((placedHouse+9-1)%12)+1);
+      }
+      const activeHouses = Array.from(new Set([...ownedHouses, ...(placedHouse?[placedHouse]:[]), ...aspectedHouses])).sort((a,b)=>a-b);
+      const HSIG = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.HOUSE_SIGNIFICATIONS) || {};
+
+      html += `<div class="dt-section" style="margin-top:14px;">HOUSES ACTIVE DURING ${mdLord.toUpperCase()} MAHADASHA</div>`;
+      html += `<div style="padding:8px 10px;font-size:9px;">`;
+      html += `<div style="color:var(--muted);margin-bottom:4px;">${mdLord} owns H${ownedHouses.join(', H')||'—'}${placedHouse?`, sits in H${placedHouse}`:''}${aspectedHouses.length?`, and aspects H${Array.from(new Set(aspectedHouses)).join(', H')}`:''}.</div>`;
+      activeHouses.forEach(h => {
+        const sig = HSIG[h];
+        const role = ownedHouses.includes(h) ? 'owns' : (h === placedHouse ? 'placed in' : 'aspects');
+        html += `<div style="margin:2px 0;padding:3px 6px;border-left:2px solid #9B6FFF;background:rgba(155,111,255,.06);"><b>H${h}</b> (${role}) — ${sig ? sig.name+': '+sig.keywords : ''}</div>`;
+      });
+      html += `</div>`;
+
+      // 2. Favorable Transit Prediction, via the Ashtakavarga engine.
+      if (window.ASHTAKVARGA && typeof getPos === 'function') {
+        const allBAV = window.ASHTAKVARGA.computeAllBAV(BIRTH_PLANETS, ascSn, parseFloat(BIRTH_ASC.deg)||0, true);
+        const sav = window.ASHTAKVARGA.computeSAV(allBAV);
+        const transitNow = getPos(ref);
+        const planetsToCheck = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'];
+        const evaluated = planetsToCheck.map(p => {
+          const tp = transitNow[p];
+          if (!tp) return null;
+          const a = window.ASHTAKVARGA.analyzeTransitPlanet(p, tp.sn, parseFloat(tp.deg)||0, allBAV, ascSn, LORDS, sav);
+          return a ? Object.assign({ planet: p }, a) : null;
+        }).filter(Boolean);
+        evaluated.sort((a,b) => (b.bindus + (b.kakshaGrantsBindu?2:0)) - (a.bindus + (a.kakshaGrantsBindu?2:0)));
+
+        html += `<div class="dt-section" style="margin-top:10px;">FAVORABLE TRANSIT RIGHT NOW (Ashtakavarga)</div>`;
+        html += `<div style="padding:8px 10px;font-size:9px;">`;
+        evaluated.slice(0, 3).forEach((a, i) => {
+          const color = a.strength === 'strong' ? '#00DD77' : a.strength === 'weak' ? '#FF4477' : '#FFD700';
+          const isMD = a.planet === mdLord, isAD = a.planet === adLord;
+          html += `<div style="margin:3px 0;padding:5px 8px;border-left:3px solid ${color};background:${color}0A;">
+            <span style="font-weight:bold;color:${color};">${i===0?'⭐ ':''}${a.planet}${isMD?' (MD Lord)':''}${isAD?' (AD Lord)':''} transiting ${a.sign}</span> —
+            <b>${a.bindus}</b> bindus (${a.strength}, own avg ${a.ownAverage.toFixed(1)}), Kaksha ${a.kaksha.lord} ${a.kakshaGrantsBindu?'<span style="color:#00DD77;">grants ✓</span>':'<span style="color:#FF4477;">withholds ✗</span>'}
+            ${a.sav!==null?`, sign SAV ${a.sav} (${a.savStrength})`:''}.
+          </div>`;
+        });
+        const mdEval = evaluated.find(a => a.planet === mdLord);
+        if (mdEval) {
+          const favorable = mdEval.strength !== 'weak' && mdEval.kakshaGrantsBindu;
+          html += `<div style="margin-top:6px;font-size:9px;font-weight:bold;color:${favorable?'#00DD77':'#FF4477'};">
+            ${mdLord} (your current Mahadasha lord) is transiting ${favorable ? 'FAVORABLY' : 'less favorably'} right now — ${mdEval.bindus} bindus in ${mdEval.sign}, Kaksha ${mdEval.kaksha.lord} ${mdEval.kakshaGrantsBindu?'open':'closed'}.
+          </div>`;
+        }
+        html += `</div>`;
+      }
+    }
+  } catch(e) { console.error('Dasha favorable-transit / house-activation section failed:', e); }
 
   c.innerHTML = html;
 }
@@ -6028,6 +6092,14 @@ function runBusinessAnalysis() {
       console.log('TARA CHAKRA RENDERED for nakIdx:', moonNakIdx);
     }
   } catch(e) { console.error('TARA CHAKRA FAIL', e); }
+
+  // 1.62 D9 (NAVAMSHA) BUSINESS-TYPE ANALYSIS
+  try {
+    if (BIRTH_PLANETS && BIRTH_ASC && typeof renderD9BusinessType === 'function' && typeof window.getVargaData === 'function') {
+      el.innerHTML += renderD9BusinessType(BIRTH_PLANETS, BIRTH_ASC.sn, LORDS, SIGNS, (lon, vn) => window.getVargaData(lon, vn).sign);
+      console.log('D9 BUSINESS TYPE RENDERED');
+    }
+  } catch(e) { console.error('D9 BUSINESS TYPE FAIL', e); }
 // 1.65 PANCHANG + BUSINESS MUHURTA + AUSPICIOUS CALENDAR GENERATOR
   try {
     if (window.PANCHANG_ENGINE && window.BUSINESS_MUHURTA && window.BIRTH) {

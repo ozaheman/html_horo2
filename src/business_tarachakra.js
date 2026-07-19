@@ -476,3 +476,94 @@ function buildPlanetaryBirthStarsHTML(moonNakIdx) {
   html += `</div>`;
   return html;
 }
+
+// ─────────────────────────────────────────────────────────────
+//  D9 (NAVAMSHA) BUSINESS-TYPE ANALYSIS
+//  Classical technique: the Navamsha sign of the key business
+//  significators (2nd/10th/11th lords, plus the natural business
+//  karakas Mercury & Saturn) indicates the ELEMENTAL nature of
+//  business best suited, refined by each planet's own industry
+//  significations.
+// ─────────────────────────────────────────────────────────────
+
+const D9_BUSINESS_ELEMENT_TRAITS = {
+  Fire:  { signs: [0,4,8],  trait: 'Leadership-driven, pioneering, high-risk/high-reward ventures', examples: 'startups, entrepreneurship, sports, defense/security, energy, sales leadership' },
+  Earth: { signs: [1,5,9],  trait: 'Stable, tangible, process-oriented', examples: 'manufacturing, real estate, agriculture, finance/banking, structured services' },
+  Air:   { signs: [2,6,10], trait: 'Communication, networking, and idea-driven', examples: 'trading, consulting, media, IT/software, partnerships, technology' },
+  Water: { signs: [3,7,11], trait: 'Service, emotional connection, and behind-the-scenes depth', examples: 'hospitality, healthcare, import/export, research, counselling, spirituality-adjacent ventures' }
+};
+const D9_BUSINESS_PLANET_FIELD = {
+  Sun: 'authority/government-facing or leadership-driven business',
+  Moon: 'public-facing, hospitality, food, or people-oriented services',
+  Mars: 'engineering, real estate, sports, construction, or action-based ventures',
+  Mercury: 'trading, commerce, communication, IT, or accounting-based business',
+  Jupiter: 'advisory, education, finance, law, or banking-related ventures',
+  Venus: 'creative, luxury, fashion, or beauty/design-based business',
+  Saturn: 'labour-intensive, agriculture, mining, or long-gestation structured business'
+};
+
+function elementOfSign(signIdx) {
+  for (const [el, data] of Object.entries(D9_BUSINESS_ELEMENT_TRAITS)) {
+    if (data.signs.includes(signIdx)) return el;
+  }
+  return null;
+}
+
+/**
+ * @param planets - {PlanetName: {sid or longitude, ...}}
+ * @param ascSignNum - natal ascendant sign index (0-11)
+ * @param LORDS - sign-index -> lord-name map
+ * @param SIGNS - sign-index -> sign-name array
+ * @param getVargaSignFn - function(lon, vargaN) => signIndex (wire to window.getVargaData)
+ */
+function analyzeD9BusinessType(planets, ascSignNum, LORDS, SIGNS, getVargaSignFn) {
+  if (typeof getVargaSignFn !== 'function') return null;
+  const lonOf = p => planets[p] ? (planets[p].sid !== undefined ? planets[p].sid : planets[p].longitude) : null;
+
+  const secondLord = LORDS[(ascSignNum + 1) % 12];
+  const tenthLord = LORDS[(ascSignNum + 9) % 12];
+  const eleventhLord = LORDS[(ascSignNum + 10) % 12];
+
+  const significators = [
+    { label: `2nd Lord (${secondLord})`, planet: secondLord },
+    { label: `10th Lord (${tenthLord})`, planet: tenthLord },
+    { label: `11th Lord (${eleventhLord})`, planet: eleventhLord },
+    { label: 'Mercury (business karaka)', planet: 'Mercury' },
+    { label: 'Saturn (business karaka)', planet: 'Saturn' }
+  ];
+
+  const elementCount = { Fire: 0, Earth: 0, Air: 0, Water: 0 };
+  const rows = significators.map(s => {
+    const lon = lonOf(s.planet);
+    if (lon === null) return Object.assign({}, s, { unavailable: true });
+    const d9Sign = getVargaSignFn(lon, 9);
+    const element = elementOfSign(d9Sign);
+    if (element) elementCount[element]++;
+    return Object.assign({}, s, { d9Sign: SIGNS[d9Sign], element: element, field: D9_BUSINESS_PLANET_FIELD[s.planet] });
+  });
+
+  const dominantElement = Object.entries(elementCount).sort((a, b) => b[1] - a[1])[0][0];
+  return { rows: rows, elementCount: elementCount, dominantElement: dominantElement, dominantTrait: D9_BUSINESS_ELEMENT_TRAITS[dominantElement] };
+}
+
+function renderD9BusinessType(planets, ascSignNum, LORDS, SIGNS, getVargaSignFn) {
+  const analysis = analyzeD9BusinessType(planets, ascSignNum, LORDS, SIGNS, getVargaSignFn);
+  if (!analysis) return `<div class="pred-item" style="color:var(--rose)">Navamsha calculator unavailable for business-type analysis.</div>`;
+
+  const rows = analysis.rows.map(r => {
+    if (r.unavailable) return `<div style="font-size:8.5px;color:var(--muted);">${r.label}: unavailable</div>`;
+    return `<div style="margin:3px 0;padding:5px 8px;border-left:2px solid var(--gold);background:rgba(255,215,0,.05);font-size:8.5px;">
+      <b>${r.label}</b> → D9 ${r.d9Sign} (<span style="color:var(--cyan);">${r.element}</span>) — ${r.field}
+    </div>`;
+  }).join('');
+
+  return `<div class="pred-item" style="border-left:3px solid var(--gold);">
+    <div class="pred-title" style="color:var(--gold);">🏭 D9 (Navamsha) Business-Type Analysis</div>
+    <div style="font-size:8.5px;color:var(--muted);margin-bottom:4px;">Navamsha sign of the key business significators (2nd/10th/11th lords, Mercury, Saturn) — the elemental split indicates the best-suited business nature.</div>
+    ${rows}
+    <div style="margin-top:6px;padding:6px 8px;background:rgba(0,221,119,.08);border-radius:4px;font-size:9px;">
+      <b style="color:#00DD77;">Dominant element: ${analysis.dominantElement}</b> (${analysis.elementCount.Fire}Fire/${analysis.elementCount.Earth}Earth/${analysis.elementCount.Air}Air/${analysis.elementCount.Water}Water)<br>
+      <span style="color:var(--muted);">${analysis.dominantTrait.trait} — best suited: ${analysis.dominantTrait.examples}.</span>
+    </div>
+  </div>`;
+}

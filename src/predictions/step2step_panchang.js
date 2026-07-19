@@ -17,14 +17,8 @@ const getPlanetSafe = (name) => {
     return planets[name] || planets[name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()] || null;
 };
   // ------------------------------------------------------------
-    // Normalize `ascendant`: callers sometimes pass a raw sidereal
-    // longitude number (e.g. window.CURRENT_ASCENDANT = BIRTH_ASC.sid)
-    // instead of an {sn, deg, sid, sign} object. Every block below
-    // expects the object shape, so coerce it once, here, up front.
-    // This is what was causing "Lagna: undefined at NaN°" on the
-    // D1 / D9 / D10 / Arudha charts (Indu Lagna doesn't read
-    // `ascendant` directly, which is why it alone rendered fine).
-    // ------------------------------------------------------------
+ 
+    //------------------------------------------------------------
     (function normalizeAscendant() {
       const _SIGNS_NORM = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS)
         ? window.ASTRO_CONSTANTS.SIGNS
@@ -519,7 +513,15 @@ const requestedDivs = [
         sign: SIGNS[Math.floor(lon / 30)]
       };
     });
-    
+       // Normalize `ascendant`: callers sometimes pass a raw sidereal
+    // longitude number (e.g. window.CURRENT_ASCENDANT = BIRTH_ASC.sid)
+    // instead of an {sn, deg, sid, sign} object. Every block below
+    // expects the object shape, so coerce it once, here, up front.
+    // This is what was causing "Lagna: undefined at NaN°" on the
+    // D1 / D9 / D10 / Arudha charts (Indu Lagna doesn't read
+    // `ascendant` directly, which is why it alone rendered fine).
+    // 
+   
     // Create Arudha chart data
     const arudhaPlanets = {};
     Object.keys(planets).forEach(p => {
@@ -665,6 +667,71 @@ const requestedDivs = [
     const d10AscSn = d10Chart.asc.sn;
     const d1010thLord = LORDS[(d10AscSn + 9) % 12];
     const d1010thLordPlanet = d10Chart.planets[d1010thLord];
+    // 1. Patel's Pushkara Navamsa Detection (Page 31)
+const isPushkara = (sn, navPart) => {
+    // Fire Signs (Ari, Leo, Sag): 7th (Lib) and 9th (Sag) Navamsas
+    if ([0, 4, 8].includes(sn)) return [6, 8].includes(navPart);
+    // Earth Signs (Tau, Vir, Cap): 3rd (Pis), 5th (Tau) Navamsas
+    if ([1, 5, 9].includes(sn)) return [2, 4].includes(navPart);
+    // Air Signs (Gem, Lib, Aqu): 6th (Pis), 8th (Tau) Navamsas
+    if ([2, 6, 10].includes(sn)) return [5, 7].includes(navPart);
+    // Water Signs (Can, Sco, Pis): 1st (Can), 3rd (Vir) Navamsas
+    if ([3, 7, 11].includes(sn)) return [0, 2].includes(navPart);
+    return false;
+};
+
+// 2. Patel's Nidhanamsa (8th Navamsa) (Page 91)
+// Used for predicting challenges or transformation periods
+const isNidhanamsa = (pD9Sn, pD1Sn) => {
+    return ((pD9Sn - pD1Sn + 12) % 12) === 7; // 8th from Rasi position
+};
+
+// Enhancement to the Navamsa Table in step2step
+// Add "Patel Highlights" to the result mapping
+Object.keys(planets).forEach(p => {
+    const lon = planets[p].sid || planets[p].longitude;
+    const d1Sn = Math.floor(lon / 30);
+    const navPart = Math.floor((lon % 30) / (3.333333));
+    const d9Sn = d9Chart.planets[p].sn;
+
+    if (isPushkara(d1Sn, navPart)) {
+        d9Chart.planets[p].patelStatus = "Pushkara (Auspicious)";
+    } else if (isNidhanamsa(d9Sn, d1Sn)) {
+        d9Chart.planets[p].patelStatus = "Nidhanamsa (Transformative)";
+    }
+    
+    
+    // Add this Metadata Dictionary at the top of STEP2STEP_PANCHANG
+const PATEL_NAVAMSA_META = {
+    "Pushkara": {
+        desc: "Healing and Nourishing Navamsa degrees.",
+        effect: "Acts as a protective shield. Even if a planet is debilitated in D1, being in Pushkara allows it to bestow wealth and health during its dasha.",
+        remedies: ["Worship the deity of the Navamsa Lord", "Regular charity on the planet's ruling day"]
+    },
+    "Nidhanamsa": {
+        desc: "The 8th Navamsa from the planet's own Rasi position.",
+        effect: "Signifies 'Nidhana' (Death/Transformation). Can cause sudden breaks in career or health dips when transited by Saturn.",
+        remedies: ["Chant Maha Mrityunjaya Mantra", "Perform Tila-Daan (Sesame donation) on Saturdays"]
+    },
+    "Vargottama": {
+        desc: "Planet occupying the same sign in D1 and D9.",
+        effect: "Indicates a strong soul-connection. Results promised in the natal chart are 'guaranteed' and the native shows great consistency in character.",
+        remedies: ["Strengthen the planet further with its associated Gemstone", "Follow the planet's Vrata (Fasting)"]
+    }
+};
+
+// Inside analyze logic, when mapping planets:
+const pMeta = d9Chart.planets[p];
+if (pMeta.patelStatus) {
+    const meta = PATEL_NAVAMSA_META[pMeta.patelStatus.split(' ')[0]];
+    if (meta) {
+        pMeta.patelDescription = meta.desc;
+        pMeta.patelEffect = meta.effect;
+        pMeta.patelRemedy = meta.remedies.join(", ");
+    }
+} 
+    
+});
      html += `<div class="pred-item" style="border-left: 3px solid #00cec9; margin-top:20px;">
       <div class="pred-title" style="color:#00cec9; font-size:14px; text-align:center;">🔍 Divisional Chart Analysis</div>
       <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:15px; margin-top:10px;">
@@ -1064,7 +1131,46 @@ const requestedDivs = [
           stepHtml += `${badhakesh}'s position is unavailable.`;
         }
         stepHtml += `</div>`;
-        // Final Summary
+
+        // Step 10: All Important Navamshas (D9) Summary
+        stepHtml += `<div style="color:var(--gold2); font-weight:bold; margin-bottom:6px; font-size:12px;">10. All Important Navamshas (D9) Summary</div>`;
+        stepHtml += `<div style="margin-bottom:15px; padding-left:12px; border-left:2px solid rgba(255,255,255,0.1);">`;
+        if (typeof window.getVargaData === 'function') {
+          // Atmakaraka: highest degree-in-sign among the 7 classical grahas.
+          const classicalGrahas = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'];
+          let atmakaraka = null, akMaxDeg = -1;
+          classicalGrahas.forEach(p => {
+            if (!planets[p]) return;
+            const lon = planets[p].sid !== undefined ? planets[p].sid : planets[p].longitude;
+            const dg = lon % 30;
+            if (dg > akMaxDeg) { akMaxDeg = dg; atmakaraka = p; }
+          });
+          const seventhSn = (natalAscSn + 6) % 12, seventhLord = LORDS[seventhSn];
+          const ninthSn = (natalAscSn + 8) % 12, ninthLord = LORDS[ninthSn];
+
+          const navItems = [
+            { label: 'Lagna (Ascendant)', lon: ascAbs, note: 'Overall dharma/personality after Navamsha maturity (~age 32); marriage foundation.' },
+            { label: 'Moon', lon: planets.Moon ? (planets.Moon.sid !== undefined ? planets.Moon.sid : planets.Moon.longitude) : null, note: 'Emotional/mental dharma; inner stability and how the mind matures.' },
+            { label: 'Sun', lon: planets.Sun ? (planets.Sun.sid !== undefined ? planets.Sun.sid : planets.Sun.longitude) : null, note: 'Soul\'s deeper confidence/authority as it matures with age.' },
+            { label: `7th Lord (${seventhLord}, Kalatresh)`, lon: planets[seventhLord] ? (planets[seventhLord].sid !== undefined ? planets[seventhLord].sid : planets[seventhLord].longitude) : null, note: 'Spouse/marriage quality and the nature of committed partnerships.' },
+            { label: `9th Lord (${ninthLord}, Bhagyesh)`, lon: planets[ninthLord] ? (planets[ninthLord].sid !== undefined ? planets[ninthLord].sid : planets[ninthLord].longitude) : null, note: 'How fortune/dharma actually manifests in lived experience.' },
+            { label: `Atmakaraka (${atmakaraka || '?'})`, lon: atmakaraka && planets[atmakaraka] ? (planets[atmakaraka].sid !== undefined ? planets[atmakaraka].sid : planets[atmakaraka].longitude) : null, note: 'Karakamsa — the soul\'s deepest purpose/relationship with the divine this life.' },
+            { label: 'Venus', lon: planets.Venus ? (planets.Venus.sid !== undefined ? planets.Venus.sid : planets.Venus.longitude) : null, note: 'Spouse\'s nature, relationship comforts, and aesthetic/romantic disposition.' }
+          ];
+
+          stepHtml += `<table style="width:100%; max-width:520px; color:var(--text); border-collapse:collapse; text-align:left; border:1px solid rgba(255,255,255,0.1); font-size:10px;">`;
+          stepHtml += `<tr style="background:rgba(255,255,255,0.05);"><th style="padding:5px 7px; border:1px solid rgba(255,255,255,0.1);">Significator</th><th style="padding:5px 7px; border:1px solid rgba(255,255,255,0.1);">D9 Sign</th><th style="padding:5px 7px; border:1px solid rgba(255,255,255,0.1);">D9 Lord</th><th style="padding:5px 7px; border:1px solid rgba(255,255,255,0.1);">Significance</th></tr>`;
+          navItems.forEach(item => {
+            if (item.lon === null || item.lon === undefined) { stepHtml += `<tr><td style="padding:5px 7px; border:1px solid rgba(255,255,255,0.1);">${item.label}</td><td colspan="3" style="padding:5px 7px; border:1px solid rgba(255,255,255,0.1); color:var(--muted);">unavailable</td></tr>`; return; }
+            const d9Sn = window.getVargaData(item.lon, 9).sign;
+            const d9Lord = LORDS[d9Sn];
+            stepHtml += `<tr><td style="padding:5px 7px; border:1px solid rgba(255,255,255,0.1); font-weight:bold;">${item.label}</td><td style="padding:5px 7px; border:1px solid rgba(255,255,255,0.1); color:var(--cyan);">${SIGNS[d9Sn]}</td><td style="padding:5px 7px; border:1px solid rgba(255,255,255,0.1); color:var(--rose); font-weight:bold;">${d9Lord}</td><td style="padding:5px 7px; border:1px solid rgba(255,255,255,0.1); color:var(--muted); font-size:9px;">${item.note}</td></tr>`;
+          });
+          stepHtml += `</table>`;
+        } else {
+          stepHtml += `Navamsha (D9) calculator unavailable.`;
+        }
+        stepHtml += `</div>`;
         stepHtml += `<div style="color:var(--gold2); font-weight:bold; margin-top:20px; margin-bottom:6px; font-size:12px;">📊 Final Summary Table</div>`;
         stepHtml += `<table style="width:100%; max-width:450px; color:var(--text); border-collapse:collapse; text-align:left; border:1px solid rgba(255,255,255,0.1);">`;
         stepHtml += `<tr style="background:rgba(255,255,255,0.05);"><th style="padding:6px 8px; border:1px solid rgba(255,255,255,0.1);">Factor</th><th style="padding:6px 8px; border:1px solid rgba(255,255,255,0.1);">Result</th></tr>`;
