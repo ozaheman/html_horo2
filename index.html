@@ -601,6 +601,19 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
         <div class="chart-sub" id="dchartSub">Birth chart · Gemini Ascendant</div>
       </div>
     </div>
+    <div class="chk-group" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 0;">
+      <label style="display:flex;align-items:center;gap:3px;"><input type="checkbox" id="chkShowBindus"> <span style="color:var(--gold);font-weight:bold;font-size:10px;">✦ Ashtakavarga Bindus</span></label>
+      <select id="selBinduSystem" style="font-size:9px;background:var(--bg2,#111);color:var(--fg,#eee);border:1px solid var(--border3,#444);border-radius:3px;padding:1px 3px;">
+        <option value="Sarva">Sarvashtakavarga (all-house total)</option>
+        <option value="Sun">Sun BAV</option>
+        <option value="Moon">Moon BAV</option>
+        <option value="Mars">Mars BAV</option>
+        <option value="Mercury">Mercury BAV</option>
+        <option value="Jupiter">Jupiter BAV</option>
+        <option value="Venus">Venus BAV</option>
+        <option value="Saturn">Saturn BAV</option>
+      </select>
+    </div>
     <div class="dwheel-wrap">
       <canvas id="dchartCanvas" class="dwheel-canvas" width="300" height="300"></canvas>
       <div id="svgChartContainer" style="display:none; width:300px; height:300px; overflow:hidden; border-radius:4px; background:white;"></div>
@@ -2908,7 +2921,54 @@ function drawDChart(cvId, customData){
     ctx.fillText(sn,c.x,c.y);
   }
   ctx.textAlign='left';
+ // ─── ASHTAKAVARGA BINDU OVERLAY ───
+  // Bindus are a property of the NATAL D1 chart (Ashtakavarga is classically defined
+  // only for the Rasi chart). Houses stay fixed with the Ascendant in House 1; the
+  // sign occupying each house rotates with the ascendant, exactly as computed above
+  // for the sign-number labels — so we look up bindus for that same rotated sign.
+  const NO_BINDU_CHART_IDS = ['pD9']; // divisional (Navamsha) charts: bindus aren't classically meaningful here
+  const showBindus = document.getElementById('chkShowBindus')?.checked;
+  if (showBindus && window.ASHTAKVARGA && BIRTH_PLANETS && BIRTH_ASC && !NO_BINDU_CHART_IDS.includes(cvId)) {
+    try {
+      const binduSystem = document.getElementById('selBinduSystem')?.value || 'Sarva';
+      const natalAscSn = BIRTH_ASC.sn ?? 0;
+      const natalAscDeg = parseFloat(BIRTH_ASC.deg) || 0;
+      const allBAV = window.ASHTAKVARGA.computeAllBAV(BIRTH_PLANETS, natalAscSn, natalAscDeg, true);
 
+      let binduAt, strengthOf, label;
+      if (binduSystem === 'Sarva') {
+        const sav = window.ASHTAKVARGA.computeSAV(allBAV);
+        binduAt = (sn0) => sav[sn0];
+        strengthOf = (v) => window.ASHTAKVARGA.classifySAVStrength(v);
+        label = 'SAV';
+      } else {
+        const bav = allBAV[binduSystem];
+        binduAt = (sn0) => bav ? bav.bindus[sn0] : null;
+        strengthOf = (v) => window.ASHTAKVARGA.classifyBAVStrength(binduSystem, v);
+        label = binduSystem.substring(0, 2).toUpperCase();
+      }
+      const binduColorMap = { exceptional: '#00FFAA', strong: '#00DD77', good: '#FFD700', average: '#FFD700', weak: '#FF9955', 'very-weak': '#FF4477' };
+      const binduColor = (s) => binduColorMap[s] || '#AAAAAA';
+
+      for (let h = 1; h <= 12; h++) {
+        const sn1 = ((ascSn + h - 1) % 12) + 1; // sign (1-based) currently occupying this fixed house
+        const sn0 = sn1 - 1;
+        const c = CE[h];
+        const bindus = binduAt(sn0);
+        if (bindus === null || bindus === undefined || !c) continue;
+        const strength = strengthOf(bindus);
+        const col = binduColor(strength);
+        ctx.textAlign = 'left';
+        ctx.font = 'bold 9px Courier New';
+        ctx.fillStyle = col;
+        ctx.fillText(String(bindus), c.x + 12, c.y - 8);
+        ctx.font = '6px Courier New';
+        ctx.fillStyle = col + 'CC';
+        ctx.fillText(label, c.x + 12, c.y - 1);
+      }
+      ctx.textAlign = 'left';
+    } catch (e) { console.error('Ashtakavarga bindu overlay failed:', e); }
+  }
   const hmap={}; for(let i=1;i<=12;i++)hmap[i]=[];
   if(planetsData){
     Object.entries(planetsData).filter(([p])=>!['Uranus','Neptune','Pluto'].includes(p))
@@ -7138,7 +7198,12 @@ document.getElementById('chkHouseDividers')?.addEventListener('change', drawMain
 document.getElementById('chkShowAspectPlanets')?.addEventListener('change', () => {
   if (typeof drawDChart === 'function') drawDChart('dchartCanvas');
 });
-
+document.getElementById('chkShowBindus')?.addEventListener('change', () => {
+  if (typeof drawDChart === 'function') drawDChart('dchartCanvas');
+});
+document.getElementById('selBinduSystem')?.addEventListener('change', () => {
+  if (typeof drawDChart === 'function') drawDChart('dchartCanvas');
+});
 // ---------- MATCHING & CUSP CHART HANDLERS ----------
 document.getElementById('btnMatching')?.addEventListener('click', () => {
   document.getElementById('matchingPanel').classList.add('open');
