@@ -1184,6 +1184,113 @@ if (pMeta.patelStatus) {
           stepHtml += `Navamsha (D9) calculator unavailable.`;
         }
         stepHtml += `</div>`;
+         // Step 11: Pushkara Navamsha Check (all planets + Lagna)
+        stepHtml += `<div style="color:var(--gold2); font-weight:bold; margin-bottom:6px; font-size:12px;">11. Pushkara Navamsha Check</div>`;
+        stepHtml += `<div style="margin-bottom:15px; padding-left:12px; border-left:2px solid rgba(255,255,255,0.1);">`;
+        if (typeof window.getVargaData === 'function') {
+          // Verified against Jataka Parijata (Adh.1, Sh.58): 7th & 9th navamsha of Fire signs,
+          // 3rd & 5th of Earth, 6th & 8th of Air, 1st & 3rd of Water (all 1-indexed; stored here 0-indexed).
+          // All resulting signs are benefic-ruled (Jupiter/Venus for Fire-Earth-Air, Moon/Mercury for Water) —
+          // this internal consistency was used to cross-check the derivation.
+          const FIRE = [0,4,8], EARTH = [1,5,9], AIR = [2,6,10], WATER = [3,7,11];
+          const PUSHKARA_NAV_IDX = { fire: [6,8], earth: [2,4], air: [5,7], water: [0,2] };
+          function pushkaraGroup(signIdx) {
+            if (FIRE.includes(signIdx)) return 'fire';
+            if (EARTH.includes(signIdx)) return 'earth';
+            if (AIR.includes(signIdx)) return 'air';
+            return 'water';
+          }
+          const navamshaSpan = 30/9;
+          const checkList = [
+            { label: 'Lagna', lon: ascAbs },
+            ...Object.keys(planets).filter(p => ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'].includes(p)).map(p => ({ label: p, lon: planets[p].sid !== undefined ? planets[p].sid : planets[p].longitude }))
+          ];
+          const pushkaraHits = [];
+          checkList.forEach(item => {
+            if (item.lon === undefined || item.lon === null) return;
+            const norm = ((item.lon % 360) + 360) % 360;
+            const signIdx = Math.floor(norm / 30);
+            const degInSign = norm % 30;
+            const navIdx = Math.floor(degInSign / navamshaSpan);
+            const group = pushkaraGroup(signIdx);
+            if (PUSHKARA_NAV_IDX[group].includes(navIdx)) {
+              const d9Sign = window.getVargaData(item.lon, 9).sign;
+              pushkaraHits.push({ label: item.label, sign: SIGNS[signIdx], navIdx: navIdx+1, d9Sign: SIGNS[d9Sign] });
+            }
+          });
+          if (pushkaraHits.length) {
+            pushkaraHits.forEach(h => {
+              stepHtml += `<div style="margin:3px 0;padding:5px 8px;background:rgba(0,221,119,.08);border-left:2px solid #00DD77;">
+                <b style="color:#00DD77;">${h.label}</b> is in Pushkara Navamsha (${h.sign}, ${h.navIdx}${h.navIdx===1?'st':h.navIdx===2?'nd':h.navIdx===3?'rd':'th'} navamsha → D9 ${h.d9Sign}) —
+                "nourished" and strengthened; gives good results here even if otherwise afflicted, and its karakatwas (significations) get an extra supportive boost.
+              </div>`;
+            });
+          } else {
+            stepHtml += `<div style="color:var(--muted);">No planet or Lagna currently falls in a Pushkara Navamsha zone in this chart.</div>`;
+          }
+        } else {
+          stepHtml += `Navamsha (D9) calculator unavailable.`;
+        }
+        stepHtml += `</div>`;
+
+        // Step 12: 91st Navamsha (Income Source)
+        stepHtml += `<div style="color:var(--gold2); font-weight:bold; margin-bottom:6px; font-size:12px;">12. 91st Navamsha (Income Source)</div>`;
+        stepHtml += `<div style="margin-bottom:15px; padding-left:12px; border-left:2px solid rgba(255,255,255,0.1);">`;
+        if (typeof window.getVargaData === 'function') {
+          // 90 navamshas complete the first 10 houses (9 each); the 91st navamsha is
+          // therefore the 1st navamsha of the 11th house. Practical shortcut used here:
+          // check whether the planet occupying D1's 11th house also falls in D9's 7th house.
+          const h11Sn = (natalAscSn + 10) % 12;
+          const planetsInH11 = Object.keys(planets).filter(p => planets[p] && planets[p].sn === h11Sn);
+          const d9AscSn = window.getVargaData(ascAbs, 9).sign;
+          const d9SeventhSn = (d9AscSn + 6) % 12;
+
+          let incomeSignificator = null, method = null;
+
+          if (planetsInH11.length) {
+            for (const p of planetsInH11) {
+              const pLon = planets[p].sid !== undefined ? planets[p].sid : planets[p].longitude;
+              const pD9Sn = window.getVargaData(pLon, 9).sign;
+              if (pD9Sn === d9SeventhSn) { incomeSignificator = p; method = 'Rule 1: occupies both D1 11th house and D9 7th house'; break; }
+            }
+          }
+          if (!incomeSignificator) {
+            // Rule 2a: any planet directly occupying D9's 7th house
+            const planetsInD9Seventh = Object.keys(planets).filter(p => {
+              if (!planets[p]) return false;
+              const pLon = planets[p].sid !== undefined ? planets[p].sid : planets[p].longitude;
+              return window.getVargaData(pLon, 9).sign === d9SeventhSn;
+            });
+            if (planetsInD9Seventh.length) { incomeSignificator = planetsInD9Seventh[0]; method = "Rule 2: occupies D9's 7th house (D1 11th house was empty)"; }
+          }
+          if (!incomeSignificator) {
+            // Rule 3: fall back to D9's 7th lord itself
+            incomeSignificator = LORDS[d9SeventhSn];
+            method = "Rule 3: D9's 7th Lord taken directly (both D1 11th house and D9 7th house were empty)";
+          }
+
+          const sigFields = {
+            Sun: 'government, authority, leadership roles, or father-related sources',
+            Moon: 'public dealing, hospitality, liquids/food, or mother-related sources',
+            Mars: 'engineering, real estate, sports, police/military, or property',
+            Mercury: 'trade, commerce, communication, writing, or consultancy',
+            Jupiter: 'teaching, advisory, finance, law, or spiritual/religious work',
+            Venus: 'arts, luxury goods, beauty, entertainment, or spouse-linked sources',
+            Saturn: 'labour-intensive work, service, mining/agriculture, or long-term structured income',
+            Rahu: 'unconventional, foreign, or technology-linked sources',
+            Ketu: 'research, spirituality, or detachment-linked/inheritance sources'
+          };
+          stepHtml += `<div style="font-size:9.5px;">D1 11th house (${SIGNS[h11Sn]}) occupants: ${planetsInH11.length ? planetsInH11.join(', ') : 'none'}. Navamsha Lagna: ${SIGNS[d9AscSn]}, D9 7th house: ${SIGNS[d9SeventhSn]}.</div>`;
+          stepHtml += `<div style="margin-top:6px;padding:6px 8px;background:rgba(255,215,0,.08);border-left:2px solid var(--gold2);">
+            <b style="color:var(--gold2);">Income significator: ${incomeSignificator}</b><br>
+            <span style="font-size:8.5px;color:var(--muted);">${method}</span><br>
+            <span style="font-size:9px;">Result: income is most likely to come through ${sigFields[incomeSignificator] || 'this planet\'s significations'}. Its Mahadasha/Antardasha, and its favourable transits, are the periods most likely to bring financial gain.</span>
+          </div>`;
+          stepHtml += `<div style="margin-top:6px;font-size:8.5px;color:var(--muted);font-style:italic;">Remedy note: if this significator is weak/afflicted in your D1 chart, strengthening it (its mantra, gemstone if applicable, or associated remedial acts) is classically said to support steadier income from this source.</div>`;
+        } else {
+          stepHtml += `Navamsha (D9) calculator unavailable.`;
+        }
+        stepHtml += `</div>`;
         stepHtml += `<div style="color:var(--gold2); font-weight:bold; margin-top:20px; margin-bottom:6px; font-size:12px;">📊 Final Summary Table</div>`;
         stepHtml += `<table style="width:100%; max-width:450px; color:var(--text); border-collapse:collapse; text-align:left; border:1px solid rgba(255,255,255,0.1);">`;
         stepHtml += `<tr style="background:rgba(255,255,255,0.05);"><th style="padding:6px 8px; border:1px solid rgba(255,255,255,0.1);">Factor</th><th style="padding:6px 8px; border:1px solid rgba(255,255,255,0.1);">Result</th></tr>`;

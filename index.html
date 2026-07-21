@@ -309,7 +309,15 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 /* ── D-CHART WHEEL ── */
 .dwheel-wrap{padding:8px;display:flex;flex-direction:column;align-items:center;gap:6px;}
 .dwheel-canvas{border-radius:4px;background:var(--panel2);}
-
+#chakraFsWrap:fullscreen{width:100vw;height:100vh;background:#0b0b0e;display:flex;align-items:center;justify-content:center;}
+#chakraFsWrap:-webkit-full-screen{width:100vw;height:100vh;background:#0b0b0e;display:flex;align-items:center;justify-content:center;}
+#chakraFsWrap:fullscreen #chakraContainer{width:min(92vh,92vw);height:min(92vh,92vw);}
+#chakraFsWrap:-webkit-full-screen #chakraContainer{width:min(92vh,92vw);height:min(92vh,92vw);}
+#chakraDetailsPanel{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px;margin-top:6px;font-size:9.5px;}
+#chakraDetailsPanel .cd-row{background:var(--panel2,#161616);border:1px solid var(--border3,#333);border-radius:4px;padding:4px 6px;line-height:1.5;}
+#chakraDetailsPanel .cd-row b{color:var(--gold);}
+#chakraDetailsPanel .cd-transit{border-left:3px solid #22ccff;}
+#chakraDetailsPanel .cd-natal{border-left:3px solid var(--gold);}
 /* ── ASPECTS legend ── */
 .asp-legend{display:flex;flex-wrap:wrap;gap:6px;padding:5px 12px;border-top:1px solid var(--border);font-size:9.5px;}
 .aspli{display:flex;align-items:center;gap:4px;}
@@ -527,6 +535,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
     <button class="btn violet" id="btnPredictions" title="Show Predictions & Forecasts">🔮 PREDICTIONS</button>
     <button class="btn" id="btnNumerology" title="Numerology (Lo Shu Grid) Analysis" style="border-color:rgba(0,191,255,.4);color:rgba(0,191,255,.6);">🔢 NUMEROLOGY</button>
     <button class="btn" id="btnLalKitab" title="Lal Kitab Remedies & Predictions" style="border-color:rgba(255,68,68,.4);color:rgba(255,68,68,.6);">🔴 LAL KITAB</button>
+     <button class="btn" id="btnDiseasePredictor" title="Disease Predictor — Indian Astrology and Diseases (Parimal Purkāyastha, 1956)" style="border-color:rgba(255,68,68,.4);color:rgba(255,68,68,.7);">🩺 DISEASES</button>
     <button class="btn" id="btnAshtakvarga" title="Ashtakavarga (Bhinnashtaka + Sarvashtaka) Analysis" style="border-color:rgba(0,221,119,.4);color:rgba(0,221,119,.7);">🎯 ASHTAKVARGA</button>
     <button class="btn" id="btnCuspChart" title="Bhava Chalit / Cusp Chart" style="border-color:rgba(255,255,255,.4);color:white;">◬ CUSP CHART</button>
     <button class="btn" id="btnMatching" title="Chart Matching / Synastry (Ashtakoota)" style="border-color:rgba(255,20,147,.4);color:#ff1493;">💞 MATCHING</button>
@@ -614,7 +623,19 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
         <option value="Saturn">Saturn BAV</option>
       </select>
     </div>
-    <div class="dwheel-wrap">
+   <div id="chakraOptsBar" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:4px 0;font-size:10px;">
+      <span class="lbl">CHAKRA REF:</span>
+      <select id="chakraRefSel" style="font-size:9px;background:var(--bg2,#111);color:var(--fg,#eee);border:1px solid var(--border3,#444);border-radius:3px;padding:2px 4px;">
+        <option value="lagna">Lagna Chart (Ascendant)</option>
+        <option value="moon">Chandra Lagna (Moon Chart)</option>
+        <option value="sun">Surya Lagna (Sun Chart)</option>
+      </select>
+      <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraTransit"> <span style="color:var(--cyan,#22ccff);font-weight:bold;">◎ Show Transit</span></label>
+      <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraNak" checked> <span style="color:var(--gold);">✦ Nakshatra Rings</span></label>
+      <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraVarga" checked> <span style="color:var(--rose,#ff6688);">◆ Vargottama Navamsa</span></label>
+      <button class="btn" id="btnChakraFullscreen" style="margin-left:auto;" title="View chakra chart full screen">⛶ Full Screen</button>
+    </div>
+    <div class="dwheel-wrap" id="chakraFsWrap">
       <canvas id="dchartCanvas" class="dwheel-canvas" width="300" height="300"></canvas>
       <div id="svgChartContainer" style="display:none; width:300px; height:300px; overflow:hidden; border-radius:4px; background:white;"></div>
       <div id="chakraContainer" style="display:none; width:300px; height:300px; overflow:hidden; border-radius:4px; background:white;"></div>
@@ -840,7 +861,29 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
     </div>
   </div>
 </div>
-
+<!-- DISEASE PREDICTOR PANEL -->
+<div id="diseasePanel" style="position:fixed;right:0;top:0;bottom:0;width:560px;max-width:100vw;background:rgba(4,4,18,.98);border-left:1px solid var(--border2);z-index:200;transform:translateX(100%);transition:transform .3s cubic-bezier(.25,.46,.45,.94);overflow-y:auto;backdrop-filter:blur(12px);">
+  <div class="conj-hdr">
+    <h2 style="color:#FF4444">🩺 DISEASE PREDICTOR</h2>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="close-btn" id="closeDisease">✕</button>
+    </div>
+  </div>
+  <div style="padding:8px 12px;font-family:'Courier New',monospace;font-size:9px;color:var(--muted);background:rgba(255,68,68,.05);border-bottom:1px solid var(--border);">
+    Based on "Indian Astrology and Diseases" — Parimal Purkāyastha, Calcutta 1956 · Study/reference tool only — not medical advice
+  </div>
+  <div style="padding:15px;background:rgba(255,68,68,0.05);border-bottom:1px solid var(--border);">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.5;">
+      Applies the Lagna/Sun/Moon/6th-house health rules, planetary body-part correspondences, and Dasha timing rules from the reference text to the current birth chart, in a step-by-step Cause → Effect → Remedy format.
+    </div>
+    <button class="btn primary" id="btnGenerateDiseaseReport" style="width:100%; border-color:#FF4444; color:#FF4444; background:rgba(255,68,68,.1); padding:8px;">⟲ Generate Step-by-Step Disease Analysis</button>
+  </div>
+  <div id="diseaseContent" style="padding:15px;padding-bottom:100px;">
+    <div style="text-align:center;padding:40px 20px;color:var(--muted);font-family:Courier New,monospace;font-size:11px;">
+      Click 'Generate' to analyze afflictions, likely disease tendencies, causes, effects, Dasha timing and remedies.
+    </div>
+  </div>
+</div>
 <!-- LAL KITAB PANEL -->
 <div id="moneyGainFloat" style="display:none;position:fixed;top:90px;right:24px;width:380px;max-width:92vw;max-height:70vh;background:rgba(4,4,18,.98);border:1px solid rgba(255,215,0,.35);border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.6);backdrop-filter:blur(12px);z-index:1010;flex-direction:column;overflow:hidden;">
   <div id="moneyGainFloatHeader" style="cursor:grab;padding:8px 10px;background:rgba(255,215,0,.08);border-bottom:1px solid rgba(255,215,0,.25);display:flex;justify-content:space-between;align-items:center;user-select:none;">
@@ -1360,6 +1403,7 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
 <script src="./src/predictions/graha_maitri.js"></script>
 <script src="./src/predictions/dasha_transit_relations.js"></script>
 <script src="./src/predictions/sahdharm_sambandh_predictor.js"></script>
+<script src="./src/predictions/disease_predictor.js"></script>
 <script src="./src/predictions/panchang_engine.js"></script>
 <script src="./src/predictions/business_muhurta_calendar.js"></script>
 <script src="./src/predictions/guru_trikona_dhanagam.js?v=2"></script>
@@ -5239,6 +5283,8 @@ document.getElementById('btnToggleSvg').addEventListener('click',()=>{
   document.getElementById('dchartCanvas').style.display = (useSvgChart || showChakra) ? 'none' : 'block';
   document.getElementById('svgChartContainer').style.display = useSvgChart ? 'block' : 'none';
   document.getElementById('chakraContainer').style.display = 'none';
+  document.getElementById('chakraOptsBar').style.display = 'none';
+  document.getElementById('chakraDetailsPanel').style.display = 'none';
   renderAll();
 });
 document.getElementById('btnToggleChakra').addEventListener('click',()=>{
@@ -5248,9 +5294,33 @@ document.getElementById('btnToggleChakra').addEventListener('click',()=>{
   document.getElementById('dchartCanvas').style.display = (useSvgChart || showChakra) ? 'none' : 'block';
   document.getElementById('chakraContainer').style.display = showChakra ? 'block' : 'none';
   document.getElementById('svgChartContainer').style.display = 'none';
+  document.getElementById('chakraOptsBar').style.display = showChakra ? 'flex' : 'none';
+  if(!showChakra) document.getElementById('chakraDetailsPanel').style.display = 'none';
   renderAll();
 });
-
+// ── Chakra chart controls: reference chart, transit/nakshatra/varga toggles, fullscreen ──
+document.getElementById('chakraRefSel').addEventListener('change',(e)=>{
+  chakraRefMode = e.target.value; renderAll();
+});
+document.getElementById('chkChakraTransit').addEventListener('change',(e)=>{
+  chakraShowTransit = e.target.checked; renderAll();
+});
+document.getElementById('chkChakraNak').addEventListener('change',(e)=>{
+  chakraShowNak = e.target.checked; renderAll();
+});
+document.getElementById('chkChakraVarga').addEventListener('change',(e)=>{
+  chakraShowVarga = e.target.checked; renderAll();
+});
+document.getElementById('btnChakraFullscreen').addEventListener('click',()=>{
+  const wrap = document.getElementById('chakraFsWrap');
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  } else if (wrap.requestFullscreen) {
+    wrap.requestFullscreen();
+  } else if (wrap.webkitRequestFullscreen) {
+    wrap.webkitRequestFullscreen();
+  }
+});
 // ═══════════════════════════════════════════════════════════
 //  SAVED PROFILES (localStorage)
 // ═══════════════════════════════════════════════════════════
@@ -5309,77 +5379,217 @@ function updateSavedProfilesList(){
 }
 
 // ═══════════════════════════════════════════════════════════
-//  SVG CHART LOGIC (User Provided)
+//  SVG CHART LOGIC (User Provided) + Enhanced Sudarshan Chakra
 // ═══════════════════════════════════════════════════════════
 let useSvgChart = false;
 let showChakra = false;
+let chakraRefMode = 'lagna';       // 'lagna' | 'moon' | 'sun'
+let chakraShowTransit = false;
+let chakraShowNak = true;
+let chakraShowVarga = true;
 const asRashi = SIGNS;
 const signs = SIGNS;
-const s_nakshatra = NAK_NAMES.map((n, i) => `${n}-${PFNS[['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'][i % 9]] ? ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'][i % 9] : 'Lord'}`);
+const s_nakshatra = NAK_NAMES; // legacy reference (lord lookup now uses NAK_LORD_SEQ, see determineNakshatra)
 
 function fix360(a){ return ((a % 360) + 360) % 360; }
 
-function generateChakraChartSVG(chartData, title = "Chakra Chart") {
-  const W = 600, H = 600;
-  const viewBox = `-300 -300 600 600`;
-  const chartStartAngle = 285;
-  const numRashi = 12;
-  const rashiAngleWidth = -(360 / numRashi);
+// Correct Vimshottari nakshatra-lord cycle: Ashwini->Ketu, Bharani->Venus, Krittika->Sun... (repeats x3)
+const NAK_LORD_SEQ = ['Ketu','Venus','Sun','Moon','Mars','Rahu','Jupiter','Saturn','Mercury'];
+function nakLordOf(nakIdx){ return NAK_LORD_SEQ[((nakIdx%9)+9)%9]; }
+const SIGN_ELEMENTS=['Fire','Earth','Air','Water'];
+const SIGN_QUALITIES=['Movable','Fixed','Dual'];
+function signElement(idx){ return SIGN_ELEMENTS[((idx%4)+4)%4]; }
+function signQuality(idx){ return SIGN_QUALITIES[((idx%3)+3)%3]; }
+// Classical Vargottama rule: a movable sign's own-sign navamsa is its 1st, a fixed sign's is its
+// 5th, a dual sign's is its 9th — i.e. that specific navamsa pada is "Vargottama" for that rashi.
+function vargottamaAmsaNum(signIdx){ return [1,5,9][((signIdx%3)+3)%3]; }
 
-  const getCoords = (radius, angleDeg) => {
-    const angleRad = (angleDeg * Math.PI) / 180;
-    return { x: radius * Math.cos(angleRad), y: radius * Math.sin(angleRad) };
-  };
+const PLANET_ABBR2={Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke'};
 
-  const describeArc = (x, y, radius, startAngle, endAngle) => {
-    const start = getCoords(radius, endAngle);
-    const end = getCoords(radius, startAngle);
-    const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-    return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
-  };
+// Assemble natal + (optional) live-transit data for the enhanced chakra chart
+function buildChakraData(refMode){
+  const natal=[];
+  if (window.BIRTH_ASC) natal.push({ p:'Asc', tx:'Asc', sid:BIRTH_ASC.sid, sn:BIRTH_ASC.sn, isAsc:true });
+  if (window.BIRTH_PLANETS){
+    for (const [p,d] of Object.entries(BIRTH_PLANETS)){
+      const nak = determineNakshatra(d.sid);
+      natal.push({ p, tx:PLANET_ABBR2[p]||p.substring(0,2), sid:d.sid, sn:d.sn, house:d.house,
+                   retro:d.retro, combust:d.combust, status:d.status,
+                   nak:nak.name, pada:nak.pada, nl:nak.lord, sl:getSubLord(d.sid,nak.lord) });
+    }
+  }
+  let transit=[];
+  if (window.BIRTH_PLANETS && window.BIRTH_ASC){
+    try{
+      const tp=getPos(new Date());
+      for (const [p,d] of Object.entries(tp)){
+        transit.push({ p, tx:PLANET_ABBR2[p]||p.substring(0,2), sid:d.sid, sn:d.sn, house:d.house,
+                       retro:d.retro, nak:d.nak, pada:d.pada, nl:d.nl, sl:d.sl });
+      }
+    }catch(e){ /* transit unavailable until birth data is loaded */ }
+  }
+  let refSignIdx = window.BIRTH_ASC ? BIRTH_ASC.sn : 0, refLabel='Lagna Chart (Ascendant)';
+  if (refMode==='moon' && window.BIRTH_PLANETS && BIRTH_PLANETS.Moon){ refSignIdx=BIRTH_PLANETS.Moon.sn; refLabel='Chandra Lagna (Moon Chart)'; }
+  else if (refMode==='sun' && window.BIRTH_PLANETS && BIRTH_PLANETS.Sun){ refSignIdx=BIRTH_PLANETS.Sun.sn; refLabel='Surya Lagna (Sun Chart)'; }
+  return { natal, transit, refSignIdx, refLabel };
+}
 
-  let svg = `<svg viewBox="${viewBox}" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="background:#fff;border-radius:8px;">`;
-  svg += `<style>
-    .ring { fill: none; stroke: #bbb; stroke-width: 0.5; }
-    .segment-line { stroke: #999; stroke-width: 0.5; }
-    .rashi-name { font-size: 10px; font-weight: bold; fill: #333; text-anchor: middle; }
-    .planet { font-size: 10px; font-weight: bold; fill: #c0392b; text-anchor: middle; }
-    .om-symbol { font-family: serif; font-size: 30px; text-anchor: middle; dominant-baseline: central; fill: #333; }
-  </style>`;
-
-  const radii = [10, 40, 80, 110, 140, 175, 210, 245, 280];
-  radii.forEach(r => { svg += `<circle cx="0" cy="0" r="${r}" class="ring" />`; });
-
-  // Rashi segments
-  for (let i = 0; i < numRashi; i++) {
-    const angle = chartStartAngle + (i * rashiAngleWidth);
-    const p1 = getCoords(40, angle), p2 = getCoords(280, angle);
-    svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" class="segment-line" style="stroke:#333;stroke-width:1;" />`;
-    
-    // Rashi Names
-    const midAngle = angle + rashiAngleWidth / 2;
-    const cp = getCoords(125, midAngle);
-    svg += `<text x="${cp.x}" y="${cp.y}" class="rashi-name">${SIGNS[i]}</text>`;
+function generateChakraChartSVG(dataOrChartData, opts) {
+  // Backward compatible with the old call shape: generateChakraChartSVG([{sid,p}, ...])
+  let natal, transit=[], refSignIdx=0, refLabel='Lagna Chart', showTransit=false, showNak=true, showVarga=true;
+  if (Array.isArray(dataOrChartData)) {
+    natal = dataOrChartData.map(d=>({ p:d.p, tx:PLANET_ABBR2[d.p]||(d.p||'').substring(0,2), sid:d.sid,
+                                       isAsc:(d.p==='As'||d.p==='Asc') }));
+  } else {
+    const built = dataOrChartData || buildChakraData(chakraRefMode);
+    natal=built.natal; transit=built.transit; refSignIdx=built.refSignIdx; refLabel=built.refLabel;
+  }
+  if (opts){
+    showTransit = !!opts.showTransit; showNak = opts.showNak!==false; showVarga = opts.showVarga!==false;
+    if (opts.transit) transit = opts.transit;
+    if (opts.refSignIdx!==undefined) refSignIdx = opts.refSignIdx;
+    if (opts.refLabel) refLabel = opts.refLabel;
   }
 
-  // Planets
-  if (chartData) {
-    chartData.forEach(p => {
-      const angle = fix360(chartStartAngle + (p.sid / 360 * 360 * (rashiAngleWidth/30))); // simplification
-      // Let's use simpler angle calc:
-      const rashiIdx = Math.floor(p.sid / 30);
-      const degInRashi = p.sid % 30;
-      const pAngle = chartStartAngle + (rashiIdx * rashiAngleWidth) + (degInRashi / 30 * rashiAngleWidth);
-      const { x, y } = getCoords(60, pAngle);
-      svg += `<text x="${x}" y="${y}" class="planet">${p.p.substring(0,2)}</text>`;
+  const chartStartAngle = 285;
+  const w = -(360/12); // rashi wedge width (clockwise)
+
+  const getCoords = (radius, angleDeg) => {
+    const a = angleDeg*Math.PI/180;
+    return { x: radius*Math.cos(a), y: radius*Math.sin(a) };
+  };
+  const signAngle = (signIdx) => chartStartAngle + signIdx*w;
+  const lonAngle = (sid) => {
+    const sn=Math.floor(fix360(sid)/30), degIn=fix360(sid)%30;
+    return signAngle(sn) + (degIn/30)*w;
+  };
+
+  const R = { rashiIn:34, rashiOut:92, natalIn:92, natalOut:150, transitIn:150, transitOut:182,
+              nakIn:182, nakOut:216, nlIn:216, nlOut:246, vargaIn:246, vargaOut:278, outer:280 };
+
+  let svg = `<svg viewBox="-300 -300 600 600" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="background:#fff;border-radius:8px;">`;
+  svg += `<style>
+    .ring{fill:none;stroke:#ccc;stroke-width:0.6;}
+    .seg{stroke:#999;stroke-width:0.5;}
+    .segBold{stroke:#333;stroke-width:1;}
+    .rashi-name{font-size:9px;font-weight:700;fill:#222;text-anchor:middle;}
+    .rashi-sub{font-size:6.2px;fill:#777;text-anchor:middle;}
+    .house-num{font-size:7.5px;font-weight:700;fill:#a67c00;text-anchor:middle;}
+    .nak-name{font-size:5.6px;fill:#333;text-anchor:middle;}
+    .nl-name{font-size:6.6px;font-weight:700;fill:#5a3ea6;text-anchor:middle;}
+    .planet{font-size:11px;font-weight:800;text-anchor:middle;}
+    .planet-deg{font-size:6px;fill:#555;text-anchor:middle;}
+    .planet-t{font-size:8.5px;font-weight:700;fill:#0aa;text-anchor:middle;}
+    .planet-t-deg{font-size:5.2px;fill:#0aa;text-anchor:middle;}
+    .om-symbol{font-family:serif;font-size:22px;text-anchor:middle;dominant-baseline:central;fill:#333;}
+    .ref-label{font-size:7.5px;fill:#a67c00;text-anchor:middle;font-weight:700;}
+    .varga-tick{stroke:#ccc;stroke-width:0.6;}
+    .varga-tick-v{stroke:#c98b00;stroke-width:1.8;}
+  </style>`;
+
+  Object.values(R).forEach(r=>{ svg += `<circle cx="0" cy="0" r="${r}" class="ring"/>`; });
+
+  // ══ Rashi ring: sign name, element/quality, house number relative to chosen reference ══
+  for (let i=0;i<12;i++){
+    const a0=signAngle(i);
+    const p1=getCoords(R.rashiIn,a0), p2=getCoords(R.vargaOut,a0);
+    svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" class="segBold"/>`;
+    const mid=a0+w/2;
+    const houseNum=((i-refSignIdx+12)%12)+1;
+    const isRef=(i===refSignIdx);
+    if (isRef){
+      const arc1=getCoords(R.rashiIn,a0), arc2=getCoords(R.rashiIn,a0+w);
+      svg += `<path d="M ${arc1.x} ${arc1.y} A ${R.rashiIn} ${R.rashiIn} 0 0 0 ${arc2.x} ${arc2.y}" fill="none" stroke="#c98b00" stroke-width="2.4"/>`;
+    }
+    let cp=getCoords(80,mid);
+    svg += `<text x="${cp.x}" y="${cp.y-8}" class="rashi-name">${SIGNS[i]}</text>`;
+    svg += `<text x="${cp.x}" y="${cp.y+2}" class="rashi-sub">${signElement(i)} · ${signQuality(i)}</text>`;
+    cp=getCoords(46,mid);
+    svg += `<text x="${cp.x}" y="${cp.y+3}" class="house-num">${houseNum}${isRef?' ✦':''}</text>`;
+  }
+
+  // ══ Nakshatra ring + Nakshatra-Lord ring (27 divisions each) ══
+  if (showNak){
+    const nakW=-(360/27);
+    for (let i=0;i<27;i++){
+      const a0=chartStartAngle+i*nakW;
+      const p1=getCoords(R.nakIn,a0), p2=getCoords(R.nlOut,a0);
+      svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" class="seg"/>`;
+      const mid=a0+nakW/2;
+      let cp=getCoords((R.nakIn+R.nakOut)/2, mid);
+      const shortNak = NAK_NAMES[i].length>7 ? NAK_NAMES[i].slice(0,6)+'…' : NAK_NAMES[i];
+      svg += `<text x="${cp.x}" y="${cp.y+2}" class="nak-name" transform="rotate(${mid+90} ${cp.x} ${cp.y})">${shortNak}</text>`;
+      cp=getCoords((R.nlIn+R.nlOut)/2, mid);
+      svg += `<text x="${cp.x}" y="${cp.y+2}" class="nl-name" transform="rotate(${mid+90} ${cp.x} ${cp.y})">${nakLordOf(i)}</text>`;
+    }
+  }
+
+  // ══ Navamsa ring: 108 ticks (9 per sign); the Vargottama pada is highlighted gold ══
+  if (showVarga){
+    for (let s=0;s<12;s++){
+      const vAmsa=vargottamaAmsaNum(s);
+      for (let k=0;k<9;k++){
+        const a=signAngle(s)+(k/9)*w;
+        const p1=getCoords(R.vargaIn,a), p2=getCoords(R.vargaOut,a);
+        const isV=(k+1)===vAmsa;
+        svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" class="${isV?'varga-tick-v':'varga-tick'}"/>`;
+      }
+    }
+  }
+  svg += `<circle cx="0" cy="0" r="${R.outer}" class="ring" style="stroke:#333;stroke-width:1.2;"/>`;
+
+  // ══ Transit planets (toggle) ══
+  if (showTransit && transit && transit.length){
+    transit.forEach(p=>{
+      const a=lonAngle(p.sid);
+      let c=getCoords((R.transitIn+R.transitOut)/2-6,a);
+      svg += `<text x="${c.x}" y="${c.y}" class="planet-t">${p.tx}${p.retro?'℞':''}</text>`;
+      c=getCoords((R.transitIn+R.transitOut)/2+9,a);
+      svg += `<text x="${c.x}" y="${c.y}" class="planet-t-deg">${fmtDeg(fix360(p.sid)%30)}</text>`;
     });
   }
 
-  svg += `<text x="0" y="0" class="om-symbol">ॐ</text>`;
+  // ══ Natal planets (symbol/abbrev + degree + retrograde) ══
+  natal.forEach(p=>{
+    const a=lonAngle(p.sid);
+    const col = PCFG[p.p] ? PCFG[p.p].color : '#c0392b';
+    let c=getCoords((R.natalIn+R.natalOut)/2-10,a);
+    const label = p.isAsc ? 'Asc' : (PCFG[p.p]?PCFG[p.p].sym:p.tx);
+    svg += `<text x="${c.x}" y="${c.y}" class="planet" style="fill:${p.isAsc?'#c98b00':col};">${label}${p.retro?'℞':''}</text>`;
+    if (!p.isAsc){
+      c=getCoords((R.natalIn+R.natalOut)/2+13,a);
+      svg += `<text x="${c.x}" y="${c.y}" class="planet-deg">${fmtDeg(fix360(p.sid)%30)}</text>`;
+    }
+  });
+
+  // ══ Center ══
+  svg += `<text x="0" y="-6" class="om-symbol">ॐ</text>`;
+  svg += `<text x="0" y="15" class="ref-label">${refLabel}</text>`;
   svg += `</svg>`;
   return svg;
 }
 
+// Builds the HTML details panel (exact degrees / nakshatra / lords) shown below the wheel
+function renderChakraDetailsPanel(built){
+  const el=document.getElementById('chakraDetailsPanel');
+  if(!el) return;
+  if(!built || !built.natal || !built.natal.length){ el.style.display='none'; return; }
+  el.style.display='grid';
+  let rows='';
+  built.natal.forEach(p=>{
+    if(p.isAsc){
+      rows += `<div class="cd-row cd-natal"><b>Ascendant</b><br>${SIGNS[p.sn]} ${fmtDeg(fix360(p.sid)%30)}</div>`;
+      return;
+    }
+    rows += `<div class="cd-row cd-natal"><b>${p.p}</b> ${p.retro?'℞':''}<br>${SIGNS[p.sn]} ${fmtDeg(fix360(p.sid)%30)} · H${p.house}<br>${p.nak||''} Pd${p.pada||''} · NL:${p.nl||''} SL:${p.sl||''}</div>`;
+  });
+  if(chakraShowTransit && built.transit && built.transit.length){
+    built.transit.forEach(p=>{
+      rows += `<div class="cd-row cd-transit"><b>${p.p} (transit)</b> ${p.retro?'℞':''}<br>${SIGNS[p.sn]} ${fmtDeg(fix360(p.sid)%30)} · H${p.house}<br>${p.nak||''} Pd${p.pada||''} · NL:${p.nl||''} SL:${p.sl||''}</div>`;
+    });
+  }
+  el.innerHTML = rows;
+}
 function GetDivisionalSign2(degrees, division) {
     let SignNum = Math.floor(degrees / 30); let SignDeg = degrees % 30;         
     let DivSize, StartSign, SignOdd; let iDiv = 0;
@@ -5412,18 +5622,27 @@ function GetDivisionalSign2(degrees, division) {
     }
 }
 
+<!-- function determineNakshatra(longitude) { -->
+    <!-- if (typeof s_nakshatra === 'undefined') return { name: "", lord: "", pada: 0 }; -->
+    <!-- longitude = fix360(longitude); -->
+    <!-- const nakshatraSpan = (13 + 20 / 60); -->
+    <!-- const padaSpan = nakshatraSpan / 4.0; -->
+    <!-- const nakshatraIndex = Math.floor(longitude / nakshatraSpan); -->
+    <!-- const nakDataString = s_nakshatra[nakshatraIndex % 27]; -->
+    <!-- const [nakName, nakLord] = nakDataString ? nakDataString.split('-') : ["Unknown", "-"]; -->
+    <!-- const pada = Math.floor((longitude % nakshatraSpan) / padaSpan) + 1; -->
+    <!-- return { name: nakName, lord: nakLord, pada: pada }; -->
+<!-- } -->
 function determineNakshatra(longitude) {
-    if (typeof s_nakshatra === 'undefined') return { name: "", lord: "", pada: 0 };
     longitude = fix360(longitude);
     const nakshatraSpan = (13 + 20 / 60);
     const padaSpan = nakshatraSpan / 4.0;
-    const nakshatraIndex = Math.floor(longitude / nakshatraSpan);
-    const nakDataString = s_nakshatra[nakshatraIndex % 27];
-    const [nakName, nakLord] = nakDataString ? nakDataString.split('-') : ["Unknown", "-"];
+    const nakshatraIndex = Math.floor(longitude / nakshatraSpan) % 27;
+    const nakName = NAK_NAMES[nakshatraIndex] || "Unknown";
+    const nakLord = nakLordOf(nakshatraIndex);
     const pada = Math.floor((longitude % nakshatraSpan) / padaSpan) + 1;
-    return { name: nakName, lord: nakLord, pada: pada };
+    return { name: nakName, lord: nakLord, pada: pada, idx: nakshatraIndex };
 }
-
 function getPlanetDisplayDetails(planet, chartData) {
     let symbolTspan = "";
     let fontWeight = "normal"; 
@@ -5585,9 +5804,12 @@ function renderAll(){
   if(CURRENT_DIV===1) calculateCharkarakas();
   updateRange();
   if(showChakra) {
-    const data = [{sid:BIRTH_ASC.sid, p:'As'}];
-    for(const[p,pd] of Object.entries(BIRTH_PLANETS)) data.push({sid:pd.sid, p});
-    document.getElementById('chakraContainer').innerHTML = generateChakraChartSVG(data);
+  const built = buildChakraData(chakraRefMode);
+    document.getElementById('chakraContainer').innerHTML = generateChakraChartSVG(built, {
+      showTransit: chakraShowTransit, showNak: chakraShowNak, showVarga: chakraShowVarga
+    });
+    document.getElementById('chakraDetailsPanel').style.display = 'grid';
+    renderChakraDetailsPanel(built);
   } else if(useSvgChart) renderSvgChart();
   else drawDChart('dchartCanvas');
   drawMainChart();
@@ -5836,8 +6058,8 @@ const BNN_REMEDIES = {
     Ketu: 'Help stray dogs. Donate blankets. Visit Ganesh temple. Use Cat\'s eye.'
 };
 
-const SIGN_ELEMENTS = ['Fire','Earth','Air','Water','Fire','Earth','Air','Water','Fire','Earth','Air','Water'];
-function getElementType(sn){ return SIGN_ELEMENTS[sn % 12]; }
+//const SIGN_ELEMENTS = ['Fire','Earth','Air','Water','Fire','Earth','Air','Water','Fire','Earth','Air','Water'];
+//function getElementType(sn){ return SIGN_ELEMENTS[sn % 12]; }
 
 const D9_10L_HOUSE = {
   1: { title:'10th Lord in 1st House (Lagna)', nature:'Kendra \u2014 4th from own house',
@@ -7487,6 +7709,32 @@ if(typeof renderAll === 'function') renderAll();
       </div>
     `;
     document.getElementById('numerologyContent').innerHTML = html;
+  });
+</script>
+<script>
+  document.getElementById('btnDiseasePredictor')?.addEventListener('click', () => {
+    document.getElementById('diseasePanel').style.transform = 'translateX(0)';
+  });
+  document.getElementById('closeDisease')?.addEventListener('click', () => {
+    document.getElementById('diseasePanel').style.transform = 'translateX(100%)';
+  });
+  document.getElementById('btnGenerateDiseaseReport')?.addEventListener('click', () => {
+    const contentEl = document.getElementById('diseaseContent');
+    if (!window.DISEASE_PREDICTOR || !window.BIRTH_PLANETS || !window.BIRTH_ASC) {
+      contentEl.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--muted);font-family:Courier New,monospace;font-size:11px;">Please set birth details first, then try again.</div>';
+      return;
+    }
+    let dashaCtx = {};
+    try {
+      const ref = (typeof TODAY !== 'undefined') ? TODAY : new Date();
+      const md = (typeof getVimsh === 'function') ? getVimsh(ref) : null;
+      const ad = md?.subs?.find(s => ref >= s.start && ref < s.end) || null;
+      const pd = ad?.subs?.find(s => ref >= s.start && ref < s.end) || null;
+      dashaCtx = { md: md ? md.lord : null, ad: ad ? ad.lord : null, pd: pd ? pd.lord : null };
+    } catch (e) { dashaCtx = {}; }
+
+    const report = window.DISEASE_PREDICTOR.generateReport(window.BIRTH_PLANETS, window.BIRTH_ASC, dashaCtx);
+    contentEl.innerHTML = window.DISEASE_PREDICTOR.renderHTML(report);
   });
 </script>
 <script src="src/lalkitab_cause.js"></script>
