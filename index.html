@@ -318,6 +318,11 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 #chakraDetailsPanel .cd-row b{color:var(--gold);}
 #chakraDetailsPanel .cd-transit{border-left:3px solid #22ccff;}
 #chakraDetailsPanel .cd-natal{border-left:3px solid var(--gold);}
+#chakraFloatWin.chakra-maximized{top:0!important;left:0!important;width:100vw!important;height:100vh!important;max-width:100vw!important;max-height:100vh!important;border-radius:0;}
+#chakraFloatWin:fullscreen{width:100vw;height:100vh;top:0;left:0;border-radius:0;}
+#chakraFloatWin:-webkit-full-screen{width:100vw;height:100vh;top:0;left:0;border-radius:0;}
+#chakraFloatWin:fullscreen #chakraFloatBody, #chakraFloatWin:-webkit-full-screen #chakraFloatBody{padding:20px;}
+#chakraFloatBody #chakraContainer, #chakraFloatBody #chakraFsWrap{width:100%!important;height:100%!important;}
 /* ── ASPECTS legend ── */
 .asp-legend{display:flex;flex-wrap:wrap;gap:6px;padding:5px 12px;border-top:1px solid var(--border);font-size:9.5px;}
 .aspli{display:flex;align-items:center;gap:4px;}
@@ -633,12 +638,25 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
       <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraTransit"> <span style="color:var(--cyan,#22ccff);font-weight:bold;">◎ Show Transit</span></label>
       <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraNak" checked> <span style="color:var(--gold);">✦ Nakshatra Rings</span></label>
       <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraVarga" checked> <span style="color:var(--rose,#ff6688);">◆ Vargottama Navamsa</span></label>
-      <button class="btn" id="btnChakraFullscreen" style="margin-left:auto;" title="View chakra chart full screen">⛶ Full Screen</button>
+       <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraAspects"> <span style="color:#8a5cff;">☍ Show Aspects</span></label>
+      <button class="btn" id="btnChakraFullscreen" style="margin-left:auto;" title="Open chart in a floating window (then maximize / full screen from there)">🗔 Float / Full Screen</button>
     </div>
     <div class="dwheel-wrap" id="chakraFsWrap">
       <canvas id="dchartCanvas" class="dwheel-canvas" width="300" height="300"></canvas>
       <div id="svgChartContainer" style="display:none; width:300px; height:300px; overflow:hidden; border-radius:4px; background:white;"></div>
       <div id="chakraContainer" style="display:none; width:300px; height:300px; overflow:hidden; border-radius:4px; background:white;"></div>
+    </div>
+    <div id="chakraDetailsPanel" style="display:none;"></div>
+    <div id="chakraFloatAnchor" style="display:none;"></div>
+    <div id="chakraFloatWin" style="display:none;position:fixed;top:70px;left:70px;width:560px;height:680px;max-width:96vw;max-height:92vh;background:var(--panel,#141414);border:1px solid var(--gold,#a67c00);border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.6);z-index:9999;flex-direction:column;overflow:hidden;">
+      <div id="chakraFloatHeader" style="cursor:move;user-select:none;display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--panel2,#1c1c1c);border-bottom:1px solid var(--border3,#333);">
+        <span style="color:var(--gold);font-weight:700;font-size:11px;flex:1;">✦ Sudarshan Chakra — Floating View</span>
+        <button class="btn" id="btnChakraFloatMax" title="Maximize / restore" style="padding:2px 7px;">🗖</button>
+        <button class="btn" id="btnChakraFloatOsFs" title="True full screen" style="padding:2px 7px;">⛶</button>
+        <button class="btn" id="btnChakraFloatDock" title="Dock back to sidebar" style="padding:2px 7px;">🗗</button>
+        <button class="btn" id="btnChakraFloatClose" title="Close" style="padding:2px 7px;color:var(--rose,#ff6688);">✕</button>
+      </div>
+      <div id="chakraFloatBody" style="flex:1;overflow:auto;padding:10px;"></div>
     </div>
     <div class="sec">
       <div class="sec-title">Planetary Positions</div>
@@ -1361,7 +1379,7 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
 
 <!-- Core ASTRO Constants -->
 <script src="./src/constant.js"></script>
-
+<script src="./src/navamsa88.js"></script>
 <!-- Yoga Analysis Files -->
 <script src="./src/marriage.js"></script>
 <script src="./src/yogas_data.js"></script>
@@ -5276,50 +5294,112 @@ document.getElementById('chkShowKarakas').addEventListener('change',(e)=>{
   showKarakas=e.target.checked;
   renderAll();
 });
-document.getElementById('btnToggleSvg').addEventListener('click',()=>{
+function qs(id){ return document.getElementById(id); }
+function setDisp(id,val){ const e=qs(id); if(e) e.style.display=val; }
+
+const btnToggleSvgEl = qs('btnToggleSvg');
+if (btnToggleSvgEl) btnToggleSvgEl.addEventListener('click',()=>{
   useSvgChart = !useSvgChart; showChakra = false;
-  document.getElementById('btnToggleSvg').classList.toggle('active', useSvgChart);
-  document.getElementById('btnToggleChakra').classList.remove('active');
-  document.getElementById('dchartCanvas').style.display = (useSvgChart || showChakra) ? 'none' : 'block';
-  document.getElementById('svgChartContainer').style.display = useSvgChart ? 'block' : 'none';
-  document.getElementById('chakraContainer').style.display = 'none';
-  document.getElementById('chakraOptsBar').style.display = 'none';
-  document.getElementById('chakraDetailsPanel').style.display = 'none';
+  if(qs('btnToggleSvg')) qs('btnToggleSvg').classList.toggle('active', useSvgChart);
+  if(qs('btnToggleChakra')) qs('btnToggleChakra').classList.remove('active');
+  setDisp('dchartCanvas',(useSvgChart || showChakra) ? 'none' : 'block');
+  setDisp('svgChartContainer', useSvgChart ? 'block' : 'none');
+  setDisp('chakraContainer','none');
+  setDisp('chakraOptsBar','none');
+  setDisp('chakraDetailsPanel','none');
   renderAll();
 });
-document.getElementById('btnToggleChakra').addEventListener('click',()=>{
+const btnToggleChakraEl = qs('btnToggleChakra');
+if (btnToggleChakraEl) btnToggleChakraEl.addEventListener('click',()=>{
   showChakra = !showChakra; useSvgChart = false;
-  document.getElementById('btnToggleChakra').classList.toggle('active', showChakra);
-  document.getElementById('btnToggleSvg').classList.remove('active');
-  document.getElementById('dchartCanvas').style.display = (useSvgChart || showChakra) ? 'none' : 'block';
-  document.getElementById('chakraContainer').style.display = showChakra ? 'block' : 'none';
-  document.getElementById('svgChartContainer').style.display = 'none';
-  document.getElementById('chakraOptsBar').style.display = showChakra ? 'flex' : 'none';
-  if(!showChakra) document.getElementById('chakraDetailsPanel').style.display = 'none';
+  if(qs('btnToggleChakra')) qs('btnToggleChakra').classList.toggle('active', showChakra);
+  if(qs('btnToggleSvg')) qs('btnToggleSvg').classList.remove('active');
+  setDisp('dchartCanvas',(useSvgChart || showChakra) ? 'none' : 'block');
+  setDisp('chakraContainer', showChakra ? 'block' : 'none');
+  setDisp('svgChartContainer','none');
+  setDisp('chakraOptsBar', showChakra ? 'flex' : 'none');
+  if(!showChakra){ setDisp('chakraDetailsPanel','none'); closeChakraFloat(true); }
   renderAll();
 });
-// ── Chakra chart controls: reference chart, transit/nakshatra/varga toggles, fullscreen ──
-document.getElementById('chakraRefSel').addEventListener('change',(e)=>{
-  chakraRefMode = e.target.value; renderAll();
-});
-document.getElementById('chkChakraTransit').addEventListener('change',(e)=>{
-  chakraShowTransit = e.target.checked; renderAll();
-});
-document.getElementById('chkChakraNak').addEventListener('change',(e)=>{
-  chakraShowNak = e.target.checked; renderAll();
-});
-document.getElementById('chkChakraVarga').addEventListener('change',(e)=>{
-  chakraShowVarga = e.target.checked; renderAll();
-});
-document.getElementById('btnChakraFullscreen').addEventListener('click',()=>{
-  const wrap = document.getElementById('chakraFsWrap');
-  if (document.fullscreenElement || document.webkitFullscreenElement) {
-    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-  } else if (wrap.requestFullscreen) {
-    wrap.requestFullscreen();
-  } else if (wrap.webkitRequestFullscreen) {
-    wrap.webkitRequestFullscreen();
+
+// ── Chakra chart controls: reference chart, transit/nakshatra/varga toggles ──
+if(qs('chakraRefSel')) qs('chakraRefSel').addEventListener('change',(e)=>{ chakraRefMode = e.target.value; renderAll(); });
+if(qs('chkChakraTransit')) qs('chkChakraTransit').addEventListener('change',(e)=>{ chakraShowTransit = e.target.checked; renderAll(); });
+if(qs('chkChakraNak')) qs('chkChakraNak').addEventListener('change',(e)=>{ chakraShowNak = e.target.checked; renderAll(); });
+if(qs('chkChakraVarga')) qs('chkChakraVarga').addEventListener('change',(e)=>{ chakraShowVarga = e.target.checked; renderAll(); });
+if(qs('chkChakraAspects')) qs('chkChakraAspects').addEventListener('change',(e)=>{ chakraShowAspects = e.target.checked; renderAll(); });
+// ── Floating / Full-Screen Chakra Window ──
+let chakraFloatOpen = false;
+function openChakraFloat(){
+  const wrap = qs('chakraFsWrap'), details = qs('chakraDetailsPanel'), body = qs('chakraFloatBody'),
+        win = qs('chakraFloatWin'), anchor = qs('chakraFloatAnchor');
+  if(!wrap || !body || !win || !anchor) return;
+  if(chakraFloatOpen) return;
+  anchor.appendChild(wrap);           // keep a place to dock back to
+  if(details) anchor.appendChild(details);
+  body.appendChild(wrap);
+  if(details) body.appendChild(details);
+  wrap.style.width='100%'; wrap.style.height='auto'; wrap.style.maxWidth='';
+  win.style.display='flex';
+  if(details) details.style.display='grid';
+  chakraFloatOpen = true;
+  renderAll();
+}
+function closeChakraFloat(silent){
+  const wrap = qs('chakraFsWrap'), details = qs('chakraDetailsPanel'), win = qs('chakraFloatWin'),
+        dwheel = document.querySelector('.dwheel-wrap')?.parentElement;
+  if(!chakraFloatOpen){ if(win) win.style.display='none'; return; }
+  if(document.fullscreenElement) { try{ document.exitFullscreen(); }catch(e){} }
+  win.classList.remove('chakra-maximized');
+  win.style.display='none';
+  // Dock the wheel + details panel back to their original slot (right before chakraOptsBar's next sibling)
+  const optsBar = qs('chakraOptsBar');
+  if (optsBar && optsBar.parentElement && wrap) {
+    optsBar.parentElement.insertBefore(wrap, optsBar.nextSibling);
+    if (details) optsBar.parentElement.insertBefore(details, wrap.nextSibling);
   }
+  chakraFloatOpen = false;
+  if(!silent) renderAll();
+}
+if(qs('btnChakraFullscreen')) qs('btnChakraFullscreen').addEventListener('click', openChakraFloat);
+if(qs('btnChakraFloatClose')) qs('btnChakraFloatClose').addEventListener('click', ()=>closeChakraFloat(false));
+if(qs('btnChakraFloatDock')) qs('btnChakraFloatDock').addEventListener('click', ()=>closeChakraFloat(false));
+if(qs('btnChakraFloatMax')) qs('btnChakraFloatMax').addEventListener('click', ()=>{
+  const win = qs('chakraFloatWin'); if(!win) return;
+  win.classList.toggle('chakra-maximized');
+});
+if(qs('btnChakraFloatOsFs')) qs('btnChakraFloatOsFs').addEventListener('click', ()=>{
+  const win = qs('chakraFloatWin'); if(!win) return;
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
+  } else if (win.requestFullscreen) {
+    win.requestFullscreen().catch(()=>{ win.classList.add('chakra-maximized'); });
+  } else if (win.webkitRequestFullscreen) {
+    win.webkitRequestFullscreen();
+  } else {
+    win.classList.add('chakra-maximized'); // fallback if the Fullscreen API is unavailable
+  }
+});
+// Drag-to-move for the floating window (only while not maximized/fullscreen)
+(function initChakraDrag(){
+  const header = qs('chakraFloatHeader'), win = qs('chakraFloatWin');
+  if(!header || !win) return;
+  let dragging=false, ox=0, oy=0;
+  header.addEventListener('mousedown', (e)=>{
+    if (win.classList.contains('chakra-maximized') || document.fullscreenElement) return;
+    dragging=true; ox = e.clientX - win.offsetLeft; oy = e.clientY - win.offsetTop;
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove',(e)=>{
+    if(!dragging) return;
+    win.style.left = Math.max(0, e.clientX - ox) + 'px';
+    win.style.top = Math.max(0, e.clientY - oy) + 'px';
+  });
+  document.addEventListener('mouseup', ()=>{ dragging=false; });
+})();
+window.addEventListener('fullscreenchange', ()=>{
+  const win = qs('chakraFloatWin');
+  if(win && !document.fullscreenElement) win.classList.remove('chakra-maximized');
 });
 // ═══════════════════════════════════════════════════════════
 //  SAVED PROFILES (localStorage)
@@ -5387,10 +5467,22 @@ let chakraRefMode = 'lagna';       // 'lagna' | 'moon' | 'sun'
 let chakraShowTransit = false;
 let chakraShowNak = true;
 let chakraShowVarga = true;
+let chakraShowAspects = false;
+// Vedic (Parashari) drishti rules, given as sign-steps from the planet's own sign:
+// every planet has the universal 7th-house aspect; Mars/Jupiter/Saturn get extra special aspects.
+// Rahu/Ketu are kept to the universal 7th aspect only here — classical texts differ on whether
+// the shadow planets carry Jupiter/Saturn-style special aspects, so this stays with the
+// uncontested baseline rather than picking one convention.
+const ASPECT_STEPS = {
+  Sun:[6], Moon:[6], Mercury:[6], Venus:[6], Rahu:[6], Ketu:[6],
+  Mars:[3,6,7],       // 4th, 7th, 8th house aspects
+  Jupiter:[4,6,8],    // 5th, 7th, 9th house aspects
+  Saturn:[2,6,9]      // 3rd, 7th, 10th house aspects
+};
 const asRashi = SIGNS;
 const signs = SIGNS;
-const s_nakshatra = NAK_NAMES; // legacy reference (lord lookup now uses NAK_LORD_SEQ, see determineNakshatra)
-
+//const s_nakshatra = NAK_NAMES; // legacy reference (lord lookup now uses NAK_LORD_SEQ, see determineNakshatra)
+const s_nakshatra = NAK_NAMES.map((n, i) => `${n}-${PFNS[['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'][i % 9]] ? ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'][i % 9] : 'Lord'}`);
 function fix360(a){ return ((a % 360) + 360) % 360; }
 
 // Correct Vimshottari nakshatra-lord cycle: Ashwini->Ketu, Bharani->Venus, Krittika->Sun... (repeats x3)
@@ -5436,7 +5528,7 @@ function buildChakraData(refMode){
 
 function generateChakraChartSVG(dataOrChartData, opts) {
   // Backward compatible with the old call shape: generateChakraChartSVG([{sid,p}, ...])
-  let natal, transit=[], refSignIdx=0, refLabel='Lagna Chart', showTransit=false, showNak=true, showVarga=true;
+  let natal, transit=[], refSignIdx=0, refLabel='Lagna Chart', showTransit=false, showNak=true, showVarga=true, showAspects=false;
   if (Array.isArray(dataOrChartData)) {
     natal = dataOrChartData.map(d=>({ p:d.p, tx:PLANET_ABBR2[d.p]||(d.p||'').substring(0,2), sid:d.sid,
                                        isAsc:(d.p==='As'||d.p==='Asc') }));
@@ -5446,6 +5538,7 @@ function generateChakraChartSVG(dataOrChartData, opts) {
   }
   if (opts){
     showTransit = !!opts.showTransit; showNak = opts.showNak!==false; showVarga = opts.showVarga!==false;
+    showAspects = !!opts.showAspects;
     if (opts.transit) transit = opts.transit;
     if (opts.refSignIdx!==undefined) refSignIdx = opts.refSignIdx;
     if (opts.refLabel) refLabel = opts.refLabel;
@@ -5464,8 +5557,8 @@ function generateChakraChartSVG(dataOrChartData, opts) {
     return signAngle(sn) + (degIn/30)*w;
   };
 
-  const R = { rashiIn:34, rashiOut:92, natalIn:92, natalOut:150, transitIn:150, transitOut:182,
-              nakIn:182, nakOut:216, nlIn:216, nlOut:246, vargaIn:246, vargaOut:278, outer:280 };
+  const R = { rashiIn:32, rashiOut:86, natalIn:86, natalOut:138, transitIn:138, transitOut:166,
+              nakIn:166, nakOut:196, nlIn:196, nlOut:222, vargaIn:222, vargaOut:250, outer:252 };
 
   let svg = `<svg viewBox="-300 -300 600 600" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="background:#fff;border-radius:8px;">`;
   svg += `<style>
@@ -5537,7 +5630,26 @@ function generateChakraChartSVG(dataOrChartData, opts) {
     }
   }
   svg += `<circle cx="0" cy="0" r="${R.outer}" class="ring" style="stroke:#333;stroke-width:1.2;"/>`;
-
+// ══ Vedic Aspects (Drishti) — chords between an aspecting planet and every sign it aspects ══
+  const aspectList = []; // collected for the legend / details panel caller
+  if (showAspects){
+    const anchorR = R.rashiIn + 14; // inner band so lines stay clear of the rashi-ring text
+    natal.filter(p=>!p.isAsc).forEach(p=>{
+      const steps = ASPECT_STEPS[p.p]; if(!steps) return;
+      const srcAngle = lonAngle(p.sid);
+      const src = getCoords(anchorR, srcAngle);
+      const col = PCFG[p.p] ? PCFG[p.p].color : '#8a5cff';
+      steps.forEach(step=>{
+        const targetSign = (p.sn + step) % 12;
+        const targetMid = signAngle(targetSign) + w/2;
+        const dst = getCoords(anchorR, targetMid);
+        const isSeventh = (step===6);
+        aspectList.push({ from:p.p, toSign:SIGNS[targetSign], houseOffset: step+1 });
+        svg += `<line x1="${src.x}" y1="${src.y}" x2="${dst.x}" y2="${dst.y}" stroke="${col}" stroke-width="${isSeventh?0.9:1.3}" stroke-opacity="0.55" ${isSeventh?'':'stroke-dasharray="3,2"'}/>`;
+        svg += `<circle cx="${dst.x}" cy="${dst.y}" r="2.1" fill="${col}" fill-opacity="0.8"/>`;
+      });
+    });
+  }
   // ══ Transit planets (toggle) ══
   if (showTransit && transit && transit.length){
     transit.forEach(p=>{
@@ -5565,7 +5677,25 @@ function generateChakraChartSVG(dataOrChartData, opts) {
   // ══ Center ══
   svg += `<text x="0" y="-6" class="om-symbol">ॐ</text>`;
   svg += `<text x="0" y="15" class="ref-label">${refLabel}</text>`;
+  // ══ Always-on ASC / MOON / SUN outer-ring pointers ══
+  // Shown regardless of the chosen reference chart, so you can see all three
+  // lagna points (Ascendant, Chandra Lagna, Surya Lagna) at a glance.
+  const keyPoints=[];
+  const ascNat = natal.find(p=>p.isAsc);
+  if (ascNat) keyPoints.push({ label:'ASC', sid:ascNat.sid, col:'#c98b00' });
+  const moonNat = natal.find(p=>p.p==='Moon');
+  if (moonNat) keyPoints.push({ label:'MOON', sid:moonNat.sid, col:'#4d7dff' });
+  const sunNat = natal.find(p=>p.p==='Sun');
+  if (sunNat) keyPoints.push({ label:'SUN', sid:sunNat.sid, col:'#ff8c1a' });
+  keyPoints.forEach(kp=>{
+    const a=lonAngle(kp.sid);
+    const p1=getCoords(R.outer,a), p2=getCoords(R.outer+10,a);
+    svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="${kp.col}" stroke-width="2.2"/>`;
+    const tp=getCoords(R.outer+22,a);
+    svg += `<text x="${tp.x}" y="${tp.y}" font-size="7.5" font-weight="800" fill="${kp.col}" text-anchor="middle" transform="rotate(${a+90} ${tp.x} ${tp.y})">${kp.label}</text>`;
+  });
   svg += `</svg>`;
+  window._lastChakraAspects = aspectList;
   return svg;
 }
 
@@ -5586,6 +5716,13 @@ function renderChakraDetailsPanel(built){
   if(chakraShowTransit && built.transit && built.transit.length){
     built.transit.forEach(p=>{
       rows += `<div class="cd-row cd-transit"><b>${p.p} (transit)</b> ${p.retro?'℞':''}<br>${SIGNS[p.sn]} ${fmtDeg(fix360(p.sid)%30)} · H${p.house}<br>${p.nak||''} Pd${p.pada||''} · NL:${p.nl||''} SL:${p.sl||''}</div>`;
+    });
+  }
+  if(chakraShowAspects && window._lastChakraAspects && window._lastChakraAspects.length){
+    const byPlanet={};
+    window._lastChakraAspects.forEach(a=>{ (byPlanet[a.from]=byPlanet[a.from]||[]).push(`${a.toSign} (${a.houseOffset}th)`); });
+    Object.entries(byPlanet).forEach(([pl,list])=>{
+      rows += `<div class="cd-row" style="border-left:3px solid #8a5cff;"><b>☍ ${pl} aspects</b><br>${list.join(', ')}</div>`;
     });
   }
   el.innerHTML = rows;
@@ -5805,10 +5942,12 @@ function renderAll(){
   updateRange();
   if(showChakra) {
   const built = buildChakraData(chakraRefMode);
-    document.getElementById('chakraContainer').innerHTML = generateChakraChartSVG(built, {
-      showTransit: chakraShowTransit, showNak: chakraShowNak, showVarga: chakraShowVarga
+    const cc = document.getElementById('chakraContainer');
+    if (cc) cc.innerHTML = generateChakraChartSVG(built, {
+      showTransit: chakraShowTransit, showNak: chakraShowNak, showVarga: chakraShowVarga, showAspects: chakraShowAspects
     });
-    document.getElementById('chakraDetailsPanel').style.display = 'grid';
+    const dp = document.getElementById('chakraDetailsPanel');
+    if (dp) dp.style.display = 'grid';
     renderChakraDetailsPanel(built);
   } else if(useSvgChart) renderSvgChart();
   else drawDChart('dchartCanvas');
@@ -6383,6 +6522,13 @@ function runBusinessAnalysis() {
       console.log('D9 BUSINESS TYPE RENDERED');
     }
   } catch(e) { console.error('D9 BUSINESS TYPE FAIL', e); }
+  // 1.62b 88TH NAVAMSA (ASHTASHITI NAVAMSA) CAREER CAUTION
+  try {
+    if (BIRTH_PLANETS && BIRTH_ASC && typeof renderNavamsa88BusinessSection === 'function') {
+      el.innerHTML += renderNavamsa88BusinessSection(BIRTH_PLANETS, BIRTH_ASC);
+      console.log('88TH NAVAMSA BUSINESS SECTION RENDERED');
+    }
+  } catch(e) { console.error('88TH NAVAMSA BUSINESS SECTION FAIL', e); }
   // 1.63 ASHTAKAVARGA BUSINESS SECRETS (Poshak Khanda, effort-vs-income, work rhythm, savings vs investment, rivals vs growth)
   try {
     if (BIRTH_PLANETS && BIRTH_ASC && window.ASHTAKVARGA_SECRETS_DISPLAY && window.ASHTAKVARGA) {
@@ -6393,10 +6539,12 @@ function runBusinessAnalysis() {
 // 1.65 PANCHANG + BUSINESS MUHURTA + AUSPICIOUS CALENDAR GENERATOR
   try {
     if (window.PANCHANG_ENGINE && window.BUSINESS_MUHURTA && window.BIRTH) {
-      var bmPanchang = window.PANCHANG_ENGINE.compute(new Date(), window.BIRTH.lat, window.BIRTH.lon, window.BIRTH.utcOff);
-      el.innerHTML += window.BUSINESS_MUHURTA.renderPanchangPanel(bmPanchang);
-      el.innerHTML += window.BUSINESS_MUHURTA.renderBusinessMuhurtaPanel(bmPanchang);
+      el.innerHTML += window.BUSINESS_MUHURTA.renderDateTimePickerUI(new Date());
       el.innerHTML += window.BUSINESS_MUHURTA.renderCalendarGeneratorUI();
+      // Buttons/inputs only exist in the DOM now that the HTML above has been inserted, so wire them up here.
+      // wireDateTimePicker also performs the initial Panchang/Business-Muhurta render (defaulting to "now")
+      // and lets the user recalculate for any other date/time afterwards.
+      window.BUSINESS_MUHURTA.wireDateTimePicker({ lat: window.BIRTH.lat, lon: window.BIRTH.lon, utcOffsetHours: window.BIRTH.utcOff });
       // Buttons only exist in the DOM now that the HTML above has been inserted, so wire them up here.
       window.BUSINESS_MUHURTA.wireCalendarGenerator({ lat: window.BIRTH.lat, lon: window.BIRTH.lon, utcOffsetHours: window.BIRTH.utcOff });
       console.log('PANCHANG / BUSINESS MUHURTA / CALENDAR GENERATOR RENDERED');

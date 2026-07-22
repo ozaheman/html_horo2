@@ -1548,6 +1548,221 @@ window.YOGAS_DATA = [
     deities: ['Satya (Vasu)', 'Mercury'],
     keywords: ['Truth', 'Honesty', 'Justice'],
     evaluate: (c) => false,
+    },
+
+  // ========== PROPERTY YOGAS (Real Estate / Griha Yogas) ==========
+  // Source: classical property-yoga principles (4th house = home/property)
+  // covering (1) a beautiful/comfortable house, (2) multiple large
+  // mansions, (3) effortless acquisition via Lagna/7th lord, (4) effortless
+  // acquisition via 9th lord + 4th lord dignity, and (5) the negative
+  // "Graha Nash Yoga" where property is acquired but does not stay.
+
+  {
+    name: "Bhavya Bhoomi Yoga",
+    category: 'Property',
+    description: "4th Lord placed in a Kendra (1,4,7,10) or Trikona (1,5,9) house, conjunct with or aspected by a natural benefic (Jupiter, Venus, Mercury or Moon)",
+    result: "Native acquires a beautiful, spacious and comfortable house or property in life, generally without excessive struggle.",
+    effect: "Strong 4th Lord blessed by benefic influence brings a good quality home/property, often earlier in life than average.",
+    quality: "Positive",
+    strength: 'Strong',
+    varga: 1,
+    remedies: ['Perform Vastu Puja / Bhoomi Puja before construction or purchase', 'Donate white items on Mondays for domestic comfort', 'Keep the north-east corner of the home clean and well-lit', 'Strengthen the 4th Lord through its ruling mantra/gemstone'],
+    mantras: ['Om Bhoomi Devyai Namaha', 'Vastu Shanti Mantra'],
+    deities: ['Vastu Purush', 'Bhoomi Devi'],
+    keywords: ['Property', 'House', 'Comfort', '4th Lord'],
+    evaluate: (c) => {
+      if (!c.planets || !c.asc) return false;
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
+      const benefics = window.ASTRO_CONSTANTS.BENEFICS;
+      const ascSn = c.asc.sn || 0;
+      const lord4 = getSignLord(signNames[(ascSn + 3) % 12]);
+      const p4 = c.planets[lord4];
+      if (!p4) return false;
+
+      const kendraTrikona = [1, 4, 5, 7, 9, 10];
+      if (!kendraTrikona.includes(p4.house)) return false;
+
+      const ASPECT_HOUSES = { Mars: [4, 7, 8], Jupiter: [5, 7, 9], Saturn: [3, 7, 10] };
+      let conjBenefic = null, aspectingBenefic = null;
+
+      benefics.forEach(b => {
+        if (b === lord4) return;
+        const bp = c.planets[b];
+        if (!bp) return;
+        if (bp.sn === p4.sn && Math.abs((bp.deg || 0) - (p4.deg || 0)) <= 8) conjBenefic = b;
+        const rules = ASPECT_HOUSES[b] || [7];
+        const diff = ((p4.house - bp.house + 12) % 12) + 1;
+        if (rules.includes(diff)) aspectingBenefic = b;
+      });
+
+      if (conjBenefic || aspectingBenefic) {
+        const via = conjBenefic ? `conjunct with ${conjBenefic}` : `aspected by ${aspectingBenefic}`;
+        return { result: true, rationale: `4th Lord ${lord4} is placed in House ${p4.house} (Kendra/Trikona) and is ${via} — a benefic influence on the house of property.` };
+      }
+      return false;
+    }
+  },
+
+  {
+    name: "Vichitra Saudha Yoga",
+    category: 'Property',
+    description: "Rare combination where the 4th Lord, 10th Lord, Saturn and Mars (as many of these as are distinct planets) all conjoin together in one sign",
+    result: "Indicates ownership of more than one large house/mansion — in modern terms, multiple big properties or a palatial residence.",
+    effect: "A rare, very strong property yoga; native tends to accumulate substantial real estate/landed property over a lifetime.",
+    quality: "Positive",
+    strength: 'Very Strong',
+    varga: 1,
+    remedies: ['Charitable donation of land or shelter to the needy to sustain the yoga\'s fruits', 'Worship Mars (Tuesdays) and Saturn (Saturdays) together for stability of assets', 'Maintain proper legal documentation for every property acquired'],
+    mantras: ['Om Bhaumaya Namaha', 'Om Sham Shanicharaya Namaha'],
+    deities: ['Mars', 'Saturn', 'Bhoomi Devi'],
+    keywords: ['Property', 'Mansion', 'Multiple Houses', 'Real Estate'],
+    evaluate: (c) => {
+      if (!c.planets || !c.asc) return false;
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
+      const ascSn = c.asc.sn || 0;
+      const lord4 = getSignLord(signNames[(ascSn + 3) % 12]);
+      const lord10 = getSignLord(signNames[(ascSn + 9) % 12]);
+      const requiredPlanets = Array.from(new Set([lord4, lord10, 'Saturn', 'Mars']));
+      if (requiredPlanets.length < 3) return false;
+
+      const positions = requiredPlanets.map(p => c.planets[p]).filter(Boolean);
+      if (positions.length !== requiredPlanets.length) return false;
+
+      const firstSn = positions[0].sn;
+      const allSameSign = positions.every(p => p.sn === firstSn);
+      if (allSameSign) {
+        return { result: true, rationale: `${requiredPlanets.join(', ')} are conjunct together in ${positions[0].sign} — a rare combination indicating ownership of multiple large properties/mansions.` };
+      }
+      return false;
+    }
+  },
+
+  {
+    name: "Ayatna Griha Prapti Yoga",
+    category: 'Property',
+    description: "Lagna Lord and 7th Lord both placed in Lagna (1st) or 4th house; the strength of the yoga depends on whether a benefic also aspects them",
+    result: "Native acquires home and property with relative ease; if no benefic aspects the two lords, property still comes but only after extra effort.",
+    effect: "Placement of both key lords in Lagna/4th links self and partnerships directly to the house of property.",
+    quality: "Positive",
+    strength: 'Moderate',
+    varga: 1,
+    remedies: ['Strengthen the Lagna Lord through its ruling mantra/colour/gemstone', 'Keep the home entrance (main door) clean, well-lit and clutter-free', 'Perform Ganesh Puja before initiating any property-related effort'],
+    mantras: ['Om Gam Ganapataye Namaha'],
+    deities: ['Ganesha', 'Vastu Purush'],
+    keywords: ['Property', 'Lagna Lord', '7th Lord', 'Acquisition'],
+    evaluate: (c) => {
+      if (!c.planets || !c.asc) return false;
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
+      const benefics = window.ASTRO_CONSTANTS.BENEFICS;
+      const ascSn = c.asc.sn || 0;
+      const lagnaLord = getSignLord(signNames[ascSn % 12]);
+      const lord7 = getSignLord(signNames[(ascSn + 6) % 12]);
+      const pL = c.planets[lagnaLord];
+      const p7 = c.planets[lord7];
+      if (!pL || !p7) return false;
+
+      const placementOk = [1, 4].includes(pL.house) && [1, 4].includes(p7.house);
+      if (!placementOk) return false;
+
+      const ASPECT_HOUSES = { Mars: [4, 7, 8], Jupiter: [5, 7, 9], Saturn: [3, 7, 10] };
+      const isAspectedByBenefic = (target) => benefics.some(b => {
+        const bp = c.planets[b];
+        if (!bp || bp === target) return false;
+        const rules = ASPECT_HOUSES[b] || [7];
+        const diff = ((target.house - bp.house + 12) % 12) + 1;
+        return rules.includes(diff);
+      });
+
+      const bothAspected = isAspectedByBenefic(pL) && isAspectedByBenefic(p7);
+
+      if (bothAspected) {
+        return { result: true, rationale: `Lagna Lord (${lagnaLord}) and 7th Lord (${lord7}) both occupy Lagna/4th house and are aspected by benefics — property comes with ease and with little effort.` };
+      }
+      return { result: true, rationale: `Lagna Lord (${lagnaLord}) and 7th Lord (${lord7}) both occupy Lagna/4th house, but lack a full benefic aspect — property/home will still come, but only after some extra effort.` };
+    }
+  },
+
+  {
+    name: "Navamsa Sukh Griha Yoga",
+    category: 'Property',
+    description: "9th Lord placed in a Kendra (1,4,7,10) house, while the 4th Lord is in its own sign, exaltation, or Moolatrikona",
+    result: "Native can easily acquire a home and property in their lifetime, without needing to strive for it.",
+    effect: "Fortune (9th house) actively supports the house of property, and the 4th Lord's own dignity makes the outcome stable and lasting.",
+    quality: "Positive",
+    strength: 'Strong',
+    varga: 1,
+    remedies: ['Worship Jupiter (Thursdays) to strengthen the 9th house of fortune', 'Perform charitable acts related to shelter/housing for others', 'Keep ancestral property documents and blessings (Pitru) in good order'],
+    mantras: ['Om Brihaspataye Namaha', 'Om Namo Bhagavate Vasudevaya'],
+    deities: ['Jupiter', 'Vastu Purush'],
+    keywords: ['Property', '9th Lord', '4th Lord', 'Dignity', 'Fortune'],
+    evaluate: (c) => {
+      if (!c.planets || !c.asc) return false;
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
+      const ascSn = c.asc.sn || 0;
+      const lord9 = getSignLord(signNames[(ascSn + 8) % 12]);
+      const lord4 = getSignLord(signNames[(ascSn + 3) % 12]);
+      const p9 = c.planets[lord9];
+      const p4 = c.planets[lord4];
+      if (!p9 || !p4) return false;
+
+      const kendra = [1, 4, 7, 10];
+      if (!kendra.includes(p9.house)) return false;
+
+      const dign = window.ASTRO_CONSTANTS.DIGNITIES[lord4];
+      const mt = window.ASTRO_CONSTANTS.MULATRIKONA[lord4];
+      const isOwn = dign && Array.isArray(dign.own) && dign.own.includes(p4.sn);
+      const isExalt = dign && dign.exalt === p4.sn;
+      const isMT = mt && mt.sign === p4.sn && (p4.deg || 0) >= mt.start && (p4.deg || 0) <= mt.end;
+
+      if (isOwn || isExalt || isMT) {
+        const dignityLabel = isMT ? 'Moolatrikona' : (isExalt ? 'Exaltation' : 'Own sign');
+        return { result: true, rationale: `9th Lord ${lord9} is in a Kendra (House ${p9.house}) and 4th Lord ${lord4} is in its ${dignityLabel} (${p4.sign}) — property/home comes easily and without struggle.` };
+      }
+      return false;
+    }
+  },
+
+  {
+    name: "Griha Nash Yoga",
+    category: 'Property',
+    description: "4th Lord placed in the 3rd house from Lagna (i.e. the 12th house counted from the 4th house itself) and afflicted by a malefic conjunction/aspect",
+    result: "Property is acquired but does not stay with the native — forced sale, bank seizure on a loan-backed property, or transfer out of the native's name.",
+    effect: "The 4th Lord's placement in the 'loss from property' zone, combined with malefic affliction, repeatedly disturbs ownership and retention of real estate.",
+    quality: "Negative",
+    strength: 'Strong',
+    varga: 1,
+    remedies: ['Avoid registering major property purely in your own single name; consider joint/family or trust ownership', 'Strengthen the 4th Lord via its mantra/gemstone before any property purchase', 'Perform Vastu Shanti and Bhoomi Puja before every purchase', 'Keep property-related loans conservative — avoid over-leveraging', 'Get legal documentation thoroughly verified before signing'],
+    mantras: ['Om Namah Shivaya', "4th Lord's beej mantra"],
+    deities: ['Vastu Purush', 'Bhoomi Devi'],
+    keywords: ['Property Loss', '4th Lord', 'Graha Nash', 'Real Estate'],
+    evaluate: (c) => {
+      if (!c.planets || !c.asc) return false;
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
+      const malefics = window.ASTRO_CONSTANTS.MALEFICS;
+      const ascSn = c.asc.sn || 0;
+      const lord4 = getSignLord(signNames[(ascSn + 3) % 12]);
+      const p4 = c.planets[lord4];
+      if (!p4) return false;
+
+      // 12th from the 4th house = the 3rd house from Lagna
+      if (p4.house !== 3) return false;
+
+      const ASPECT_HOUSES = { Mars: [4, 7, 8], Saturn: [3, 7, 10] };
+      const afflicted = malefics.some(m => {
+        if (m === lord4) return false;
+        const mp = c.planets[m];
+        if (!mp) return false;
+        if (mp.sn === p4.sn && Math.abs((mp.deg || 0) - (p4.deg || 0)) <= 8) return true;
+        const rules = ASPECT_HOUSES[m] || [7];
+        const diff = ((p4.house - mp.house + 12) % 12) + 1;
+        return rules.includes(diff);
+      });
+
+      if (afflicted) {
+        return { result: true, rationale: `4th Lord ${lord4} is placed in the 3rd house from Lagna (the 12th house counted from the 4th house) and is afflicted by a malefic — property acquired may not stay; risk of forced sale, loss or transfer out of the native's name.` };
+      }
+      return false;
+    }
   }
 
 ];

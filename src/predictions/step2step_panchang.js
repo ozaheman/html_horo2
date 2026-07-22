@@ -2,7 +2,57 @@
  * Step by Step Panchang & Rotated Kundalis Prediction Module
  * Complete rewrite with proper time display, error handling, and chart rotation
  */
+// ============================================================
+// NAKSHATRA / PADA / CHARAN / KP SUB-LORD HELPER
+// Self-contained so every planet table below can always show
+// Nakshatra, Pada (Charan), and the classical KP Sub-Lord — even if
+// a planet is missing this info from the incoming chart-data object,
+// or if window.getNakshatra / window.determineNakshatra aren't present.
+// ============================================================
+const _S2S_NAK_NAMES = ['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha',
+  'Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha',
+  'Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishta','Shatabhisha','Purva Bhadrapada','Uttara Bhadrapada','Revati'];
+// Fixed Vimshottari lord cycle (also the order nakshatra-lords repeat in: 9 lords x 3 = 27 nakshatras)
+const _S2S_VIMS_ORDER = ['Ketu','Venus','Sun','Moon','Mars','Rahu','Jupiter','Saturn','Mercury'];
+const _S2S_VIMS_YEARS = { Ketu: 7, Venus: 20, Sun: 6, Moon: 10, Mars: 7, Rahu: 18, Jupiter: 16, Saturn: 19, Mercury: 17 };
+const _S2S_VIMS_TOTAL = 120;
 
+/**
+ * Given an absolute sidereal longitude (0-360°), return
+ * { index, name, pada, charan, lord, subLord } for that point.
+ * pada === charan (same 1-4 quarter measure; both are provided since
+ * different traditions/users refer to it by either name).
+ */
+function _s2sGetNakDetails(lonDeg) {
+  const lon = ((Number(lonDeg) || 0) % 360 + 360) % 360;
+  const span = 360 / 27;                 // 13°20' per nakshatra
+  const idx = Math.min(26, Math.floor(lon / span));
+  const within = lon - idx * span;
+  const padaSpan = span / 4;             // 3°20' per pada/charan
+  const pada = Math.min(4, Math.floor(within / padaSpan) + 1);
+
+  const NAKS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.NAKSHATRAS) || null;
+  const nakEntry = (NAKS && NAKS[idx]) ? NAKS[idx] : null;
+  const name = (nakEntry && nakEntry.name) || _S2S_NAK_NAMES[idx];
+  const nakLord = (nakEntry && nakEntry.lord) || _S2S_VIMS_ORDER[idx % 9];
+
+  // KP-style Sub-Lord: split the 13°20' nakshatra span proportionally
+  // by each planet's Vimshottari dasha-years, cycling the fixed 9-lord
+  // order starting from the nakshatra's own lord.
+  let subLord = nakLord;
+  const startIdx = _S2S_VIMS_ORDER.indexOf(nakLord);
+  if (startIdx >= 0) {
+    let cursor = 0;
+    for (let i = 0; i < 9; i++) {
+      const lord = _S2S_VIMS_ORDER[(startIdx + i) % 9];
+      const portion = (_S2S_VIMS_YEARS[lord] / _S2S_VIMS_TOTAL) * span;
+      if (within < cursor + portion + 1e-7) { subLord = lord; break; }
+      cursor += portion;
+    }
+  }
+
+  return { index: idx, name: name, pada: pada, charan: pada, lord: nakLord, subLord: subLord };
+}
 window.STEP2STEP_PANCHANG = {
   analyze: function(planets, ascendant, houses, birthDate, birthConfig) {
     // ============================================================
@@ -297,6 +347,8 @@ const requestedDivs = [
                     <th style="padding:3px 4px; text-align:center;">H</th>
                     <th style="padding:3px 4px; text-align:right;">Deg</th>
                     <th style="padding:3px 4px; text-align:left;">Nakshatra</th>
+                      <th style="padding:3px 4px; text-align:center;">Pada/Charan</th>
+                    <th style="padding:3px 4px; text-align:left;">Sub Lord</th>
                     <th style="padding:3px 4px; text-align:left;">Status</th>
                   </tr>`;
 
@@ -307,8 +359,13 @@ const requestedDivs = [
                 const pSn = pd.sn !== undefined ? pd.sn : (pd.sid !== undefined ? Math.floor(pd.sid/30) : 0);
                 const pSign = _SIGNS_DRAW[pSn] || '?';
                 const pHouse = pd.house || ((pSn - ascSn2 + 12) % 12 + 1);
-                const pDeg = pd.deg !== undefined ? parseFloat(pd.deg).toFixed(1) : (pd.sid !== undefined ? (pd.sid % 30).toFixed(1) : '?');
-                const pNak = pd.nak || '—';
+                const rawDeg = pd.deg !== undefined ? parseFloat(pd.deg) : (pd.sid !== undefined ? (pd.sid % 30) : 0);
+                const pDeg = rawDeg.toFixed(1);
+                const absLon = pd.sid !== undefined ? pd.sid : (pSn * 30 + rawDeg);
+                const nakDetails = _s2sGetNakDetails(absLon);
+                const pNak = pd.nak || nakDetails.name || '—';
+                const pPada = pd.pada || nakDetails.pada || '—';
+                const pSubLord = pd.subLord || pd.sub_lord || nakDetails.subLord || '—';
                 const pStatus = pd.status || (pd.retro ? 'Retro' : '—');
                 const retro = pd.retro ? ' ℞' : '';
                 const color = planetColors[pName] || 'var(--text)';
@@ -318,6 +375,8 @@ const requestedDivs = [
                   <td style="padding:3px 4px; text-align:center; color:var(--gold2);">${pHouse}</td>
                   <td style="padding:3px 4px; text-align:right; font-family:monospace;">${pDeg}°</td>
                   <td style="padding:3px 4px; color:var(--muted);">${pNak}</td>
+                     <td style="padding:3px 4px; text-align:center; color:var(--cyan);">${pPada}/4</td>
+                  <td style="padding:3px 4px; color:var(--gold2); font-weight:bold;">${pSubLord}</td>
                   <td style="padding:3px 4px; color:${pStatus === 'Exalted' ? 'var(--green)' : pStatus === 'Debilitated' ? 'var(--rose)' : 'var(--muted)'};">${pStatus}</td>
                 </tr>`;
               });
@@ -1495,8 +1554,9 @@ if (pMeta.patelStatus) {
             <tr style="color:var(--cyan); border-bottom:1px solid var(--border2);">
                 <th style="padding:4px;">Planet</th>
                 <th style="padding:4px;">Degree</th>
-                <th style="padding:4px;">Nakshatra (Pada)</th>
+              <th style="padding:4px;">Nakshatra (Pada/Charan)</th>
                 <th style="padding:4px;">Lord</th>
+                <th style="padding:4px;">Sub Lord</th>
                 <th style="padding:4px;">Vish Navamsha?</th>
             </tr>
     `;
@@ -1505,14 +1565,23 @@ if (pMeta.patelStatus) {
             let lon = planets[p].sid !== undefined ? planets[p].sid : planets[p].longitude;
             let degStr = (lon % 30).toFixed(2) + "°";
             let nakInfoLocal = (typeof window.determineNakshatra === 'function') ? window.determineNakshatra(lon) : {name:'-', pada:'-', lord:'-'};
-            
+            if (!nakInfoLocal || nakInfoLocal.name === '-') {
+                nakInfoLocal = window.getNakshatra ? window.getNakshatra(lon) : {name:'-', pada:'-', lord:'-'};
+            }
+            // Fill in anything still missing (pada/charan/sub-lord) using the
+            // self-contained calculator so no planet is left without full details.
+            const nakFallback = _s2sGetNakDetails(lon);
+            const nakName = (nakInfoLocal && nakInfoLocal.name && nakInfoLocal.name !== '-') ? nakInfoLocal.name : nakFallback.name;
+            const nakPada = (nakInfoLocal && nakInfoLocal.pada && nakInfoLocal.pada !== '-') ? nakInfoLocal.pada : nakFallback.pada;
+            const nakLord = (nakInfoLocal && nakInfoLocal.lord && nakInfoLocal.lord !== '-') ? nakInfoLocal.lord : nakFallback.lord;
+            const nakSubLord = (nakInfoLocal && (nakInfoLocal.subLord || nakInfoLocal.sub_lord)) || nakFallback.subLord;
             let isVish = '-';
             if (navData && navData.vishPlanets) {
                 let vp = navData.vishPlanets.find(v => v.name === p);
                 if (vp) isVish = `<span style="color:#ff4757;font-weight:bold;">Yes${vp.sunHora ? ' (Sun Hora)' : ''}</span>`;
             }
             
-            html += `<tr><td style="padding:4px;">${p}</td><td style="padding:4px; font-family:monospace;">${degStr}</td><td style="padding:4px;">${nakInfoLocal.name} (${nakInfoLocal.pada})</td><td style="padding:4px;">${nakInfoLocal.lord}</td><td style="padding:4px;">${isVish}</td></tr>`;
+           html += `<tr><td style="padding:4px;">${p}</td><td style="padding:4px; font-family:monospace;">${degStr}</td><td style="padding:4px;">${nakName} (${nakPada})</td><td style="padding:4px;">${nakLord}</td><td style="padding:4px; color:var(--gold2); font-weight:bold;">${nakSubLord}</td><td style="padding:4px;">${isVish}</td></tr>`;
         }
     });
     html += `</table></div>`;
@@ -1789,11 +1858,88 @@ if (pMeta.patelStatus) {
     // 13. RASHI PARIVARTAN & DUAL LORDSHIP PRIORITY
     // ============================================================
     html += buildParivartanAndDualLordshipSection(planets, ascendant, SIGNS, LORDS);
+// ============================================================
+    // 14. 88TH NAVAMSA (ASHTASHITI NAVAMSA) ANALYSIS
+    // ============================================================
+    try {
+      if (typeof window.NAVAMSA_88 === 'object' && window.NAVAMSA_88.renderStep2StepHTML) {
+        html += window.NAVAMSA_88.renderStep2StepHTML(planets, ascData);
+      }
+    } catch (e) {
+      console.warn('88th Navamsa analysis failed:', e);
+    }
 
+    // ============================================================
+    // 15. PROPERTY (GRIHA) YOGA ANALYSIS
+    // ============================================================
+    try {
+      html += buildPropertyYogaSection(planets, ascData, SIGNS, LORDS);
+    } catch (e) {
+      console.warn('Property Yoga analysis failed:', e);
+    }
     return html;
   }
 };
+/**
+ * Detects and renders all Property/Griha yogas (category === 'Property')
+ * present in the D1 chart. Relies on window.YOGAS_DATA / detectAllYogasInChart
+ * being loaded (yogas_data.js + yoga_engine.js).
+ */
+function buildPropertyYogaSection(planets, ascData, SIGNS, LORDS) {
+  let html = `<div class="pred-item" style="border-left: 3px solid #8B5CF6; margin-top:20px;">
+        <div class="pred-title" style="color:#8B5CF6; font-size:14px; text-align:center;">🏠 Property (Griha) Yoga Analysis</div>
+        <div style="font-size:10px; color:var(--muted); text-align:center; margin-bottom:15px;">What kind of house/property you receive, when, and whether it stays with you — based on 4th house/4th lord combinations</div>`;
 
+  if (typeof window.YOGAS_DATA === 'undefined' || !Array.isArray(window.YOGAS_DATA)) {
+    return html + `<div style="font-size:10px;color:var(--muted);">Yoga database not loaded.</div></div>`;
+  }
+
+  const chart = { planets: planets, asc: ascData };
+  const propertyYogas = window.YOGAS_DATA.filter(y => y && y.category === 'Property');
+
+  const detected = [];
+  const reference = [];
+
+  propertyYogas.forEach(y => {
+    try {
+      const res = typeof y.evaluate === 'function' ? y.evaluate(chart) : false;
+      const isTrue = (res === true) || (res && typeof res === 'object' && res.result);
+      if (isTrue) {
+        detected.push({ yoga: y, rationale: (res && res.rationale) ? res.rationale : '' });
+      } else {
+        reference.push(y);
+      }
+    } catch (e) {
+      console.warn('Error evaluating property yoga', y && y.name, e);
+    }
+  });
+
+  if (detected.length === 0) {
+    html += `<div style="font-size:10.5px;color:var(--muted);padding:10px;text-align:center;">No specific property yoga combination was detected in this chart from the checked set.</div>`;
+  } else {
+    detected.forEach(d => {
+      const y = d.yoga;
+      const qColor = y.quality === 'Positive' ? 'var(--green)' : (y.quality === 'Negative' ? 'var(--rose)' : 'var(--gold)');
+      html += `<div style="background:rgba(139,92,246,0.06);border:1px solid var(--border);border-left:3px solid ${qColor};border-radius:4px;padding:10px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <h4 style="color:var(--gold);font-size:11.5px;margin:0;">${y.name}</h4>
+          <span style="font-size:9px;padding:2px 6px;border-radius:2px;background:${qColor}22;color:${qColor};">${y.quality}</span>
+        </div>
+        <div style="font-size:9.5px;color:var(--cyan);font-style:italic;margin-bottom:4px;">${y.description}</div>
+        ${d.rationale ? `<div style="background:rgba(0,188,212,0.08);padding:5px;border-radius:3px;margin:4px 0;font-size:9.5px;color:var(--cyan);border-left:2px solid var(--cyan);"><b>Why:</b> ${d.rationale}</div>` : ''}
+        <div style="font-size:10px;color:var(--text);line-height:1.4;margin-top:4px;"><b>Result:</b> ${y.result}</div>
+        ${y.remedies && y.remedies.length ? `<div style="font-size:9px;color:var(--muted);margin-top:6px;"><b style="color:var(--gold2);">Remedies:</b> ${y.remedies.join('; ')}</div>` : ''}
+      </div>`;
+    });
+  }
+
+  if (reference.length > 0) {
+    html += `<div style="margin-top:8px;font-size:8.5px;color:var(--muted);">Checked but not present: ${reference.map(y => y.name).join(', ')}</div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
 function buildParivartanAndDualLordshipSection(planets, ascSn, SIGNS, LORDS) {
     let pList = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'];
     
@@ -2320,7 +2466,8 @@ function buildTaraChakraAndMoolTrikonaSection(planets, ascendant, SIGNS, LORDS) 
   html += `<table style="width:100%; font-size:10px; color:var(--text); text-align:left; border-collapse: collapse; margin-bottom:15px;">
         <tr style="color:var(--cyan); border-bottom:1px solid var(--border2);">
             <th style="padding:4px;">Planet</th>
-            <th style="padding:4px;">Nakshatra (Pada)</th>
+           <th style="padding:4px;">Nakshatra (Pada/Charan)</th>
+            <th style="padding:4px;">Sub Lord</th>
             <th style="padding:4px;">Tara (1-9)</th>
             <th style="padding:4px;">Name</th>
             <th style="padding:4px;">Experience Modifier</th>
@@ -2338,6 +2485,12 @@ function buildTaraChakraAndMoolTrikonaSection(planets, ascendant, SIGNS, LORDS) 
           if (nakInfoLocal.name === '-') {
             nakInfoLocal = window.getNakshatra ? window.getNakshatra(lon) : {name:'-', pada:'-', lord:'-'};
           }
+          // Ensure pada/charan and sub-lord are always available, even if the
+          // external helpers above don't supply them.
+          const nakFallback = _s2sGetNakDetails(lon);
+          const nakName = (nakInfoLocal && nakInfoLocal.name && nakInfoLocal.name !== '-') ? nakInfoLocal.name : nakFallback.name;
+          const nakPada = (nakInfoLocal && nakInfoLocal.pada && nakInfoLocal.pada !== '-') ? nakInfoLocal.pada : nakFallback.pada;
+          const nakSubLord = (nakInfoLocal && (nakInfoLocal.subLord || nakInfoLocal.sub_lord)) || nakFallback.subLord;
 
           const tInfo = taraNames[category - 1];
           taraMap[p] = { category: category, info: tInfo };
@@ -2348,7 +2501,8 @@ function buildTaraChakraAndMoolTrikonaSection(planets, ascendant, SIGNS, LORDS) 
           
           html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
               <td style="padding:4px; font-weight:bold;">${p}</td>
-              <td style="padding:4px;">${nakInfoLocal.name} (${nakInfoLocal.pada})</td>
+              <td style="padding:4px;">${nakName} (${nakPada})</td>
+              <td style="padding:4px; color:var(--gold2); font-weight:bold;">${nakSubLord}</td>
               <td style="padding:4px; color:${color}; font-weight:bold;">${category}</td>
               <td style="padding:4px; color:${color};">${tInfo.name}</td>
               <td style="padding:4px;" title="${tInfo.desc}">${tInfo.effect}</td>

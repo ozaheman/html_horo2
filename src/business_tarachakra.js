@@ -567,3 +567,24 @@ function renderD9BusinessType(planets, ascSignNum, LORDS, SIGNS, getVargaSignFn)
     </div>
   </div>`;
 }
+/**
+ * 88th Navamsa (Ashtashiti Navamsa) — Business/Career Caution Section
+ * Wraps window.NAVAMSA_88 (src/navamsa88.js) for the Business panel.
+ * Flags any 10th/11th house planet whose Navamsha falls in the D9 4th
+ * house, and tells the native which career/business domain to avoid
+ * building their primary identity around.
+ *
+ * @param planets - {PlanetName: {sid or longitude, house, sn, deg, ...}}
+ * @param ascendant - ascendant object/number (sn+deg, or absolute longitude)
+ */
+function renderNavamsa88BusinessSection(planets, ascendant) {
+  if (typeof window.NAVAMSA_88 === 'undefined' || !window.NAVAMSA_88.renderBusinessHTML) {
+    return `<div class="pred-item" style="color:var(--muted);font-size:9px;">88th Navamsa module not loaded.</div>`;
+  }
+  try {
+    return window.NAVAMSA_88.renderBusinessHTML(planets, ascendant);
+  } catch (e) {
+    console.warn('renderNavamsa88BusinessSection failed:', e);
+    return `<div class="pred-item" style="color:var(--rose);font-size:9px;">88th Navamsa business check failed.</div>`;
+  }
+}
