@@ -31,15 +31,11 @@ const AI_PREDICTION = (function() {
     // ========== SECTION 1: CONSTANTS & MAPPINGS ==========
     
     // Signs
-    const SIGNS = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
-    const SIGN_SYMBOLS = ["♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"];
+    const SIGNS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) || []
+    const SIGN_SYMBOLS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGN_SYMBOLS) || []
     
     // Sign Lords
-    const SIGN_LORDS = {
-        0: 'Mars', 1: 'Venus', 2: 'Mercury', 3: 'Moon', 4: 'Sun',
-        5: 'Mercury', 6: 'Venus', 7: 'Mars', 8: 'Jupiter', 9: 'Saturn',
-        10: 'Saturn', 11: 'Jupiter'
-    };
+    const SIGN_LORDS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGN_LORDS) || {};
     
     // House Nature (Kendra, Trikona, Dusthana, Upachaya)
     const HOUSE_NATURE = {
@@ -58,9 +54,9 @@ const AI_PREDICTION = (function() {
     };
     
     // Natural Benefics and Malefics
-    const BENEFICS = ['Jupiter', 'Venus', 'Mercury', 'Moon'];
-    const MALEFICS = ['Saturn', 'Mars', 'Rahu', 'Ketu'];
-    const NEUTRALS = ['Sun'];
+    const BENEFICS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.BENEFICS) || []
+    const MALEFICS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.MALEFICS) || []
+    const NEUTRALS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.NEUTRALS) || []
 
     // BNN & Jaimini Constants
     const BNN_YOGAS = [
@@ -364,89 +360,7 @@ const AI_PREDICTION = (function() {
     
     // ========== SECTION 4: NAKSHATRA DATA ==========
     
-    const NAKSHATRAS = [
-        { name: "Ashwini", lord: "Ketu", gana: "Deva", nature: "Kshipra (Swift)", startDeg: 0, endDeg: 13.3333,
-          cause: "Legacy of healing and swift beginnings", effect: "Ability to heal oneself and others, quick recovery, impulsive starts",
-          interpretation: "Swift action, healing, new beginnings, horse-like energy" },
-        { name: "Bharani", lord: "Venus", gana: "Manushya", nature: "Ugra (Fierce)", startDeg: 13.3333, endDeg: 26.6667,
-          cause: "The burden of creative responsibility", effect: "Intensive focus on productivity, tendency to overwork, strong sexual magnetism",
-          interpretation: "Transformation, letting go, deep karma, bearer of life" },
-        { name: "Krittika", lord: "Sun", gana: "Rakshasa", nature: "Mixed", startDeg: 26.6667, endDeg: 40.0,
-          cause: "The fire of purification and discernment", effect: "Sharp critical faculty, ability to remove obstacles, digestive strength, occasional harshness",
-          interpretation: "Sharp intelligence, purification, courage, cutting through ignorance" },
-        { name: "Rohini", lord: "Moon", gana: "Manushya", nature: "Dhruva (Fixed)", startDeg: 40.0, endDeg: 53.3333,
-          cause: "Magnetic attraction and nurturing capacity", effect: "Material abundance, artistic talent, tendency for obsessive attachments",
-          interpretation: "Creativity, fertility, material comforts, growth" },
-        { name: "Mrigashira", lord: "Mars", gana: "Deva", nature: "Mridu (Soft)", startDeg: 53.3333, endDeg: 66.6667,
-          cause: "Eternal search for truth and variety", effect: "Curious and restless mind, versatile talents, skill in scent/sensory arts",
-          interpretation: "Curiosity, searching, adventure, deer-like grace" },
-        { name: "Ardra", lord: "Rahu", gana: "Manushya", nature: "Tikshna (Dreadful)", startDeg: 66.6667, endDeg: 80.0,
-          cause: "Deep emotional storms leading to renewal", effect: "Sudden breakthroughs after crises, technical genius, emotional intensity",
-          interpretation: "Destruction, rebuilding, emotional intensity, tears" },
-        { name: "Punarvasu", lord: "Jupiter", gana: "Deva", nature: "Chara (Movable)", startDeg: 80.0, endDeg: 93.3333,
-          cause: "The cyclic nature of success", effect: "Bouncing back from failure, optimism, multiple Residences/opportunities",
-          interpretation: "Return, renewal, optimism, restoration" },
-        { name: "Pushya", lord: "Saturn", gana: "Deva", nature: "Kshipra (Swift)", startDeg: 93.3333, endDeg: 106.6667,
-          cause: "Deep karmic foundation of service", effect: "Reliability, protection of others, spiritual depth, respect in society",
-          interpretation: "Nourishment, protection, spiritual growth, prosperity" },
-        { name: "Ashlesha", lord: "Mercury", gana: "Rakshasa", nature: "Tikshna (Dreadful)", startDeg: 106.6667, endDeg: 120.0,
-          cause: "Hidden wisdom and strategic manipulation", effect: "Strategic genius, ability to handle complex secrets, potential for suspicion",
-          interpretation: "Mystery, wisdom, karmic healing, serpentine energy" },
-        { name: "Magha", lord: "Ketu", gana: "Rakshasa", nature: "Ugra (Fierce)", startDeg: 120.0, endDeg: 133.3333,
-          cause: "Ancestral inheritance and egoic identity", effect: "Strong leadership, connection with traditions, pride, authoritative status",
-          interpretation: "Ancestral power, authority, legacy, throne" },
-        { name: "Purva Phalguni", lord: "Venus", gana: "Manushya", nature: "Ugra (Fierce)", startDeg: 133.3333, endDeg: 146.6667,
-          cause: "Seeking pleasure and social recognition", effect: "Charismatic social presence, artistic achievement, focus on relaxation",
-          interpretation: "Creativity, romance, pleasure, front of the bed" },
-        { name: "Uttara Phalguni", lord: "Sun", gana: "Manushya", nature: "Dhruva (Fixed)", startDeg: 146.6667, endDeg: 160.0,
-          cause: "Duty towards others and noble contracts", effect: "Steadfast loyalty, success in long-term projects, respected counselor",
-          interpretation: "Service, marriage, fulfillment, back of the bed" },
-        { name: "Hasta", lord: "Moon", gana: "Deva", nature: "Kshipra (Swift)", startDeg: 160.0, endDeg: 173.3333,
-          cause: "Skill of hand and mental ingenuity", effect: "Manifestation through technical skill, humor, ability to manage details",
-          interpretation: "Skill, manifestation, craftsmanship, hand" },
-        { name: "Chitra", lord: "Mars", gana: "Rakshasa", nature: "Mridu (Soft)", startDeg: 173.3333, endDeg: 186.6667,
-          cause: "Architectural and aesthetic perfection", effect: "Brilliant design capacity, love for beauty, potential for vanity",
-          interpretation: "Creativity, architecture, brilliance, bright jewel" },
-        { name: "Swati", lord: "Rahu", gana: "Deva", nature: "Chara (Movable)", startDeg: 186.6667, endDeg: 200.0,
-          cause: "Independence and the wind of change", effect: "Global mindset, business independence, adaptability, occasional isolation",
-          interpretation: "Independence, movement, adaptability, sword" },
-        { name: "Vishakha", lord: "Jupiter", gana: "Rakshasa", nature: "Mixed", startDeg: 200.0, endDeg: 213.3333,
-          cause: "One-pointedness and competitive ambition", effect: "Success in mid-life, strong focus on goals, dual career paths",
-          interpretation: "Determination, focus, transformation, forked" },
-        { name: "Anuradha", lord: "Saturn", gana: "Deva", nature: "Mridu (Soft)", startDeg: 213.3333, endDeg: 226.6667,
-          cause: "Devotion and networking beyond borders", effect: "Success in foreign lands, deep friendships, organizational skills",
-          interpretation: "Friendship, devotion, success, following Radha" },
-        { name: "Jyeshtha", lord: "Mercury", gana: "Rakshasa", nature: "Tikshna (Dreadful)", startDeg: 226.6667, endDeg: 240.0,
-          cause: "Mature wisdom and protection of the tribe", effect: "Strategic leadership, hidden power, focus on seniority and respect",
-          interpretation: "Wisdom, seniority, protection, eldest" },
-        { name: "Mula", lord: "Ketu", gana: "Rakshasa", nature: "Tikshna (Dreadful)", startDeg: 240.0, endDeg: 253.3333,
-          cause: "The search for roots through destruction", effect: "Complete career resets, interest in investigative research/roots",
-          interpretation: "Roots, destruction, rebirth, root" },
-        { name: "Purva Ashadha", lord: "Venus", gana: "Manushya", nature: "Ugra (Fierce)", startDeg: 253.3333, endDeg: 266.6667,
-          cause: "Invigorating the flow of material gains", effect: "Indomitable spirit, early successes, connection with water/emotions",
-          interpretation: "Invigoration, purification, optimism, earlier victory" },
-        { name: "Uttara Ashadha", lord: "Sun", gana: "Manushya", nature: "Dhruva (Fixed)", startDeg: 266.6667, endDeg: 280.0,
-          cause: "The burden of permanent victory", effect: "Unstoppable rise, high discipline, public recognition in old age",
-          interpretation: "Victory, perseverance, leadership, later victory" },
-        { name: "Shravana", lord: "Moon", gana: "Deva", nature: "Chara (Movable)", startDeg: 280.0, endDeg: 293.3333,
-          cause: "Learning through listening and repetition", effect: "Encyclopedic knowledge, skill in languages, public renown",
-          interpretation: "Learning, listening, wisdom, ear" },
-        { name: "Dhanishta", lord: "Mars", gana: "Rakshasa", nature: "Chara (Movable)", startDeg: 293.3333, endDeg: 306.6667,
-          cause: "Aspiration for wealth and social impact", effect: "Financial prosperity, musical/rhythmic talent, group leadership",
-          interpretation: "Wealth, music, prosperity, drum" },
-        { name: "Shatabhisha", lord: "Rahu", gana: "Rakshasa", nature: "Chara (Movable)", startDeg: 306.6667, endDeg: 320.0,
-          cause: "The veil of secrecy and healing arts", effect: "Technical/medical breakthroughs, solitary tendencies, focus on humanity",
-          interpretation: "Healing, mystery, secrets, hundred physicians" },
-        { name: "Purva Bhadrapada", lord: "Jupiter", gana: "Manushya", nature: "Ugra (Fierce)", startDeg: 320.0, endDeg: 333.3333,
-          cause: "The call of the spiritual warrior", effect: "Intensive self-discipline, connection with the occult, revolutionary ideas",
-          interpretation: "Spiritual warrior, purification, front of the funeral cot" },
-        { name: "Uttara Bhadrapada", lord: "Saturn", gana: "Manushya", nature: "Dhruva (Fixed)", startDeg: 333.3333, endDeg: 346.6667,
-          cause: "Deep wisdom through selfless service", effect: "Compassion, patience, material and spiritual balance",
-          interpretation: "Wisdom, compassion, finality, back of the funeral cot" },
-        { name: "Revati", lord: "Mercury", gana: "Deva", nature: "Mridu (Soft)", startDeg: 346.6667, endDeg: 360.0,
-          cause: "Completion of the journey and safe passage", effect: "Rich artistic life, love for travel, focus on finality and moksha",
-          interpretation: "Completion, nourishment, protection, wealthy" }
-    ];
+    const NAKSHATRAS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.NAKSHATRAS) || []
     
     function analyzeNakshatra(longitude) {
         const normalized = ((longitude % 360) + 360) % 360;

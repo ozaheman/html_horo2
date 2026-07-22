@@ -37,7 +37,7 @@
  * licenses for Swiss Ephemeris.
  */
 
-import WasmSwissEph from '../wasm/swisseph.js';
+import WasmSwissEph from '../../wasm/swisseph.js';
 
 function decodeBase64(base64) {
     if (typeof window !== 'undefined' && typeof window.atob === 'function') {
@@ -361,7 +361,7 @@ class SwissEph {
           
           moduleConfig.locateFile = (path, prefix) => {
             if (path.endsWith('.data') || path.endsWith('.wasm')) {
-              return join(__dirname, '../wasm', path);
+              return join(__dirname, '../../wasm', path);
             }
             return prefix + path;
           };
@@ -372,7 +372,7 @@ class SwissEph {
         // Browser environment
         moduleConfig.locateFile = (path, prefix) => {
           if (path.endsWith('.data') || path.endsWith('.wasm')) {
-            return new URL('../wasm/' + path, import.meta.url).href;
+            return new URL('../../wasm/' + path, import.meta.url).href;
           }
           return prefix + path;
         };

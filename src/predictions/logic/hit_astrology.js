@@ -104,7 +104,7 @@ window.HitAstrologyEngine = (function() {
 
   function generateDashboardHTML(natal, transit, hits) {
     // Generate Matrix
-    const planets = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"];
+    const planets = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.PLANETS) || [];
     let matrixHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:10px; font-family:'Courier New',monospace; border:1px solid var(--border);">`;
     
     // Header
@@ -191,7 +191,7 @@ window.HitAstrologyEngine = (function() {
     let html = `<h3 style="color:var(--amber); margin-bottom:8px; font-size:12px; margin-top:20px;">🪐 Detailed Planet Effects & Remedies</h3>`;
     html += `<div style="display:grid; gap:10px;">`;
 
-    const planets = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"];
+    const planets = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.PLANETS) || [];
     
     planets.forEach(p => {
       const tPos = transit[p];

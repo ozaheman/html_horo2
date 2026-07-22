@@ -14,7 +14,7 @@
         calculateJupiterCycle: function(natalVenusSign, birthDate, birthYear) {
             const trines = [natalVenusSign, (natalVenusSign + 4) % 12, (natalVenusSign + 8) % 12];
             const cycles = [];
-            const SIGNS = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
+            const SIGNS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) || []
             
             if (typeof window.getPos !== 'function') {
                 // Fallback if getPos is somehow not available
@@ -104,7 +104,7 @@
          * Analyzes Navamsa (D9) Venus for spouse nature.
          */
         analyzeNavamsaSpouse: function(natalVenusSign, d9VenusSign) {
-            const SIGNS = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
+            const SIGNS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) || []
             const isVargottama = natalVenusSign === d9VenusSign;
             const signName = SIGNS[d9VenusSign] || "Unknown";
             

@@ -81,7 +81,7 @@ function getBNNConversations(pName, planets) {
 }
 
 function calculateCharkarakas() {
-  const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu'];
+  const planets = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.PLANETS) || [];
   const pData = planets.map(p => {
     const d = BIRTH_PLANETS[p];
     let deg = d.sid % 30;
@@ -1034,7 +1034,7 @@ function calculateAgeTriggers(planets, asc) {
 
 function calculateCharaDasha(birthYear) {
     // Highly simplified Sign-based Chara Dasha for report context
-    const signs = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
+    const signs = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) || [];
     const startSignSN = BIRTH_ASC.sn;
     const periods = [];
     let currentYear = birthYear;
@@ -1304,7 +1304,7 @@ function runCompleteMarriageTiming() {
 }
 
 function generateRefinedResearchReport(planets, asc) {
-    const signs = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
+    const signs = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) || [];
     const h7S = (asc.sn + 6)%12, h7Lord = LORDS[h7S], l7P = planets[h7Lord];
     const dk = Object.entries(planets).find(p => p[1].karaka === 'DK');
     const bYear = window.BIRTH?.year || new Date().getFullYear() - 25;
@@ -1759,7 +1759,7 @@ function getTimingSutras(planets, asc, transits) {
 }
 
 function calculateSunTransitMonths(asc) {
-    const signs = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
+    const signs = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) || [];
     const months = [
         "Apr 15 - May 14 (Aries)",
         "May 15 - Jun 14 (Taurus)",

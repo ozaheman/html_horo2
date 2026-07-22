@@ -308,40 +308,40 @@ async function updatePredictionsDisplay() {
       const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, d1, houses, asc, null);
       html += window.makeEditable('comprehensive_master', generatedHTML);
     } else if (mode === 'saral') {
-      const dbMap = { "Saral Jyotish": { data: window.SARAL_DB || [], color: 'var(--amber)' } };
-      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      const dbMap = { "Saral Jyotish": { data: window.SARAL_JYOTISH_DB || [], color: 'var(--amber)' } };
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
       html += window.makeEditable('saral_jyotish', generatedHTML);
     } else if (mode === 'astro') {
-      const dbMap = { "Astro Pathshala": { data: window.ASTRO_DB || [], color: 'var(--cyan)' } };
-      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      const dbMap = { "Astro Pathshala": { data: window.ASTRO_PATHSHALA_DB || [], color: 'var(--cyan)' } };
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
       html += window.makeEditable('astro_jyotish', generatedHTML);
     } else if (mode === 'arun_pandit') {
       const dbMap = { "Arun Pandit": { data: window.ARUN_PANDIT_DB || [], color: '#FF9933' } };
-      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
       html += window.makeEditable('arun_pandit_db', generatedHTML);
     } else if (mode === 'astrology_made_easy') {
       const dbMap = { "Astrology Made Easy": { data: window.ASTROLOGY_MADE_EASY_DB || [], color: '#44FF88' } };
-      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
       html += window.makeEditable('astro_made_easy_db', generatedHTML);
     } else if (mode === 'bnn') {
       const dbMap = { "BNN": { data: window.BNN_DB || [], color: 'var(--rose)' } };
-      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
       html += window.makeEditable('bnn_db', generatedHTML);
     } else if (mode === 'kaalpurush') {
       const dbMap = { "Kaalpurush Astrology": { data: window.KAALPURUSH_ASTROLOGY_DB || [], color: '#00FF88' } };
-      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
       html += window.makeEditable('kaalpurush_db', generatedHTML);
     } else if (mode === 'tathastu') {
       const dbMap = { "Tathastu Anubhav": { data: window.TATHASTU_ANUBHAV_DB || [], color: '#44AAFF' } };
-      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
       html += window.makeEditable('tathastu_db', generatedHTML);
     } else if (mode === 'professor') {
       const dbMap = { "The Professor": { data: window.THE_PROFESSOR_DB || [], color: '#FF3344' } };
-      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
       html += window.makeEditable('professor_db', generatedHTML);
     } else if (mode === 'vedang') {
       const dbMap = { "Vedang Jyotish": { data: window.VEDANG_JYOTIS_BY_SHIV_SHARMA_DB || [], color: '#FFD700' } };
-      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
       html += window.makeEditable('vedang_db', generatedHTML);
     } else {
       await showProgress('Loading forecasting modules...');
@@ -850,7 +850,7 @@ function renderAstrologyKnowledgeSection() {
   html += '<div class="pred-title" style="color:var(--amber);">📚 Deep Astrological Insights</div>';
   
   // Basic rendering of planets in houses
-  const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
+  const planets = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.PLANETS) || [];
   let foundInsights = false;
   
   planets.forEach(p => {
@@ -1169,7 +1169,7 @@ function renderNatalDegreesSection() {
           <tbody>
   `;
 
-  const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
+  const planets = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.PLANETS) || [];
   const data = window.BIRTH_PLANETS || {};
   const asc = window.BIRTH_ASC || {};
 
