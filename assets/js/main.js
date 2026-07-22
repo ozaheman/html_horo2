@@ -5142,13 +5142,15 @@ function runBusinessAnalysis() {
     if (window.PANCHANG_ENGINE && window.BUSINESS_MUHURTA && window.BIRTH) {
       el.innerHTML += window.BUSINESS_MUHURTA.renderDateTimePickerUI(new Date());
       el.innerHTML += window.BUSINESS_MUHURTA.renderCalendarGeneratorUI();
-      // Buttons/inputs only exist in the DOM now that the HTML above has been inserted, so wire them up here.
-      // wireDateTimePicker also performs the initial Panchang/Business-Muhurta render (defaulting to "now")
-      // and lets the user recalculate for any other date/time afterwards.
-      window.BUSINESS_MUHURTA.wireDateTimePicker({ lat: window.BIRTH.lat, lon: window.BIRTH.lon, utcOffsetHours: window.BIRTH.utcOff });
-      // Buttons only exist in the DOM now that the HTML above has been inserted, so wire them up here.
-      window.BUSINESS_MUHURTA.wireCalendarGenerator({ lat: window.BIRTH.lat, lon: window.BIRTH.lon, utcOffsetHours: window.BIRTH.utcOff });
-      console.log('PANCHANG / BUSINESS MUHURTA / CALENDAR GENERATOR RENDERED');
+        setTimeout(() => {
+          // Buttons/inputs only exist in the DOM now that the HTML above has been inserted, so wire them up here.
+          // wireDateTimePicker also performs the initial Panchang/Business-Muhurta render (defaulting to "now")
+          // and lets the user recalculate for any other date/time afterwards.
+          window.BUSINESS_MUHURTA.wireDateTimePicker({ lat: window.BIRTH.lat, lon: window.BIRTH.lon, utcOffsetHours: window.BIRTH.utcOff });
+          // Buttons only exist in the DOM now that the HTML above has been inserted, so wire them up here.
+          window.BUSINESS_MUHURTA.wireCalendarGenerator({ lat: window.BIRTH.lat, lon: window.BIRTH.lon, utcOffsetHours: window.BIRTH.utcOff });
+          console.log('PANCHANG / BUSINESS MUHURTA / CALENDAR GENERATOR RENDERED');
+        }, 100);
     }
   } catch(e) { console.error('BUSINESS MUHURTA FAIL', e); }
   // 1.5 ADVANCED BNN & JAIMINI ANALYSIS (NEW)
