@@ -24,16 +24,24 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 
 /* ── LAYOUT ── */
 .app{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
-.top-bar{background:var(--bg2);border-bottom:1px solid var(--border2);z-index:50;flex-shrink:0;resize:vertical;overflow:hidden;max-height:50vh;min-height:50px;}
+/* .top-bar definition merged below */
 .workspace{display:flex;flex:1;overflow:hidden;}
 .drag-handle{background:var(--bg3);color:var(--muted);text-align:center;cursor:grab;font-size:9px;padding:2px;letter-spacing:2px;user-select:none;border-bottom:1px solid var(--border);}
 .drag-handle:active{cursor:grabbing;}
 .col-dragging{opacity:0.6;background:var(--panel2);}
 
 /* ── TOP BAR ── */
-.tb1{padding:10px 16px 6px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--border);}
-.tb2{padding:6px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border);}
-.tb3{padding:5px 16px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.top-bar{background:var(--bg2);border-bottom:1px solid var(--border2);z-index:50;flex-shrink:0;resize:vertical;overflow:hidden;max-height:50vh;min-height:30px; display:flex; flex-direction:column;}
+.tb1, .tb2, .tb3 {
+  display:flex; align-items:center; gap:6px; flex-wrap:nowrap;
+  border-bottom:1px solid var(--border); overflow-x:auto; scrollbar-width:thin;
+  width:100%; padding:2px 0 2px 8px;
+}
+.tb1::after, .tb2::after, .tb3::after {
+  content: "";
+  flex: 0 0 45vw;
+}
+.tb1::-webkit-scrollbar, .tb2::-webkit-scrollbar, .tb3::-webkit-scrollbar { height: 4px; }
 
 .app-title{font-family:Palatino,'Book Antiqua',serif;font-size:18px;font-weight:900;letter-spacing:2px;
   background:linear-gradient(120deg,var(--gold),var(--gold2),var(--amber));
@@ -60,8 +68,8 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 .lbl{font-family:'Courier New',monospace;font-size:9px;color:var(--muted);letter-spacing:1.5px;white-space:nowrap;}
 
 /* ── CHECKBOX GROUP ── */
-.chk-group{display:flex;align-items:center;gap:5px;}
-.chk-group label{display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;font-weight:600;color:var(--muted);transition:color .15s;}
+.chk-group{display:flex;align-items:center;gap:5px; white-space:nowrap;}
+.chk-group label{display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;font-weight:600;color:var(--muted);transition:color .15s; white-space:nowrap;}
 .chk-group label:hover{color:var(--text);}
 .chk-group input[type=checkbox]{width:12px;height:12px;accent-color:var(--cyan);cursor:pointer;}
 .chk-group label.active{color:var(--cyan);}
@@ -71,7 +79,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
   padding:3px 10px;background:rgba(58,240,255,.05);border:1px solid rgba(58,240,255,.2);border-radius:2px;min-width:180px;text-align:center;}
 
 /* ── LEFT: D-CHART PANEL ── */
-.left-col{border-right:1px solid var(--border2);overflow:auto;resize:horizontal;background:var(--bg2);display:flex;flex-direction:column;width:340px;min-width:250px;max-width:50vw;padding-bottom:10px;}
+.left-col{border-right:1px solid var(--border2);overflow:auto;resize:horizontal;background:var(--bg2);display:flex;flex-direction:column;width:260px;min-width:200px;max-width:90vw;padding-bottom:10px;}
 .left-col canvas{display:block;}
 .chart-header{padding:8px 12px 4px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .chart-title{font-family:Palatino,'Book Antiqua',serif;font-size:12px;font-weight:700;color:var(--gold);letter-spacing:1.5px;}
@@ -86,7 +94,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 .dasha-lbl{font-family:'Courier New',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;width:52px;flex-shrink:0;text-align:right;}
 
 /* ── RIGHT: INFO COL ── */
-.right-col{border-left:1px solid var(--border2);background:var(--bg2);overflow:auto;resize:horizontal;direction:rtl;display:flex;flex-direction:column;width:310px;min-width:250px;max-width:50vw;padding-bottom:10px;}
+.right-col{border-left:1px solid var(--border2);background:var(--bg2);overflow:auto;resize:horizontal;direction:rtl;display:flex;flex-direction:column;width:310px;min-width:250px;max-width:90vw;padding-bottom:10px;}
 .right-col > * {direction:ltr;}
 .sec{border-bottom:1px solid var(--border);padding:8px 12px;}
 .sec:last-child{border-bottom:none;}
@@ -136,6 +144,17 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
   border-left:1px solid var(--border2);z-index:200;transform:translateX(100%);
   transition:transform .3s cubic-bezier(.25,.46,.45,.94);overflow-y:auto;backdrop-filter:blur(12px);}
 #dashaPanel.open{transform:translateX(0);}
+
+/* ── ALL SIDE PANELS (RESIZABLE) ── */
+div[id$="Panel"] {
+    resize: horizontal;
+    direction: rtl;
+    min-width: 300px;
+    max-width: 90vw;
+}
+div[id$="Panel"] > * {
+    direction: ltr;
+}
 
 /* Dasha tree */
 .dasha-tree{padding:6px 10px;}

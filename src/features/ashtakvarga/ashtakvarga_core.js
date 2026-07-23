@@ -697,6 +697,104 @@ window.ASHTAKVARGA = {
         const stageIdx = isOdd ? portion : (4 - portion);
         const stage = this.AVASTHA_STAGES[stageIdx];
         return { stage: stage, portion: portion, isOddSign: isOdd, effect: this.AVASTHA_EFFECT[stage] };
+    },
+
+    // ===================== 15. VASTU & DIRECTION ANALYSIS =====================
+
+    /** 
+     * Computes the strongest direction for each planet based on its BAV points 
+     * in directional signs (East: 1,5,9, South: 2,6,10, West: 3,7,11, North: 4,8,12)
+     */
+    analyzeVastuAndDirections: function (allBAV) {
+        const directions = [
+            { name: 'East', signs: [0, 4, 8] },
+            { name: 'South', signs: [1, 5, 9] },
+            { name: 'West', signs: [2, 6, 10] },
+            { name: 'North', signs: [3, 7, 11] }
+        ];
+
+        const analysis = {};
+        this.PLANETS7.forEach(p => {
+            if (!allBAV[p]) return;
+            const dirScores = directions.map(dir => {
+                const total = dir.signs.reduce((sum, signIdx) => sum + allBAV[p].bindus[signIdx], 0);
+                return { direction: dir.name, signs: dir.signs.map(s => this.SIGNS[s]), total: total };
+            });
+            dirScores.sort((a, b) => b.total - a.total);
+            analysis[p] = {
+                strongest: dirScores[0],
+                weakest: dirScores[dirScores.length - 1],
+                allDirections: dirScores
+            };
+        });
+        return analysis;
+    },
+
+    // ===================== 16. MAHADASHA ANALYSIS =====================
+
+    /**
+     * Evaluates property/land prospects during a Mahadasha by treating the Mahadasha 
+     * lord's sign as the Ascendant (Dasha Lagna) and checking the 4th house SAV.
+     */
+    analyzeMahadashaForLand: function (mdLord, natalPlanets, savArray) {
+        if (!mdLord || !natalPlanets || !natalPlanets[mdLord]) return null;
+        
+        // Dasha Lagna is the sign where the Mahadasha lord is placed
+        const dashaLagnaSignIdx = natalPlanets[mdLord].sn;
+        
+        // Check the 4th house from Dasha Lagna (Property/Land)
+        const fourthHouseIdx = (dashaLagnaSignIdx + 3) % 12;
+        const fourthHousePoints = savArray[fourthHouseIdx];
+        
+        // Also check the 11th house from Dasha Lagna (Gains) to see if efforts yield high results
+        const eleventhHouseIdx = (dashaLagnaSignIdx + 10) % 12;
+        const eleventhHousePoints = savArray[eleventhHouseIdx];
+        
+        return {
+            dashaLord: mdLord,
+            dashaLagnaSign: this.SIGNS[dashaLagnaSignIdx],
+            fourthHouseSign: this.SIGNS[fourthHouseIdx],
+            fourthHousePoints: fourthHousePoints,
+            eleventhHousePoints: eleventhHousePoints,
+            favourable: fourthHousePoints >= 28,
+            highlyFavourable: fourthHousePoints >= 30 && eleventhHousePoints >= 28
+        };
+    },
+
+    /**
+     * Evaluates business/career prospects during a Mahadasha by treating the Mahadasha 
+     * lord's sign as the Ascendant (Dasha Lagna) and checking the 10th and 11th house SAV.
+     */
+    analyzeMahadashaForBusiness: function (mdLord, natalPlanets, savArray) {
+        if (!mdLord || !natalPlanets || !natalPlanets[mdLord]) return null;
+        
+        const dashaLagnaSignIdx = natalPlanets[mdLord].sn;
+        
+        // Check the 10th house (Career/Business) and 11th house (Gains) from Dasha Lagna
+        const tenthHouseIdx = (dashaLagnaSignIdx + 9) % 12;
+        const tenthHousePoints = savArray[tenthHouseIdx];
+        
+        const eleventhHouseIdx = (dashaLagnaSignIdx + 10) % 12;
+        const eleventhHousePoints = savArray[eleventhHouseIdx];
+        
+        // Less effort, more gains if 11th > 10th
+        const effortVsGains = {
+            effort: tenthHousePoints,
+            gains: eleventhHousePoints,
+            ratio: (tenthHousePoints > 0) ? (eleventhHousePoints / tenthHousePoints).toFixed(2) : 1
+        };
+
+        return {
+            dashaLord: mdLord,
+            dashaLagnaSign: this.SIGNS[dashaLagnaSignIdx],
+            tenthHouseSign: this.SIGNS[tenthHouseIdx],
+            tenthHousePoints: tenthHousePoints,
+            eleventhHouseSign: this.SIGNS[eleventhHouseIdx],
+            eleventhHousePoints: eleventhHousePoints,
+            effortVsGains: effortVsGains,
+            favourable: tenthHousePoints >= 28 && eleventhHousePoints >= 28,
+            highlyFavourable: eleventhHousePoints > tenthHousePoints && eleventhHousePoints >= 30
+        };
     }
 };
 

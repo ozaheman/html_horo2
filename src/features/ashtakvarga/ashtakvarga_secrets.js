@@ -318,6 +318,38 @@
     }
 
     // ═══════════════════════════════════════════════════════════
+    //  10. CAREER ALIGNMENT (DIGBALA ACTIVATION)
+    // ═══════════════════════════════════════════════════════════
+    function analyzeCareerDigbala(natalPlanets, ascSignNum, lords) {
+        if (!lords || !natalPlanets) return null;
+        const tenthHouseSignIdx = (ascSignNum + 9) % 12;
+        const tenthLord = lords[tenthHouseSignIdx];
+        if (!tenthLord || !natalPlanets[tenthLord]) return null;
+
+        const digbalaHouses = {
+            'Sun': 10, 'Mars': 10, 'Ketu': 10,
+            'Moon': 4, 'Venus': 4,
+            'Mercury': 1, 'Jupiter': 1,
+            'Saturn': 7, 'Rahu': 7
+        };
+
+        const digbalaHouse = digbalaHouses[tenthLord] || 1;
+        const natalSignIdx = A()._signOf(natalPlanets[tenthLord].sid !== undefined ? natalPlanets[tenthLord].sid : natalPlanets[tenthLord].longitude);
+        const natalHouse = (natalSignIdx - ascSignNum + 12) % 12 + 1;
+
+        // Formula: Natal House is the Digbala-th house from the Activation House.
+        // N = (A + D - 1) mod 12  => A = (N - D + 1)
+        const activationHouse = (natalHouse - digbalaHouse + 12) % 12 + 1;
+
+        return {
+            lord: tenthLord,
+            natalHouse: natalHouse,
+            digbalaHouse: digbalaHouse,
+            activationHouse: activationHouse
+        };
+    }
+
+    // ═══════════════════════════════════════════════════════════
     //  ATTACH CALCULATION LAYER
     // ═══════════════════════════════════════════════════════════
     function attach() {
@@ -334,6 +366,7 @@
             analyzeMoonSwing: analyzeMoonSwing,
             analyzeSadheSati: analyzeSadheSati,
             analyzeVarshaphalHouse: analyzeVarshaphalHouse,
+            analyzeCareerDigbala: analyzeCareerDigbala,
             REFERENCES: [
                 'Ashtakavarga Secrets discourse — Manoj Kaushik (in conversation, crediting K.N. Rao, Vinay Gupta, and C.S. Patel)',
                 'B.V. Raman — Ashtakavarga System of Prediction (standard BAV/SAV reference)',
@@ -378,7 +411,6 @@
               <div class="pred-title" style="color:var(--cyan);">🧭 Personality Bindu-Comparisons</div>
               <div style="font-size:8.5px;margin:3px 0;"><b>Confidence vs Fear:</b> ${cf.narrative}</div>
               <div style="font-size:8.5px;margin:3px 0;"><b>Desire vs Fulfilment:</b> ${df.verdict} (H3: ${df.desire.sav} · H11: ${df.fulfillment.sav})</div>
-              <div style="font-size:8.5px;margin:3px 0;"><b>Dharma → Karma → Gains:</b> ${dkg.narrative}</div>
             </div>`;
         },
 
@@ -401,6 +433,82 @@
               <div class="pred-title" style="color:var(--rose);">💍 Ashtakavarga Marriage Harmony Secrets</div>
               <div style="font-size:8px;color:var(--muted);margin-bottom:4px;">A supplement to classical Kundli Milan: a partner whose Moon/Lagna/Venus falls in one of these signs tends to bring smoother harmony on that specific dimension.</div>
               ${blocks}
+            </div>`;
+        },
+
+        renderVastuAndDirections: function(vastu) {
+            if (!vastu) return '';
+            const vastuNotes = {
+                Sun: 'Prayer Room / Shiva Temple / Govt Work / Authority',
+                Moon: 'Mental Peace / Healing / Water / Rest',
+                Mars: 'Land Purchase / Gym / Kitchen / Action',
+                Mercury: 'Study / Business Deals / Networking',
+                Jupiter: 'Valuables / Prayer / Expansion / Wisdom',
+                Venus: 'Bedroom / Luxury / Romance / Art',
+                Saturn: 'Dustbin / Toilet / Disposal / Discipline'
+            };
+            
+            const naturalDirs = {
+                Sun: 'East',
+                Moon: 'North-West',
+                Mars: 'South',
+                Mercury: 'North',
+                Jupiter: 'North-East',
+                Venus: 'South-East',
+                Saturn: 'West'
+            };
+            
+            const allPlanets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+            const rows = allPlanets.map(p => {
+                if (!vastu[p]) return '';
+                const s = vastu[p].strongest;
+                const w = vastu[p].weakest;
+                
+                let remedyText = '';
+                if (p === 'Moon') {
+                    remedyText = `Spend time here for mental peace (Energy Giver). Avoid ${w.direction} (Energy Sucker).`;
+                } else if (p === 'Mars') {
+                    remedyText = `Buy land/property in this direction. Avoid deals when Mars transits ${w.direction} signs.`;
+                } else if (p === 'Sun') {
+                    remedyText = `Place prayer room or face this way for govt help. Avoid ${w.direction}.`;
+                } else if (p === 'Saturn') {
+                    remedyText = `Best direction for toilets/dustbins to neutralize negative energy. Avoid facing ${w.direction} for important work.`;
+                } else if (p === 'Mercury') {
+                    remedyText = `Best direction for studying or signing business deals.`;
+                } else if (p === 'Jupiter') {
+                    remedyText = `Keep valuables or setup a place of worship here.`;
+                } else if (p === 'Venus') {
+                    remedyText = `Ideal direction for bedroom or luxury items.`;
+                }
+
+                return `<div style="font-size:8.5px;margin:3px 0;padding:4px;border-left:2px solid var(--cyan);background:rgba(0,255,170,.05);margin-bottom:4px;">
+                    <b style="color:var(--gold,#FFD700);">${p} — Natural Vastu Direction: ${naturalDirs[p]}</b> 
+                    <div style="color:var(--cyan);margin-top:2px;"><b>Your Favourable Direction:</b> ${s.direction} (${s.total} bindus)</div>
+                    <div style="color:var(--cyan);margin-top:2px;"><b>Best for:</b> ${vastuNotes[p]}</div>
+                    <div style="color:var(--muted);margin-top:2px;"><i>Action:</i> ${remedyText}</div>
+                </div>`;
+            }).join('');
+            
+            return `<div class="pred-item" style="border-left:3px solid var(--cyan);">
+                <div class="pred-title" style="color:var(--cyan);">🧭 Astro-Vastu & Key Directions</div>
+                <div style="font-size:7.5px;color:var(--muted);margin-bottom:6px;">Blends Natural Vastu Directions with your chart's Bhinnashtakavarga strength (1,5,9=East; 2,6,10=South; 3,7,11=West; 4,8,12=North)</div>
+                ${rows}
+            </div>`;
+        },
+
+        renderCareerDigbala: function (digbalaLogic) {
+            if (!digbalaLogic) return '';
+            return `<div class="pred-item" style="border-left:3px solid #FF9955;">
+                <div class="pred-title" style="color:#FF9955;">🏆 Career Alignment (किस भाव से मिलेगा अपार धन)</div>
+                <div style="font-size:8.5px;margin:3px 0;padding:4px;">
+                    <b>10th Lord:</b> ${digbalaLogic.lord} (Natal House: ${digbalaLogic.natalHouse})<br/>
+                    <b>Digbala House:</b> ${digbalaLogic.digbalaHouse} House<br/>
+                    <b>Activation House:</b> ${digbalaLogic.activationHouse} House 
+                    <span style="color:var(--muted); font-size:7.5px;">(Since ${digbalaLogic.natalHouse} is the ${digbalaLogic.digbalaHouse}th from the ${digbalaLogic.activationHouse}th House)</span>
+                </div>
+                <div style="font-size:8.5px;margin:3px 0;color:var(--cyan);">
+                    <i>Result/Action:</i> Engage in ${digbalaLogic.activationHouse}th house activities/significations to massively unlock and stabilize your career.
+                </div>
             </div>`;
         },
 
@@ -459,6 +567,10 @@
             );
             if (allBAV) html += this.renderMarriageHarmony(S.analyzeMarriageHarmony(allBAV, ascSignNum));
             html += this.renderBusinessSecrets(S.analyzeBusinessSecrets(sav, ascSignNum, khanda));
+            if (allBAV) {
+                const vastu = window.ASHTAKVARGA.analyzeVastuAndDirections(allBAV);
+                html += this.renderVastuAndDirections(vastu);
+            }
 
             const transitOpts = {};
             if (transitPlanets && allBAV) {
@@ -488,7 +600,37 @@
                 const allBAV = A_.computeAllBAV(natalPlanets, ascSignNum, ascDeg, true);
                 const sav = A_.computeSAV(allBAV);
                 const khanda = S.computeKhandaAnalysis(sav, ascSignNum);
-                return this.renderBusinessSecrets(S.analyzeBusinessSecrets(sav, ascSignNum, khanda));
+                
+                // Evaluate Mahadashas for Land and Business
+                let bestLandMD = null;
+                let bestBizMD = null;
+                if (A_.analyzeMahadashaForLand) {
+                    const planets = Object.keys(natalPlanets).filter(p => p !== 'Ascendant' && p !== 'Uranus' && p !== 'Neptune' && p !== 'Pluto');
+                    let landResults = planets.map(p => A_.analyzeMahadashaForLand(p, natalPlanets, sav)).filter(Boolean);
+                    let bizResults = planets.map(p => A_.analyzeMahadashaForBusiness(p, natalPlanets, sav)).filter(Boolean);
+                    
+                    landResults.sort((a, b) => b.fourthHousePoints - a.fourthHousePoints);
+                    bizResults.sort((a, b) => (b.eleventhHousePoints - b.tenthHousePoints) - (a.eleventhHousePoints - a.tenthHousePoints));
+                    
+                    if (landResults.length) bestLandMD = landResults[0];
+                    if (bizResults.length) bestBizMD = bizResults[0];
+                }
+
+                let html = this.renderBusinessSecrets(S.analyzeBusinessSecrets(sav, ascSignNum, khanda));
+                if (allBAV) {
+                    const vastu = A_.analyzeVastuAndDirections(allBAV);
+                    html += this.renderVastuAndDirections(vastu);
+                }
+                const digbalaLogic = S.analyzeCareerDigbala(natalPlanets, ascSignNum, lords);
+                if (digbalaLogic) {
+                    html += this.renderCareerDigbala(digbalaLogic);
+                }
+                if (typeof this.renderMahadashaAnalysis === 'function') {
+                    html += this.renderMahadashaAnalysis(bestLandMD, bestBizMD);
+                } else if (this.renderMahadashaAnalysis) {
+                    html += this.renderMahadashaAnalysis(bestLandMD, bestBizMD);
+                }
+                return html;
             } catch (e) {
                 console.error('renderForBusinessPanel failed:', e);
                 return '';
@@ -544,3 +686,5 @@
     if (typeof module !== 'undefined' && module.exports) module.exports = { SECRETS: window.ASHTAKVARGA && window.ASHTAKVARGA.SECRETS, DISPLAY: DISPLAY };
 
 })();
+
+

@@ -12,14 +12,14 @@
 <!-- TOP BAR -->
 <div class="top-bar">
   <div class="tb1">
-    <div>
+    <div style="display:flex;align-items:baseline;gap:12px;white-space:nowrap;">
       <div class="app-title">Vedic Jyotish Engine</div>
       <div class="app-sub" id="appSub">Loading…</div>
     </div>
     <button class="btn active" id="btnBirthForm" style="border-color:var(--gold);color:var(--gold)">✎ Birth Details</button>
     <div class="sep"></div>
     <span class="lbl">CHART:</span>
-    <div id="dchartBtns" style="display:flex;gap:3px;flex-wrap:wrap;"></div>
+    <div id="dchartBtns" style="display:flex;gap:3px;flex-wrap:nowrap;"></div>
     <div class="sep"></div>
     <button class="btn" id="btnToggleSvg">SVG VIEW</button>
     <button class="btn" id="btnToggleChakra">CHAKRA VIEW</button>
@@ -43,7 +43,7 @@
   </div>
   <div class="tb2">
     <span class="lbl">TIME:</span>
-    <div id="timeBtns" style="display:flex;gap:3px;flex-wrap:wrap;"></div>
+    <div id="timeBtns" style="display:flex;gap:3px;flex-wrap:nowrap;"></div>
     <div class="sep"></div>
     <button class="btn" id="prevBtn">◀</button>
     <div class="range-pill" id="rangeLabel">…</div>
@@ -62,6 +62,11 @@
     <button class="btn green" id="btnAnimate">▶ PLAY</button>
     <div class="sep"></div>
     <button class="btn" id="btnTheme" title="Toggle Dark/Light Mode">◑ THEME</button>
+    <div class="sep"></div>
+    <button class="btn" id="btnFontInc" title="Increase Font Size" style="padding:4px 6px;">A+</button>
+    <button class="btn" id="btnFontDec" title="Decrease Font Size" style="padding:4px 6px;">A-</button>
+    <button class="btn" id="btnFontReset" title="Reset Font Size" style="padding:4px 6px;">A↺</button>
+    <div class="sep"></div>
     <button class="btn" id="btnPrint" title="Print Report">⎙ PRINT</button>
     <button class="btn sky" id="btnActivated" title="Show Activated House">⊕ ACTIVATED</button>
     <button class="btn" id="btnBizAnalysis" title="Business & Career Analysis (D1/D2/D9/D10)" style="border-color:rgba(200,168,75,.4);color:rgba(200,168,75,.6);">💼 BUSINESS</button>
@@ -102,7 +107,7 @@
   </div>
   <div class="tb3">
     <span class="lbl">PLANETS:</span>
-    <div id="planetToggles" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
+    <div id="planetToggles" style="display:flex;gap:4px;flex-wrap:nowrap;"></div>
     <div class="sep"></div>
     <span class="lbl">SHOW:</span>
     <div class="chk-group">

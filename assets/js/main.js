@@ -3818,6 +3818,11 @@ document.addEventListener('keydown',e=>{
 
 // Resize
 window.addEventListener('resize',()=>{clearTimeout(window._rt);window._rt=setTimeout(renderAll,120);});
+const panelObserver = new ResizeObserver(() => {
+  clearTimeout(window._rt);
+  window._rt = setTimeout(renderAll, 60);
+});
+document.querySelectorAll('.left-col, .right-col, .center-col').forEach(el => panelObserver.observe(el));
 
 // ═══════════════════════════════════════════════════════════
 //  READABLE & PRINT
@@ -3852,6 +3857,26 @@ document.getElementById('btnTheme').addEventListener('click', () => {
   document.getElementById('btnTheme').textContent = isDark ? '◑ THEME' : '☼ LIGHT';
   renderAll();
 });
+
+// Font Size Controls
+let currentFontSize = 100;
+if (document.getElementById('btnFontInc')) {
+  document.getElementById('btnFontInc').addEventListener('click', () => {
+    currentFontSize += 10;
+    document.documentElement.style.fontSize = currentFontSize + '%';
+    if(typeof renderAll === 'function') renderAll();
+  });
+  document.getElementById('btnFontDec').addEventListener('click', () => {
+    currentFontSize = Math.max(50, currentFontSize - 10);
+    document.documentElement.style.fontSize = currentFontSize + '%';
+    if(typeof renderAll === 'function') renderAll();
+  });
+  document.getElementById('btnFontReset').addEventListener('click', () => {
+    currentFontSize = 100;
+    document.documentElement.style.fontSize = '';
+    if(typeof renderAll === 'function') renderAll();
+  });
+}
 
 // Movable Panels (Drag and Drop)
 let draggedItem = null;
