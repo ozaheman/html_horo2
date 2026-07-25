@@ -4084,6 +4084,88 @@ function updateSavedProfilesList(){
   });
 }
 
+// ── Zoom / Pan for the Chakra wheel (mouse wheel, drag, pinch, +/-/reset buttons) ──
+const chakraZoomState = {}; // keyed by container element id -> {scale, tx, ty}
+function getChakraZoomState(id){ return chakraZoomState[id] || (chakraZoomState[id] = { scale:1, tx:0, ty:0 }); }
+function applyChakraZoomTransform(id){
+  const st = getChakraZoomState(id);
+  const cont = document.getElementById(id);
+  const stage = cont ? cont.querySelector('.chakra-zoom-stage') : null;
+  if (stage) stage.style.transform = `translate(${st.tx}px, ${st.ty}px) scale(${st.scale})`;
+}
+// Wraps a chakra SVG string with a zoomable/pannable stage + on-screen +/-/reset controls
+function wrapChakraZoomable(svgString){
+  return `<div class="chakra-zoom-wrap">
+    <div class="chakra-zoom-controls">
+      <button type="button" class="chakra-zoom-btn" data-zact="in" title="Zoom in">+</button>
+      <button type="button" class="chakra-zoom-btn" data-zact="out" title="Zoom out">−</button>
+      <button type="button" class="chakra-zoom-btn" data-zact="reset" title="Reset zoom / pan">⟲</button>
+    </div>
+    <div class="chakra-zoom-stage">${svgString}</div>
+  </div>`;
+}
+// Binds zoom/pan interaction handlers once per container (persists across innerHTML re-renders
+// because the listeners live on the outer container element, not on its replaced children).
+function initChakraZoom(id){
+  const cont = document.getElementById(id);
+  if (!cont) return;
+  applyChakraZoomTransform(id);
+  if (cont.dataset.zoomBound==='1') return;
+  cont.dataset.zoomBound='1';
+  const st = getChakraZoomState(id);
+  const clamp = v => Math.min(6, Math.max(0.5, v));
+
+  cont.addEventListener('wheel',(e)=>{
+    e.preventDefault();
+    st.scale = clamp(st.scale + (e.deltaY>0 ? -0.12 : 0.12));
+    applyChakraZoomTransform(id);
+  }, { passive:false });
+
+  let dragging=false, sx=0, sy=0, ox=0, oy=0;
+  cont.addEventListener('mousedown',(e)=>{
+    if (e.target.closest('.chakra-zoom-btn')) return;
+    dragging=true; sx=e.clientX; sy=e.clientY; ox=st.tx; oy=st.ty; cont.classList.add('chakra-dragging');
+  });
+  window.addEventListener('mousemove',(e)=>{
+    if (!dragging) return;
+    st.tx = ox + (e.clientX-sx); st.ty = oy + (e.clientY-sy);
+    applyChakraZoomTransform(id);
+  });
+  window.addEventListener('mouseup', ()=>{ dragging=false; cont.classList.remove('chakra-dragging'); });
+
+  let pinchDist=0, pinchScale=1, panTouch=null;
+  cont.addEventListener('touchstart',(e)=>{
+    if (e.touches.length===2){
+      pinchDist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+      pinchScale = st.scale;
+    } else if (e.touches.length===1){
+      panTouch = { sx:e.touches[0].clientX, sy:e.touches[0].clientY, ox:st.tx, oy:st.ty };
+    }
+  }, { passive:true });
+  cont.addEventListener('touchmove',(e)=>{
+    if (e.touches.length===2 && pinchDist){
+      e.preventDefault();
+      const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+      st.scale = clamp(pinchScale * (d/pinchDist));
+      applyChakraZoomTransform(id);
+    } else if (e.touches.length===1 && panTouch){
+      st.tx = panTouch.ox + (e.touches[0].clientX-panTouch.sx);
+      st.ty = panTouch.oy + (e.touches[0].clientY-panTouch.sy);
+      applyChakraZoomTransform(id);
+    }
+  }, { passive:false });
+  cont.addEventListener('touchend', ()=>{ pinchDist=0; panTouch=null; });
+
+  cont.addEventListener('click',(e)=>{
+    const btn = e.target.closest('.chakra-zoom-btn'); if (!btn) return;
+    const act = btn.dataset.zact;
+    if (act==='in') st.scale = clamp(st.scale+0.25);
+    else if (act==='out') st.scale = clamp(st.scale-0.25);
+    else { st.scale=1; st.tx=0; st.ty=0; }
+    applyChakraZoomTransform(id);
+  });
+}
+
 // ═══════════════════════════════════════════════════════════
 //  SVG CHART LOGIC (User Provided) + Enhanced Sudarshan Chakra
 // ═══════════════════════════════════════════════════════════
@@ -4149,18 +4231,29 @@ function buildChakraData(refMode){
   let refSignIdx = window.BIRTH_ASC ? BIRTH_ASC.sn : 0, refLabel='Lagna Chart (Ascendant)';
   if (refMode==='moon' && window.BIRTH_PLANETS && BIRTH_PLANETS.Moon){ refSignIdx=BIRTH_PLANETS.Moon.sn; refLabel='Chandra Lagna (Moon Chart)'; }
   else if (refMode==='sun' && window.BIRTH_PLANETS && BIRTH_PLANETS.Sun){ refSignIdx=BIRTH_PLANETS.Sun.sn; refLabel='Surya Lagna (Sun Chart)'; }
-  return { natal, transit, refSignIdx, refLabel };
+  // The three classical Sudarshan Chakra reference points — always computed so all three
+  // concentric house-rings (Lagna/inner, Chandra/mid, Surya/outer) can be drawn together,
+  // regardless of which single chart the "CHAKRA REF" dropdown currently highlights.
+  const lagnaSignIdx = window.BIRTH_ASC ? BIRTH_ASC.sn : 0;
+  const moonSignIdx = (window.BIRTH_PLANETS && BIRTH_PLANETS.Moon) ? BIRTH_PLANETS.Moon.sn : lagnaSignIdx;
+  const sunSignIdx = (window.BIRTH_PLANETS && BIRTH_PLANETS.Sun) ? BIRTH_PLANETS.Sun.sn : lagnaSignIdx;
+  return { natal, transit, refSignIdx, refLabel, lagnaSignIdx, moonSignIdx, sunSignIdx };
 }
 
 function generateChakraChartSVG(dataOrChartData, opts) {
   // Backward compatible with the old call shape: generateChakraChartSVG([{sid,p}, ...])
   let natal, transit=[], refSignIdx=0, refLabel='Lagna Chart', showTransit=false, showNak=true, showVarga=true, showAspects=false;
+  let lagnaSignIdx=0, moonSignIdx=0, sunSignIdx=0;
   if (Array.isArray(dataOrChartData)) {
     natal = dataOrChartData.map(d=>({ p:d.p, tx:PLANET_ABBR2[d.p]||(d.p||'').substring(0,2), sid:d.sid,
                                        isAsc:(d.p==='As'||d.p==='Asc') }));
+    lagnaSignIdx = moonSignIdx = sunSignIdx = refSignIdx;
   } else {
     const built = dataOrChartData || buildChakraData(chakraRefMode);
     natal=built.natal; transit=built.transit; refSignIdx=built.refSignIdx; refLabel=built.refLabel;
+    lagnaSignIdx = built.lagnaSignIdx!==undefined ? built.lagnaSignIdx : refSignIdx;
+    moonSignIdx = built.moonSignIdx!==undefined ? built.moonSignIdx : refSignIdx;
+    sunSignIdx = built.sunSignIdx!==undefined ? built.sunSignIdx : refSignIdx;
   }
   if (opts){
     showTransit = !!opts.showTransit; showNak = opts.showNak!==false; showVarga = opts.showVarga!==false;
@@ -4168,6 +4261,9 @@ function generateChakraChartSVG(dataOrChartData, opts) {
     if (opts.transit) transit = opts.transit;
     if (opts.refSignIdx!==undefined) refSignIdx = opts.refSignIdx;
     if (opts.refLabel) refLabel = opts.refLabel;
+    if (opts.lagnaSignIdx!==undefined) lagnaSignIdx = opts.lagnaSignIdx;
+    if (opts.moonSignIdx!==undefined) moonSignIdx = opts.moonSignIdx;
+    if (opts.sunSignIdx!==undefined) sunSignIdx = opts.sunSignIdx;
   }
 
   const chartStartAngle = 285;
@@ -4183,8 +4279,12 @@ function generateChakraChartSVG(dataOrChartData, opts) {
     return signAngle(sn) + (degIn/30)*w;
   };
 
-  const R = { rashiIn:32, rashiOut:86, natalIn:86, natalOut:138, transitIn:138, transitOut:166,
-              nakIn:166, nakOut:196, nlIn:196, nlOut:222, vargaIn:222, vargaOut:250, outer:252 };
+  // Innermost three bands are the classical Sudarshan Chakra house-rings: Lagna (natal) innermost,
+  // Chandra (Moon) in the middle, Surya (Sun) outermost of the three — each numbering all 12 signs
+  // 1-12 as houses counted from its own reference sign. The rashi/planet/nakshatra rings sit outside them.
+  const R = { houseLagnaIn:16, houseLagnaOut:26, houseMoonIn:26, houseMoonOut:39, houseSunIn:39, houseSunOut:52,
+              rashiIn:55, rashiOut:107, natalIn:107, natalOut:157, transitIn:157, transitOut:183,
+              nakIn:183, nakOut:211, nlIn:211, nlOut:235, vargaIn:235, vargaOut:260, outer:262 };
 
   let svg = `<svg viewBox="-300 -300 600 600" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="background:#fff;border-radius:8px;">`;
   svg += `<style>
@@ -4204,9 +4304,48 @@ function generateChakraChartSVG(dataOrChartData, opts) {
     .ref-label{font-size:7.5px;fill:#a67c00;text-anchor:middle;font-weight:700;}
     .varga-tick{stroke:#ccc;stroke-width:0.6;}
     .varga-tick-v{stroke:#c98b00;stroke-width:1.8;}
+    .house-ring-num{font-size:6.4px;font-weight:700;text-anchor:middle;dominant-baseline:central;}
+    .ring-planet{font-size:5.6px;font-weight:800;text-anchor:middle;dominant-baseline:central;}
+    .chakra-legend{font-size:6.6px;font-weight:700;text-anchor:middle;}
   </style>`;
 
   Object.values(R).forEach(r=>{ svg += `<circle cx="0" cy="0" r="${r}" class="ring"/>`; });
+
+  // ══ Sudarshan Chakra: three concentric house-number rings ══
+  // Lagna (innermost) → Chandra/Moon (middle) → Surya/Sun (outermost of the three).
+  // Each ring keeps the same fixed zodiac sign positions as the rest of the wheel, but numbers
+  // the 12 segments 1-12 as *houses* counted from that ring's own reference sign, with a bold
+  // arc marking where that ring's 1st house begins.
+  function drawChakraHouseRing(rIn, rOut, refIdx, color, planetsForRing){
+    let s='';
+    const numR = rIn + (rOut-rIn)*0.3;       // house number sits toward the inner edge of the band
+    const planetR = rIn + (rOut-rIn)*0.76;   // planet labels sit toward the outer edge of the band
+    for (let i=0;i<12;i++){
+      const a0=signAngle(i);
+      const p1=getCoords(rIn,a0), p2=getCoords(rOut,a0);
+      s += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="${color}" stroke-width="0.5" stroke-opacity="0.5"/>`;
+      const mid=a0+w/2;
+      const houseNum=((i-refIdx+12)%12)+1;
+      const cp=getCoords(numR, mid);
+      s += `<text x="${cp.x}" y="${cp.y}" class="house-ring-num" fill="${color}">${houseNum}</text>`;
+      if (houseNum===1){
+        const arc1=getCoords(rIn,a0), arc2=getCoords(rIn,a0+w);
+        s += `<path d="M ${arc1.x} ${arc1.y} A ${rIn} ${rIn} 0 0 0 ${arc2.x} ${arc2.y}" fill="none" stroke="${color}" stroke-width="1.8"/>`;
+      }
+    }
+    if (planetsForRing && planetsForRing.length){
+      planetsForRing.forEach(p=>{
+        const a=lonAngle(p.sid);
+        const c=getCoords(planetR, a);
+        const label = PCFG[p.p] ? PCFG[p.p].sym : p.tx;
+        s += `<text x="${c.x}" y="${c.y}" class="ring-planet" fill="${color}">${label}${p.retro?'℞':''}</text>`;
+      });
+    }
+    return s;
+  }
+  svg += drawChakraHouseRing(R.houseLagnaIn, R.houseLagnaOut, lagnaSignIdx, '#c98b00');
+  svg += drawChakraHouseRing(R.houseMoonIn, R.houseMoonOut, moonSignIdx, '#3060e0', natal.filter(p=>!p.isAsc));
+  svg += drawChakraHouseRing(R.houseSunIn, R.houseSunOut, sunSignIdx, '#e0700a', natal.filter(p=>!p.isAsc));
 
   // ══ Rashi ring: sign name, element/quality, house number relative to chosen reference ══
   for (let i=0;i<12;i++){
@@ -4301,8 +4440,13 @@ function generateChakraChartSVG(dataOrChartData, opts) {
   });
 
   // ══ Center ══
-  svg += `<text x="0" y="-6" class="om-symbol">ॐ</text>`;
-  svg += `<text x="0" y="15" class="ref-label">${refLabel}</text>`;
+  svg += `<text x="0" y="-3" class="om-symbol" style="font-size:15px;">ॐ</text>`;
+  svg += `<text x="0" y="10" class="ref-label" style="font-size:5.6px;">${refLabel}</text>`;
+
+  // ══ Legend for the three Sudarshan Chakra house-rings ══
+  svg += `<text x="-90" y="284" class="chakra-legend" fill="#c98b00">● Lagna (inner)</text>`;
+  svg += `<text x="0" y="284" class="chakra-legend" fill="#3060e0">● Chandra (mid)</text>`;
+  svg += `<text x="90" y="284" class="chakra-legend" fill="#e0700a">● Surya (outer)</text>`;
   // ══ Always-on ASC / MOON / SUN outer-ring pointers ══
   // Shown regardless of the chosen reference chart, so you can see all three
   // lagna points (Ascendant, Chandra Lagna, Surya Lagna) at a glance.
@@ -4569,9 +4713,12 @@ function renderAll(){
   if(showChakra) {
   const built = buildChakraData(chakraRefMode);
     const cc = document.getElementById('chakraContainer');
-    if (cc) cc.innerHTML = generateChakraChartSVG(built, {
-      showTransit: chakraShowTransit, showNak: chakraShowNak, showVarga: chakraShowVarga, showAspects: chakraShowAspects
-    });
+    if (cc) {
+      cc.innerHTML = wrapChakraZoomable(generateChakraChartSVG(built, {
+        showTransit: chakraShowTransit, showNak: chakraShowNak, showVarga: chakraShowVarga, showAspects: chakraShowAspects
+      }));
+      initChakraZoom('chakraContainer');
+    }
     const dp = document.getElementById('chakraDetailsPanel');
     if (dp) dp.style.display = 'grid';
     renderChakraDetailsPanel(built);
