@@ -2754,9 +2754,17 @@ window.renderVarshaphalaPrediction = function(targetYear) {
       // convention used everywhere else (baseAsc.sn+1, d.sn+1). vp.asc.sn /
       // pData.sn / vp.muntha.sn are all 0-indexed (0-11), so +1 is required
       // here — without it, every rashi/planet on the wheel is misplaced.
+      // NOTE 2: degree-in-sign must come from a normalized 0-360 longitude
+      // before taking %30 — JS's %30 on a negative number returns a
+      // negative result (e.g. -10 % 30 === -10, not 20), which would place
+      // a planet at the wrong angular position within its house/sign wedge.
+      function degInSign(lon) {
+          const norm = ((parseFloat(lon) || 0) % 360 + 360) % 360;
+          return norm % 30;
+      }
       if (typeof window.Writesvg === 'function') {
           const varshaChartData = [
-              { id: 0, name: 'Ascendant', tx: 'As', sign: vp.asc.sn + 1, bhava: 1, retro: false, degree: vp.asc.dlon % 30 }
+             { id: 0, name: 'Ascendant', tx: 'As', sign: vp.asc.sn + 1, bhava: 1, retro: false, degree: degInSign(vp.asc.dlon) }
           ];
           const planetIds = { Sun:1, Moon:2, Mars:3, Mercury:4, Jupiter:5, Venus:6, Saturn:7, Rahu:8, Ketu:9 };
           const pAbbr = { Sun:'Su', Moon:'Mo', Mars:'Ma', Mercury:'Me', Jupiter:'Ju', Venus:'Ve', Saturn:'Sa', Rahu:'Ra', Ketu:'Ke' };
@@ -2769,7 +2777,7 @@ window.renderVarshaphalaPrediction = function(targetYear) {
                       sign: pData.sn + 1,
                       bhava: pData.house,
                       retro: pData.retro || false,
-                      degree: pData.sid % 30
+                       degree: degInSign(pData.sid)
                   });
               }
           }
@@ -2786,6 +2794,28 @@ window.renderVarshaphalaPrediction = function(targetYear) {
           html += "<div style='display:flex; justify-content:center; margin: 15px 0;'>";
           html += window.Writesvg(varshaChartData, "Varshaphala " + year);
           html += "</div>";
+          // Planetary Positions table — a plain-text cross-check of the
+          // wheel above (sign, exact degree, house, retrograde), so any
+          // wheel-rendering discrepancy is easy to catch at a glance.
+          const SIGNS_ = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) || [];
+          html += "<div style='margin-top:10px;'>";
+          html += "<h3 style='color:var(--text);'>Planetary Positions (Varshaphala Chart)</h3>";
+          html += "<table style='width:100%; border-collapse: collapse; text-align: left; font-size:0.85em;'>";
+          html += "<tr style='border-bottom: 1px solid var(--border);color:var(--muted);'><th style='padding:5px;'>Planet</th><th style='padding:5px;'>Sign</th><th style='padding:5px;'>Degree</th><th style='padding:5px;'>House</th><th style='padding:5px;'>Motion</th></tr>";
+          html += "<tr style='border-bottom: 1px dashed var(--border);'><td style='padding:5px;'><strong>Ascendant</strong></td><td style='padding:5px;'>" + (SIGNS_[vp.asc.sn] || '') + "</td><td style='padding:5px;'>" + degInSign(vp.asc.dlon).toFixed(2) + "°</td><td style='padding:5px;'>1</td><td style='padding:5px;color:var(--muted);'>—</td></tr>";
+          Object.entries(vp.planets).forEach(([pName, pData]) => {
+              if (planetIds[pName] === undefined) return;
+              const isRetro = !!pData.retro;
+              html += "<tr style='border-bottom: 1px dashed var(--border);'>";
+              html += "<td style='padding:5px;'><strong>" + pName + "</strong> (" + pAbbr[pName] + ")</td>";
+              html += "<td style='padding:5px;'>" + (SIGNS_[pData.sn] || '') + "</td>";
+              html += "<td style='padding:5px;'>" + degInSign(pData.sid).toFixed(2) + "°</td>";
+              html += "<td style='padding:5px;'>" + pData.house + "</td>";
+              html += "<td style='padding:5px;" + (isRetro ? "color:var(--rose);font-weight:bold;" : "color:var(--muted);") + "'>" + (isRetro ? "Retrograde (R)" : "Direct") + "</td>";
+              html += "</tr>";
+          });
+          html += "<tr><td style='padding:5px;'><strong>Muntha</strong></td><td style='padding:5px;'>" + vp.muntha.sign + "</td><td style='padding:5px;color:var(--muted);'>—</td><td style='padding:5px;'>" + vp.muntha.house + "</td><td style='padding:5px;color:var(--muted);'>—</td></tr>";
+          html += "</table></div>";
       }
 
       // Small helper for a colored Positive/Negative/Neutral badge
@@ -2882,20 +2912,53 @@ window.renderVarshaphalaPrediction = function(targetYear) {
       html += "<div style='margin-top: 15px;'>";
       html += "<h3 style='color:var(--text);'>Monthly Horoscope (Maasaphala)</h3>";
       if (vp.maasaphala && vp.maasaphala.length > 0) {
+           const monthAbbr = { Sun:'Su', Moon:'Mo', Mars:'Ma', Mercury:'Me', Jupiter:'Ju', Venus:'Ve', Saturn:'Sa' };
+
+          // Month picker, mirroring the Year picker UX above
+          html += "<div style='display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;'>";
+          html += "<label style='color:var(--muted);'>Select Month: </label>";
+          html += "<select onchange='window.showMaasaphalaMonth(this)' style='background:var(--bg3);color:var(--text);border:1px solid var(--border);padding:4px;border-radius:3px;'>";
+          vp.maasaphala.forEach(m => {
+              const abbr = monthAbbr[m.lord] || m.lord;
+              html += "<option value='" + m.monthIndex + "'>Month " + m.monthIndex + " — " + abbr + " (" + m.lord + ") — " + m.startDate + "</option>";
+          });
+          html += "</select>";
+          html += "<button onclick='window.showMaasaphalaMonth(this.previousElementSibling)' style='padding:4px 10px;background:var(--gold);color:#000;border:none;border-radius:3px;cursor:pointer;font-weight:bold;'>View</button>";
+          html += "</div>";
+
+          // Overview table (all 12 months at a glance)
           html += "<table style='width:100%; border-collapse: collapse; text-align: left; font-size:0.9em;'>";
           html += "<tr style='border-bottom: 1px solid var(--border);color:var(--muted);'><th style='padding:5px;'>Month</th><th style='padding:5px;'>Start Date</th><th style='padding:5px;'>Ascendant</th><th style='padding:5px;'>Maasesh</th><th style='padding:5px;'>Outlook</th></tr>";
           vp.maasaphala.forEach(m => {
               const mColor = m.qualityColor || '#FFD700';
               const mLabel = m.qualityLabel || 'Neutral';
+               const abbr = monthAbbr[m.lord] || m.lord;
               html += "<tr style='border-bottom: 1px dashed var(--border);border-left:3px solid " + mColor + ";'>";
               html += "<td style='padding:5px;'>Month " + m.monthIndex + "</td>";
               html += "<td style='padding:5px;'>" + m.startDate + "</td>";
               html += "<td style='padding:5px;'>" + m.ascSign + "</td>";
-              html += "<td style='padding:5px;'><strong>" + m.lord + "</strong></td>";
+             html += "<td style='padding:5px;'><strong>" + m.lord + "</strong> (" + abbr + ")</td>";
               html += "<td style='padding:5px;'>" + qualityBadge(mLabel, mColor) + "</td>";
               html += "</tr>";
           });
           html += "</table>";
+          // Per-month detail analysis — all 12 pre-rendered (no re-fetch
+          // needed, the data already exists for the whole year), toggled
+          // client-side by the picker above.
+          html += "<div style='margin-top:12px;'>";
+          vp.maasaphala.forEach((m, idx) => {
+              const mColor = m.qualityColor || '#FFD700';
+              const mLabel = m.qualityLabel || 'Neutral';
+              const abbr = monthAbbr[m.lord] || m.lord;
+              const houseFromVarsha = m.houseFromVarsha || null;
+              const houseSig = houseFromVarsha ? window.VARSHAPHALA.getHouseSigEn(houseFromVarsha) : 'general life affairs';
+              html += "<div class='maasa-detail-card' data-month='" + m.monthIndex + "' style='display:" + (idx === 0 ? 'block' : 'none') + ";padding:10px;border-left:4px solid " + mColor + ";background:rgba(255,255,255,0.03);border-radius:4px;margin-bottom:6px;'>";
+              html += "<h4 style='margin:0 0 6px 0;color:var(--gold);'>Month " + m.monthIndex + " analysis (from " + m.startDate + ")" + qualityBadge(mLabel, mColor) + "</h4>";
+              html += "<p style='margin:2px 0;'><strong>Maasa Lagna:</strong> " + m.ascSign + " &nbsp;|&nbsp; <strong>Maasesh (Month Lord):</strong> " + m.lord + " (" + abbr + ")" + (houseFromVarsha ? " &nbsp;|&nbsp; <strong>House from Varsha Lagna:</strong> " + houseFromVarsha : '') + "</p>";
+              html += "<p style='color:var(--cyan);margin:4px 0 0 0;font-size:9.5px;'>This month's own ascendant falls " + (houseFromVarsha ? "in House " + houseFromVarsha + " counted from your annual (Varsha) Lagna" : "at this point in the year") + " — a <b style='color:" + mColor + ";'>" + mLabel.toLowerCase() + "</b> period, with likely focus on " + houseSig + ".</p>";
+              html += "</div>";
+          });
+          html += "</div>";
       } else {
           html += "<p style='color:var(--muted);'>No monthly data available.</p>";
       }
@@ -2930,4 +2993,22 @@ window.renderVarshaphalaPrediction = function(targetYear) {
       } catch (e) {
           console.error('Varshaphala refresh failed:', e);
       }
+  };
+  /**
+   * Shows the selected month's Maasaphala detail card and hides the rest.
+   * All 12 months are already pre-rendered in the DOM (the data for the
+   * whole year is computed in one pass), so this is a pure client-side
+   * toggle — no re-fetch or recomputation needed, unlike the Year picker.
+   * Scoped via closest() so it works correctly even with multiple
+   * Varshaphala blocks/years open in the same document.
+   */
+  window.showMaasaphalaMonth = function(el) {
+      if (!el) return;
+      const scope = el.closest ? (el.closest('.varshaphala-container') || document) : document;
+      const month = el.value !== undefined ? el.value : el.getAttribute('data-month');
+      if (month === null || month === undefined) return;
+      const cards = scope.querySelectorAll('.maasa-detail-card');
+      cards.forEach(c => {
+          c.style.display = (c.getAttribute('data-month') === String(month)) ? 'block' : 'none';
+      });
   };

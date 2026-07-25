@@ -324,8 +324,25 @@ async function updatePredictionsDisplay() {
       const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
       html += window.makeEditable('astro_made_easy_db', generatedHTML);
     } else if (mode === 'bnn') {
-      const dbMap = { "BNN": { data: window.BNN_DB || [], color: 'var(--rose)' } };
-      const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+      // BNN (Bhrigu Nandi Nadi) rules are fixed birth-chart combinations, NOT
+      // transit-based — always analyze the natal chart, never CURRENT_PLANETARY_POSITIONS.
+     // GENERIC_ANALYZER can't meaningfully parse BNN_DB (it's mostly free-text
+      // transcript, not short pattern-matchable fragments like the other DBs),
+      // so this uses the dedicated engine in bnn_engine.js instead (loaded via
+      // index.html as window.BNN_ENGINE — make sure that script tag stays
+      // ABOVE this one).
+      let generatedHTML;
+      if (!window.BNN_ENGINE) {
+        generatedHTML = '<div class="pred-item">Error: bnn_engine.js did not load (check the &lt;script&gt; tag order in index.html — it must load before predictions_ui.js).</div>';
+      } else if (!window.BIRTH_PLANETS) {
+        generatedHTML = '<div class="pred-item">Error: natal chart (BIRTH_PLANETS) is not computed yet. Click "Update" again after the chart finishes loading.</div>';
+      } else {
+        const bnnGender = (window.BIRTH && window.BIRTH.gender) || 'male';
+        const bnnChart = window.BNN_ENGINE.buildChart(window.BIRTH_PLANETS, window.BIRTH_ASC || {});
+        const bnnReport = window.BNN_ENGINE.runFullAnalysis(bnnChart, { gender: bnnGender });
+        generatedHTML = bnnReport.html;
+     
+      }
       html += window.makeEditable('bnn_db', generatedHTML);
     } else if (mode === 'kaalpurush') {
       const dbMap = { "Kaalpurush Astrology": { data: window.KAALPURUSH_ASTROLOGY_DB || [], color: '#00FF88' } };
