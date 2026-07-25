@@ -5944,7 +5944,17 @@ function showPanchang() {
    const yData = P_YOGAS[yogaIdx];
    const kData = P_KARANAS[kIdx];
    const nData = P_NAKS[p.Moon.nak] || {r:"Unknown", c:"Unknown", m:"Unknown"};
-
+let vratFestivalHTML = '';
+   try {
+     if (window.VRAT_FESTIVAL_ENGINE) {
+       const maasIdx = Math.floor(norm360(p.Sun.sid) / 30);
+       const maasName = window.VRAT_FESTIVAL_ENGINE.MAAS_NAMES[maasIdx];
+       const vfResult = window.VRAT_FESTIVAL_ENGINE.detect({
+         tithiNum: tithi.num, weekday: vara, nakshatra: p.Moon.nak, maasName: maasName
+       });
+       vratFestivalHTML = window.VRAT_FESTIVAL_ENGINE.renderHTML(vfResult);
+     }
+   } catch (e) { console.error('Vrat/Festival detection failed:', e); }
    const yCol = yData.t==='Auspicious' ? 'var(--green)' : yData.t==='Mixed' ? 'var(--gold)' : 'var(--rose)';
    const kCol = kData.t==='Auspicious' ? 'var(--green)' : kData.t==='Mixed' ? 'var(--gold)' : 'var(--rose)';
 
