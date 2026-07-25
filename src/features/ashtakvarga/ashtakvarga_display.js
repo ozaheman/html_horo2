@@ -48,7 +48,117 @@ window.ASHTAKVARGA_DISPLAY = {
     renderAllBAVGrids: function (allBAV) {
         return window.ASHTAKVARGA.PLANETS7.map(p => this.renderBAVGrid(allBAV[p], p)).join('');
     },
+ // ===================== BAV IN NATAL KUNDALI (not a grid) =====================
 
+    /**
+     * Renders one <canvas> placeholder per planet, labeled with its BAV total.
+     * Actual bindus are painted in by drawAllBAVKundalis() once this markup is
+     * in the DOM (canvases can't be painted from an HTML string).
+     */
+    renderAllBAVKundalis: function (allBAV) {
+        const A = window.ASHTAKVARGA;
+        const cards = A.PLANETS7.map(p => {
+            const total = allBAV[p] ? allBAV[p].total : '';
+            return `<div style="flex:1 1 240px;min-width:210px;max-width:280px;">
+                <div style="font-size:9.5px;font-weight:bold;color:var(--gold,#FFD700);margin-bottom:3px;text-align:center;">${p}'s Bhinnashtakavarga (total ${total})</div>
+                <canvas id="bavKundali_${p}" width="250" height="250" style="width:100%;max-width:250px;display:block;margin:0 auto;"></canvas>
+              </div>`;
+        }).join('');
+        return `<div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:6px;">${cards}</div>`;
+    },
+
+    /**
+     * Paints one planet's bindus into a North-Indian diamond kundali (same house
+     * geometry as the app's main drawDChart), instead of the flat sign-by-sign
+     * grid. Each house shows: the sign number occupying it, that planet's bindu
+     * count there (color-coded strong/average/weak), and which natal
+     * planets/Ascendant sit in that house for context.
+     */
+    drawBAVKundali: function (canvasId, planetName, allBAV, natalPlanets, ascSignNum) {
+        const A = window.ASHTAKVARGA;
+        const cv = document.getElementById(canvasId);
+        if (!cv) return;
+        const ctx = cv.getContext('2d');
+        if (!ctx) return;
+        const S = cv.width || 250;
+        const getVar = (name, fallback) => {
+            try {
+                const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+                return v || fallback;
+            } catch (e) { return fallback; }
+        };
+
+        ctx.clearRect(0, 0, S, S);
+        ctx.fillStyle = getVar('--bg', '#0a0a0a');
+        ctx.fillRect(0, 0, S, S);
+
+        const M = 8, L = S - 2 * M, x0 = M, y0 = M, U = L / 4;
+        const P = (c, r) => ({ x: x0 + c * U, y: y0 + r * U });
+        const p00 = P(0, 0), p20 = P(2, 0), p40 = P(4, 0);
+        const p02 = P(0, 2), p11 = P(1, 1), p31 = P(3, 1), p22 = P(2, 2), p13 = P(1, 3), p33 = P(3, 3), p42 = P(4, 2);
+        const p04 = P(0, 4), p24 = P(2, 4), p44 = P(4, 4);
+
+        const ln = (a, b) => { ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); };
+        ctx.strokeStyle = getVar('--border3', '#555555') + '88';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x0, y0, L, L);
+        ln(p20, p02); ln(p02, p24); ln(p24, p42); ln(p42, p20); // Inner diamond
+        ln(p00, p44); ln(p40, p04); // Large diagonals
+
+        const avg3 = (a, b, c) => ({ x: (a.x + b.x + c.x) / 3, y: (a.y + b.y + c.y) / 3 });
+        const avg4 = (a, b, c, d) => ({ x: (a.x + b.x + c.x + d.x) / 4, y: (a.y + b.y + c.y + d.y) / 4 });
+        const CE = {
+            1: avg4(p20, p11, p22, p31), 2: avg3(p00, p20, p11), 3: avg3(p00, p02, p11),
+            4: avg4(p02, p11, p22, p13), 5: avg3(p04, p02, p13), 6: avg3(p04, p24, p13),
+            7: avg4(p24, p13, p22, p33), 8: avg3(p44, p24, p33), 9: avg3(p44, p42, p33),
+            10: avg4(p42, p31, p22, p33), 11: avg3(p40, p42, p31), 12: avg3(p40, p20, p31)
+        };
+
+        const bav = allBAV[planetName];
+        if (!bav) return;
+
+        const binduColorMap = { exceptional: '#00FFAA', strong: '#00DD77', good: '#FFD700', average: '#FFD700', weak: '#FF9955', 'very-weak': '#FF4477' };
+
+        // Which planets (+ Ascendant) occupy each house, for context
+        const hmap = {}; for (let i = 1; i <= 12; i++) hmap[i] = [];
+        Object.entries(natalPlanets || {}).filter(([p]) => !['Uranus', 'Neptune', 'Pluto'].includes(p)).forEach(([p, pd]) => {
+            const h = ((pd.sn - ascSignNum + 12) % 12) + 1;
+            if (h >= 1 && h <= 12) hmap[h].push(p === planetName ? p.toUpperCase() : p.slice(0, 2));
+        });
+        hmap[1].unshift('As');
+
+        for (let h = 1; h <= 12; h++) {
+            const sn1 = ((ascSignNum + h - 1) % 12) + 1;
+            const sn0 = sn1 - 1;
+            const c = CE[h];
+            if (!c) continue;
+            const bindus = bav.bindus[sn0];
+            const strength = A.classifyBAVStrength(planetName, bindus);
+            const col = binduColorMap[strength] || '#AAAAAA';
+
+            ctx.textAlign = 'center';
+            ctx.font = '8px Courier New';
+            ctx.fillStyle = getVar('--muted', '#888888');
+            ctx.fillText(String(sn1), c.x, c.y - 15);
+
+            ctx.font = 'bold 16px Courier New';
+            ctx.fillStyle = col;
+            ctx.fillText(String(bindus), c.x, c.y + 3);
+
+            const occ = hmap[h].join(' ');
+            if (occ) {
+                ctx.font = '7px Courier New';
+                ctx.fillStyle = getVar('--text', '#eeeeee');
+                ctx.fillText(occ, c.x, c.y + 15);
+            }
+        }
+        ctx.textAlign = 'left';
+    },
+
+    /** Draws all 7 planets' Bhinnashtakavarga kundalis into the canvases produced by renderAllBAVKundalis(). */
+    drawAllBAVKundalis: function (allBAV, natalPlanets, ascSignNum) {
+        window.ASHTAKVARGA.PLANETS7.forEach(p => this.drawBAVKundali(`bavKundali_${p}`, p, allBAV, natalPlanets, ascSignNum));
+    },
     // ===================== SAV GRID =====================
 
     renderSAVGrid: function (sav, reducedSAV) {
@@ -270,6 +380,13 @@ window.ASHTAKVARGA_DISPLAY = {
 
         let html = `<div style="padding:4px;">`;
         html += this.renderSAVGrid(sav, reducedSAV);
+          // Bhinnashtakavarga — shown in the natal kundali (diamond chart) per planet, not a flat grid
+        html += `<div style="margin-top:10px;">
+            <div style="font-size:10.5px;font-weight:bold;color:var(--gold,#FFD700);border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:4px;margin-bottom:6px;">📊 Bhinnashtakavarga — In Natal Kundali (per planet)</div>
+            ${this.renderAllBAVKundalis(allBAV)}
+          </div>`;
+
+        // Direction analysis chart — shown directly below the Bhinnashtakavarga charts
         html += this.renderTatwaChakra(A.analyzeTatwaChakraDirection(sav));
 
         if (mdLord && adLord && transitPlanets) {
@@ -298,14 +415,37 @@ window.ASHTAKVARGA_DISPLAY = {
             if (window.ASHTAKVARGA_SECRETS_DISPLAY && A.SECRETS) {
                 html += window.ASHTAKVARGA_SECRETS_DISPLAY.renderAllSecretsForAshtakvargaPanel({
                     natalPlanets: natalPlanets, ascSignNum: ascSignNum, ascDeg: ascDeg,
-                    allBAV: allBAV, sav: sav, transitPlanets: transitPlanets,
+                    allBAV: allBAV, sav: sav, transitPlanets: transitPlanets,lords: lords,
                     birthDate: opts.birthDate instanceof Date ? opts.birthDate : (window.BIRTH && window.BIRTH.date instanceof Date ? window.BIRTH.date : null)
                 });
             }
         } catch (e) { console.error('Ashtakavarga Secrets section failed:', e); }
+// Classical Yogas relevant to strength/fortune (Raja Yoga, Bhava-strength, etc.)
+        try {
+            if (typeof window.buildThemedYogaSection === 'function') {
+                const chartForYogas = { planets: natalPlanets, asc: { sn: ascSignNum, deg: ascDeg } };
+                html += window.buildThemedYogaSection(chartForYogas, {
+                    title: 'Classical Yogas (Strength & Fortune)',
+                    icon: '🌟',
+                    color: 'var(--gold)',
+                    categories: ['Raja Yoga', 'Vipareeta Raja Yoga', 'Auspicious', 'Special/Rare', 'Bhava Strength Yoga'],
+                    keywords: ['fortune', 'power', 'authority', 'strength', 'protection', 'prosperity', 'respect', 'greatness']
+                });
+            }
+        } catch (e) { console.error('Ashtakavarga themed yoga section failed:', e); }
 
-        html += `<details style="margin-top:8px;"><summary style="cursor:pointer;font-size:9px;color:var(--cyan);">All 7 Bhinnashtakavarga Grids</summary>${this.renderAllBAVGrids(allBAV)}</details>`;
         html += `</div>`;
+
+        // Canvases referenced above don't exist in the DOM yet (renderFullPanel
+        // only returns an HTML string — the caller assigns it to innerHTML,
+        // possibly directly instead of via mount()). Schedule the paint for the
+        // next tick, by which point that assignment has already happened.
+        const self = this;
+        setTimeout(function () {
+            try { self.drawAllBAVKundalis(allBAV, natalPlanets, ascSignNum); }
+            catch (e) { console.error('Failed to draw Bhinnashtakavarga kundalis:', e); }
+        }, 0);
+
         return html;
     },
 
@@ -313,6 +453,8 @@ window.ASHTAKVARGA_DISPLAY = {
         const el = document.getElementById(containerId);
         if (!el) { console.warn('ASHTAKVARGA_DISPLAY.mount: container not found', containerId); return; }
         if (!window.ASHTAKVARGA) { el.innerHTML = '<div class="pred-item" style="color:var(--rose)">ASHTAKVARGA core engine not loaded.</div>'; return; }
+        // renderFullPanel() self-schedules painting the BAV kundali canvases
+        // once this HTML is in the DOM, so no extra draw step is needed here.
         el.innerHTML = this.renderFullPanel(opts);
     }
 };

@@ -729,7 +729,133 @@ window.ASHTAKVARGA = {
         });
         return analysis;
     },
+ /**
+     * Lagna does not have a classical Bhinnashtakavarga of its own in the
+     * Parashari system (it is only ever a *contributor* to the 7 planets'
+     * BAVs, never a target). Per Jataka Deshamarga's teaching that Lagna's
+     * own strongest direction governs the main-door placement, this builds
+     * a defensible proxy: summed across all 7 planets' BAV tables, how many
+     * bindus does the Ascendant's own placement contribute into each sign.
+     * This uses only real classical BAV_TABLES data — it is a repurposing,
+     * not an invented table.
+     */
+    computeLagnaBAVProxy: function (planetsMap, ascSignNum, ascDeg) {
+        const pos = this._positionsFromChart(planetsMap, ascSignNum, ascDeg);
+        const ascPos = pos.Ascendant;
+        if (!ascPos) return null;
+        const bindus = new Array(12).fill(0);
+        this.PLANETS7.forEach(target => {
+            const offsets = this.BAV_TABLES[target] && this.BAV_TABLES[target].Ascendant;
+            if (!offsets) return;
+            offsets.forEach(offset => {
+                const signIdx = (ascPos.sn + offset - 1) % 12;
+                bindus[signIdx]++;
+            });
+        });
+        return { planet: 'Ascendant', bindus: bindus, total: bindus.reduce((a, b) => a + b, 0), isProxy: true };
+    },
 
+    /** Same direction analysis as analyzeVastuAndDirections, but also including the Lagna proxy (for main-door placement). */
+    analyzeVastuAndDirectionsWithLagna: function (allBAV, planetsMap, ascSignNum, ascDeg) {
+        const analysis = this.analyzeVastuAndDirections(allBAV);
+        const lagnaBAV = this.computeLagnaBAVProxy(planetsMap, ascSignNum, ascDeg);
+        if (lagnaBAV) {
+            const directions = [
+                { name: 'East', signs: [0, 4, 8] }, { name: 'South', signs: [1, 5, 9] },
+                { name: 'West', signs: [2, 6, 10] }, { name: 'North', signs: [3, 7, 11] }
+            ];
+            const dirScores = directions.map(dir => ({
+                direction: dir.name, signs: dir.signs.map(s => this.SIGNS[s]),
+                total: dir.signs.reduce((sum, signIdx) => sum + lagnaBAV.bindus[signIdx], 0)
+            })).sort((a, b) => b.total - a.total);
+            analysis.Ascendant = { strongest: dirScores[0], weakest: dirScores[dirScores.length - 1], allDirections: dirScores, isProxy: true };
+        }
+        return analysis;
+    },
+
+    // ===================== 15b. DIG BALA & THE KARMA ALIGNMENT TECHNIQUE =====================
+    // Reference: "Karma Alignment Technique — Directional Strength" (Rahul Kaushik).
+    // Classical Dig Bala (positional directional strength): each of the 7
+    // planets is naturally powerful when placed in ONE specific house.
+    // Rahu/Ketu are excluded in strict Parashari Dig Bala; the Rahu->7th
+    // and Ketu->10th entries below are this teaching's own practical
+    // extension (Rahu co-rules Aquarius/Saturn's Dig Bala house; Ketu
+    // co-rules Scorpio/Mars's Dig Bala house) and are flagged as such.
+    DIG_BALA_HOUSE: { Sun: 10, Mars: 10, Jupiter: 1, Mercury: 1, Venus: 4, Moon: 4, Saturn: 7, Rahu: 7, Ketu: 10 },
+    DIG_BALA_NON_CLASSICAL: ['Rahu', 'Ketu'],
+
+    KARMA_ALIGNMENT_TOPICS: {
+        1: 'Self / Personality', 2: 'Wealth & Family', 3: 'Courage & Effort', 4: 'Home & Property',
+        5: 'Children & Creativity', 6: 'Service & Health', 7: 'Relationships & Partnerships',
+        8: 'Transformation & Research', 9: 'Fortune & Dharma', 10: 'Career & Karma',
+        11: 'Gains & Ambitions', 12: 'Losses & Foreign Connections'
+    },
+
+    /** Does this planet, natally in `natalHouse`, already sit in its own Dig Bala (directional strength) house? */
+    analyzeDigBala: function (planetName, natalHouse) {
+        const digBalaHouse = this.DIG_BALA_HOUSE[planetName];
+        if (!digBalaHouse || !natalHouse) return null;
+        return {
+            planet: planetName, natalHouse: natalHouse, digBalaHouse: digBalaHouse,
+            hasDigBala: natalHouse === digBalaHouse,
+            nonClassical: this.DIG_BALA_NON_CLASSICAL.includes(planetName)
+        };
+    },
+
+    /**
+     * The Karma Alignment Technique itself: for a planet natally placed in
+     * `natalHouse`, find the single house H such that counting from H to
+     * the planet's natal house lands it in its own Dig Bala house. That H
+     * is "the house's own Google Map" — the one house whose affairs, when
+     * focused on, let this planet work at full natural strength for you
+     * without extra effort.
+     *
+     * Formula: counting-from-H-to-natalHouse = ((natalHouse - H + 12) % 12) + 1.
+     * Setting this equal to digBalaHouse and solving for H gives:
+     *   H = (((natalHouse - digBalaHouse) % 12 + 12) % 12) + 1
+     */
+    findKarmaAlignmentHouse: function (planetName, natalHouse) {
+        const digBalaHouse = this.DIG_BALA_HOUSE[planetName];
+        if (!digBalaHouse || !natalHouse) return null;
+        const H = (((natalHouse - digBalaHouse) % 12 + 12) % 12) + 1;
+        return { planet: planetName, natalHouse: natalHouse, digBalaHouse: digBalaHouse, karmaAlignmentHouse: H };
+    },
+
+    /**
+     * Full Karma Alignment analysis for one house's significations: finds
+     * that house's lord, the lord's natal house, and the Karma Alignment
+     * house that brings the lord into its own Dig Bala strength.
+     */
+    analyzeKarmaAlignmentForHouse: function (houseNum, ascSignNum, natalPlanets, lords) {
+        const houseLordSign = (ascSignNum + houseNum - 1) % 12;
+        const lord = lords[houseLordSign];
+        if (!lord || !natalPlanets[lord]) return null;
+        const lordHouse = natalPlanets[lord].house;
+        if (!lordHouse) return null;
+        const alignment = this.findKarmaAlignmentHouse(lord, lordHouse);
+        const topic = this.KARMA_ALIGNMENT_TOPICS[houseNum];
+        if (!alignment) {
+            return { houseNum: houseNum, topic: topic, lord: lord, lordNatalHouse: lordHouse, unavailable: true,
+                     reason: `${lord} has no Dig Bala house configured.` };
+        }
+        return {
+            houseNum: houseNum, topic: topic, lord: lord, lordNatalHouse: lordHouse,
+            digBalaHouse: alignment.digBalaHouse, karmaAlignmentHouse: alignment.karmaAlignmentHouse,
+            nonClassical: this.DIG_BALA_NON_CLASSICAL.includes(lord),
+            alreadyAligned: lordHouse === alignment.digBalaHouse,
+            narrative: `${lord} (Lord of House ${houseNum} — ${topic}) is natally in House ${lordHouse}. Its directional-strength (Dig Bala) house is ${alignment.digBalaHouse}. Counting from House ${alignment.karmaAlignmentHouse}, ${lord} lands in that Dig Bala house — making House ${alignment.karmaAlignmentHouse}'s affairs the most natural, effort-free path to fulfilling ${topic.toLowerCase()}.`
+        };
+    },
+
+    /** Runs the Karma Alignment Technique across all 12 houses at once. */
+    analyzeAllKarmaAlignments: function (ascSignNum, natalPlanets, lords) {
+        const out = [];
+        for (let h = 1; h <= 12; h++) {
+            const r = this.analyzeKarmaAlignmentForHouse(h, ascSignNum, natalPlanets, lords);
+            if (r) out.push(r);
+        }
+        return out;
+    },
     // ===================== 16. MAHADASHA ANALYSIS =====================
 
     /**

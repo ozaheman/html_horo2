@@ -1878,6 +1878,29 @@ if (pMeta.patelStatus) {
       console.warn('Property Yoga analysis failed:', e);
     }
     // ============================================================
+    // 15b. WEALTH / CAREER & MARRIAGE YOGAS
+    // ============================================================
+    try {
+      if (typeof window.buildThemedYogaSection === 'function') {
+        const chartForYogas = { planets: planets, asc: ascData };
+        html += window.buildThemedYogaSection(chartForYogas, {
+          title: 'Wealth & Career Yogas',
+          icon: '💼',
+          color: 'var(--cyan)',
+          keywords: ['wealth', 'career', 'profession', 'business', 'trade', 'commerce', 'success', 'authority', 'fame', 'gains', 'prosperity', 'money', 'leadership'],
+          categories: ['Raja Yoga', 'Vipareeta Raja Yoga']
+        });
+        html += window.buildThemedYogaSection(chartForYogas, {
+          title: 'Marriage Yogas',
+          icon: '💍',
+          color: 'var(--rose)',
+          keywords: ['marriage', 'spouse', 'wife', 'husband', 'union', 'relationship', 'love', 'partner', 'conjugal', 'family']
+        });
+      }
+    } catch (e) {
+      console.warn('Wealth/Career & Marriage Yoga analysis failed:', e);
+    }
+    // ============================================================
     // 16. VARSHAPHALA (TAJIK SOLAR RETURN)
     // ============================================================
     try {
@@ -2714,18 +2737,26 @@ window.renderVarshaphalaPrediction = function(targetYear) {
       
       if (!vp) return "<p>Unable to calculate Varshaphala for " + year + ".</p>";
   
-      let html = "<div id='varshaphala-root' class='varshaphala-container' style='padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; margin-top: 15px;'>";
+      let html = "<div id='varshaphala-root' class='varshaphala-container' style='padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-top: 15px;'>";
       html += "<div style='display:flex; justify-content:space-between; align-items:center;'>";
-      html += "<h2>Varshphal kaise dekhe - " + year + "</h2>";
-      html += "<div><label>Select Year: </label><input type='number' id='varshaYearInput' value='"+year+"' style='width:70px; background:var(--bg3); color:var(--text); border:1px solid var(--border); padding:3px;'><button onclick='window.refreshVarshaphala()' style='margin-left:5px; padding:3px 8px; background:var(--primary); color:white; border:none; cursor:pointer;'>View</button></div>";
+      html += "<h2 style='color:var(--gold);margin:0;'>Varshphal kaise dekhe - " + year + "</h2>";
+      html += "<div><label style='color:var(--muted);'>Select Year: </label><input type='number' id='varshaYearInput' class='varsha-year-input' value='"+year+"' onkeydown='if(event.key===\"Enter\"){window.refreshVarshaphala(this);}' style='width:70px; background:var(--bg3); color:var(--text); border:1px solid var(--border); padding:3px;'><button onclick='window.refreshVarshaphala(this)' style='margin-left:5px; padding:3px 8px; background:var(--gold); color:#000; border:none; border-radius:3px; cursor:pointer;font-weight:bold;'>View</button></div>";
       html += "</div>";
 
-      html += "<p style='color: var(--text-muted);'>Age: " + vp.age + " | Varshapravesh: " + (vp.dateInfo ? (vp.dateInfo.day + "/" + vp.dateInfo.month + "/" + vp.dateInfo.year) : "N/A") + "</p>";
-      
+      html += "<p style='color: var(--muted);'>Age: " + vp.age + " | Varshapravesh: " + (vp.dateInfo ? (vp.dateInfo.day + "/" + vp.dateInfo.month + "/" + vp.dateInfo.year) : "N/A") + "</p>";
+
+      if (vp.doubleJanma) {
+          html += "<div style='margin:10px 0;padding:8px 12px;background:rgba(255,68,119,0.12);border-left:3px solid var(--rose);border-radius:4px;color:var(--rose);font-size:11px;font-weight:bold;'>⚠ Dwijanma (Double Janma) Year — a highly significant and potentially turbulent year. Extra caution advised.</div>";
+      }
+
       // Draw Chart
+      // NOTE: Writesvg expects 1-indexed sign numbers (1-12), matching the
+      // convention used everywhere else (baseAsc.sn+1, d.sn+1). vp.asc.sn /
+      // pData.sn / vp.muntha.sn are all 0-indexed (0-11), so +1 is required
+      // here — without it, every rashi/planet on the wheel is misplaced.
       if (typeof window.Writesvg === 'function') {
           const varshaChartData = [
-              { id: 0, name: 'Ascendant', tx: 'As', sign: vp.asc.sn, bhava: 1, retro: false, degree: vp.asc.dlon % 30 }
+              { id: 0, name: 'Ascendant', tx: 'As', sign: vp.asc.sn + 1, bhava: 1, retro: false, degree: vp.asc.dlon % 30 }
           ];
           const planetIds = { Sun:1, Moon:2, Mars:3, Mercury:4, Jupiter:5, Venus:6, Saturn:7, Rahu:8, Ketu:9 };
           const pAbbr = { Sun:'Su', Moon:'Mo', Mars:'Ma', Mercury:'Me', Jupiter:'Ju', Venus:'Ve', Saturn:'Sa', Rahu:'Ra', Ketu:'Ke' };
@@ -2735,9 +2766,9 @@ window.renderVarshaphalaPrediction = function(targetYear) {
                       id: planetIds[pName],
                       name: pName,
                       tx: pAbbr[pName],
-                      sign: pData.sn,
+                      sign: pData.sn + 1,
                       bhava: pData.house,
-                      retro: false, // simplified for now
+                      retro: pData.retro || false,
                       degree: pData.sid % 30
                   });
               }
@@ -2746,7 +2777,7 @@ window.renderVarshaphalaPrediction = function(targetYear) {
               id: 99,
               name: 'Muntha',
               tx: 'Mu',
-              sign: vp.muntha.sn,
+              sign: vp.muntha.sn + 1,
               bhava: vp.muntha.house,
               retro: false,
               degree: 0,
@@ -2757,9 +2788,15 @@ window.renderVarshaphalaPrediction = function(targetYear) {
           html += "</div>";
       }
 
+      // Small helper for a colored Positive/Negative/Neutral badge
+      function qualityBadge(label, color) {
+          return "<span style='display:inline-block;font-size:9px;font-weight:bold;padding:2px 8px;border-radius:10px;background:" + color + "22;color:" + color + ";border:1px solid " + color + "55;margin-left:6px;'>" + label + "</span>";
+      }
+
       // Muntha kaise dekhe
+      const munthaQ = vp.muntha.quality || window.VARSHAPHALA.classifyHouse(vp.muntha.house);
       html += "<div style='margin-top: 15px; padding: 10px; background: rgba(0,255,255,0.05); border-left: 4px solid var(--cyan);'>";
-      html += "<h3>Muntha kaise dekhe</h3>";
+      html += "<h3 style='color:var(--cyan);'>Muntha kaise dekhe" + qualityBadge(munthaQ.label, munthaQ.color) + "</h3>";
       html += "<p><strong>Muntha Sign:</strong> " + vp.muntha.sign + " (" + vp.muntha.sn + ")</p>";
       html += "<p><strong>Muntha House:</strong> " + vp.muntha.house + "</p>";
       
@@ -2769,7 +2806,8 @@ window.renderVarshaphalaPrediction = function(targetYear) {
           if (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.NAKSHATRAS) {
               const nakIdx = Math.floor(mData.sid / (360/27));
               const pada = Math.floor((mData.sid % (360/27)) / (360/108)) + 1;
-              muntheshNak = " in " + window.ASTRO_CONSTANTS.NAKSHATRAS[nakIdx] + " Pada " + pada;
+             const nakObj = window.ASTRO_CONSTANTS.NAKSHATRAS[nakIdx];
+              muntheshNak = " in " + (nakObj ? nakObj.name : "Unknown") + " Pada " + pada;
           }
       }
       
@@ -2777,14 +2815,35 @@ window.renderVarshaphalaPrediction = function(targetYear) {
       html += "<p>" + vp.analysis.replace(/\n/g, '<br>') + "</p>";
       html += "</div>";
 
+      // Year Lord (Varsheshvara) & Panchadhikari Scores
+      if (vp.yearLord) {
+          const ylQ = vp.yearLordQuality || { label: 'Neutral', color: '#FFD700' };
+          html += "<div style='margin-top: 15px; padding: 10px; background: rgba(200,168,75,0.06); border-left: 4px solid var(--gold);'>";
+          html += "<h3 style='color:var(--gold);'>Varsheshvara (Year Lord)" + qualityBadge(ylQ.label, ylQ.color) + "</h3>";
+          html += "<p><strong>Year Lord:</strong> " + vp.yearLord + (vp.yearLordHouse ? " — placed in House " + vp.yearLordHouse : "") + "</p>";
+          if (vp.panchadhikarisScores) {
+              html += "<div style='display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:8px; margin-top:8px;'>";
+              Object.entries(vp.panchadhikarisScores).sort((a,b) => b[1]-a[1]).forEach(([pname, score]) => {
+                  const isWinner = pname === vp.yearLord;
+                  html += "<div style='padding:6px 8px;border-radius:4px;font-size:9.5px;background:" + (isWinner ? "rgba(200,168,75,0.15)" : "rgba(255,255,255,0.03)") + ";border:1px solid " + (isWinner ? "var(--gold)" : "var(--border)") + ";'>";
+                  html += "<strong style='color:" + (isWinner ? "var(--gold)" : "var(--text)") + ";'>" + pname + "</strong><br><span style='color:var(--muted);'>Score: " + score + "</span>" + (isWinner ? qualityBadge('Winner', '#FFD700') : '');
+                  html += "</div>";
+              });
+              html += "</div>";
+          }
+          html += "</div>";
+      }
+
       // Sahams (Tajik)
       if (vp.sahams) {
           html += "<div style='margin-top: 15px;'>";
-          html += "<h3>Tajika Sahams (Sensitive Points)</h3>";
+          html += "<h3 style='color:var(--gold2, var(--gold));'>Tajika Sahams (Sensitive Points)</h3>";
           html += "<div style='display:grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap:10px;'>";
           for (const [sName, sData] of Object.entries(vp.sahams)) {
-              html += "<div style='padding:8px; border:1px solid var(--border-color); border-radius:4px;'>";
-              html += "<strong>" + sName + "</strong><br><span style='font-size:0.9em; color:var(--text-muted);'>" + sData.sign + " (" + (sData.lon%30).toFixed(2) + "°)</span>";
+              const sColor = sData.qualityColor || '#FFD700';
+              html += "<div style='padding:8px; border:1px solid var(--border); border-left:3px solid " + sColor + "; border-radius:4px;'>";
+              html += "<strong>" + sName + "</strong>" + (sData.qualityLabel ? qualityBadge(sData.qualityLabel, sColor) : '') + "<br>";
+              html += "<span style='font-size:0.9em; color:var(--muted);'>" + sData.sign + " (" + (sData.lon%30).toFixed(2) + "°)" + (sData.house ? " · House " + sData.house : "") + "</span>";
               html += "</div>";
           }
           html += "</div></div>";
@@ -2792,47 +2851,53 @@ window.renderVarshaphalaPrediction = function(targetYear) {
   
               // 16 Tajika Yogas
         html += "<div style='margin-top: 15px;'>";
-        html += "<h3>16 Tajika Yogas (Planetary Combinations)</h3>";
+        html += "<h3 style='color:var(--text);'>16 Tajika Yogas (Planetary Combinations)</h3>";
         if (vp.tajikaYogas && vp.tajikaYogas.length > 0) {
             html += "<div style='display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:10px;'>";
             vp.tajikaYogas.forEach(yoga => {
-                html += "<div style='padding:8px; border:1px solid var(--border-color); border-radius:4px; background:rgba(255,255,255,0.03);'>";
-                html += "<strong style='color:var(--amber);'>" + yoga.name + " Yoga</strong><br>";
-                html += "<span style='font-size:0.9em; color:var(--text-muted);'>" + yoga.desc + "</span>";
+                const yColor = yoga.qualityColor || '#FFD700';
+                const yLabel = yoga.qualityLabel || 'Neutral';
+                html += "<div style='padding:8px; border:1px solid var(--border); border-left:3px solid " + yColor + "; border-radius:4px; background:rgba(255,255,255,0.03);'>";
+                html += "<strong style='color:var(--gold);'>" + yoga.name + " Yoga</strong>" + qualityBadge(yLabel, yColor) + "<br>";
+                html += "<span style='font-size:0.9em; color:var(--muted);'>" + yoga.desc + "</span>";
                 html += "</div>";
             });
             html += "</div>";
         } else {
-            html += "<p style='color:var(--text-muted);'>No classical Tajika Yogas are active in this chart.</p>";
+            html += "<p style='color:var(--muted);'>No classical Tajika Yogas are active in this chart.</p>";
         }
-        html += "</div>";// House by House
+        html += "</div>";
+
+      // House by House
       html += "<div style='margin-top: 15px;'>";
-      html += "<h3>House by House Prediction</h3>";
-      const goodHouses = [1, 2, 3, 5, 9, 10, 11];
+      html += "<h3 style='color:var(--text);'>House by House Prediction</h3>";
       Object.keys(vp.planets).forEach(p => {
           const h = vp.planets[p].house;
-          const hStatus = goodHouses.includes(h) ? "Favorable" : "Challenging";
-          html += "<p><strong>" + p + "</strong> is in House " + h + " - " + hStatus + " - Affects " + window.VARSHAPHALA.getHouseSigEn(h) + "</p>";
+          const hq = window.VARSHAPHALA.classifyHouse(h);
+          html += "<p style='border-left:3px solid " + hq.color + ";padding-left:8px;margin:4px 0;'><strong>" + p + "</strong> is in House " + h + qualityBadge(hq.label, hq.color) + " — Affects " + window.VARSHAPHALA.getHouseSigEn(h) + "</p>";
       });
       html += "</div>";
   
       // Maasaphala
       html += "<div style='margin-top: 15px;'>";
-      html += "<h3>Monthly Horoscope (Maasaphala)</h3>";
+      html += "<h3 style='color:var(--text);'>Monthly Horoscope (Maasaphala)</h3>";
       if (vp.maasaphala && vp.maasaphala.length > 0) {
           html += "<table style='width:100%; border-collapse: collapse; text-align: left; font-size:0.9em;'>";
-          html += "<tr style='border-bottom: 1px solid var(--border-color);'><th style='padding:5px;'>Month</th><th style='padding:5px;'>Start Date</th><th style='padding:5px;'>Ascendant</th><th style='padding:5px;'>Maasesh</th></tr>";
+          html += "<tr style='border-bottom: 1px solid var(--border);color:var(--muted);'><th style='padding:5px;'>Month</th><th style='padding:5px;'>Start Date</th><th style='padding:5px;'>Ascendant</th><th style='padding:5px;'>Maasesh</th><th style='padding:5px;'>Outlook</th></tr>";
           vp.maasaphala.forEach(m => {
-              html += "<tr style='border-bottom: 1px dashed var(--border-color);'>";
+              const mColor = m.qualityColor || '#FFD700';
+              const mLabel = m.qualityLabel || 'Neutral';
+              html += "<tr style='border-bottom: 1px dashed var(--border);border-left:3px solid " + mColor + ";'>";
               html += "<td style='padding:5px;'>Month " + m.monthIndex + "</td>";
               html += "<td style='padding:5px;'>" + m.startDate + "</td>";
               html += "<td style='padding:5px;'>" + m.ascSign + "</td>";
               html += "<td style='padding:5px;'><strong>" + m.lord + "</strong></td>";
+              html += "<td style='padding:5px;'>" + qualityBadge(mLabel, mColor) + "</td>";
               html += "</tr>";
           });
           html += "</table>";
       } else {
-          html += "<p>No monthly data available.</p>";
+          html += "<p style='color:var(--muted);'>No monthly data available.</p>";
       }
       html += "</div>";
   
@@ -2840,14 +2905,29 @@ window.renderVarshaphalaPrediction = function(targetYear) {
       return html;
   };
 
-  window.refreshVarshaphala = function() {
-      const yearInput = document.getElementById('varshaYearInput');
-      if(yearInput) {
-          const year = parseInt(yearInput.value);
-          const container = document.getElementById('varshaphala-root');
-          if(container) {
-              container.outerHTML = window.renderVarshaphalaPrediction(year);
-          }
+  window.refreshVarshaphala = function(el) {
+      // Scope the lookup to the specific Varshaphala block the user is
+      // interacting with (via closest()) so this keeps working even if the
+      // report has been regenerated and an older copy is still in the DOM
+      // (duplicate ids would otherwise make getElementById grab the wrong,
+      // stale instance and silently fail to update).
+      let root = el && el.closest ? el.closest('.varshaphala-container') : null;
+      let yearInput = root ? root.querySelector('#varshaYearInput, .varsha-year-input') : null;
+
+      if (!root) root = document.getElementById('varshaphala-root');
+      if (!yearInput) yearInput = document.getElementById('varshaYearInput');
+
+      if (!yearInput || !root) {
+          console.warn('Varshaphala refresh: could not locate the year input or container.');
+          return;
+      }
+
+      const parsed = parseInt(yearInput.value, 10);
+      const year = isNaN(parsed) ? new Date().getFullYear() : parsed;
+
+      try {
+          root.outerHTML = window.renderVarshaphalaPrediction(year);
+      } catch (e) {
+          console.error('Varshaphala refresh failed:', e);
       }
   };
-

@@ -578,13 +578,54 @@ function renderD9BusinessType(planets, ascSignNum, LORDS, SIGNS, getVargaSignFn)
  * @param ascendant - ascendant object/number (sn+deg, or absolute longitude)
  */
 function renderNavamsa88BusinessSection(planets, ascendant) {
+    let html = '';
   if (typeof window.NAVAMSA_88 === 'undefined' || !window.NAVAMSA_88.renderBusinessHTML) {
-    return `<div class="pred-item" style="color:var(--muted);font-size:9px;">88th Navamsa module not loaded.</div>`;
+   html = `<div class="pred-item" style="color:var(--muted);font-size:9px;">88th Navamsa module not loaded.</div>`;
+  } else {
+    try {
+      html = window.NAVAMSA_88.renderBusinessHTML(planets, ascendant);
+    } catch (e) {
+      console.warn('renderNavamsa88BusinessSection failed:', e);
+      html = `<div class="pred-item" style="color:var(--rose);font-size:9px;">88th Navamsa business check failed.</div>`;
+    }
+  }
+
+  // Classical business/career/wealth yogas from the shared yoga database
+  try {
+    if (typeof window.buildThemedYogaSection === 'function' && planets && ascendant) {
+      html += window.buildThemedYogaSection({ planets: planets, asc: ascendant }, {
+        title: 'Business & Career Yogas',
+        icon: '💼',
+        color: 'var(--cyan)',
+        keywords: ['wealth', 'career', 'profession', 'business', 'trade', 'commerce', 'success', 'authority', 'fame', 'gains', 'prosperity', 'money', 'leadership'],
+        categories: ['Raja Yoga', 'Vipareeta Raja Yoga']
+      });
+    }
+  } catch (e) { console.warn('Business themed yoga section failed:', e); }
+
+  return html;
+}
+/**
+ * Ashtakavarga Business Secrets wrapper for the Business panel.
+ * Surfaces: business/effort-vs-income ratios, Vastu & directional analysis
+ * (including the Lagna/main-door proxy), Karma Alignment Technique for the
+ * 2nd/10th/11th houses (wealth/career/gains), and Mahadasha land/business
+ * timing — all previously computed by ashtakvarga_secrets.js but never
+ * actually mounted anywhere in the app.
+ *
+ * @param planets - BIRTH_PLANETS-style map
+ * @param ascSignNum - 0-indexed ascendant sign number (BIRTH_ASC.sn)
+ * @param ascDeg - ascendant degree-in-sign
+ * @param lords - {signIdx: plainLordName} map (as used elsewhere in this app)
+ */
+function renderAshtakvargaBusinessSection(planets, ascSignNum, ascDeg, lords) {
+  if (typeof window.ASHTAKVARGA_SECRETS_DISPLAY === 'undefined' || !window.ASHTAKVARGA_SECRETS_DISPLAY.renderForBusinessPanel) {
+    return `<div class="pred-item" style="color:var(--muted);font-size:9px;">Ashtakavarga Secrets module not loaded.</div>`;
   }
   try {
-    return window.NAVAMSA_88.renderBusinessHTML(planets, ascendant);
+    return window.ASHTAKVARGA_SECRETS_DISPLAY.renderForBusinessPanel(planets, ascSignNum, ascDeg, lords);
   } catch (e) {
-    console.warn('renderNavamsa88BusinessSection failed:', e);
-    return `<div class="pred-item" style="color:var(--rose);font-size:9px;">88th Navamsa business check failed.</div>`;
+    console.warn('renderAshtakvargaBusinessSection failed:', e);
+    return `<div class="pred-item" style="color:var(--rose);font-size:9px;">Ashtakavarga business analysis failed.</div>`;
   }
 }

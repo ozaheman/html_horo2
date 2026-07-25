@@ -10,6 +10,29 @@ window.VARSHAPHALA = {
     Sun: 15, Moon: 12, Mars: 8, Mercury: 7, Jupiter: 9, Venus: 7, Saturn: 9
   },
 
+  // Houses treated as auspicious/favorable for Varshaphala purposes.
+  // Shared by Muntha, Sahams, House-by-house, and Year Lord sections so
+  // every part of the display agrees on the same definition.
+  GOOD_HOUSES: [1, 2, 3, 5, 9, 10, 11],
+
+  /** Classifies a house number as Positive/Negative for display purposes. */
+  classifyHouse: function(house) {
+    const isGood = this.GOOD_HOUSES.includes(house);
+    return isGood
+      ? { label: 'Favorable', quality: 'positive', color: '#00DD77' }
+      : { label: 'Challenging', quality: 'negative', color: '#FF4477' };
+  },
+
+  /** Classifies one of the 16 classical Tajika Yogas as Positive/Negative/Neutral. */
+  classifyTajikaYoga: function(name) {
+    const positive = ['Ikbal', 'Ithasal', 'Kuttha', 'Kamboola', 'Thambira'];
+    const negative = ['Induvara', 'Ishraf', 'Radda', 'Manau', 'Durapha', 'Gairi Kamboola'];
+    if (positive.includes(name)) return { label: 'Positive', quality: 'positive', color: '#00DD77' };
+    if (negative.includes(name)) return { label: 'Negative', quality: 'negative', color: '#FF4477' };
+    // Nakta, Yamaya, Khallasa, Duphali Kuttha (genuinely mixed/void) -> neutral
+    return { label: 'Neutral', quality: 'neutral', color: '#FFD700' };
+  },
+
   jdToDate: function(jd) {
     const millis = (jd - 2440587.5) * 86400000;
     const dateObj = new Date(millis);
@@ -175,11 +198,17 @@ window.VARSHAPHALA = {
     sahams.Roga = isDayVP ? calcSaham(vAsc, vMoon, vAsc) : calcSaham(vMoon, vAsc, vAsc);
     sahams.Artha = isDayVP ? calcSaham(vMercury, vAsc, vAsc) : calcSaham(vAsc, vMercury, vAsc);
     
-    // Add signs to Sahams
+    // Add signs to Sahams (+ house from Varsha Ascendant + Positive/Negative quality)
     const sahamData = {};
     for (const [sName, sLon] of Object.entries(sahams)) {
       const sn = Math.floor(sLon / 30);
-      sahamData[sName] = { lon: sLon, sn: sn, sign: (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) ? window.ASTRO_CONSTANTS.SIGNS[sn] : "Sign"+sn };
+      const sHouse = (sn - varshaAsc.sn + 12) % 12 + 1;
+      const quality = this.classifyHouse(sHouse);
+      sahamData[sName] = {
+        lon: sLon, sn: sn,
+        sign: (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) ? window.ASTRO_CONSTANTS.SIGNS[sn] : "Sign"+sn,
+        house: sHouse, quality: quality.quality, qualityLabel: quality.label, qualityColor: quality.color
+      };
     }
 
     
@@ -209,12 +238,17 @@ window.VARSHAPHALA = {
         const mAsc = window.computeAsc(mMidJD, window.BIRTH.lat, window.BIRTH.lon, window.BIRTH.utcOff, ayan, 1);
         const maasesh = lords[mAsc.sn];
         const mDate = (window.sweLoaded && window.swe && window.swe.revjul) ? window.swe.revjul(mMidJD, 1) : this.jdToDate(mMidJD);
-        
+
+        const maasaHouse = ((mAsc.sn - varshaAsc.sn + 12) % 12) + 1;
+        const mQuality = this.classifyHouse(maasaHouse);
+
         maasaphala.push({
             monthIndex: m,
             lord: maasesh,
             startDate: mDate.day + "/" + mDate.month + "/" + mDate.year,
-            ascSign: (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) ? window.ASTRO_CONSTANTS.SIGNS[mAsc.sn] : "Sign"+mAsc.sn
+            ascSign: (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) ? window.ASTRO_CONSTANTS.SIGNS[mAsc.sn] : "Sign"+mAsc.sn,
+            houseFromVarsha: maasaHouse,
+            quality: mQuality.quality, qualityLabel: mQuality.label, qualityColor: mQuality.color
         });
     }
 
@@ -232,13 +266,21 @@ window.VARSHAPHALA = {
       analysisHi += `यह ${this.getHouseSigHi(munthaHouse)} से संबंधित चुनौतियां या बाधाएं ला सकता है। `;
     }
 
-    analysisEn += `The Year Lord (Varsheshvara) is ${yearLord}. `;
+    analysisEn += `The Year Lord (Varsheshvara) is ${yearLord}${varshaPlanets[yearLord] ? `, placed in House ${varshaPlanets[yearLord].house}` : ''}. `;
     analysisHi += `वर्षेश (वर्ष का स्वामी) ${yearLord} है। `;
 
     if(doubleJanma){
       analysisEn += "Dwijanma (Double Janma) is present, which indicates a highly significant and potentially turbulent year. ";
       analysisHi += "द्विजन्म (डबल जन्म) उपस्थित है, जो एक अत्यधिक महत्वपूर्ण और संभावित रूप से उथल-पुथल वाले वर्ष का संकेत देता है। ";
     }
+
+    const yearLordHouse = varshaPlanets[yearLord] ? varshaPlanets[yearLord].house : null;
+    const yearLordQuality = yearLordHouse ? this.classifyHouse(yearLordHouse) : { label: 'Unknown', quality: 'neutral', color: '#FFD700' };
+
+    const taggedTajikaYogas = this.detectTajikaYogas(varshaPlanets, varshaAsc).map(y => {
+      const q = this.classifyTajikaYoga(y.name);
+      return { ...y, quality: q.quality, qualityLabel: q.label, qualityColor: q.color };
+    });
 
     return {
       year: targetYear,
@@ -247,11 +289,13 @@ window.VARSHAPHALA = {
       asc: varshaAsc,
       planets: varshaPlanets,
       yearLord: yearLord,
-      muntha: { sn: munthaSn, sign: munthaSign, house: munthaHouse, lord: munthesh },
+      yearLordHouse: yearLordHouse,
+      yearLordQuality: yearLordQuality,
+      muntha: { sn: munthaSn, sign: munthaSign, house: munthaHouse, lord: munthesh, quality: this.classifyHouse(munthaHouse) },
       doubleJanma,
       sahams: sahamData,
       maasaphala,
-      tajikaYogas: this.detectTajikaYogas(varshaPlanets, varshaAsc),
+      tajikaYogas: taggedTajikaYogas,
       panchadhikarisScores,
       analysis: analysisEn + "\n\n" + analysisHi,
       dateInfo: (window.sweLoaded && window.swe && window.swe.revjul) ? window.swe.revjul(midJD, 1) : this.jdToDate(midJD)
@@ -366,7 +410,7 @@ detectTajikaYogas: function(varshaPlanets, varshaAsc) {
                 
                 // Duphali Kuttha / Duttota checks
                 // Need basic strength (exaltation/own sign). Simplify by just checking own sign.
-                const isOwnSign = (p) => (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.LORDS && window.ASTRO_CONSTANTS.LORDS[varshaPlanets[p].sn] === p);
+                const isOwnSign = (p) => (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGN_LORDS && window.ASTRO_CONSTANTS.SIGN_LORDS[varshaPlanets[p].sn] === p);
                 if (isOwnSign(slow) && !isOwnSign(fast)) {
                     yogas.push({ name: 'Duphali Kuttha', desc: `In Ithasal, ${slow} is strong while ${fast} is weak.` });
                 }
@@ -486,4 +530,3 @@ detectTajikaYogas: function(varshaPlanets, varshaAsc) {
 }
 
 };
-

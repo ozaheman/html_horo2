@@ -48,7 +48,9 @@ function analyzeYogasAcrossDivisionalCharts(birthChart) {
       window.YOGAS_DATA.forEach(yogaTemplate => {
         try {
           if (yogaTemplate && typeof yogaTemplate.evaluate === 'function') {
-            if (yogaTemplate.evaluate(dChart)) {
+           const evalResult = yogaTemplate.evaluate(dChart);
+            const passed = evalResult === true || (evalResult && typeof evalResult === 'object' && evalResult.result === true);
+            if (passed) {
               detectedYogasInDChart.push({
                 name: yogaTemplate.name,
                 category: yogaTemplate.category || 'General',

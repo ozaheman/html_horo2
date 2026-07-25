@@ -698,11 +698,43 @@ function renderYogaDetailContent(yoga) {
             <div class="remedy-section-title">Formation</div>
             <div style="color: #555; line-height: 1.6;">${yoga.description || 'Classical yoga formation'}</div>
         </div>
+        ${yoga.methodOfCalculation ? `
+        <div class="remedy-section">
+            <div class="remedy-section-title">Method of Calculation</div>
+            <div style="color: #555; line-height: 1.6;">${yoga.methodOfCalculation}</div>
+        </div>
+        ` : ''}
         
+        ${yoga.cause ? `
+        <div class="remedy-section">
+            <div class="remedy-section-title">Cause (Why It Occurs)</div>
+            <div style="color: #555; line-height: 1.6;">${yoga.cause}</div>
+        </div>
+        ` : ''}
         <div class="remedy-section">
             <div class="remedy-section-title">Effect</div>
             <div style="color: #555; line-height: 1.6;">${yoga.result || yoga.effect || 'See detailed analysis'}</div>
         </div>
+        ${yoga.nullification ? `
+        <div class="remedy-section" style="background: rgba(255,152,0,0.05); border-left-color: #ff9800;">
+            <div class="remedy-section-title" style="color: #e65100;">Nullification / Cancellation</div>
+            <div style="color: #555; line-height: 1.6;">${yoga.nullification}</div>
+        </div>
+        ` : ''}
+        
+        ${yoga.strength && typeof yoga.strength === 'string' ? `
+        <div class="remedy-section">
+            <div class="remedy-section-title">Baseline Strength</div>
+            <div style="color: #555; line-height: 1.6;">${yoga.strength}</div>
+        </div>
+        ` : ''}
+        
+        ${yoga.referenceShloka ? `
+        <div class="remedy-section" style="background: rgba(156,39,176,0.05); border-left-color: #9c27b0;">
+            <div class="remedy-section-title" style="color: #6a1b9a;">Reference Shloka</div>
+            <div style="color: #555; line-height: 1.8; font-family: serif;">${yoga.referenceShloka}</div>
+        </div>
+        ` : ''}
     `;
     
     // Mantras

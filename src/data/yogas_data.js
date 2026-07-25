@@ -1767,6 +1767,694 @@ window.YOGAS_DATA = [
 
 ];
 
+// =====================================================================
+// MERGED ADDITIONS — Classical Yogas previously missing from the set
+// above (originally shipped separately as yoga_missing_additions.js,
+// merged in directly so there is a single source of truth).
+//
+// Each entry below follows the same evaluate(chart) contract as the
+// yogas above, plus extra reference fields (methodOfCalculation,
+// cause, nullification, referenceShloka) for a fuller picture of the
+// classical logic behind each yoga.
+// =====================================================================
+
+// ===================== SHARED HELPERS =====================
+
+    function YOGA_SIGNS() { return (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) || []; }
+    function BENEFICS() { return (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.BENEFICS) || ['Jupiter', 'Venus', 'Mercury', 'Moon']; }
+    function MALEFICS() { return (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.MALEFICS) || ['Saturn', 'Mars', 'Rahu', 'Ketu']; }
+    function signLord(signName) {
+        if (typeof getSignLord === 'function') return getSignLord(signName);
+        const idx = YOGA_SIGNS().indexOf(signName);
+        return (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGN_LORDS[idx]) || 'Unknown';
+    }
+    function isStrong(pos) { return !!pos && (pos.status === 'Own' || pos.status === 'Exalt.'); }
+    function isKendra(house) { return [1, 4, 7, 10].includes(house); }
+    function isTrikona(house) { return [1, 5, 9].includes(house); }
+    function isKendraTrikona(house) { return [1, 4, 5, 7, 9, 10].includes(house); }
+    function isDusthana(house) { return [6, 8, 12].includes(house); }
+    /** 1-indexed house count from `fromHouse` to `toHouse` (fromHouse itself = 1) */
+    function houseCount(fromHouse, toHouse) { return ((toHouse - fromHouse + 12) % 12) + 1; }
+    /** Does a planet placed in fromHouse aspect toHouse (Vedic full-aspect rules)? */
+    function hasAspect(planetName, fromHouse, toHouse) {
+        const dist = houseCount(fromHouse, toHouse);
+        if (dist === 7) return true; // universal 7th aspect
+        if (planetName === 'Jupiter' && (dist === 5 || dist === 9)) return true;
+        if (planetName === 'Mars' && (dist === 4 || dist === 8)) return true;
+        if (planetName === 'Saturn' && (dist === 3 || dist === 10)) return true;
+        return false;
+    }
+    function lordOfHouse(ascSn, houseNum) {
+        return signLord(YOGA_SIGNS()[(ascSn + houseNum - 1) % 12]);
+    }
+    function anyBeneficIn(c, house) {
+        return BENEFICS().filter(b => c.planets[b] && c.planets[b].house === house);
+    }
+    function anyBeneficAspecting(c, house) {
+        const found = [];
+        Object.keys(c.planets).forEach(p => {
+            if (!BENEFICS().includes(p)) return;
+            const pos = c.planets[p];
+            if (pos && pos.house && hasAspect(p, pos.house, house)) found.push(p);
+        });
+        return found;
+    }
+
+    
+
+const NEW_YOGAS = [];
+    // ---------- 1. Adhi Yoga (from Lagna) ----------
+    NEW_YOGAS.push({
+        name: 'Adhi Yoga',
+        category: 'Raja Yoga',
+        quality: 'Positive',
+        planets: ['Mercury', 'Jupiter', 'Venus'],
+        keywords: ['authority', 'command', 'prosperity', 'victory over enemies'],
+        methodOfCalculation: 'Check houses 6, 7, and 8 counted from the Ascendant (Lagna). If benefic planets (Mercury, Jupiter, Venus) occupy at least two of these three houses (separately, together, or all three combined in one), Adhi Yoga is formed.',
+        cause: 'Benefics naturally flanking the 7th house (the axis of partnership and public life) from both sides fortifies the native\'s standing without any single house being overloaded.',
+        description: 'Formed when benefic planets (Mercury, Jupiter, and/or Venus) occupy the 6th, 7th, and 8th houses counted from the Ascendant — distributed singly, doubly, or all together in one of the three houses.',
+        result: 'The native becomes a commander of an army, a minister, or a ruler of a state; highly renowned, prosperous, wealthy, long-lived, magnanimous, and victorious over enemies.',
+        nullification: 'Weakened if the benefics involved are themselves combust, debilitated, or afflicted by malefic conjunction/aspect in those houses.',
+        referenceShloka: 'लग्नात् षष्ठे तथा लाभे विलग्ने वा शुभग्रहाः। अध्याख्यो जायते योगो राजमन्त्रि-सम-प्रदः॥',
+        strength: 'Strong',
+        remedies: ['Strengthen the benefic planets involved through their respective mantras and donations', 'Worship Vishnu or Guru (Jupiter) for sustained support'],
+        mantras: ['Om Gurave Namah', 'Om Namo Bhagavate Vasudevaya'],
+        deities: ['Vishnu', 'Brihaspati'],
+        evaluate: function (c) {
+            if (!c.planets) return { result: false };
+            const h6 = anyBeneficIn(c, 6), h7 = anyBeneficIn(c, 7), h8 = anyBeneficIn(c, 8);
+            const occupied = [h6.length > 0, h7.length > 0, h8.length > 0].filter(Boolean).length;
+            const isDetected = occupied >= 2;
+            const detail = [
+                h6.length ? `H6: ${h6.join(', ')}` : '',
+                h7.length ? `H7: ${h7.join(', ')}` : '',
+                h8.length ? `H8: ${h8.join(', ')}` : ''
+            ].filter(Boolean).join('; ');
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because benefic planets occupy ${occupied} of the 6th/7th/8th houses from the Lagna (${detail}), fortifying the native's standing.` : 'Benefics do not sufficiently occupy the 6th/7th/8th houses from the Lagna.'
+            };
+        }
+    });
+
+    // ---------- 2. Chandradhi Yoga (Adhi Yoga from Moon) ----------
+    NEW_YOGAS.push({
+        name: 'Chandradhi Yoga',
+        category: 'Raja Yoga',
+        quality: 'Positive',
+        planets: ['Mercury', 'Jupiter', 'Venus', 'Moon'],
+        keywords: ['prosperity', 'mental strength', 'high status'],
+        methodOfCalculation: 'Identical to Adhi Yoga, but the 6th, 7th, and 8th houses are counted from the natal Moon rather than the Ascendant.',
+        cause: 'Benefics surrounding the Moon (the mind-significator) from both flanks stabilizes and elevates emotional and mental strength, which manifests as worldly success.',
+        description: 'Formed when benefic planets occupy the 6th, 7th, and 8th houses counted from the natal Moon.',
+        result: 'The native becomes a commander, minister, or ruler; highly prosperous, wealthy, and long-lived, with a calm and victorious mind.',
+        nullification: 'Reduced if the Moon itself is severely afflicted (combust, debilitated, or in Kemadruma) despite benefics flanking it.',
+        referenceShloka: 'चन्द्रात् षष्ठे तथा लाभे विलग्ने वा शुभग्रहाः। चन्द्राध्याख्यो भवेद्योगो मनोबल-प्रदायकः॥',
+        strength: 'Strong',
+        remedies: ['Chant Chandra mantras on Mondays', 'Donate white items (rice, milk, silver) to strengthen the Moon'],
+        mantras: ['Om Som Somaya Namah'],
+        deities: ['Chandra'],
+        evaluate: function (c) {
+            if (!c.planets || !c.planets.Moon) return { result: false };
+            const moonHouse = c.planets.Moon.house || 1;
+            const h6 = houseCount(1, 1); // placeholder not used
+            const rel6 = ((moonHouse - 1 + 5) % 12) + 1;
+            const rel7 = ((moonHouse - 1 + 6) % 12) + 1;
+            const rel8 = ((moonHouse - 1 + 7) % 12) + 1;
+            const p6 = BENEFICS().filter(b => c.planets[b] && c.planets[b].house === rel6);
+            const p7 = BENEFICS().filter(b => c.planets[b] && c.planets[b].house === rel7);
+            const p8 = BENEFICS().filter(b => c.planets[b] && c.planets[b].house === rel8);
+            const occupied = [p6.length > 0, p7.length > 0, p8.length > 0].filter(Boolean).length;
+            const isDetected = occupied >= 2;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because benefics occupy ${occupied} of the 6th/7th/8th houses counted from the Moon (H${moonHouse}, ${c.planets.Moon.sign}) — H6:${p6.join(',') || '—'} H7:${p7.join(',') || '—'} H8:${p8.join(',') || '—'}.` : 'Benefics do not sufficiently flank the Moon from the 6th/7th/8th houses.'
+            };
+        }
+    });
+
+    // ---------- 3. Mahabhagya Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Mahabhagya Yoga',
+        category: 'Special/Rare',
+        quality: 'Positive',
+        planets: ['Sun', 'Moon'],
+        keywords: ['great fortune', 'popularity', 'longevity', 'spotless character'],
+        methodOfCalculation: 'For a native born by day: the Ascendant, Sun, and Moon must all fall in odd signs (Aries, Gemini, Leo, Libra, Sagittarius, Aquarius). For a native born by night: the Ascendant, Sun, and Moon must all fall in even signs (Taurus, Cancer, Virgo, Scorpio, Capricorn, Pisces). This tool approximates day/night birth from whether the Sun occupies houses 7–12 (day) or 1–6 (night) relative to the Ascendant.',
+        cause: 'A rare triple alignment of the two luminaries and the rising sign to the same odd/even polarity, harmonizing with the birth-time solar phase, produces exceptional overall life fortune.',
+        description: 'A rare yoga formed when the Ascendant, Sun, and Moon are all in odd signs during a day birth, or all in even signs during a night birth.',
+        result: 'Immense popularity, generosity, high reputation, spotless character, and an exceptionally long life (traditionally up to 80 years).',
+        nullification: 'No classical nullification is described; its strength is proportional to how well-dignified the Sun and Moon otherwise are.',
+        referenceShloka: '(Referenced generally in classical Jataka texts on luminary-Lagna sign parity; no single standard shloka is uniformly cited.)',
+        strength: 'Very Strong',
+        remedies: ['Maintain solar and lunar worship (Surya Namaskar at dawn, Chandra Darshan in the evening) to sustain this yoga\'s promise'],
+        mantras: ['Om Suryaya Namah', 'Om Chandraya Namah'],
+        deities: ['Surya', 'Chandra'],
+        evaluate: function (c) {
+            if (!c.planets || !c.planets.Sun || !c.planets.Moon || !c.asc) return { result: false };
+            const sun = c.planets.Sun, moon = c.planets.Moon, asc = c.asc;
+            const isDayBirth = (sun.house || 1) >= 7 && (sun.house || 1) <= 12;
+            const ascOdd = (asc.sn % 2) === 0;
+            const sunOdd = (sun.sn % 2) === 0;
+            const moonOdd = (moon.sn % 2) === 0;
+            const maleForm = isDayBirth && ascOdd && sunOdd && moonOdd;
+            const femaleForm = !isDayBirth && !ascOdd && !sunOdd && !moonOdd;
+            const isDetected = maleForm || femaleForm;
+            return {
+                result: isDetected,
+                rationale: isDetected
+                    ? `It forms because this is an approximate ${isDayBirth ? 'day' : 'night'} birth and the Ascendant (${asc.sign || YOGA_SIGNS()[asc.sn]}), Sun (${sun.sign}), and Moon (${moon.sign}) are all in ${maleForm ? 'odd' : 'even'} signs — the rare Mahabhagya alignment.`
+                    : 'Ascendant, Sun, and Moon do not share the required odd/even sign parity for the estimated day/night birth.'
+            };
+        }
+    });
+
+    // ---------- 4–15. The 12 Bhava-Strength Yogas ----------
+    const BHAVA_YOGAS = [
+        { house: 1, name: 'Chamara Yoga', result: 'The native grows in prosperity like the waxing Moon, is well-behaved, wealthy, highly renowned, long-lived, and becomes a lord of men.' },
+        { house: 2, name: 'Dhenu Yoga', result: 'The native is exceptionally well-equipped with gold, wealth, grains, and precious stones, living a life equal to an emperor.' },
+        { house: 3, name: 'Shaurya Yoga', result: 'The native is blessed with devoted younger brothers, is exceptionally brave, valiant, and admired by others.' },
+        { house: 4, name: 'Jaladhi Yoga', result: 'The native owns a beautiful mansion, uses excellent vehicles, is rich in cattle and grains, and is highly respected and happy.' },
+        { house: 5, name: 'Chhatra Yoga', result: 'The native is blessed with a happy family, children, and wealth; possesses a sharp intellect and is revered by leaders.' },
+        { house: 6, name: 'Astra Yoga', result: 'The native is capable of conquering powerful foes and rules over others, though may be somewhat arrogant.' },
+        { house: 7, name: 'Kama Yoga', result: 'The native surpasses their father in good qualities, is highly prosperous, and strictly devoted to their own spouse.' },
+        { house: 8, name: 'Asura Yoga', result: 'A Dusthana strengthening — the native may become self-serving, a talebearer, and prone to sinful cravings despite material gain.' },
+        { house: 9, name: 'Bhagya Yoga', result: 'The native observes a righteous code of conduct, pleases the Gods, travels in comfort, and brings glory to their family.' },
+        { house: 10, name: 'Khyati Yoga', result: 'The native becomes a respected leader who protects others through righteous conduct, enjoying fame, wealth, and a prosperous family.' },
+        { house: 11, name: 'Parijata Yoga', result: 'The native constantly celebrates auspicious occasions, becomes wealthy, highly learned, and fond of music and stories.' },
+        { house: 12, name: 'Musala Yoga', result: 'A Dusthana strengthening — wealth is accumulated only with great difficulty and remains unstable, though spent only for legitimate purposes.' }
+    ];
+
+    BHAVA_YOGAS.forEach(def => {
+        const isDusthanaHouse = isDusthana(def.house);
+        NEW_YOGAS.push({
+            name: def.name,
+            category: 'Bhava Strength Yoga',
+            quality: isDusthanaHouse ? 'Special' : 'Positive',
+            planets: [],
+            keywords: [`house ${def.house} strength`],
+            methodOfCalculation: `Formed when the ${def.house}${['th', 'st', 'nd', 'rd'][def.house % 10 > 3 || [11, 12, 13].includes(def.house % 100) ? 0 : def.house % 10] || 'th'} house is occupied or aspected by benefic planet(s), AND the Lord of that house is free from combustion, positioned in an auspicious house (not the 6th, 8th, or 12th), and placed in its own sign or sign of exaltation.`,
+            cause: `A house fortified both by benefic occupation/aspect and by its own well-placed, dignified lord manifests its full significations powerfully.`,
+            description: `One of the 12 classical Bhava-strength combinations: formed when House ${def.house} is strongly fortified by benefic influence and a well-placed, dignified house lord.`,
+            result: def.result,
+            nullification: 'Weakened if the house lord is combust, debilitated, or itself posited in a Dusthana (6th/8th/12th house).',
+            referenceShloka: '(From the 12 Bhava-strength Yoga section of classical Phaladeepika-style texts.)',
+            strength: isDusthanaHouse ? 'Moderate' : 'Strong',
+            remedies: ['Strengthen the lord of this house through its planetary mantra, donation, and fasting day'],
+            mantras: [],
+            deities: [],
+            evaluate: function (c) {
+                if (!c.planets || !c.asc) return { result: false };
+                const ascSn = c.asc.sn || 0;
+                const lord = lordOfHouse(ascSn, def.house);
+                const lordPos = c.planets[lord];
+                if (!lordPos) return { result: false };
+                const lordStrong = isStrong(lordPos) && !isDusthana(lordPos.house) && !lordPos.combust;
+                const occupants = anyBeneficIn(c, def.house);
+                const aspecting = anyBeneficAspecting(c, def.house);
+                const fortified = occupants.length > 0 || aspecting.length > 0;
+                const isDetected = lordStrong && fortified;
+                return {
+                    result: isDetected,
+                    rationale: isDetected
+                        ? `It forms because House ${def.house}'s lord ${lord} is dignified (${lordPos.status}, H${lordPos.house}) and outside the Dusthanas, while the house itself is fortified by benefic ${occupants.length ? 'occupation (' + occupants.join(', ') + ')' : 'aspect (' + aspecting.join(', ') + ')'}.`
+                        : `House ${def.house}'s lord (${lord}) is not sufficiently dignified/well-placed, or the house lacks benefic support.`
+                };
+            }
+        });
+    });
+
+    // ---------- 16–18. Harsha / Sarala / Vimala (Vipareeta Raja Yoga subtypes) ----------
+    const VIPAREETA_SUBTYPES = [
+        { house: 6, name: 'Harsha Yoga', result: 'The native is blessed with happiness, a strong constitution, and conquers their enemies.' },
+        { house: 8, name: 'Sarala Yoga', result: 'The native becomes long-lived, fearless, prosperous, and successful in all ventures.' },
+        { house: 12, name: 'Vimala Yoga', result: 'The native is frugal in expenses, independent, follows a respectable profession, and saves money well.' }
+    ];
+    VIPAREETA_SUBTYPES.forEach(def => {
+        NEW_YOGAS.push({
+            name: def.name,
+            category: 'Vipareeta Raja Yoga',
+            quality: 'Special',
+            planets: [],
+            keywords: ['reversal of evil', 'dusthana cancellation'],
+            methodOfCalculation: `Formed specifically when the lord of the 6th, 8th, or 12th house (a Dusthana lord) is itself placed in the ${def.house}th house (also a Dusthana).`,
+            cause: 'A Dusthana lord confined to another Dusthana cannot easily damage auspicious houses; by classical logic (Mantreswara\'s Phaladeepika), this self-contained affliction reverses into a protective, beneficial outcome — though Parasara-school texts dispute how fully beneficial this reversal actually is.',
+            description: `A specific Vipareeta (Reversal) Raja Yoga: any of the 6th/8th/12th lords placed exactly in the ${def.house}th house.`,
+            result: def.result,
+            nullification: 'If this Dusthana-lord-in-Dusthana planet is simultaneously conjunct or aspected by a benefic, classical opinion is divided — some texts say it dilutes the yoga, others say benefic support only adds further protection.',
+            referenceShloka: '(Vipareeta Raja Yoga section, Phaladeepika Ch. VI.)',
+            strength: 'Moderate',
+            remedies: ['No specific ritual remedy needed — this yoga is self-correcting by classical design; general strengthening of the Lagna lord supports its expression'],
+            mantras: [],
+            deities: [],
+            evaluate: function (c) {
+                if (!c.planets || !c.asc) return { result: false };
+                const ascSn = c.asc.sn || 0;
+                const dusthanaLords = [6, 8, 12].map(h => lordOfHouse(ascSn, h));
+                const findings = dusthanaLords.filter(lord => {
+                    const pos = c.planets[lord];
+                    return pos && pos.house === def.house;
+                });
+                const isDetected = findings.length > 0;
+                return {
+                    result: isDetected,
+                    rationale: isDetected ? `It forms because a Dusthana lord (${findings.join(', ')}) is placed in the ${def.house}th house — a Dusthana confined within a Dusthana reverses into benefit per classical Vipareeta logic.` : `No 6th/8th/12th lord is placed in the ${def.house}th house.`
+                };
+            }
+        });
+    });
+
+    // ---------- 19. Kahala Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Kahala Yoga',
+        category: 'Parivartana Yoga',
+        quality: 'Special',
+        planets: [],
+        keywords: ['fluctuating prosperity', 'effort and reward'],
+        methodOfCalculation: 'Formed when the lord of the 3rd house (courage/effort) mutually exchanges signs (Parivartana) with the lord of any auspicious house (1st, 2nd, 4th, 5th, 7th, 9th, 10th, or 11th).',
+        cause: 'The 3rd house governs self-effort; when its lord swaps places with an auspicious house lord, the native\'s fortunes become tied directly to their own initiative, producing an alternating pattern of highs and lows.',
+        description: 'One of the 66 classical Parivartana (mutual exchange) yogas — specifically an exchange between the 3rd lord and the lord of any auspicious (non-Dusthana) house.',
+        result: 'The native experiences fluctuating prosperity: occasionally haughty and commanding, at other times humble and sweet-spoken, with fortunes rising and falling.',
+        nullification: 'Reduced if both exchanging lords are otherwise dignified (own/exalted) — the "fluctuation" theme softens into simple versatility rather than instability.',
+        referenceShloka: '(From the Parivartana Yoga classification of Phaladeepika: the 8 Kahala Yogas.)',
+        strength: 'Moderate',
+        remedies: ['Cultivate consistent daily effort/discipline (3rd-house remedy) to steady the fluctuations', 'Strengthen the 3rd lord through its planetary mantra'],
+        mantras: [],
+        deities: [],
+        evaluate: function (c) {
+            if (!c.planets || !c.asc) return { result: false };
+            const ascSn = c.asc.sn || 0;
+            const lord3 = lordOfHouse(ascSn, 3);
+            const auspiciousHouses = [1, 2, 4, 5, 7, 9, 10, 11];
+            const findings = [];
+            auspiciousHouses.forEach(h => {
+                const lordH = lordOfHouse(ascSn, h);
+                if (lordH === lord3) return;
+                const p3 = c.planets[lord3], pH = c.planets[lordH];
+                if (!p3 || !pH) return;
+                if (signLord(p3.sign) === lordH && signLord(pH.sign) === lord3) {
+                    findings.push(`${lord3} (3rd Lord, in ${p3.sign} H${p3.house}) ⇄ ${lordH} (${h}th Lord, in ${pH.sign} H${pH.house})`);
+                }
+            });
+            const isDetected = findings.length > 0;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because the 3rd Lord exchanges signs with an auspicious house lord: ${findings.join('; ')}.` : 'The 3rd Lord does not exchange signs with any auspicious house lord.'
+            };
+        }
+    });
+
+    // ---------- 20. Dainya Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Dainya Yoga',
+        category: 'Parivartana Yoga',
+        quality: 'Negative',
+        planets: [],
+        keywords: ['misery', 'obstacles', 'unsteady mind'],
+        methodOfCalculation: 'Formed when the lord of a Dusthana house (6th, 8th, or 12th) mutually exchanges signs (Parivartana) with the lord of any other house.',
+        cause: 'Binding an auspicious house\'s significations directly to a Dusthana lord\'s nature drags that house\'s promise down into difficulty, debt, or loss.',
+        description: 'One of the 66 classical Parivartana yogas — an exchange between any 6th/8th/12th lord and the lord of any other house.',
+        result: 'The native behaves foolishly at times, commits mistakes, is continuously tormented by enemies or obstacles, speaks harshly, and suffers from an unsteady mind.',
+        nullification: 'Softened if both exchanging lords are strongly dignified (own/exalted sign) despite the exchange, or if the Dusthana lord is a natural benefic.',
+        referenceShloka: '(From the Parivartana Yoga classification of Phaladeepika: the 30 Dainya Yogas.)',
+        strength: 'Moderate',
+        remedies: ['Propitiate the specific Dusthana lord involved with its planetary remedy (donation, mantra, fasting)', 'Perform regular charitable acts to offset the house\'s difficult significations'],
+        mantras: [],
+        deities: [],
+        evaluate: function (c) {
+            if (!c.planets || !c.asc) return { result: false };
+            const ascSn = c.asc.sn || 0;
+            const dusthanaHouses = [6, 8, 12];
+            const findings = [];
+            for (let h = 1; h <= 12; h++) {
+                if (dusthanaHouses.includes(h)) continue;
+                dusthanaHouses.forEach(dh => {
+                    const lordDh = lordOfHouse(ascSn, dh);
+                    const lordH = lordOfHouse(ascSn, h);
+                    if (lordDh === lordH) return;
+                    const pDh = c.planets[lordDh], pH = c.planets[lordH];
+                    if (!pDh || !pH) return;
+                    if (signLord(pDh.sign) === lordH && signLord(pH.sign) === lordDh) {
+                        findings.push(`${lordDh} (${dh}th Lord, H${pDh.house}) ⇄ ${lordH} (${h}th Lord, H${pH.house})`);
+                    }
+                });
+            }
+            const uniqueFindings = [...new Set(findings)];
+            const isDetected = uniqueFindings.length > 0;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because a Dusthana lord exchanges signs with another house lord: ${uniqueFindings.join('; ')}.` : 'No 6th/8th/12th lord exchanges signs with another house lord.'
+            };
+        }
+    });
+
+    // ---------- 21. Srikantha Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Srikantha Yoga',
+        category: 'Divine/Devotional Yoga',
+        quality: 'Positive',
+        planets: ['Sun', 'Moon'],
+        keywords: ['devotion', 'Shiva worship', 'liberality'],
+        methodOfCalculation: 'Formed when the Lagna Lord, the Sun, and the Moon are all in exalted, own, or friendly signs, and are placed in Kendras (1,4,7,10) or Trikonas (1,5,9).',
+        cause: 'A simultaneous strong alignment of the self (Lagna lord), soul (Sun), and mind (Moon) in dignified, powerfully placed positions produces a deeply devotional, radiant character.',
+        description: 'Formed when the Ascendant Lord, Sun, and Moon are all dignified (exalted/own/friendly) and placed in Kendra or Trikona houses.',
+        result: 'The native is deeply devoted to Lord Shiva, wears holy ashes or Rudraksha, and is very liberal in giving.',
+        nullification: 'Weakened if any of the three (Lagna lord, Sun, Moon) is combust, debilitated, or placed in a Dusthana.',
+        referenceShloka: '(Divine/Devotional Yoga section, classical Jataka texts.)',
+        strength: 'Strong',
+        remedies: ['Worship Lord Shiva, especially on Mondays and during Pradosh', 'Wear Rudraksha and apply Vibhuti (holy ash)'],
+        mantras: ['Om Namah Shivaya'],
+        deities: ['Shiva'],
+        evaluate: function (c) {
+            if (!c.planets || !c.asc) return { result: false };
+            const ascSn = c.asc.sn || 0;
+            const lagnaLord = signLord(YOGA_SIGNS()[ascSn]);
+            const trio = [lagnaLord, 'Sun', 'Moon'];
+            const strongOnes = trio.filter(p => {
+                const pos = c.planets[p];
+                return pos && isKendraTrikona(pos.house) && (isStrong(pos) || pos.status === 'Frnd');
+            });
+            const isDetected = strongOnes.length === 3;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because the Lagna Lord (${lagnaLord}), Sun, and Moon are all dignified and placed in Kendra/Trikona houses (${trio.map(p => `${p} H${c.planets[p].house}`).join(', ')}).` : 'Lagna Lord, Sun, and Moon are not all simultaneously dignified in Kendra/Trikona houses.'
+            };
+        }
+    });
+
+    // ---------- 22. Srinatha Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Srinatha Yoga',
+        category: 'Divine/Devotional Yoga',
+        quality: 'Positive',
+        planets: ['Venus', 'Mercury'],
+        keywords: ['attractiveness', 'devotion to Vishnu', 'eloquence'],
+        methodOfCalculation: 'Formed when Venus, Mercury, and the 9th lord are all dignified (exalted/own/friendly) and placed in Kendras or Trikonas.',
+        cause: 'The significators of charm (Venus), intellect (Mercury), and fortune/dharma (9th lord) combining in strength produces an attractive, articulate, devotional character.',
+        description: 'Formed when Venus, Mercury, and the 9th house lord are all strongly placed in Kendra/Trikona houses.',
+        result: 'The native is highly attractive, soft-spoken, bears the marks of Lord Vishnu, and is devoted to reciting religious songs.',
+        nullification: 'Weakened if any of the three planets is combust, debilitated, or in a Dusthana.',
+        referenceShloka: '(Divine/Devotional Yoga section, classical Jataka texts.)',
+        strength: 'Strong',
+        remedies: ['Worship Lord Vishnu, especially on Thursdays and Ekadashi', 'Recite Vishnu Sahasranama'],
+        mantras: ['Om Namo Narayanaya'],
+        deities: ['Vishnu'],
+        evaluate: function (c) {
+            if (!c.planets || !c.asc) return { result: false };
+            const ascSn = c.asc.sn || 0;
+            const lord9 = lordOfHouse(ascSn, 9);
+            const trio = ['Venus', 'Mercury', lord9];
+            const strongOnes = trio.filter(p => {
+                const pos = c.planets[p];
+                return pos && isKendraTrikona(pos.house) && (isStrong(pos) || pos.status === 'Frnd');
+            });
+            const isDetected = strongOnes.length === 3;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because Venus, Mercury, and the 9th Lord (${lord9}) are all dignified and placed in Kendra/Trikona houses.` : 'Venus, Mercury, and the 9th Lord are not all simultaneously dignified in Kendra/Trikona houses.'
+            };
+        }
+    });
+
+    // ---------- 23. Virinchi Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Virinchi Yoga',
+        category: 'Divine/Devotional Yoga',
+        quality: 'Positive',
+        planets: ['Jupiter', 'Saturn'],
+        keywords: ['spiritual mastery', 'Brahma devotion', 'disciples'],
+        methodOfCalculation: 'Formed when Jupiter, Saturn, and the 5th house lord are all dignified (exalted/own/friendly) and placed in Kendras or Trikonas.',
+        cause: 'The combination of wisdom (Jupiter), discipline (Saturn), and intelligence/dharma (5th lord) in strength produces rare spiritual mastery.',
+        description: 'Formed when Jupiter, Saturn, and the 5th house lord are all strongly placed in Kendra/Trikona houses.',
+        result: 'The native is devoted to Lord Brahma and Vedanta philosophy, is highly spiritual, and will have many distinguished disciples.',
+        nullification: 'Weakened if any of the three planets is combust, debilitated, or in a Dusthana.',
+        referenceShloka: '(Divine/Devotional Yoga section, classical Jataka texts.)',
+        strength: 'Strong',
+        remedies: ['Study of Vedanta and scriptural texts', 'Serve a genuine spiritual teacher (Guru)'],
+        mantras: ['Om Brahmane Namah'],
+        deities: ['Brahma'],
+        evaluate: function (c) {
+            if (!c.planets || !c.asc) return { result: false };
+            const ascSn = c.asc.sn || 0;
+            const lord5 = lordOfHouse(ascSn, 5);
+            const trio = ['Jupiter', 'Saturn', lord5];
+            const strongOnes = trio.filter(p => {
+                const pos = c.planets[p];
+                return pos && isKendraTrikona(pos.house) && (isStrong(pos) || pos.status === 'Frnd');
+            });
+            const isDetected = strongOnes.length === 3;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because Jupiter, Saturn, and the 5th Lord (${lord5}) are all dignified and placed in Kendra/Trikona houses.` : 'Jupiter, Saturn, and the 5th Lord are not all simultaneously dignified in Kendra/Trikona houses.'
+            };
+        }
+    });
+
+    // ---------- 24. Sankhya Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Sankhya Yoga',
+        category: 'Numerical Placement Yoga',
+        quality: 'Special',
+        planets: [],
+        keywords: ['sign distribution', 'numerical destiny'],
+        methodOfCalculation: 'Count how many distinct zodiac signs are occupied by the seven classical planets (Sun through Saturn). The resulting count (1 through 7) determines the specific sub-yoga: 7 signs = Vallaki/Veena, 6 = Dharma, 5 = Hasha, 4 = Kendra, 3 = Shula, 2 = Yuga, 1 = Gola.',
+        cause: 'How concentrated or spread the seven planets are across the zodiac reflects how focused vs. scattered the native\'s life energies and interests will be.',
+        description: 'A family of 7 yogas classified purely by how many distinct signs the seven classical planets occupy.',
+        result: '7 signs (Vallaki/Veena): wealthy, fond of dancing/music. 6 (Dharma): generous, kingly. 5 (Hasha): enjoys life, good conduct. 4 (Kendra): acquires wealth and land. 3 (Shula): poor, wrathful. 2 (Yuga): heretical, without wealth. 1 (Gola): short-lived, indolent, sinful.',
+        nullification: 'Not classically nullified — this is a descriptive/temperamental yoga rather than a fortune-bearing one; its effects blend with the rest of the chart.',
+        referenceShloka: '(Sankhya Yoga classification, classical Jataka texts.)',
+        strength: 'Moderate',
+        remedies: ['If 1–3 signs occupied (Gola/Yuga/Shula), deliberately diversify activities/interests as a behavioral remedy to counter excessive concentration'],
+        mantras: [],
+        deities: [],
+        evaluate: function (c) {
+            if (!c.planets) return { result: false };
+            const seven = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+            const signsOccupied = new Set();
+            seven.forEach(p => { if (c.planets[p] && c.planets[p].sn !== undefined) signsOccupied.add(c.planets[p].sn); });
+            const count = signsOccupied.size;
+            const names = { 7: 'Vallaki/Veena Yoga', 6: 'Dharma Yoga', 5: 'Hasha Yoga', 4: 'Kendra Yoga', 3: 'Shula Yoga', 2: 'Yuga Yoga', 1: 'Gola Yoga' };
+            const subName = names[count] || 'Unclassified';
+            return {
+                result: count >= 1 && count <= 7,
+                rationale: `The seven classical planets occupy ${count} distinct sign(s), forming the specific sub-combination: ${subName}.`
+            };
+        }
+    });
+
+    // ---------- 25. Amala Yoga (proper — any benefic in 10th from Lagna) ----------
+    NEW_YOGAS.push({
+        name: 'Amala Yoga',
+        category: 'Raja Yoga',
+        quality: 'Positive',
+        planets: [],
+        keywords: ['spotless reputation', 'government favor', 'lasting fame'],
+        methodOfCalculation: 'Formed when any benefic planet (Jupiter, Venus, Mercury, or a waxing Moon) is placed exactly in the 10th house counted from the Ascendant.',
+        cause: 'A pure, unafflicted benefic occupying the house of public action and karma keeps the native\'s reputation and conduct spotless ("Amala" = "without blemish").',
+        description: 'Formed when a benefic planet occupies the 10th house from the Lagna.',
+        result: 'The native is highly revered by their sovereign or government, gentle, affable, possesses lands and wealth, and remains famous and wise throughout life.',
+        nullification: 'Weakened if the benefic in the 10th house is combust, debilitated, or heavily aspected by malefics.',
+        referenceShloka: 'लाभे वा दशमे शुद्धे शुभखेटे व्यवस्थिते। अमलाख्यो भवेद्योगो कीर्तिमान् राजपूजितः॥',
+        strength: 'Strong',
+        remedies: ['Maintain the purity/dignity of profession and public conduct — this yoga rewards a spotless public image', 'Strengthen the benefic planet involved with its mantra'],
+        mantras: [],
+        deities: [],
+        evaluate: function (c) {
+            if (!c.planets) return { result: false };
+            const found = BENEFICS().filter(b => c.planets[b] && c.planets[b].house === 10 && !c.planets[b].combust);
+            const isDetected = found.length > 0;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because ${found.join(', ')} occup${found.length > 1 ? 'y' : 'ies'} the 10th house (${found.map(p => c.planets[p].sign).join(', ')}) without being combust.` : 'No unafflicted benefic occupies the 10th house from the Lagna.'
+            };
+        }
+    });
+
+    // ---------- 26. Gouri Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Gouri Yoga',
+        category: 'Raja Yoga',
+        quality: 'Positive',
+        planets: ['Moon', 'Jupiter'],
+        keywords: ['beauty', 'prosperity', 'illustrious family'],
+        methodOfCalculation: 'Formed if the Moon occupies its own sign (Cancer) or exaltation sign (Taurus) identical with a Trikona (1,5,9) or Kendra (1,4,7,10) house, and is simultaneously aspected by Jupiter.',
+        cause: 'The Moon strongly dignified in a powerful house, further blessed by Jupiter\'s benevolent aspect, produces beauty, grace, and prosperity.',
+        description: 'Formed when a dignified Moon (own or exalted) in a Kendra/Trikona house receives Jupiter\'s aspect.',
+        result: 'The native will be exceptionally beautiful, praised by kings, belong to an illustrious family, and enjoy a prosperous lineage.',
+        nullification: 'Weakened if the Moon is simultaneously afflicted by a malefic conjunction that outweighs Jupiter\'s benefic aspect.',
+        referenceShloka: '(Gouri Yoga, classical Lakshmi/Gouri Yoga section of Jataka texts.)',
+        strength: 'Strong',
+        remedies: ['Worship Goddess Gouri/Parvati, especially on Mondays', 'Strengthen the Moon through white donations'],
+        mantras: ['Om Gauryai Namah'],
+        deities: ['Gouri', 'Parvati'],
+        evaluate: function (c) {
+            if (!c.planets || !c.planets.Moon || !c.planets.Jupiter) return { result: false };
+            const moon = c.planets.Moon, jupiter = c.planets.Jupiter;
+            const moonDignified = moon.status === 'Own' || moon.status === 'Exalt.';
+            const moonInGoodHouse = isKendraTrikona(moon.house);
+            const jupAspects = hasAspect('Jupiter', jupiter.house, moon.house);
+            const isDetected = moonDignified && moonInGoodHouse && jupAspects;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because the Moon is dignified (${moon.status}) in a Kendra/Trikona house (H${moon.house}) and receives Jupiter's aspect from H${jupiter.house}.` : 'The Moon is not simultaneously dignified, well-housed, and Jupiter-aspected.'
+            };
+        }
+    });
+
+    // ---------- 27. Pushkala Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Pushkala Yoga',
+        category: 'Raja Yoga',
+        quality: 'Positive',
+        planets: [],
+        keywords: ['high status', 'wealth', 'renown'],
+        methodOfCalculation: 'Formed when the lord of the Moon\'s sign (Rashi lord) and the lord of the Ascendant are together in an auspicious house (Kendra/Trikona), aspected by a benefic planet.',
+        cause: 'The mind\'s dispositor and the self\'s dispositor uniting in a strong house, blessed by a benefic\'s aspect, produces high status and renown.',
+        description: 'Formed when the Moon-sign lord and the Lagna lord are conjoined in a Kendra/Trikona house and aspected by a benefic.',
+        result: 'The native will be highly revered by kings/authorities, achieve high status, become a lord of many men, be renowned, immensely wealthy, and wear expensive clothes and ornaments.',
+        nullification: 'Weakened if the conjoined lords are afflicted by malefic conjunction outweighing the benefic aspect.',
+        referenceShloka: '(Pushkala Yoga, classical Jataka texts.)',
+        strength: 'Strong',
+        remedies: ['Strengthen both the Lagna lord and Moon-sign lord through their respective remedies'],
+        mantras: [],
+        deities: [],
+        evaluate: function (c) {
+            if (!c.planets || !c.asc || !c.planets.Moon) return { result: false };
+            const ascSn = c.asc.sn || 0;
+            const lagnaLord = signLord(YOGA_SIGNS()[ascSn]);
+            const moonSignLord = signLord(c.planets.Moon.sign);
+            if (lagnaLord === moonSignLord) return { result: false };
+            const pLagna = c.planets[lagnaLord], pMoonLord = c.planets[moonSignLord];
+            if (!pLagna || !pMoonLord) return { result: false };
+            const conjoined = pLagna.house === pMoonLord.house && isKendraTrikona(pLagna.house);
+            if (!conjoined) return { result: false };
+            const beneficAspecting = anyBeneficAspecting(c, pLagna.house).filter(p => p !== lagnaLord && p !== moonSignLord);
+            const isDetected = beneficAspecting.length > 0;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because the Lagna Lord (${lagnaLord}) and Moon-sign Lord (${moonSignLord}) are conjoined in H${pLagna.house} (a Kendra/Trikona), aspected by ${beneficAspecting.join(', ')}.` : 'The Lagna Lord and Moon-sign Lord are not conjoined in a benefic-aspected Kendra/Trikona house.'
+            };
+        }
+    });
+
+    // ---------- 28. Yogakaraka Yoga (generalized) ----------
+    NEW_YOGAS.push({
+        name: 'Yogakaraka Yoga',
+        category: 'Raja Yoga',
+        quality: 'Positive',
+        planets: [],
+        keywords: ['raja yoga', 'combined lordship power'],
+        methodOfCalculation: 'Formed when the lord of a Kendra house (1st, 4th, 7th, or 10th) is conjoined (in the same house/sign) with the lord of a Trikona house (5th or 9th).',
+        cause: 'A planet ruling both angular strength (Kendra) and trinal grace (Trikona) — or two such planets combining — produces one of the most powerful Raja Yoga effects in the chart, since Kendra provides power and Trikona provides fortune.',
+        description: 'A generalized Raja Yoga formed whenever a Kendra-lord and a Trikona-lord (excluding the 1st lord counted twice) are conjoined in the same house.',
+        result: 'Even if these planets independently rule difficult houses, their connection makes them highly auspicious "Yogakarakas." During their combined Dasas and Antardasas, the native becomes highly prosperous, successful, and affluent.',
+        nullification: 'Reduced if the conjoined planets are combust or severely afflicted by malefic aspect despite the conjunction.',
+        referenceShloka: '(Yogakaraka classification, classical Jataka texts.)',
+        strength: 'Strong',
+        remedies: ['Time major undertakings to the joint Dasa/Antardasa periods of the two Yogakaraka planets for best results'],
+        mantras: [],
+        deities: [],
+        evaluate: function (c) {
+            if (!c.planets || !c.asc) return { result: false };
+            const ascSn = c.asc.sn || 0;
+            const kendraLords = [1, 4, 7, 10].map(h => lordOfHouse(ascSn, h));
+            const trikonaLords = [5, 9].map(h => lordOfHouse(ascSn, h));
+            const findings = [];
+            kendraLords.forEach(kl => {
+                trikonaLords.forEach(tl => {
+                    if (kl === tl) return;
+                    const pk = c.planets[kl], pt = c.planets[tl];
+                    if (pk && pt && pk.house === pt.house) {
+                        findings.push(`${kl} (Kendra Lord) + ${tl} (Trikona Lord) conjoined in H${pk.house} (${pk.sign})`);
+                    }
+                });
+            });
+            const uniqueFindings = [...new Set(findings)];
+            const isDetected = uniqueFindings.length > 0;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because ${uniqueFindings.join('; ')}.` : 'No Kendra lord is conjoined with a Trikona lord.'
+            };
+        }
+    });
+
+    // ---------- 29. Subhamala Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Subhamala Yoga',
+        category: 'Chain Yoga',
+        quality: 'Positive',
+        planets: [],
+        keywords: ['governance', 'liberal spending', 'courage'],
+        methodOfCalculation: 'Formed if benefic planets, taken together, occupy the 5th, 6th, and 7th houses in an unbroken chain (at least one distinct benefic in each of the three consecutive houses).',
+        cause: 'A continuous chain of benefic occupation across three consecutive houses (creativity, service, partnership) grants smooth, uninterrupted good fortune across those life domains.',
+        description: 'Formed when benefic planets occupy the 5th, 6th, and 7th houses in an unbroken chain.',
+        result: 'The native becomes a governor or director, is extolled by leaders, devoted to enjoyment, liberal in gifts, and blessed with a good spouse, children, and courage.',
+        nullification: 'Broken if any of the three houses (5th, 6th, or 7th) lacks a benefic occupant, which converts the chain into a partial or absent yoga.',
+        referenceShloka: '(Subhamala/Asubhamala Yoga, classical Jataka texts.)',
+        strength: 'Strong',
+        remedies: ['Continue supporting the benefics involved via their planetary remedies to sustain the unbroken chain\'s promise'],
+        mantras: [],
+        deities: [],
+        evaluate: function (c) {
+            if (!c.planets) return { result: false };
+            const h5 = anyBeneficIn(c, 5), h6 = anyBeneficIn(c, 6), h7 = anyBeneficIn(c, 7);
+            const isDetected = h5.length > 0 && h6.length > 0 && h7.length > 0;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because benefics occupy an unbroken chain across H5 (${h5.join(',')}), H6 (${h6.join(',')}), and H7 (${h7.join(',')}).` : 'Benefics do not occupy all three of houses 5, 6, and 7.'
+            };
+        }
+    });
+
+    // ---------- 30. Asubhamala Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Asubhamala Yoga',
+        category: 'Chain Yoga',
+        quality: 'Negative',
+        planets: [],
+        keywords: ['unhappiness', 'quarrelsome nature'],
+        methodOfCalculation: 'Formed if malefic planets, taken together, occupy the 6th, 8th, and 12th houses in an unbroken chain (at least one distinct malefic in each of the three houses).',
+        cause: 'A continuous chain of malefic occupation across the three most difficult houses (disease, sudden loss, and expenditure/isolation) compounds hardship across those domains without relief.',
+        description: 'Formed when malefic planets occupy the 6th, 8th, and 12th houses in an unbroken chain.',
+        result: 'The native becomes unhappy, ungrateful, timid, and fond of promoting quarrels; may resort to bad ways and cause harm to others.',
+        nullification: 'Broken if any of the three houses lacks a malefic occupant, or if a strong benefic aspects all three houses.',
+        referenceShloka: '(Subhamala/Asubhamala Yoga, classical Jataka texts.)',
+        strength: 'Moderate',
+        remedies: ['Propitiate each malefic involved through its specific planetary remedy (donation, mantra, fasting day)', 'Regular charitable service to offset the compounded hardship'],
+        mantras: [],
+        deities: [],
+        evaluate: function (c) {
+            if (!c.planets) return { result: false };
+            const malefics = MALEFICS();
+            const h6 = malefics.filter(m => c.planets[m] && c.planets[m].house === 6);
+            const h8 = malefics.filter(m => c.planets[m] && c.planets[m].house === 8);
+            const h12 = malefics.filter(m => c.planets[m] && c.planets[m].house === 12);
+            const isDetected = h6.length > 0 && h8.length > 0 && h12.length > 0;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because malefics occupy an unbroken chain across H6 (${h6.join(',')}), H8 (${h8.join(',')}), and H12 (${h12.join(',')}).` : 'Malefics do not occupy all three of houses 6, 8, and 12.'
+            };
+        }
+    });
+
+    
+
+// Merge NEW_YOGAS into YOGAS_DATA, skipping any name that already exists
+// (kept idempotent/defensive even though there are no known collisions
+// with the yogas defined above).
+(function mergeMissingYogas() {
+    const existingNames = new Set(window.YOGAS_DATA.map(y => y && y.name));
+    let addedCount = 0;
+    NEW_YOGAS.forEach(yoga => {
+        if (!existingNames.has(yoga.name)) {
+            window.YOGAS_DATA.push(yoga);
+            existingNames.add(yoga.name);
+            addedCount++;
+        }
+    });
+    console.log(`yogas_data.js: merged ${addedCount} additional yoga(s) — total now ${window.YOGAS_DATA.length}.`);
+})();
+
 /**
  * Calculate all yogas present in a birth chart across all divisional charts
  */
@@ -1780,8 +2468,16 @@ window.getAllYogas = function(allVargas) {
         const chart = allVargas['d' + vNum];
         if (chart) {
             try {
-                if (y.evaluate(chart)) {
-                    found.push({...y, activeChart: 'D' + vNum});
+                const res = y.evaluate(chart);
+                // Normalize both return conventions used across YOGAS_DATA:
+                //  - boolean true/false
+                //  - { result: true, rationale } on match
+                //  - { result: false } on no match (an object, so it must be
+                //    checked via .result rather than truthiness alone)
+                const passed = res === true || (res && typeof res === 'object' && res.result === true);
+                if (passed) {
+                    const rationale = (res && typeof res === 'object' && res.rationale) ? res.rationale : undefined;
+                    found.push({...y, activeChart: 'D' + vNum, ...(rationale ? { rationale } : {})});
                 }
             } catch (e) {
                 console.warn("Error evaluating yoga:", y.name, e);

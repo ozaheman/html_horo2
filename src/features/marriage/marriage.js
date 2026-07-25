@@ -895,6 +895,17 @@ function runMarriageAnalysis() {
       console.log('ASHTAKAVARGA MARRIAGE HARMONY SECRETS RENDERED');
     }
   } catch (e) { console.error('ASHTAKAVARGA MARRIAGE HARMONY SECRETS FAIL', e); }
+  // 2.6 Classical marriage yogas from the shared yoga database
+  try {
+    if (typeof window.buildThemedYogaSection === 'function' && BIRTH_PLANETS && BIRTH_ASC) {
+      el.innerHTML += window.buildThemedYogaSection({ planets: BIRTH_PLANETS, asc: BIRTH_ASC }, {
+        title: 'Classical Marriage Yogas',
+        icon: '💍',
+        color: 'var(--rose)',
+        keywords: ['marriage', 'spouse', 'wife', 'husband', 'union', 'relationship', 'love', 'partner', 'conjugal', 'family']
+      });
+    }
+  } catch (e) { console.error('MARRIAGE THEMED YOGA SECTION FAIL', e); }
   
   // 3. Precision Month-by-Month Scanner UI
   const sahamDeg = calculateVivahaSaham();

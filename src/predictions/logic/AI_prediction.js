@@ -36,6 +36,37 @@ const AI_PREDICTION = (function() {
     
     // Sign Lords
     const SIGN_LORDS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGN_LORDS) || {};
+    /**
+     * FIX: Normalize the natal Ascendant object so `.signIndex` always reflects
+     * the ACTUAL natal ascendant sign — never a silent Aries(0) default.
+     *
+     * Root cause of the "rotate chart always shows Aries as 1st house" bug:
+     * the rest of the app stores the ascendant as { sid: <longitude>, sn: <signNum>, ... }
+     * (see graha_maitri.js, sahams.js, predictions_ui.js — all use .sid/.sn),
+     * but this module reads asc.signIndex everywhere. Since that property never
+     * existed on the real object, every `asc.signIndex !== undefined ? ... : 0`
+     * fallback silently resolved to 0 (Aries), and every un-guarded `asc.signIndex`
+     * usage produced NaN. This helper derives signIndex correctly from whatever
+     * shape the ascendant object actually has, based on the natal horoscope.
+     */
+    function normalizeAscendant(asc) {
+        if (!asc || typeof asc !== 'object') {
+            return { signIndex: 0, sid: 0, sign: SIGNS[0] };
+        }
+        let signIndex = asc.signIndex;
+        if (signIndex === undefined || signIndex === null || isNaN(signIndex)) {
+            if (asc.sn !== undefined && !isNaN(asc.sn)) {
+                signIndex = asc.sn;
+            } else {
+                const lon = asc.sid !== undefined ? asc.sid
+                          : (asc.longitude !== undefined ? asc.longitude
+                          : (asc.deg !== undefined ? asc.deg : 0));
+                signIndex = Math.floor(((lon % 360) + 360) % 360 / 30);
+            }
+        }
+        return { ...asc, signIndex: signIndex, sign: asc.sign || SIGNS[signIndex] };
+    }
+    
     
     // House Nature (Kendra, Trikona, Dusthana, Upachaya)
     const HOUSE_NATURE = {
@@ -157,7 +188,7 @@ const AI_PREDICTION = (function() {
      */
     function generate12RotatedHoroscopes(planets, natalAsc) {
         const rotatedCharts = [];
-        const ascSignIndex = natalAsc.signIndex !== undefined ? natalAsc.signIndex : 0;
+       const ascSignIndex = normalizeAscendant(natalAsc).signIndex; // FIX: was defaulting to Aries(0)
 
         for (let h = 1; h <= 12; h++) {
             // New Ascendant Sign for this rotation
@@ -1010,7 +1041,18 @@ const AI_PREDICTION = (function() {
     /**
      * General Bhavat Bhavam House Rotation Logic
      */
-    function analyzeBhavatBhavam(targetLagnaHouse, planets, natalAsc) {
+     //
+    // FIX: This section used to redeclare analyzeBhavatBhavam / getRotationMapping /
+    // getRotatedSignificance with the SAME NAMES as the sign-aware, natal-ascendant-based
+    // versions defined earlier (Section 2). In JavaScript, a later function declaration
+    // with the same name silently overwrites the earlier one in the same scope, so the
+    // real, correct implementation (which factors in the natal ascendant's actual sign)
+    // was being shadowed by this simplified, house-number-only duplicate below it.
+    // The duplicate has been removed; these wrappers now call the single, correct
+    // analyzeBhavatBhavam(baseHouse, planets, asc) defined in Section 2, which — combined
+    // with the normalizeAscendant() fix above — now correctly rotates the chart based on
+    // the actual natal ascendant instead of assuming Aries.
+     function analyzeBhavatBhavam(targetLagnaHouse, planets, natalAsc) {
         const rotationMap = getRotationMapping(targetLagnaHouse);
         const summaries = [];
         
@@ -1047,7 +1089,7 @@ const AI_PREDICTION = (function() {
             10: "Reputation and external achievement", 11: "Gains and fulfillments", 12: "Endings and subtler realms"
         };
         return significations[houseNum];
-    }
+    } 
     
     function analyzeMotherHoroscope(planets, asc) { return analyzeBhavatBhavam(4, planets, asc); }
     function analyzeFatherHoroscope(planets, asc) { return analyzeBhavatBhavam(9, planets, asc); }
@@ -1576,7 +1618,8 @@ const AI_PREDICTION = (function() {
      * @param {Object} inputData - Contains planets, age, asc, dashaInfo, transitPlanets, birthDate
      */
     function generateReport(inputData) {
-        const { planets, age, asc, dashaInfo, transitPlanets, birthDate } = inputData;
+        const { planets, age, dashaInfo, transitPlanets, birthDate } = inputData;
+        const asc = normalizeAscendant(inputData.asc); // FIX: use natal ascendant's real sign, not a default Aries
         
         // Find Moon
         const moon = planets.find(p => p && (p.name === 'Moon'));
@@ -1734,8 +1777,14 @@ const AI_PREDICTION = (function() {
             // Layer 1: Primary House
             const primaryPrediction = strongestPlanet ? HOUSE_GENERAL_PREDICTIONS[houseNum]?.(strongestPlanet.name) : `No planets in House ${houseNum}. Matters handled by house lord.`;
             
-            // Layer 2: Bhavat Bhavam (7th from house)
-            const bhavatTarget = (houseNum + 6) % 12 || 12;
+              // Layer 2: Bhavat Bhavam (house-of-a-house, classical rotation)
+            // FIX: was `(houseNum + 6) % 12` which is just the opposite/7th house —
+            // that's a fixed offset, not a rotation, and gave every house the same
+            // "7th from it" target instead of the correct Bhavat Bhavam target.
+            // Classical rule: BB(h) = counting h houses from h itself = ((2h-2) % 12) + 1.
+            // This now matches the formula already used in buildBBSection() below,
+            // instead of silently disagreeing with it.
+            const bhavatTarget = ((2 * houseNum - 2) % 12) + 1;
             const bhavatOccupants = planetsToUse.filter(p => p.house === bhavatTarget);
             
             // Layer 3: Natural Karaka
@@ -1828,8 +1877,13 @@ const AI_PREDICTION = (function() {
         }).join('');
     }
 
-    function buildBBSection(houseNum, occupants, report) {
-        const bbHouse = ((2 * houseNum - 2) % 12) + 1;
+    function buildBBSection(houseNum, occupants, report) {    
+    // FIX: previously recomputed its own bbHouse via a second, separately-maintained
+        // formula, which happened to be correct but risked silently drifting out of sync
+        // with the report.houses[].bhavatBhavam data (which used a different, wrong
+        // formula until fixed above). Now both read from one source of truth.
+        const houseEntry = report.houses.find(h => h.house === houseNum);
+        const bbHouse = houseEntry ? houseEntry.bhavatBhavam.targetHouse : ((2 * houseNum - 2) % 12) + 1;
         const bbOccupants = report.houses.find(h => h.house === bbHouse)?.primaryPlanets || [];
         const implication = BB_IMPLICATIONS[houseNum] || '';
         const bbContent = bbOccupants.length > 0
@@ -1851,8 +1905,8 @@ const AI_PREDICTION = (function() {
         const report = generateReport(inputData);
         if (report.error) return `<div style="color:var(--rose);padding:20px;">Error: ${report.error}</div>`;
 
-        const asc = inputData.asc || {};
-        const ascSignIndex = asc.signIndex !== undefined ? asc.signIndex : 0;
+        const asc = normalizeAscendant(inputData.asc); // FIX: use natal ascendant's real sign, not a default Aries
+        const ascSignIndex = asc.signIndex;
         const planetsArr = report.summary.allPlanets || inputData.planets || []; // Use processed planets if available
 
         // ── MASTER SUMMARY BANNER ──────────────────────────────────────────
@@ -2155,7 +2209,8 @@ const AI_PREDICTION = (function() {
         return `<div class="bnn-integrated-report">${report}</div>`;
     }
 
-    function generateAdvancedReport(type, planets, asc, birthYear, birthDate, transitSaturnSign) {
+   function generateAdvancedReport(type, planets, rawAsc, birthYear, birthDate, transitSaturnSign) {
+        const asc = normalizeAscendant(rawAsc); // FIX: use natal ascendant's real sign, not a default Aries
         const isBiz = type === 'business';
         const karaka = isBiz ? 'Saturn' : 'Venus';
         const kData = planets.find(p => p.name === karaka);
@@ -2289,7 +2344,32 @@ const AI_PREDICTION = (function() {
             </li>`);
             html += `</ul></div>`;
         }
-
+// 7b. Classical yogas from the shared yoga database
+        try {
+            if (typeof window.buildThemedYogaSection === 'function') {
+                const yogaChart = {
+                    planets: Object.fromEntries(planets.map(p => [p.name, {
+                        sn: p.signIndex, sign: p.sign, deg: (p.degree !== undefined ? p.degree : p.sid) || 0,
+                        house: p.house, retro: p.retro
+                    }])),
+                    asc: { sn: asc.signIndex, deg: asc.degree || asc.sid || 0 }
+                };
+                html += isBiz
+                    ? window.buildThemedYogaSection(yogaChart, {
+                        title: 'Classical Business & Career Yogas',
+                        icon: '💼',
+                        color: 'var(--cyan)',
+                        keywords: ['wealth', 'career', 'profession', 'business', 'trade', 'commerce', 'success', 'authority', 'fame', 'gains', 'prosperity', 'money', 'leadership'],
+                        categories: ['Raja Yoga', 'Vipareeta Raja Yoga']
+                    })
+                    : window.buildThemedYogaSection(yogaChart, {
+                        title: 'Classical Marriage Yogas',
+                        icon: '💍',
+                        color: 'var(--rose)',
+                        keywords: ['marriage', 'spouse', 'wife', 'husband', 'union', 'relationship', 'love', 'partner', 'conjugal', 'family']
+                    });
+            }
+        } catch (e) { console.warn('AI Prediction themed yoga section failed:', e); }
         // 8. Remedies
         const nakProp = BNN_NAK_PROPERTIES[SIGN_LORDS[kData.signIndex]] || {};
         html += `<div class="biz-remedy" style="padding:15px; border-radius:8px; border:1px solid var(--cyan); background:rgba(58,240,255,0.05);">

@@ -528,6 +528,101 @@ if (typeof module !== 'undefined' && module.exports) {
         generateComprehensiveYogaReport,
         getYogaRemedyDetails,
         calculateYogaStrengthLevel,
-        generateRemedyPlan
+        generateRemedyPlan,
+        buildThemedYogaSection
     };
 }
+
+/**
+ * Builds a themed "Detected Yogas" HTML section for any panel (Marriage,
+ * Business, Ashtakvarga, Step2Step, AI Prediction, ...). Filters
+ * window.YOGAS_DATA down to yogas relevant to a theme — by exact
+ * `category` match and/or by keyword match against the yoga's name,
+ * keywords[], category, and effect/result text — evaluates each against
+ * the supplied chart, and renders a "detected" list plus a collapsed
+ * "reference" list of relevant-but-not-formed yogas.
+ *
+ * @param {Object} chart - {planets, asc, houses, ...} as accepted by
+ *   yoga.evaluate(chart) elsewhere in this codebase.
+ * @param {Object} opts
+ *   - title {String}      e.g. "Marriage Yogas"
+ *   - icon {String}       e.g. "💍"
+ *   - color {String}      CSS color/var, e.g. "var(--rose)"
+ *   - keywords {String[]} lowercase-matched fragments, e.g. ['marriage','spouse']
+ *   - categories {String[]} exact yoga.category matches, e.g. ['Raja Yoga']
+ *   - maxReference {Number} cap on the reference list shown (default 8)
+ * @returns {String} HTML, or '' if YOGAS_DATA/chart is unavailable or
+ *   nothing in the data matches the theme.
+ */
+function buildThemedYogaSection(chart, opts) {
+    if (!window.YOGAS_DATA || !Array.isArray(window.YOGAS_DATA) || !chart) return '';
+    opts = opts || {};
+    const title = opts.title || 'Related Yogas';
+    const icon = opts.icon || '✨';
+    const color = opts.color || 'var(--gold)';
+    const keywords = (opts.keywords || []).map(k => String(k).toLowerCase());
+    const categories = opts.categories || [];
+    const maxReference = opts.maxReference || 8;
+
+    const matchesTheme = (y) => {
+        if (categories.length && categories.includes(y.category)) return true;
+        if (!keywords.length) return false;
+        const haystack = [
+            y.name || '',
+            Array.isArray(y.keywords) ? y.keywords.join(' ') : '',
+            y.effect || y.result || '',
+            y.category || ''
+        ].join(' ').toLowerCase();
+        return keywords.some(k => haystack.includes(k));
+    };
+
+    const themed = window.YOGAS_DATA.filter(y => y && typeof y.evaluate === 'function' && matchesTheme(y));
+    if (themed.length === 0) return '';
+
+    const detected = [];
+    const reference = [];
+
+    themed.forEach(y => {
+        try {
+            const res = y.evaluate(chart);
+            const passed = res === true || (res && typeof res === 'object' && res.result === true);
+            if (passed) {
+                const rationale = (res && typeof res === 'object' && res.rationale) ? res.rationale : (y.effect || y.result || '');
+                detected.push({ name: y.name, rationale: rationale, quality: y.quality || 'Positive' });
+            } else {
+                reference.push(y);
+            }
+        } catch (e) {
+            // Skip evaluation errors silently — this is a supplementary display section
+        }
+    });
+
+    let html = `<div class="yoga-theme-section" style="margin:10px 12px;padding:14px;background:rgba(255,255,255,0.03);border:1px solid ${color}44;border-radius:6px;">`;
+    html += `<div style="font-size:13px;font-weight:700;color:${color};margin-bottom:10px;">${icon} ${title}</div>`;
+
+    if (detected.length > 0) {
+        html += `<div style="margin-bottom:${reference.length ? '12px' : '0'};">`;
+        detected.forEach(d => {
+            const qColor = d.quality === 'Negative' ? 'var(--rose)' : 'var(--green)';
+            html += `<div style="margin-bottom:8px;padding:8px;background:rgba(255,255,255,0.03);border-left:2px solid ${qColor};border-radius:3px;">
+                <div style="font-size:11px;font-weight:700;color:${qColor};">✓ ${d.name}</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:3px;line-height:1.5;">${d.rationale}</div>
+            </div>`;
+        });
+        html += `</div>`;
+    } else {
+        html += `<div style="font-size:11px;color:var(--muted);margin-bottom:10px;">No ${title.toLowerCase()} are currently active in this chart.</div>`;
+    }
+
+    if (reference.length > 0) {
+        const refList = reference.slice(0, maxReference);
+        html += `<details style="font-size:10px;color:var(--muted);">
+            <summary style="cursor:pointer;color:${color};">Reference: ${reference.length} other ${title.toLowerCase()} checked but not present</summary>
+            <div style="margin-top:6px;padding-left:10px;">${refList.map(y => y.name).join(', ')}${reference.length > maxReference ? ', …' : ''}</div>
+        </details>`;
+    }
+
+    html += `</div>`;
+    return html;
+}
+if (typeof window !== 'undefined') { window.buildThemedYogaSection = buildThemedYogaSection; }
