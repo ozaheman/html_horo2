@@ -62,6 +62,33 @@ function fmtCompact(d){
 }
 
 // Global Mappings (Moved up to prevent TDZ errors)
+
+const PLANET_IDSx = {
+    ASC: 0,
+    SUN: 1,
+    MOON: 2,
+    MARS: 3,
+    MERCURY: 4,
+    JUPITER: 5,
+    VENUS: 6,
+    SATURN: 7,
+    RAHU: 8,
+    KETU: 9
+};
+
+const planetNamesx = {
+    0: { en: 'Ascendant', hi: 'लग्न', short: 'As', short_hi: 'लग्न' },
+    1: { en: 'Sun', hi: 'सूर्य', short: 'Su', short_hi: 'सू' },
+    2: { en: 'Moon', hi: 'चंद्र', short: 'Mo', short_hi: 'चं' },
+    3: { en: 'Mars', hi: 'मंगल', short: 'Ma', short_hi: 'मं' },
+    4: { en: 'Mercury', hi: 'बुध', short: 'Me', short_hi: 'बु' },
+    5: { en: 'Jupiter', hi: 'गुरु', short: 'Ju', short_hi: 'गु' },
+    6: { en: 'Venus', hi: 'शुक्र', short: 'Ve', short_hi: 'शु' },
+    7: { en: 'Saturn', hi: 'शनि', short: 'Sa', short_hi: 'श' },
+    8: { en: 'Rahu', hi: 'राहु', short: 'Ra', short_hi: 'रा' },
+    9: { en: 'Ketu', hi: 'केतु', short: 'Ke', short_hi: 'के' }
+};
+
 var LAGNA_HORA_MAPPING = {
   "Aries": { best: ["Sun", "Mars", "Jupiter"], avg: ["Moon"], avoid: ["Mercury", "Venus", "Saturn"] },
   "Taurus": { best: ["Venus", "Mercury", "Saturn"], avg: ["Sun"], avoid: ["Moon", "Mars", "Jupiter"] },
@@ -5167,7 +5194,243 @@ function computeSAV(chartData) {
 
   return { sav: houseSAV, planetAV: housePlanetAV, totalPoints: houseSAV.reduce(function(a,b){return a+b;},0) };
 }
+var BNN_YOGAS = [
+  { p:['Jupiter','Venus','Mercury'], t:'Early Marriage', c:'Marriage' },
+  { p:['Venus','Saturn'], t:'Delayed Marriage', c:'Marriage' },
+  { p:['Sun','Moon','Saturn'], t:'Late Marriage', c:'Marriage' },
+  { p:['Mars','Jupiter'], t:'Happy Married Life', c:'Marriage' },
+  { p:['Mars','Saturn'], t:'Multiple Marriages / Disputes', c:'Marriage' },
+  { p:['Sun','Moon','Saturn'], t:'Service / Govt Benefits', c:'Career' },
+  { p:['Sun','Mars','Saturn'], t:'Govt Job / Authority', c:'Career' },
+  { p:['Sun','Jupiter','Saturn'], t:'Politician / Leader', c:'Career' },
+  { p:['Mars','Saturn'], t:'Police / Technical', c:'Career' }
+];
+var BNN_PROPERTY_YOGAS = [
+  { p:['Venus','Jupiter'], t:'Beautiful house with exquisite furniture' },
+  { p:['Venus','Mercury'], t:'Duplex / Commercial Complex' },
+  { p:['Venus','Mercury','Rahu'], t:'Old or ancestral property' },
+  { p:['Venus','Rahu'], t:'Multi-storied building / Apartment' },
+  { p:['Venus','Saturn'], t:'Property acquired after marriage' },
+  { p:['Venus','Saturn','Sun'], t:'Government-allotted quarters' },
+  { p:['Venus','Mars'], t:'Ordinary / Simple house' }
+];
+var BNN_SPIRITUAL_YOGAS = [
+  { p:['Jupiter','Ketu'], t:'Soul Silence / Spiritual Blockage', r:'Parad Shivling Remedy recommended' },
+  { p:['Saturn','Jupiter'], dist:11, t:'Karmic Lock - Burden without reason', r:'Search for surrender, not mantras' },
+  { p:['Ketu','Venus'], t:'Mantras stop working (Spiritual impasse)', r:'' },
+  { p:['Ketu','Mercury'], t:'Learning blocks / Intellectual spiritual impasse', r:'' },
+  { p:['Sun','Saturn','Mars'], t:'Ego vs Soul War', r:'' }
+];
+var BNN_NAK_PROPERTIES = {
+    Sun: { biz: "Government, leadership, high-status projects.", mar: "Partner from a respectable or authoritative family." },
+    Moon: { biz: "Public reach, travel, emotional products.", mar: "Emotional and caring partner; focus on family peace." },
+    Mars: { biz: "Technical, physical effort, property, strategy.", mar: "Active, energetic, sometimes argumentative partner." },
+    Mercury: { biz: "Trade, commerce, analytical work, communication.", mar: "Intellectual, communicative, youthful partner." },
+    Jupiter: { biz: "Expansion, wisdom, legal or financial counseling.", mar: "Wise, virtuous, traditional partner; blessings in union." },
+    Venus: { biz: "Luxury, arts, creative finance, jewelry.", mar: "Artistic, beautiful, romantic partner; harmony-focused." },
+    Saturn: { biz: "Hard work, structural projects, long-term stability.", mar: "Mature, disciplined, older partner; stability comes slowly." }
+};
+var BNN_REMEDY_RITUALS = {
+    Saturn: "Serve the elderly, feed black dogs, perform Shani Shanti rituals. Saturn demands discipline and patience.",
+    Venus: "Respect the feminine energy, donate white clothes to the needy, perform Lakshmi Puja for relationship harmony.",
+    Jupiter: "Respect your Guru, donate yellow items (like gram lentils), read spiritual texts for wisdom and expansion.",
+    Mars: "Perform Hanuman Chalisa, volunteer for physical service, donate red items to channelize energy positively.",
+    Mercury: "Donate books or green items, practice conscious communication, plant trees for intellectual growth.",
+    Sun: "Surya Namaskar at sunrise, respect the father figure, donate wheat/copper for authority and health.",
+    Moon: "Respect the mother figure, donate milk/water on Mondays, practice meditation for emotional stability."
+};
 
+function generateAdvancedReport(type, planets, asc) {
+  const isBiz = type === 'business';
+  const karaka = isBiz ? 'Saturn' : 'Venus';
+  const kData = planets[karaka];
+  if (!kData) return `<div class="error">Karaka ${karaka} not found in chart.</div>`;
+
+  const upagrahas = calculateUpagrahas();
+  const exchanges = findParivartana(planets);
+  const circuit = getBNNConversations(karaka, planets);
+  const circNames = [karaka, ...circuit.map(c => c.p)];
+
+  exchanges.forEach(ex => {
+    if (circNames.includes(ex.p1) || circNames.includes(ex.p2)) {
+      if (!circNames.includes(ex.p1)) circNames.push(ex.p1);
+      if (!circNames.includes(ex.p2)) circNames.push(ex.p2);
+    }
+  });
+
+  const matches = BNN_YOGAS.filter(y => {
+    if (isBiz && y.c !== 'Career') return false;
+    if (!isBiz && y.c !== 'Marriage') return false;
+    return y.p.every(yp => circNames.includes(yp));
+  });
+
+  const spiritMatches = BNN_SPIRITUAL_YOGAS.filter(y => {
+    const meetP = y.p.every(yp => circNames.includes(yp));
+    if (!meetP) return false;
+    if (y.dist !== undefined) {
+      const p1Data = planets[y.p[0]], p2Data = planets[y.p[1]];
+      if (!p1Data || !p2Data) return false;
+      const realDist = (p2Data.sn - p1Data.sn + 12) % 12;
+      return realDist === y.dist;
+    }
+    return true;
+  });
+
+  let html = `<div class="advanced-report" style="font-family:'Outfit', sans-serif; color:var(--text); line-height:1.6;">`;
+  const sagesData = analyzeSagesMethodology(planets, asc);
+  const timingData = getTimingSutras(planets, asc, getPos(new Date()));
+  
+  // 📜 CLASSICAL SAGES METHODOLOGY & 4-COLUMN REPORT
+  html += `<div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:20px; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+    <div style="background:linear-gradient(90deg, rgba(255,100,100,0.1), rgba(255,155,58,0.1)); padding:15px; border-bottom:1px solid var(--border);">
+      <h3 style="color:var(--rose); font-size:14px; margin:0; text-transform:uppercase; letter-spacing:1px; display:flex; justify-content:space-between; align-items:center;">
+        <span>📜 Detailed Marriage Analysis Report</span>
+        <span style="color:var(--gold); font-size:10px; font-weight:normal;">Classical Sages Methodology</span>
+      </h3>
+    </div>
+    
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      ${sagesData.map((s, idx) => {
+        const col = s.type === 'Major' ? 'var(--gold)' : s.type === 'Timing' ? 'var(--cyan)' : 'var(--rose)';
+        return `
+          <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; padding:15px; border-left:5px solid ${col}; box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:8px;">
+               <div>
+                 <div style="font-weight:900; color:${col}; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">${s.sage}: ${s.title}</div>
+                 <div style="font-size:9px; color:var(--muted); margin-top:2px;">${s.type || 'Rule-based'} Indicator</div>
+               </div>
+               <div style="font-size:11px; color:var(--gold2); font-weight:bold; background:rgba(200,168,75,0.1); padding:2px 8px; border-radius:4px; border:1px solid rgba(200,168,75,0.2);">
+                 🕒 ${s.time}
+               </div>
+            </div>
+            
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="background:rgba(0,0,0,0.2); padding:8px 12px; border-radius:6px;">
+                <div style="font-size:9px; color:var(--muted); text-transform:uppercase; margin-bottom:4px; font-weight:bold;">Cause (The Yoga)</div>
+                <div style="font-size:11px; color:var(--text); font-style:italic; line-height:1.4;">"${s.cause}"</div>
+              </div>
+              
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div style="background:rgba(58,240,255,0.05); padding:8px 10px; border-radius:6px; border:1px solid rgba(58,240,255,0.1);">
+                  <div style="font-size:9px; color:var(--cyan); text-transform:uppercase; margin-bottom:2px; font-weight:bold;">Effect</div>
+                  <div style="font-size:10.5px; color:var(--text); line-height:1.3;">${s.effect}</div>
+                </div>
+                <div style="background:rgba(61,255,155,0.05); padding:8px 10px; border-radius:6px; border:1px solid rgba(61,255,155,0.1);">
+                  <div style="font-size:9px; color:var(--green); text-transform:uppercase; margin-bottom:2px; font-weight:bold;">Result</div>
+                  <div style="font-size:10.5px; color:var(--text); line-height:1.3;">${s.result}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('') || '<div style="padding:30px; text-align:center; color:var(--muted); font-size:12px;">No specific sage-based hits found for current transits.</div>'}
+    </div>
+  </div>`;
+
+  // 📅 TIMING WINDOWS (Consolidated Current Activation)
+  if (timingData.length > 0) {
+    html += `<div style="background:rgba(58,240,255,0.05); border:1px solid rgba(58,240,255,0.2); border-radius:12px; padding:15px; margin-bottom:20px; box-shadow:0 4px 12px rgba(58,240,255,0.1);">
+      <h3 style="color:var(--cyan); font-size:12px; margin:0 0 12px 0; text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid rgba(58,240,255,0.2); padding-bottom:8px;">📅 Immediate Precise Timing Windows</h3>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+        ${timingData.map(t => `
+          <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:8px; border-left:3px solid ${t.type === 'Year' ? 'var(--gold)' : 'var(--cyan)'};">
+            <div style="font-size:11px; font-weight:bold; color:var(--text); margin-bottom:4px;">${t.title}</div>
+            <div style="font-size:10px; color:var(--text-dim); line-height:1.4;">${t.desc}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  }
+
+  const str = getKarakaStrength(karaka, kData.sn);
+  html += `<div class="biz-summary" style="border-color:${str.color}; background:rgba(255,255,255,0.02);">`;
+  html += `<h3 style="color:${str.color};"><span style="margin-right:8px;">💎</span> Karaka Core (${karaka})</h3>`;
+  html += `<div style="display:flex;justify-content:space-between;margin-bottom:10px;">`;
+  html += `<span>Placed in ${kData.sign} (H${kData.house})</span>`;
+  html += `<span style="font-weight:900;color:${str.color}">${str.label}</span>`;
+  html += `</div>`;
+  if (kData.retro) html += `<div class="alert-mini" style="color:var(--amber);background:rgba(255,155,58,0.05);padding:4px;border-radius:4px;font-size:10px;margin-bottom:5px;">⚠ <strong>Retrograde:</strong> Results may be delayed.</div>`;
+  html += `</div>`;
+
+  const anukari = getAnukariPlanets(karaka, planets);
+  if (anukari.length > 0) {
+    html += `<div class="biz-summary"><h3>📜 Anukari (Supporting) Circuit</h3><div class="biz-fields">`;
+    anukari.forEach(a => {
+      html += `<span class="biz-field">${a.p} (${a.dist})</span>`;
+    });
+    html += `</div></div>`;
+  }
+
+  const opposingH = (kData.house + 6) % 12 || 12;
+  const oppPlanets = Object.entries(planets).filter(([p, pd]) => pd.house === opposingH).map(p => p[0]);
+  if (oppPlanets.length > 0) {
+    html += `<div class="biz-summary" style="border-color:var(--rose);"><h3>🚫 Resistance & Opposition</h3>`;
+    html += `<div style="font-size:10px;"><strong>Opposition (7th):</strong> ${oppPlanets.join(', ')} causes challenge to ${karaka}.</div>`;
+    html += `</div>`;
+  }
+
+  html += getJaiminiReportHTML(type, planets);
+
+  if (isBiz) {
+    const ss = getSadeSatiDetails();
+    if (ss) {
+      html += `<div class="shimmer" style="padding:8px;border-radius:4px;margin-bottom:10px;border:1px solid rgba(255,155,58,0.3);">`;
+      html += `<div style="color:var(--amber);font-weight:900;font-size:11px;">⚠️ Sade Sati: ${ss.label}</div>`;
+      html += `<div style="font-size:10px;margin-top:4px;">${ss.desc}</div>`;
+      html += `</div>`;
+    }
+    const returns = getSaturnReturnDetails();
+    html += `<div style="font-size:10px;margin-bottom:10px;">`;
+    html += `<strong>Saturn Cycles:</strong><br>`;
+    returns.forEach(r => html += `<span class="biz-field" style="font-size:9px;margin-right:5px;">Cycle ${r.cycle}: Age ${r.age} (${r.year})</span>`);
+    html += `</div>`;
+    html += `<p style="font-size:9.5px;color:var(--muted);">Saturn in H${kData.house} tests your ${isBiz? (kData.house===10?'career-status':kData.house===6?'daily routines':'financial foundation') : 'spouse connection'}. Success is inevitable but slow.</p>`;
+  }
+  html += `</div>`;
+
+  if (matches.length > 0) {
+    html += `<div class="biz-summary" style="border-color:var(--gold);"><h3>🌟 Step 9: Specialized BNN Yogas</h3><ul>`;
+    matches.forEach(m => html += `<li style="margin-bottom:4px;"><strong>${m.t}</strong>: Indicates success via ${m.p.join(' + ')} interactions.</li>`);
+    html += `</ul></div>`;
+  }
+
+  if (spiritMatches.length > 0) {
+    html += `<div class="biz-summary" style="border-color:var(--violet);"><h3>🧘 Soul Silence Diagnostics</h3><ul>`;
+    spiritMatches.forEach(m => html += `<li><strong>${m.t}</strong>: ${m.r || 'A deeper spiritual search is indicated.'}</li>`);
+    html += `</ul></div>`;
+  }
+
+  // Unified Timing Timeline handled by runCompleteMarriageTiming
+
+  const nakProp = BNN_NAK_PROPERTIES[LORDS[kData.sn]] || {};
+  html += `<div class="biz-remedy">`;
+  html += `<div class="biz-remedy-title">✨ Step 10: Remedies & Mitigation</div>`;
+  html += `<p>${BNN_REMEDY_RITUALS[karaka] || 'Connect with the divine nature of ' + karaka + '.'}</p>`;
+  if (isBiz && nakProp.biz) html += `<p style="margin-top:8px;"><strong>Strategic Alignment:</strong> ${nakProp.biz}</p>`;
+  if (!isBiz && nakProp.mar) html += `<p style="margin-top:8px;"><strong>Relationship Alignment:</strong> ${nakProp.mar}</p>`;
+  html += `</div>`;
+
+  html += `</div>`;
+  return html;
+}
+/**
+ * Router for BNN-based analysis (Career/Marriage) from Prashna or other panels.
+ */
+function runBNNAnalysis(type) {
+  if (type === 'bnn_career' || type === 'business') {
+    if (typeof runBusinessAnalysis === 'function') {
+      runBusinessAnalysis();
+    } else {
+      console.error("runBusinessAnalysis not found.");
+    }
+  } else if (type === 'bnn_marriage' || type === 'marriage') {
+    if (typeof runMarriageAnalysis === 'function') {
+      runMarriageAnalysis();
+    } else {
+      console.error("runMarriageAnalysis not found.");
+    }
+  }
+}
 function runBusinessAnalysis() {
   console.log("STARTING BUSINESS ANALYSIS...");
   var el = document.getElementById('bizContent');
@@ -5326,9 +5589,15 @@ function runBusinessAnalysis() {
     }
   } catch(e) { console.error('BUSINESS MUHURTA FAIL', e); }
   // 1.5 ADVANCED BNN & JAIMINI ANALYSIS (NEW)
-  try {
-    const advancedBNN = generateAdvancedReport('business', BIRTH_PLANETS, BIRTH_ASC);
-    el.innerHTML += advancedBNN;
+  try {// generateAdvancedReport (advanced_analysis.js) is undefined/broken in this
+    // build — was failing silently here (caught below, only logged to console).
+    // Using the self-contained BNN_ENGINE instead.
+    if (window.BNN_ENGINE && BIRTH_PLANETS) {
+      const bnnGender = (window.BIRTH && window.BIRTH.gender) || 'male';
+      const bnnChart = window.BNN_ENGINE.buildChart(BIRTH_PLANETS, BIRTH_ASC || {});
+      const advancedBNN = window.BNN_ENGINE.runFullAnalysis(bnnChart, { gender: bnnGender }).html;
+      el.innerHTML += advancedBNN;
+    }
   } catch(e) { console.error("ADVANCED BNN FAIL", e); }
 
   // 2. CHART LOOP
@@ -5516,8 +5785,31 @@ function runBNNAnalysis(type) {
 
 function getBNNReportHTML(type, planets, asc, isIntegrated = false) {
   const isCareer = type === 'bnn_career';
-  const report = generateAdvancedReport(isCareer ? 'business' : 'marriage', planets, asc);
-
+  let report;
+  if (!window.BNN_ENGINE) {
+    report = '<div class="pred-item">Error: bnn_engine.js did not load (check the &lt;script&gt; tag order in index.html).</div>';
+  } else if (!planets) {
+    report = '<div class="pred-item">Error: natal chart data not available yet.</div>';
+  } else {
+    // generateAdvancedReport (advanced_analysis.js) is undefined/broken in this
+    // build, so this uses the self-contained BNN_ENGINE instead — same engine
+    // the prediction panel's BNN mode uses, just filtered to the sections
+    // relevant to this category (career vs. marriage).
+    const bnnGender = (window.BIRTH && window.BIRTH.gender) || 'male';
+    const bnnChart = window.BNN_ENGINE.buildChart(planets, asc || {});
+    const full = window.BNN_ENGINE.runFullAnalysis(bnnChart, { gender: bnnGender });
+    const wantTitles = isCareer ? ['Profession', 'Education'] : ['Marriage', 'Progeny', 'Own House'];
+    const sections = full.findings.filter(sec => wantTitles.includes(sec.title));
+    report = sections.length
+      ? `<div style="display:grid;gap:12px;">${sections.map(sec => `
+          <div style="background:rgba(20,20,40,0.5);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:4px;padding:12px;">
+            <h3 style="color:var(--gold);font-size:12px;margin:0 0 8px 0;">${sec.title}</h3>
+            <ul style="margin:0;padding-left:18px;font-size:10.5px;color:var(--text);line-height:1.5;">
+              ${sec.findings.map(f => `<li>${typeof f === 'string' ? f : f.text}</li>`).join('')}
+            </ul>
+          </div>`).join('')}</div>`
+      : '<div class="pred-item">No BNN combinations matched for this chart.</div>';
+  }
   let html = `<div class="bnn-integrated-report">`;
   html += report;
   if(isIntegrated) {

@@ -1,4 +1,3 @@
-
 // --- START OF FILE bnn_prediction.js ---
 // Contains the database of predictions for Bhrigu Nandi Nadi.
 // This includes:
@@ -6,6 +5,49 @@
 // 2. Transit interpretations of Jupiter and Saturn over natal planets.
 // 3. Profession indicators (Saturn in Rashis, Saturn with Planets, Specific Profession Combinations).
 // 4. Progression rules and example interpretations.
+
+// ============================================================================
+// CORE CONSTANTS — bnn_logic.js references PLANET_IDS and planetNames
+// throughout (combination-key lookups like `${PLANET_IDS.SATURN}-${id}`,
+// display names via planetNames[id].en/.hi/.short/.short_hi), but neither
+// was defined anywhere in the project. Defined here since this is the data
+// layer bnn_logic.js already depends on — load this file before
+// bnn_logic.js (and after constant.js, if present) for both to resolve.
+// ============================================================================
+const PLANET_IDS = {
+    ASC: 0,
+    SUN: 1,
+    MOON: 2,
+    MARS: 3,
+    MERCURY: 4,
+    JUPITER: 5,
+    VENUS: 6,
+    SATURN: 7,
+    RAHU: 8,
+    KETU: 9
+};
+
+const planetNames = {
+    0: { en: 'Ascendant', hi: 'लग्न', short: 'As', short_hi: 'लग्न' },
+    1: { en: 'Sun', hi: 'सूर्य', short: 'Su', short_hi: 'सू' },
+    2: { en: 'Moon', hi: 'चंद्र', short: 'Mo', short_hi: 'चं' },
+    3: { en: 'Mars', hi: 'मंगल', short: 'Ma', short_hi: 'मं' },
+    4: { en: 'Mercury', hi: 'बुध', short: 'Me', short_hi: 'बु' },
+    5: { en: 'Jupiter', hi: 'गुरु', short: 'Ju', short_hi: 'गु' },
+    6: { en: 'Venus', hi: 'शुक्र', short: 'Ve', short_hi: 'शु' },
+    7: { en: 'Saturn', hi: 'शनि', short: 'Sa', short_hi: 'श' },
+    8: { en: 'Rahu', hi: 'राहु', short: 'Ra', short_hi: 'रा' },
+    9: { en: 'Ketu', hi: 'केतु', short: 'Ke', short_hi: 'के' }
+};
+
+// Also expose on window for any code that references them as globals via
+// window.* rather than bare identifiers (both work since this is a plain
+// script, not a module — var/const at top level attaches to window too,
+// but some callers check `window.PLANET_IDS` explicitly).
+if (typeof window !== 'undefined') {
+    window.PLANET_IDS = PLANET_IDS;
+    window.planetNames = planetNames;
+}
 
 const bnnSpecialYogas = {
     "Accident_Yoga": {

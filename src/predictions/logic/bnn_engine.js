@@ -388,7 +388,76 @@
 
     return { findings: sections, html: renderHtml(sections) };
   }
+// ========== 9b. RAW SOURCE NOTES (collapsed by default) ==========
+  //
+  // window.BNN_DB entries are raw transcript text — lines are wrapped with
+  // \r\n mid-sentence (just line-wrapping from the original source, not
+  // paragraph breaks), so rendered as-is it reads as one giant unbroken
+  // block. This reflows it into real paragraphs and hides it behind a
+  // collapsed "[+] Additional Notes" toggle so it doesn't dominate the
+  // panel — click to expand.
 
+  /** Undo the mid-sentence \r\n wrapping, keep genuine blank-line breaks. */
+  function reflowTranscriptText(raw) {
+    if (!raw) return '';
+    return String(raw)
+      .replace(/\r\n/g, '\n')
+      // A run of 2+ newlines is a real paragraph break — protect it first.
+      .replace(/\n{2,}/g, '\u0001')
+      // Any remaining single newline is just line-wrap — rejoin with a space.
+      .replace(/\n/g, ' ')
+      .replace(/\u0001/g, '\n\n')
+      .replace(/[ \t]{2,}/g, ' ')
+      .trim();
+  }
+
+  /** Group a wall of sentences into readable paragraphs (~N sentences each). */
+  function chunkIntoParagraphs(text, sentencesPerParagraph) {
+    const n = sentencesPerParagraph || 4;
+    const paragraphs = text.split(/\n\n+/).filter(Boolean);
+    const out = [];
+    paragraphs.forEach(block => {
+      // Split on Hindi '।' or Latin '.'/'?'/'!' followed by a space, keeping the delimiter.
+      const sentences = block.split(/(?<=[।.?!])\s+/).filter(Boolean);
+      for (let i = 0; i < sentences.length; i += n) {
+        out.push(sentences.slice(i, i + n).join(' ').trim());
+      }
+    });
+    return out.filter(Boolean);
+  }
+
+  /**
+   * Builds the collapsed "Additional Notes from BNN Source Material" block.
+   * @param {Number} [maxEntries=5] - cap how many BNN_DB entries to include,
+   *   since the corpus is very large — this is supplementary reading, not
+   *   the primary analysis above.
+   */
+  function renderSourceNotes(maxEntries) {
+    const db = window.BNN_DB || [];
+    if (!db.length) return '';
+    const entries = db.slice(0, maxEntries || 5);
+
+    const body = entries.map(entry => {
+      const reflowed = reflowTranscriptText(entry.text);
+      const paragraphs = chunkIntoParagraphs(reflowed, 4);
+      return `
+        <div style="margin-bottom:14px;">
+          <div style="font-size:9px;color:var(--cyan);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">${escapeHtml(entry.topic || '')}</div>
+          ${paragraphs.map(p => `<p style="margin:0 0 8px 0;font-size:10.5px;color:var(--text);line-height:1.6;">${escapeHtml(p)}</p>`).join('')}
+        </div>`;
+    }).join('');
+
+    // Native <details>/<summary> gives a free, accessible, JS-free collapse;
+    // ontoggle just swaps the "[+]"/"[-]" label to match the open state.
+    return `
+      <details ontoggle="this.querySelector('.bnn-notes-toggle').textContent = this.open ? '[\u2212]' : '[+]';" style="margin-top:14px;background:rgba(20,20,40,0.35);border:1px solid var(--border);border-radius:4px;padding:0;">
+        <summary style="cursor:pointer;list-style:none;padding:10px 12px;color:var(--gold);font-size:11px;user-select:none;">
+          <span class="bnn-notes-toggle" style="display:inline-block;width:14px;">[+]</span> Additional Notes from BNN Source Material
+        </summary>
+        <div style="padding:4px 12px 12px 12px;border-top:1px solid var(--border);">${body}</div>
+      </details>
+      <style>.bnn-integrated-report summary::-webkit-details-marker, .pred-item summary::-webkit-details-marker { display: none; }</style>`;
+  }
   function renderHtml(sections) {
     let html = '<div style="display:grid;gap:12px;">';
     sections.forEach(sec => {
@@ -401,6 +470,7 @@
         </div>`;
     });
     html += '</div>';
+     html += renderSourceNotes();
     return html;
   }
 

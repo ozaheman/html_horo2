@@ -84,6 +84,22 @@ function generateBnnPrediction(chartData, topic, heroIdentifier, subject ) {
     let english = "";
     let hindi = "";
 
+    // Dependency guard: bnnCombinationPredictions, PLANET_IDS and
+    // planetNames all come from bnn_prediction.js. If that file 404s (e.g.
+    // a dev-server MIME/nosniff block, wrong path, or the file just isn't
+    // deployed at ./src/predictions/db/bnn_prediction.js), every one of
+    // these silently stays undefined and every BNN call below fails with a
+    // cryptic "X is not defined" deep inside some other function. Catching
+    // it here, right at the entry point, turns that into one clear message.
+    if (typeof bnnCombinationPredictions === 'undefined' || typeof PLANET_IDS === 'undefined' || typeof planetNames === 'undefined') {
+        const msg = 'BNN data files did not load (bnnCombinationPredictions/PLANET_IDS/planetNames undefined). ' +
+            'Check that <script src=".../db/bnn_prediction.js"> is present in index.html BEFORE bnn_logic.js, ' +
+            'and that the file actually exists at that path on your server (a 404 there often shows up as ' +
+            'a MIME-type/nosniff console error, not a missing-file error).';
+        console.error('generateBnnPrediction:', msg);
+        return { english: `<p style="color:var(--rose);">⚠️ ${msg}</p>`, hindi: `<p style="color:var(--rose);">⚠️ BNN डेटा फ़ाइलें लोड नहीं हुईं। bnn_prediction.js का पथ जांचें।</p>` };
+    }
+
     /*// --- New Feature Handling ---
     if (topic === 'career_saturn_combinations') {
         english += `<h4>Career/Profession: Saturn Combinations</h4>`;
@@ -839,7 +855,6 @@ function generateProfessionHtml(heroIdentifier) {
 function generateCareerSaturnCombinationsHtml() {
     let english = "";
     let hindi = "";
-    alert('career saturn2');
     english += `<h4>Career/Profession: Saturn Combinations</h4>`;
         hindi += `<h4>करियर/व्यवसाय: शनि संयोजन</h4>`;
         let found = false;
@@ -849,7 +864,6 @@ function generateCareerSaturnCombinationsHtml() {
                 const planetId = PLANET_IDS[planetKey];
                 const key1 = `${PLANET_IDS.SATURN}-${planetId}`; // Saturn first
                 const key2 = `${planetId}-${PLANET_IDS.SATURN}`; // Saturn second
-                alert('career saturn');
                 let predictionData = null;
                 let combinationOrderNoteEn = "";
                 let combinationOrderNoteHi = "";
@@ -1040,6 +1054,20 @@ function generateHealthPatternsHtml(heroIdentifier) {
     return { english, hindi };
 }
 
+/**
+ * Defensively checks whether a chart-data planet entry is retrograde.
+ * Some upstream chart builders represent retrograde as a string ('R'/'D'),
+ * others as a plain boolean. Calling .toLowerCase() directly on p.retro
+ * (as this file used to) throws if it's ever a boolean, silently breaking
+ * whichever BNN topic hit it first (career/money/marriage all route
+ * through generateKarmicPathHtml, so this affected all of them).
+ */
+function isBnnRetro(p) {
+    if (!p || !p.retro) return false;
+    if (typeof p.retro === 'string') return p.retro.toLowerCase().includes('r');
+    return p.retro === true;
+}
+
 function generateKarmicPathHtml(chartData, heroIdentifier) {
     let english = "", hindi = "";
     // alert ('generateKarmicPathHtml: '+ heroIdentifier);
@@ -1054,6 +1082,9 @@ function generateKarmicPathHtml(chartData, heroIdentifier) {
     const heroPlanet = chartData.find(p => p.id === heroPlanetId);
     if (!heroPlanet) {
         return { hindi: "हीरो ग्रह नहीं मिला।", english: "Hero Planet not found." };
+    }
+    if (heroPlanet.bhava === undefined || heroPlanet.bhava === null) {
+        return { hindi: "हीरो ग्रह के लिए भाव (हाउस) डेटा गुम है।", english: "House (bhava) data missing for the hero planet." };
     }
      // console.log  ('chartData: '+ chartData);
      // console.log  ( chartData);
@@ -1077,7 +1108,7 @@ function generateKarmicPathHtml(chartData, heroIdentifier) {
     let futurePlanets = chartData.filter(p => p.id !== PLANET_IDS.ASC && p.bhava === secondHouseFromHero);
      // alert('ddfd');
     chartData.forEach(p => {
-        if (p.retro && p.retro.toLowerCase().includes('r')) { 
+        if (isBnnRetro(p)) { 
              const prevBhava = ((p.bhava - 2 + 12) % 12) + 1;
              if (uniqueTrineHouses.includes(prevBhava) && !presentPlanets.some(pp => pp.id === p.id)) {
                 let retroPlanet = JSON.parse(JSON.stringify(p)); 
@@ -1098,7 +1129,7 @@ function generateKarmicPathHtml(chartData, heroIdentifier) {
 
     const formatPlanetWithDegree = (p, lang) => {
         const isHero = p.id === heroPlanetId ? (lang === 'hi' ? ' (हीरो)' : ' (Hero)') : '';
-        const isRetro = p.retro && p.retro.toLowerCase().includes('r') ? (lang === 'hi' ? '(व)' : '(R)') : '';
+        const isRetro = isBnnRetro(p) ? (lang === 'hi' ? '(व)' : '(R)') : '';
         const degree = (p.long % 30).toFixed(1);
         const name = lang === 'hi' ? planetNames[p.id].short_hi : planetNames[p.id].short;
         return `${name}${isRetro} ${degree}°${isHero}`;
@@ -1499,3 +1530,294 @@ function generateProgressionHtml(chartData) {
 
     return { english, hindi };
 }
+
+// ============================================================================
+// NATAL CHART INTEGRATION LAYER
+// Ties together the three BNN pieces for a one-call natal analysis:
+//   - bnn_logic.js       : the analysis engine (generateBnnPrediction, hero
+//                          planet logic, karmic path, combination lookups)
+//   - bnn_prediction.js  : the structured combination-prediction data
+//                          (bnnCombinationPredictions, bnnProfession*, etc.)
+//   - bnn_db.js          : raw BNN transcript excerpts (window.BNN_DB), now
+//                          chunked into ~600 small, keyword-matchable
+//                          entries — used here as supplementary source notes
+//                          per topic, on top of the structured predictions.
+// ============================================================================
+
+/** Maps a chart-planet name (as used elsewhere in this app, e.g. BIRTH_PLANETS keys) to a PLANET_IDS key. */
+const BNN_PLANET_NAME_TO_KEY = {
+    Sun: 'SUN', Moon: 'MOON', Mars: 'MARS', Mercury: 'MERCURY',
+    Jupiter: 'JUPITER', Venus: 'VENUS', Saturn: 'SATURN', Rahu: 'RAHU', Ketu: 'KETU'
+};
+
+/**
+ * Converts a natal planets object (e.g. window.BIRTH_PLANETS, keyed by
+ * planet name with .house/.sn/.deg/.sid/.retro) plus an ascendant object
+ * (e.g. window.BIRTH_ASC) into the {id, bhava, long, retro} chartData array
+ * that generateBnnPrediction / generateKarmicPathHtml expect.
+ */
+function buildBnnChartDataFromNatal(planetsObj, ascendantObj) {
+    const chartData = [];
+
+    if (ascendantObj) {
+        const ascLong = ascendantObj.sid !== undefined ? ascendantObj.sid
+            : (ascendantObj.sn !== undefined ? (ascendantObj.sn * 30) + (parseFloat(ascendantObj.deg) || 0) : 0);
+        chartData.push({ id: PLANET_IDS.ASC, bhava: 1, long: ascLong, retro: false });
+    }
+
+    Object.keys(planetsObj || {}).forEach(name => {
+        const key = BNN_PLANET_NAME_TO_KEY[name];
+        if (!key || PLANET_IDS[key] === undefined) return;
+        const p = planetsObj[name];
+        if (!p) return;
+        const long = p.sid !== undefined ? p.sid
+            : (p.sn !== undefined ? (p.sn * 30) + (parseFloat(p.deg) || 0) : 0);
+        chartData.push({
+            id: PLANET_IDS[key],
+            bhava: p.house || p.bhava || 1,
+            long: long,
+            retro: p.retro
+        });
+    });
+
+    return chartData;
+}
+
+// Keyword sets used to pull relevant excerpts out of window.BNN_DB for each topic.
+const BNN_TOPIC_KEYWORDS = {
+    career: ['करियर', 'व्यवसाय', 'नौकरी', 'profession', 'career', 'job', 'शनि'],
+    money: ['धन', 'पैसा', 'वित्त', 'दौलत', 'wealth', 'money', 'finance', 'शुक्र'],
+    marriage: ['विवाह', 'शादी', 'पति', 'पत्नी', 'marriage', 'spouse', 'wife', 'husband'],
+    health: ['स्वास्थ्य', 'बीमारी', 'रोग', 'health', 'disease', 'illness']
+};
+
+/**
+ * Simple keyword-frequency scan over window.BNN_DB (the chunked raw
+ * transcript excerpts) to find entries relevant to a topic / hero planet,
+ * used to enrich the structured combination predictions with real BNN
+ * source material rather than only canned combination text.
+ */
+function findBnnDbExcerpts(topic, extraKeyword, limit) {
+    limit = limit || 3;
+    const db = window.BNN_DB;
+    if (!Array.isArray(db) || db.length === 0) return [];
+
+    const keywords = (BNN_TOPIC_KEYWORDS[topic] || []).slice();
+    if (extraKeyword) keywords.push(extraKeyword);
+    if (keywords.length === 0) return [];
+
+    const scored = [];
+    for (let i = 0; i < db.length; i++) {
+        const entry = db[i];
+        const text = entry && entry.text ? entry.text : '';
+        if (!text) continue;
+        let score = 0;
+        for (let k = 0; k < keywords.length; k++) {
+            const kw = keywords[k];
+            if (!kw) continue;
+            let idx = text.indexOf(kw);
+            while (idx !== -1) {
+                score++;
+                idx = text.indexOf(kw, idx + kw.length);
+            }
+        }
+        if (score > 0) scored.push({ entry, score });
+    }
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, limit).map(s => s.entry);
+}
+
+function renderBnnDbExcerptsHtml(excerpts, lang) {
+    if (!excerpts || excerpts.length === 0) return '';
+    const title = lang === 'hi' ? 'BNN स्रोत सामग्री से अतिरिक्त नोट्स' : 'Additional Notes from BNN Source Material';
+    const items = excerpts.map(e =>
+        `<li style="margin-bottom:6px;"><span style="color:var(--muted);font-size:8.5px;">[${e.topic}]</span> ${e.text}</li>`
+    ).join('');
+    return `<div style="margin-top:8px;padding:8px;background:rgba(255,68,119,0.06);border-left:2px solid var(--rose);border-radius:4px;">
+        <div style="font-size:9.5px;font-weight:bold;color:var(--rose);margin-bottom:4px;">${title}</div>
+        <ul style="margin:0;padding-left:16px;font-size:9px;color:var(--text);line-height:1.5;">${items}</ul>
+    </div>`;
+}
+
+/**
+ * Formats a BNN_ENGINE section result ({title, findings}) into an HTML
+ * block matching the visual style used elsewhere. BNN_ENGINE only produces
+ * English findings (it's a plain rule engine, not bilingual), so in Hindi
+ * mode we still show them but under a Hindi label so it's clear these are
+ * the engine's own English rule text rather than a broken translation.
+ */
+function renderBnnEngineSectionHtml(section, lang) {
+    if (!section || !section.findings || section.findings.length === 0) return '';
+    const title = lang === 'hi' ? 'नियम-आधारित क्रॉस-चेक (BNN इंजन)' : 'Rule-Based Cross-Check (BNN Engine)';
+    const items = section.findings.map(f => {
+        const text = typeof f === 'string' ? f : (f.text || '');
+        return `<li style="margin-bottom:4px;">${text}</li>`;
+    }).join('');
+    return `<div style="margin-top:8px;padding:8px;background:rgba(0,188,212,0.06);border-left:2px solid var(--cyan);border-radius:4px;">
+        <div style="font-size:9.5px;font-weight:bold;color:var(--cyan);margin-bottom:4px;">${title}${lang === 'hi' ? ' <span style="color:var(--muted);font-weight:normal;font-size:8px;">(अंग्रेज़ी स्रोत पाठ)</span>' : ''}</div>
+        <ul style="margin:0;padding-left:16px;font-size:9px;color:var(--text);line-height:1.5;">${items}</ul>
+    </div>`;
+}
+
+/** Safely builds a BNN_ENGINE chart + runs one of its analyze* functions, returning null on any failure/absence. */
+function runBnnEngineSection(planetsObj, ascendantObj, fnName, extraArg) {
+    if (!window.BNN_ENGINE || typeof window.BNN_ENGINE[fnName] !== 'function') return null;
+    try {
+        const chart = window.BNN_ENGINE.buildChart(planetsObj, ascendantObj);
+        return window.BNN_ENGINE[fnName](chart, extraArg);
+    } catch (e) {
+        console.warn(`BNN_ENGINE.${fnName} failed:`, e);
+        return null;
+    }
+}
+
+/**
+ * Full natal-chart BNN analysis, combining THREE sources for every topic:
+ *  1. bnn_logic.js's karmic-path engine (generateKarmicPathHtml)
+ *  2. bnn_prediction.js's structured planet-combination lookups
+ *  3. bnn_db.js's raw source excerpts (keyword-matched)
+ *  4. bnn_engine.js's independent, self-contained rule engine (sign-distance
+ *     rules reconstructed directly from the BNN source text) as a
+ *     cross-check alongside the above
+ *
+ * @param {Object} planetsObj - e.g. window.BIRTH_PLANETS
+ * @param {Object} ascendantObj - e.g. window.BIRTH_ASC
+ * @param {Object} [opts] - { topics: [...], gender: 'male'|'female' }
+ * @returns {Object} { career, money, marriage, health, education, progeny, foreign_travel }
+ */
+window.generateNatalBnnAnalysis = function (planetsObj, ascendantObj, opts) {
+    opts = opts || {};
+    const gender = opts.gender || 'male';
+    const topics = opts.topics || ['career', 'money', 'marriage', 'health', 'education', 'progeny', 'foreign_travel'];
+
+    if (typeof PLANET_IDS === 'undefined' || typeof planetNames === 'undefined' || typeof bnnCombinationPredictions === 'undefined') {
+        const msg = { english: '<p style="color:var(--rose);">⚠️ BNN data files did not load — check that bnn_prediction.js is loaded before bnn_logic.js in index.html and actually exists at its script path (a 404 there commonly shows up in the console as a MIME-type/nosniff error rather than a missing-file error).</p>',
+                       hindi: '<p style="color:var(--rose);">⚠️ BNN डेटा फ़ाइलें लोड नहीं हुईं। सुनिश्चित करें कि bnn_prediction.js, bnn_logic.js से पहले लोड हो।</p>' };
+        const results = {};
+        topics.forEach(t => { results[t] = msg; });
+        return results;
+    }
+
+    const chartData = buildBnnChartDataFromNatal(planetsObj, ascendantObj);
+    const results = {};
+
+    if (!chartData.some(p => p.id === PLANET_IDS.ASC) || chartData.length <= 1) {
+        const msg = { english: '<p>Natal chart data not available for BNN analysis.</p>', hindi: '<p>BNN विश्लेषण के लिए जन्म कुंडली डेटा उपलब्ध नहीं है।</p>' };
+        topics.forEach(t => { results[t] = msg; });
+        return results;
+    }
+
+    if (topics.includes('career')) {
+        const karmic = generateBnnPrediction(chartData, 'career', PLANET_IDS.SATURN);
+        const combos = generateBnnPrediction(chartData, 'career_saturn_combinations', PLANET_IDS.SATURN);
+        const excerpts = findBnnDbExcerpts('career', 'शनि');
+        const engineSection = runBnnEngineSection(planetsObj, ascendantObj, 'analyzeProfession');
+        results.career = {
+            english: `<h3>Career &amp; Profession</h3>${karmic.english || ''}${combos.english || ''}${renderBnnEngineSectionHtml(engineSection, 'en')}${renderBnnDbExcerptsHtml(excerpts, 'en')}`,
+            hindi: `<h3>करियर और व्यवसाय</h3>${karmic.hindi || ''}${combos.hindi || ''}${renderBnnEngineSectionHtml(engineSection, 'hi')}${renderBnnDbExcerptsHtml(excerpts, 'hi')}`
+        };
+    }
+
+    if (topics.includes('money')) {
+        const karmic = generateBnnPrediction(chartData, 'money', PLANET_IDS.VENUS);
+        const combos = generateBnnPrediction(chartData, 'property_venus_combinations', PLANET_IDS.VENUS);
+        const excerpts = findBnnDbExcerpts('money', 'शुक्र');
+        const engineSection = runBnnEngineSection(planetsObj, ascendantObj, 'analyzeHouseYoga');
+        results.money = {
+            english: `<h3>Money &amp; Wealth</h3>${karmic.english || ''}${combos.english || ''}${renderBnnEngineSectionHtml(engineSection, 'en')}${renderBnnDbExcerptsHtml(excerpts, 'en')}`,
+            hindi: `<h3>धन और संपत्ति</h3>${karmic.hindi || ''}${combos.hindi || ''}${renderBnnEngineSectionHtml(engineSection, 'hi')}${renderBnnDbExcerptsHtml(excerpts, 'hi')}`
+        };
+    }
+
+    if (topics.includes('marriage')) {
+        const karmic = generateBnnPrediction(chartData, 'marriage', PLANET_IDS.JUPITER, 'self_journey');
+        const obstacles = generateBnnPrediction(chartData, 'marriage_obstacles_or_love', 'obstacles');
+        const love = generateBnnPrediction(chartData, 'marriage_obstacles_or_love', 'love_marriage');
+        const excerpts = findBnnDbExcerpts('marriage', 'विवाह');
+        const engineSection = runBnnEngineSection(planetsObj, ascendantObj, 'analyzeMarriage', gender);
+        results.marriage = {
+            english: `<h3>Marriage &amp; Relationships</h3>${karmic.english || ''}${obstacles.english || ''}${love.english || ''}${renderBnnEngineSectionHtml(engineSection, 'en')}${renderBnnDbExcerptsHtml(excerpts, 'en')}`,
+            hindi: `<h3>विवाह और संबंध</h3>${karmic.hindi || ''}${obstacles.hindi || ''}${love.hindi || ''}${renderBnnEngineSectionHtml(engineSection, 'hi')}${renderBnnDbExcerptsHtml(excerpts, 'hi')}`
+        };
+    }
+
+    if (topics.includes('health')) {
+        // No BNN_ENGINE module for health — bnn_logic + bnn_db only.
+        const ailments = ['skin_issues', 'diabetes', 'blood_disorders', 'eye_issues', 'bone_joint_issues'];
+        let englishAll = '', hindiAll = '';
+        ailments.forEach(a => {
+            const r = generateBnnPrediction(chartData, 'health_patterns', a);
+            englishAll += r.english || '';
+            hindiAll += r.hindi || '';
+        });
+        const excerpts = findBnnDbExcerpts('health', null);
+        results.health = {
+            english: `<h3>Health Patterns</h3>${englishAll}${renderBnnDbExcerptsHtml(excerpts, 'en')}`,
+            hindi: `<h3>स्वास्थ्य पैटर्न</h3>${hindiAll}${renderBnnDbExcerptsHtml(excerpts, 'hi')}`
+        };
+    }
+
+    if (topics.includes('education')) {
+        const combos = generateBnnPrediction(chartData, 'education_mercury_combinations', PLANET_IDS.MERCURY);
+        const analysis = generateBnnPrediction(chartData, 'education_analysis', null, null);
+        const excerpts = findBnnDbExcerpts('education', 'बुध');
+        const engineSection = runBnnEngineSection(planetsObj, ascendantObj, 'analyzeEducation');
+        results.education = {
+            english: `<h3>Education</h3>${combos.english || ''}${analysis.english || ''}${renderBnnEngineSectionHtml(engineSection, 'en')}${renderBnnDbExcerptsHtml(excerpts, 'en')}`,
+            hindi: `<h3>शिक्षा</h3>${combos.hindi || ''}${analysis.hindi || ''}${renderBnnEngineSectionHtml(engineSection, 'hi')}${renderBnnDbExcerptsHtml(excerpts, 'hi')}`
+        };
+    }
+
+    if (topics.includes('progeny')) {
+        const male = generateBnnPrediction(chartData, 'progeny_issues', 'male_child');
+        const female = generateBnnPrediction(chartData, 'progeny_issues', 'female_child');
+        const excerpts = findBnnDbExcerpts('progeny', 'संतान');
+        const engineSection = runBnnEngineSection(planetsObj, ascendantObj, 'analyzeProgeny');
+        results.progeny = {
+            english: `<h3>Progeny</h3>${male.english || ''}${female.english || ''}${renderBnnEngineSectionHtml(engineSection, 'en')}${renderBnnDbExcerptsHtml(excerpts, 'en')}`,
+            hindi: `<h3>संतान</h3>${male.hindi || ''}${female.hindi || ''}${renderBnnEngineSectionHtml(engineSection, 'hi')}${renderBnnDbExcerptsHtml(excerpts, 'hi')}`
+        };
+    }
+
+    if (topics.includes('foreign_travel')) {
+        // BNN_ENGINE-only topic — bnn_logic.js / bnn_prediction.js don't
+        // have a dedicated foreign-travel combination table.
+        const excerpts = findBnnDbExcerpts('foreign_travel', 'विदेश');
+        const engineSection = runBnnEngineSection(planetsObj, ascendantObj, 'analyzeForeignTravel');
+        const engineHtmlEn = renderBnnEngineSectionHtml(engineSection, 'en');
+        const engineHtmlHi = renderBnnEngineSectionHtml(engineSection, 'hi');
+        results.foreign_travel = {
+            english: `<h3>Foreign Travel</h3>${engineHtmlEn || '<p>No BNN_ENGINE data available.</p>'}${renderBnnDbExcerptsHtml(excerpts, 'en')}`,
+            hindi: `<h3>विदेश यात्रा</h3>${engineHtmlHi || '<p>BNN_ENGINE डेटा उपलब्ध नहीं है।</p>'}${renderBnnDbExcerptsHtml(excerpts, 'hi')}`
+        };
+    }
+
+    return results;
+};
+
+/**
+ * Convenience renderer: runs generateNatalBnnAnalysis and wraps each topic
+ * in a styled panel item, auto-picking English/Hindi from window.I18N if
+ * present (matching the existing language-toggle convention used elsewhere
+ * in the Predictions panel).
+ */
+window.renderNatalBnnAnalysisHtml = function (planetsObj, ascendantObj, opts) {
+    const lang = (window.I18N && window.I18N.current === 'hi') ? 'hi' : 'en';
+    let results;
+    try {
+        results = window.generateNatalBnnAnalysis(planetsObj, ascendantObj, opts);
+    } catch (e) {
+        console.error('generateNatalBnnAnalysis failed:', e);
+        return `<div class="pred-item"><div class="pred-title">⚠️ BNN Analysis Error</div><div class="pred-detail">${e.message}</div></div>`;
+    }
+
+    const topicOrder = ['career', 'money', 'marriage', 'health', 'education', 'progeny', 'foreign_travel'];
+    let html = '<div class="bnn-natal-analysis">';
+    topicOrder.forEach(topic => {
+        if (!results[topic]) return;
+        const content = lang === 'hi' ? results[topic].hindi : results[topic].english;
+        html += `<div class="pred-item" style="margin-bottom:14px;border-left:3px solid var(--rose);padding:10px;">${content}</div>`;
+    });
+    html += '</div>';
+    return html;
+};

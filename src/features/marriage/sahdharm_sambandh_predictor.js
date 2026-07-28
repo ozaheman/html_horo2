@@ -81,6 +81,28 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
         trik:    'Trik/Dushtana (6-8-12) — obstacle, loss, affliction'
     },
 
+    // ===== PPP ("Purna Parmatma Ansh" / Raj-Yoga-Karaka) + Dhan-Yoga constants =====
+    // Classical 4 Dhana-Sthana (wealth houses) per the "Money Making Dasha /
+    // Huge Wealth Combination" teaching — 2nd (Dhana/family wealth),
+    // 5th (Purva-Punya/speculative wealth), 9th (Bhagya/fortune wealth),
+    // 11th (Labha/gains). Deliberately a SEPARATE list from GROUPS.dhana
+    // (which is only [2,11] and used for the sah-dharm weight table above).
+    DHANA_STHANA: [2, 5, 9, 11],
+
+    // Classical pairings the source teaching calls out explicitly as
+    // Dhan-Yoga-forming when their lords combine (yuti/parivartan/drishti):
+    // 2-9, 2-11, 5-9, 5-11. (2-5 and 9-11 are not separately flagged in the
+    // source — 2nd/11th are treated as the "core" wealth pair with 5th/9th
+    // reinforcing them.)
+    DHANA_STHANA_PAIRS: [[2, 9], [2, 11], [5, 9], [5, 11]],
+
+    // Naisargik (natural) benefic/malefic split used only for the
+    // Kendradhipati-Dosha note — Moon here is treated as benefic by default
+    // (waxing-Moon assumption); Rahu/Ketu are judged by their own 3-point
+    // rule in getRahuKetuPPP(), not by this list.
+    NATURAL_BENEFICS: ['Jupiter', 'Venus', 'Mercury', 'Moon'],
+    NATURAL_MALEFICS: ['Sun', 'Mars', 'Saturn'],
+
     TARA_SEQUENCE: ['Janma', 'Sampat', 'Vipat', 'Kshem', 'Pratyari', 'Saadhak', 'Vadha', 'Maitri', 'Ati-Maitri'],
 
     // Position (1-9) that a count/remainder maps to — kept 0-indexed internally,
@@ -468,6 +490,487 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
         return Math.round(score * 10) / 10;
     },
 
+    // ===================== 4a½. BENEFIC/MALEFIC DETERMINATION + NULLIFICATION =====================
+    //
+    // Embedded sidereal exaltation/debilitation degrees + own-sign list
+    // (same values used elsewhere in the app's chart engine) so this module
+    // stays self-contained and doesn't need to read chart globals.
+    DIGNITY: {
+        Sun:     { ex: 10,  de: 190, own: [4] },
+        Moon:    { ex: 33,  de: 213, own: [3] },
+        Mars:    { ex: 298, de: 118, own: [0, 7] },
+        Mercury: { ex: 165, de: 345, own: [2, 5] },
+        Jupiter: { ex: 95,  de: 275, own: [8, 11] },
+        Venus:   { ex: 357, de: 177, own: [1, 6] },
+        Saturn:  { ex: 200, de: 20,  own: [9, 10] }
+    },
+
+    /** Exalted / Debilitated / Own-sign / neutral dignity check from sidereal longitude. */
+    _getDignity: function (planet, sid) {
+        const d = this.DIGNITY[planet];
+        if (!d || sid === undefined) return { state: 'unknown', label: '' };
+        const lon = ((sid % 360) + 360) % 360;
+        const signNum = Math.floor(lon / 30);
+        const angDist = (a, b) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
+        if (angDist(lon, d.ex) < 5) return { state: 'exalted', label: 'Exalted' };
+        if (angDist(lon, d.de) < 5) return { state: 'debilitated', label: 'Debilitated' };
+        if (d.own.includes(signNum)) return { state: 'own', label: 'Own Sign (Swakshetra)' };
+        return { state: 'neutral', label: '' };
+    },
+
+    /** Shukla (waxing) vs Krishna (waning) Paksha, needed for Moon's naisargik nature. */
+    _getMoonPaksha: function (natalPlanetsMap) {
+        const moon = natalPlanetsMap && natalPlanetsMap.Moon;
+        const sun = natalPlanetsMap && natalPlanetsMap.Sun;
+        if (!moon || !sun || moon.sid === undefined || sun.sid === undefined) return null;
+        const diff = ((moon.sid - sun.sid) % 360 + 360) % 360; // Moon's lead over Sun
+        return diff < 180 ? 'waxing' : 'waning';
+    },
+
+    /** All planets sharing the same rashi (sign) as `planet` — i.e. in conjunction. */
+    _getConjunctPlanets: function (planet, natalPlanetsMap) {
+        const p = natalPlanetsMap && natalPlanetsMap[planet];
+        if (!p) return [];
+        return Object.keys(natalPlanetsMap).filter(pl =>
+            pl !== planet && natalPlanetsMap[pl] && natalPlanetsMap[pl].sn === p.sn);
+    },
+
+    /** Bare naisargik (natural) nature only — used internally to avoid recursing through Mercury's own logic. */
+    _naisargikOnly: function (planet, natalPlanetsMap) {
+        if (planet === 'Jupiter' || planet === 'Venus') return 'benefic';
+        if (planet === 'Sun' || planet === 'Mars' || planet === 'Saturn' || planet === 'Rahu' || planet === 'Ketu') return 'malefic';
+        if (planet === 'Moon') return this._getMoonPaksha(natalPlanetsMap) === 'waning' ? 'malefic' : 'benefic';
+        return 'neutral';
+    },
+
+    /**
+     * METHOD TO FIND naisargik (natural) benefic/malefic status, with the
+     * classical reasoning spelled out:
+     *   • Jupiter, Venus → always benefic.
+     *   • Sun, Mars, Saturn → always malefic.
+     *   • Rahu, Ketu → treated as malefic (shadow/node grahas).
+     *   • Moon → benefic if waxing (Shukla Paksha), malefic if waning
+     *     (Krishna Paksha) — found by comparing Moon's longitude to Sun's.
+     *   • Mercury → naturally neutral ("chameleon" graha); takes on the
+     *     nature of whichever planet(s) it's conjunct — benefic if only
+     *     conjunct benefics, malefic if only conjunct malefics, neutral/
+     *     mixed if conjunct both or none.
+     */
+    getNaisargikNature: function (planet, natalPlanetsMap) {
+        if (planet === 'Jupiter' || planet === 'Venus') {
+            return { nature: 'benefic', reason: `${planet} is a Naisargik (natural) Shubha Graha — always benefic by nature.` };
+        }
+        if (planet === 'Sun' || planet === 'Mars' || planet === 'Saturn') {
+            return { nature: 'malefic', reason: `${planet} is a Naisargik (natural) Papa Graha — always malefic by nature.` };
+        }
+        if (planet === 'Rahu' || planet === 'Ketu') {
+            return { nature: 'malefic', reason: `${planet} is a Chhaya Graha (shadow planet/node) — classically treated as naturally malefic.` };
+        }
+        if (planet === 'Moon') {
+            const paksha = this._getMoonPaksha(natalPlanetsMap);
+            if (paksha === 'waxing') return { nature: 'benefic', reason: `Moon is in Shukla Paksha (waxing — ahead of Sun in longitude), so it is classed as a natural benefic.` };
+            if (paksha === 'waning') return { nature: 'malefic', reason: `Moon is in Krishna Paksha (waning — behind Sun in longitude), so it is classed as a natural malefic (weaker light).` };
+            return { nature: 'benefic', reason: `Moon's paksha could not be determined (Sun's position missing) — defaulting to its usual benefic classification.` };
+        }
+        if (planet === 'Mercury') {
+            const conjunct = this._getConjunctPlanets('Mercury', natalPlanetsMap);
+            if (!conjunct.length) return { nature: 'neutral', reason: `Mercury is naturally neutral (the "chameleon" graha) — with nothing conjunct it here, it stays neutral.` };
+            const natures = conjunct.map(pl => this._naisargikOnly(pl, natalPlanetsMap));
+            if (natures.every(n => n === 'benefic')) return { nature: 'benefic', reason: `Mercury is conjunct only natural benefic(s) (${conjunct.join(', ')}) — it takes on their benefic character.` };
+            if (natures.every(n => n === 'malefic')) return { nature: 'malefic', reason: `Mercury is conjunct only natural malefic(s) (${conjunct.join(', ')}) — it takes on their malefic character.` };
+            return { nature: 'neutral', reason: `Mercury is conjunct a mix of benefic and malefic planets (${conjunct.join(', ')}) — it stays neutral/mixed, reflecting a bit of both.` };
+        }
+        return { nature: 'neutral', reason: `${planet} — no naisargik classification defined.` };
+    },
+
+    /**
+     * METHOD TO FIND functional (house-lordship-based) nature for THIS
+     * ascendant — the classical principle being that functional nature
+     * usually DOMINATES results in a given chart, even overriding an
+     * otherwise-fixed naisargik nature:
+     *   • Rules Trikona (1,5,9) AND Kendra (1,4,7,10), no Trik → Yogakaraka
+     *     (strongest functional benefic; this is the PPP/Raj-Yoga-Karaka
+     *     condition itself).
+     *   • Rules any Trik/Dushtana house (6,8,12) → functional malefic,
+     *     regardless of naisargik nature.
+     *   • Rules Trikona only → strong functional benefic.
+     *   • Rules Kendra only → functional benefic, tempered by Kendradhipati
+     *     Dosha (see getKendradhipatiNullification below).
+     *   • Rules Dhana/Labha (2/11) only → mixed (wealth-giving, but 2nd is
+     *     also a Maraka/death-inflicting house).
+     *   • Rules ONLY the 3rd house (the one Upachaya house that never
+     *     overlaps Kendra/Trikona/Trik/Dhana) → many classical authors call
+     *     a pure 3rd-lord a mild functional malefic; this point is debated
+     *     across traditions and is flagged as such.
+     */
+    getFunctionalNature: function (planet, ascSignNum, lords) {
+        const L = lords || this.DEFAULT_LORDS;
+        const tags = this.getGroupTags(planet, ascSignNum, L).tags;
+        const hasTrikona = !!tags.trikona, hasKendra = !!tags.kendra, hasTrik = !!tags.trik, hasDhana = !!tags.dhana;
+        const hasUpachayaOnly = !!tags.upachaya && !hasTrikona && !hasKendra && !hasTrik && !hasDhana;
+
+        if (hasTrikona && hasKendra && !hasTrik) {
+            return { nature: 'yogakaraka', reason: `${planet} rules BOTH a Trikona house (${tags.trikona.join(',')}) and a Kendra house (${tags.kendra.join(',')}) with no Trik overlap — the strongest functional-benefic status (Yogakaraka).` };
+        }
+        if (hasTrik) {
+            return { nature: 'malefic', reason: `${planet} rules Trik/Dushtana house(s) (${tags.trik.join(',')}) — a functional malefic for this ascendant, regardless of its naisargik nature.` };
+        }
+        if (hasTrikona) {
+            return { nature: 'benefic', reason: `${planet} rules Trikona house(s) (${tags.trikona.join(',')}) with no Trik overlap — a strong functional benefic for this ascendant.` };
+        }
+        if (hasKendra) {
+            return { nature: 'benefic', reason: `${planet} rules only Kendra house(s) (${tags.kendra.join(',')}) — functionally benefic, though tempered by Kendradhipati Dosha.` };
+        }
+        if (hasDhana) {
+            return { nature: 'mixed', reason: `${planet} rules only Dhana/Labha house(s) (${tags.dhana.join(',')}) — functionally mixed: wealth-giving, but 2nd is also a Maraka house.` };
+        }
+        if (hasUpachayaOnly) {
+            return { nature: 'mixed', reason: `${planet} rules only the 3rd house (Upachaya) with no other group overlap — several classical authors treat a pure 3rd-lord as a mild functional malefic; opinion is divided across traditions.` };
+        }
+        return { nature: 'neutral', reason: `${planet} rules none of the Kendra/Trikona/Trik/Dhana houses for this ascendant — functionally neutral.` };
+    },
+
+    /**
+     * Combines naisargik + functional nature into one verdict, applying the
+     * classical rule that functional nature (specific to THIS ascendant)
+     * generally outweighs the fixed naisargik nature when they disagree.
+     */
+    getPlanetNature: function (planet, ascSignNum, natalPlanetsMap, lords) {
+        const L = lords || this.DEFAULT_LORDS;
+        const naisargik = this.getNaisargikNature(planet, natalPlanetsMap);
+        const functional = this.getFunctionalNature(planet, ascSignNum, L);
+
+        let overall, overallReason;
+        if (functional.nature === 'yogakaraka') {
+            overall = 'yogakaraka';
+            overallReason = `Functional Yogakaraka status overrides everything else — ${planet} acts as one of the most auspicious planets in this chart regardless of its ${naisargik.nature} naisargik nature.`;
+        } else if (naisargik.nature === functional.nature) {
+            overall = naisargik.nature;
+            overallReason = `Naisargik and functional nature agree (both ${naisargik.nature}) — a clear, unambiguous verdict.`;
+        } else if (functional.nature === 'malefic' && naisargik.nature === 'benefic') {
+            overall = 'mixed';
+            overallReason = `${planet} is naturally benefic but functionally malefic for this ascendant — the FUNCTIONAL (house-lordship) nature dominates results here, so treat it with caution despite its pleasant natural character.`;
+        } else if (functional.nature === 'benefic' && naisargik.nature === 'malefic') {
+            overall = 'mixed-favourable';
+            overallReason = `${planet} is naturally malefic but functionally benefic for this ascendant — functional nature dominates here, so it can act auspiciously despite its harsher natural character (classically why planets like Mars/Saturn turn highly favourable for certain ascendants).`;
+        } else {
+            overall = 'mixed';
+            overallReason = `Naisargik nature is ${naisargik.nature} and functional nature is ${functional.nature} — results are situational; judge case-by-case using dignity, conjunctions and dasha context.`;
+        }
+
+        return { planet: planet, naisargik: naisargik, functional: functional, overall: overall, overallReason: overallReason };
+    },
+
+    /**
+     * NULLIFICATION check for Kendradhipati Dosha — the classical
+     * mitigating/aggravating factors:
+     *   • Exalted Kendra-lord → FULLY nullifies the Dosha.
+     *   • Own-sign (Swakshetra) Kendra-lord → PARTIALLY reduces the Dosha.
+     *   • Debilitated Kendra-lord → AGGRAVATES the Dosha (opposite effect;
+     *     this engine does not separately check for Neecha-Bhanga/
+     *     debilitation-cancellation).
+     *   • Retrograde (Vakri) Kendra-lord → a classical, debated opinion
+     *     holds this PARTIALLY softens the Dosha (retrogression is said to
+     *     add hidden strength). Only checked when retro data is present.
+     *   • Conjunct a Trikona-lord, or conjunct a natural benefic → PARTIALLY
+     *     offsets the Dosha through a real supportive chart relationship.
+     */
+    getKendradhipatiNullification: function (planet, ascSignNum, natalPlanetsMap, lords) {
+        const L = lords || this.DEFAULT_LORDS;
+        const p = natalPlanetsMap && natalPlanetsMap[planet];
+        if (!p) return null;
+        const factors = [];
+        const dignity = this._getDignity(planet, p.sid);
+
+        if (dignity.state === 'exalted') {
+            factors.push({ type: 'exaltation', strength: 'full', desc: `${planet} is Exalted — this classically FULLY NULLIFIES Kendradhipati Dosha; it gives full auspicious results as a Kendra-lord.` });
+        } else if (dignity.state === 'own') {
+            factors.push({ type: 'own-sign', strength: 'partial', desc: `${planet} is in its own sign (Swakshetra) — this PARTIALLY reduces Kendradhipati Dosha (a planet is comfortable/strong in its own house).` });
+        } else if (dignity.state === 'debilitated') {
+            factors.push({ type: 'debilitation', strength: 'aggravates', desc: `${planet} is Debilitated — this AGGRAVATES Kendradhipati Dosha rather than nullifying it (unless a separate Neecha-Bhanga/debilitation-cancellation applies, which this engine does not check).` });
+        }
+
+        if (p.retro === true) {
+            factors.push({ type: 'retrograde', strength: 'partial', desc: `${planet} is Retrograde (Vakri) — a classical (debated) opinion holds retrograde Kendra-lords carry a milder Kendradhipati Dosha, since retrogression is said to add hidden strength.` });
+        }
+
+        const conjunct = this._getConjunctPlanets(planet, natalPlanetsMap);
+        const conjunctTrikonaLord = conjunct.filter(pl => !!this.getGroupTags(pl, ascSignNum, L).tags.trikona);
+        const conjunctBenefic = conjunct.filter(pl => this.getNaisargikNature(pl, natalPlanetsMap).nature === 'benefic');
+        if (conjunctTrikonaLord.length) {
+            factors.push({ type: 'trikona-conjunction', strength: 'partial', desc: `${planet} is conjunct Trikona-lord(s) (${conjunctTrikonaLord.join(', ')}) — this real chart relationship helps offset the Dosha and can push results toward Raj-Yoga-Karaka-like territory.` });
+        }
+        if (conjunctBenefic.length) {
+            factors.push({ type: 'benefic-conjunction', strength: 'partial', desc: `${planet} is conjunct natural benefic(s) (${conjunctBenefic.join(', ')}) — their supportive influence softens the Dosha.` });
+        }
+
+        let status;
+        if (factors.some(f => f.strength === 'full')) status = 'nullified';
+        else if (factors.some(f => f.strength === 'aggravates') && !factors.some(f => f.strength === 'partial' || f.strength === 'full')) status = 'aggravated';
+        else if (factors.some(f => f.strength === 'partial')) status = 'reduced';
+        else status = 'unmitigated';
+
+        return { planet: planet, dignity: dignity, factors: factors, status: status };
+    },
+
+    // ===================== 4b. PPP ("PURNA PARMATMA ANSH") LAYER =====================
+    //
+    // Single-planet Raj-Yoga-Karaka rules, per the "Purna Parmatma Ansh
+    // grahon ka prabhav" teaching:
+    //   • A planet that rules ONLY Kendra house(s) (1,4,7,10 — no Trikona,
+    //     no Trik overlap) and NATALLY SITS in a Trikona house (1,5,9) →
+    //     single-planet Raj-Yoga-Karaka ("PPP planet").
+    //   • A planet that rules ONLY Trikona house(s) and natally sits in a
+    //     Kendra house → also a single-planet Raj-Yoga-Karaka.
+    //   • Either condition is CANCELLED if that same planet also owns any
+    //     Trik/Dushtana house (6,8,12) — "trishadaya dosha" crosses it out.
+    //   • Kendradhipati Dosha (independent of the above): a planet that
+    //     rules ONLY Kendra house(s) has its own natural quality dampened —
+    //     a natural BENEFIC there loses some auspiciousness, a natural
+    //     MALEFIC there loses some of its harshness. This is a softening
+    //     note, not a verdict flip. WHY it's benefic/malefic (naisargik +
+    //     functional determination) and its NULLIFICATION factors are now
+    //     computed via getPlanetNature() / getKendradhipatiNullification()
+    //     above and attached to each result below.
+
+    /**
+     * Per-planet PPP check for all non-node grahas (Sun..Saturn).
+     * Rahu/Ketu are judged separately in getRahuKetuPPP() below, since the
+     * source teaching gives them their own distinct 3-point rule.
+     */
+    getPPPPlanets: function (ascSignNum, natalPlanetsMap, lords) {
+        const L = lords || this.DEFAULT_LORDS;
+        const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+        const results = [];
+        planets.forEach(planet => {
+            const p = natalPlanetsMap && natalPlanetsMap[planet];
+            if (!p || p.house === undefined) return;
+            const tags = this.getGroupTags(planet, ascSignNum, L).tags;
+            const hasTrik = !!tags.trik;
+            const ownsKendraOnly = !!tags.kendra && !tags.trikona;
+            const ownsTrikonaOnly = !!tags.trikona && !tags.kendra;
+            const sitsInTrikona = this.GROUPS.trikona.includes(p.house);
+            const sitsInKendra = this.GROUPS.kendra.includes(p.house);
+            const natureAnalysis = this.getPlanetNature(planet, ascSignNum, natalPlanetsMap, L);
+
+            let isPPP = false, reason = null;
+            if (!hasTrik && ownsKendraOnly && sitsInTrikona) {
+                isPPP = true;
+                reason = `${planet} rules only Kendra house${tags.kendra.length > 1 ? 's' : ''} (${tags.kendra.join(',')}) and natally sits in Trikona (house ${p.house}) — a pure single-planet Raj-Yoga-Karaka ("PPP" planet).`;
+            } else if (!hasTrik && ownsTrikonaOnly && sitsInKendra) {
+                isPPP = true;
+                reason = `${planet} rules only Trikona house${tags.trikona.length > 1 ? 's' : ''} (${tags.trikona.join(',')}) and natally sits in Kendra (house ${p.house}) — a pure single-planet Raj-Yoga-Karaka ("PPP" planet).`;
+            } else if (hasTrik && ((ownsKendraOnly && sitsInTrikona) || (ownsTrikonaOnly && sitsInKendra))) {
+                reason = `${planet} would otherwise qualify (Kendra↔Trikona placement) but also rules Trik/Dushtana house(s) (${tags.trik.join(',')}) — trishadaya dosha CANCELS the Raj-Yoga-Karaka status.`;
+            }
+
+            let kendradhipatiDosha = null;
+            if (ownsKendraOnly) {
+                const nullification = this.getKendradhipatiNullification(planet, ascSignNum, natalPlanetsMap, L);
+                const naisargikNature = natureAnalysis.naisargik.nature;
+                if (naisargikNature === 'benefic') {
+                    kendradhipatiDosha = { nature: 'benefic', desc: `${planet} rules only Kendra house(s) (${tags.kendra.join(',')}) — being a natural benefic (${natureAnalysis.naisargik.reason}), it suffers Kendradhipati Dosha: some reduction in its auspiciousness (it does NOT turn malefic).`, nullification: nullification };
+                } else if (naisargikNature === 'malefic') {
+                    kendradhipatiDosha = { nature: 'malefic', desc: `${planet} rules only Kendra house(s) (${tags.kendra.join(',')}) — being a natural malefic (${natureAnalysis.naisargik.reason}), its harshness is softened by Kendradhipati Dosha (it does NOT turn benefic, but acts noticeably milder).`, nullification: nullification };
+                } else {
+                    kendradhipatiDosha = { nature: 'neutral', desc: `${planet} rules only Kendra house(s) (${tags.kendra.join(',')}) — as a naturally neutral planet here (${natureAnalysis.naisargik.reason}), Kendradhipati Dosha has only a mild, situational effect.`, nullification: nullification };
+                }
+            }
+
+            results.push({
+                planet: planet, house: p.house, tags: tags,
+                isPPP: isPPP, hasTrikDosha: hasTrik, reason: reason,
+                kendradhipatiDosha: kendradhipatiDosha, natureAnalysis: natureAnalysis
+            });
+        });
+        return results;
+    },
+
+    /**
+     * Rahu/Ketu get their own 3-point rule from the source teaching (NOT
+     * the Sun..Saturn rule above):
+     *   1. Node alone (no conjunction with any other graha) in Kendra OR
+     *      Trikona → highly auspicious ("atishubh") on its own.
+     *   2. Node in Kendra conjunct a Trikona-lord, OR node in Trikona
+     *      conjunct a Kendra-lord → Raj Yoga.
+     *   3. Node in Upachaya (3,6,10,11) → generally good; BUT if conjunct a
+
+     *      Trik-lord (6th/8th/12th lord) → its dasha can bring major
+     *      hardship despite the Upachaya placement.
+     */
+    getRahuKetuPPP: function (ascSignNum, natalPlanetsMap, lords) {
+        const L = lords || this.DEFAULT_LORDS;
+        const out = [];
+        ['Rahu', 'Ketu'].forEach(node => {
+            const p = natalPlanetsMap && natalPlanetsMap[node];
+            if (!p || p.house === undefined) return;
+            const house = p.house;
+            const inKendra = this.GROUPS.kendra.includes(house);
+            const inTrikona = this.GROUPS.trikona.includes(house);
+            const inUpachaya = this.GROUPS.upachaya.includes(house);
+
+            const conjunct = Object.keys(natalPlanetsMap).filter(pl =>
+                pl !== node && natalPlanetsMap[pl] && natalPlanetsMap[pl].sn === p.sn);
+            const conjunctKendraLord = conjunct.some(pl => !!this.getGroupTags(pl, ascSignNum, L).tags.kendra);
+            const conjunctTrikonaLord = conjunct.some(pl => !!this.getGroupTags(pl, ascSignNum, L).tags.trikona);
+            const conjunctTrikLord = conjunct.some(pl => !!this.getGroupTags(pl, ascSignNum, L).tags.trik);
+
+            let verdict = 'neutral', label = 'No Special PPP Condition', detail =
+                `${node} sits in house ${house} — none of the three classical ${node} conditions (alone in Kendra/Trikona, Kendra+Trikona-lord relation, or Upachaya) is triggered.`;
+
+            if ((inKendra || inTrikona) && conjunct.length === 0) {
+                verdict = 'highly_auspicious'; label = 'Atishubh (Highly Auspicious)';
+                detail = `${node} sits alone (no conjunction) in ${inKendra ? 'Kendra' : 'Trikona'} (house ${house}) — classically highly auspicious on its own.`;
+            } else if (inKendra && conjunctTrikonaLord) {
+                verdict = 'raj_yoga'; label = 'Raj Yoga';
+                detail = `${node} in Kendra (house ${house}) is conjunct a Trikona-lord — this forms Raj Yoga.`;
+            } else if (inTrikona && conjunctKendraLord) {
+                verdict = 'raj_yoga'; label = 'Raj Yoga';
+                detail = `${node} in Trikona (house ${house}) is conjunct a Kendra-lord — this forms Raj Yoga.`;
+            } else if (inUpachaya) {
+                if (conjunctTrikLord) {
+                    verdict = 'dangerous'; label = 'Upachaya + Trishadaya-linked — Caution';
+                    detail = `${node} sits in Upachaya (house ${house}) but is conjunct a Trik(6/8/12)-lord — its dasha can bring significant hardship despite the otherwise-favourable Upachaya placement.`;
+                } else {
+                    verdict = 'good'; label = 'Good (Upachaya Placement)';
+                    detail = `${node} sits in Upachaya (house ${house}) with no Trik-lord conjunction — generally favourable, growth-through-effort results.`;
+                }
+            }
+
+            const naisargik = this.getNaisargikNature(node, natalPlanetsMap);
+            out.push({ planet: node, house: house, verdict: verdict, label: label, detail: detail, conjunct: conjunct, naisargik: naisargik });
+        });
+        return out;
+    },
+
+    // ===================== 4c. DHAN-YOGA (WEALTH HOUSE) LAYER =====================
+    //
+    // Per "Money Making Dasha / Huge Wealth Combination" teaching: Dhan Yoga
+    // forms when lords of the 4 wealth houses (2,5,9,11) combine with each
+    // other (yuti/parivartan/mutual-drishti, judged via getSambandh, or one
+    // planet ruling BOTH houses outright). WHICHEVER HOUSE the yoga forms
+    // in is the actual SOURCE of wealth for the native; if the 7th house
+    // from that source is empty of natal planets, it becomes a second
+    // source (the "opposite empty house also reacts" rule).
+
+    /** Resolve the lord of each of the 4 Dhana-Sthana for this ascendant. */
+    getDhanaSthanaLords: function (ascSignNum, lords) {
+        const L = lords || this.DEFAULT_LORDS;
+        const map = {};
+        this.DHANA_STHANA.forEach(h => {
+            const signNum = (ascSignNum + h - 1) % 12;
+            map[h] = L[signNum];
+        });
+        return map;
+    },
+
+    /**
+     * All Dhan-Yoga-forming combinations among the classical 2-9 / 2-11 /
+     * 5-9 / 5-11 wealth-house pairs.
+     */
+    getDhanYogaCombinations: function (ascSignNum, natalPlanetsMap, lords) {
+        const L = lords || this.DEFAULT_LORDS;
+        const dhanaLords = this.getDhanaSthanaLords(ascSignNum, L);
+        const combos = [];
+        this.DHANA_STHANA_PAIRS.forEach(pair => {
+            const h1 = pair[0], h2 = pair[1];
+            const l1 = dhanaLords[h1], l2 = dhanaLords[h2];
+            if (!l1 || !l2) return;
+            if (l1 === l2) {
+                combos.push({
+                    houses: [h1, h2], lord1: l1, lord2: l2, sameLord: true, relation: 'single-lord',
+                    detail: `${l1} rules BOTH house ${h1} and house ${h2} — one planet carrying two wealth-house agendas is itself a strong built-in Dhan Yoga.`
+                });
+                return;
+            }
+            const sambandh = this.getSambandh(l1, l2, natalPlanetsMap, L);
+            if (sambandh.found && sambandh.level !== 'none') {
+                combos.push({
+                    houses: [h1, h2], lord1: l1, lord2: l2, sameLord: false, relation: sambandh.level,
+                    sambandhDetails: sambandh.details,
+                    detail: `${l1} (lord of ${h1}) and ${l2} (lord of ${h2}) share a ${sambandh.level} sambandh (${sambandh.details.map(d => d.label).join(', ') || 'chart relationship'}) — Dhan Yoga formed.`
+                });
+            }
+        });
+        return { dhanaLords: dhanaLords, combos: combos };
+    },
+
+    /**
+     * For each Dhan-Yoga combo, work out the actual SOURCE house(s) of
+     * wealth: the natal house each involved lord sits in, PLUS the 7th
+     * house from it if that 7th house holds no natal planet (per the
+     * "opposite empty house also becomes a source" rule).
+     */
+    getDhanYogaSourceHouses: function (combos, natalPlanetsMap) {
+        const occupied = {};
+        Object.values(natalPlanetsMap || {}).forEach(p => { if (p && p.house) occupied[p.house] = true; });
+        return (combos || []).map(combo => {
+            const sourceHouses = [];
+            const seen = {};
+            [combo.lord1, combo.lord2].forEach(lord => {
+                const p = natalPlanetsMap && natalPlanetsMap[lord];
+                if (!p || !p.house) return;
+                if (!seen[p.house]) { sourceHouses.push({ house: p.house, why: `${lord} (dhan-yoga lord) sits here natally.` }); seen[p.house] = true; }
+                const opp = ((p.house + 5) % 12) + 1;
+                if (!occupied[opp] && !seen[opp]) {
+                    sourceHouses.push({ house: opp, why: `7th from ${lord}'s house ${p.house} is empty of natal planets, so it also reacts as a wealth source.` });
+                    seen[opp] = true;
+                }
+            });
+            sourceHouses.sort((a, b) => a.house - b.house);
+            return Object.assign({}, combo, { sourceHouses: sourceHouses });
+        });
+    },
+
+    // ===================== 4d. PPP + DHAN-YOGA PER-DASHA-LEVEL SUMMARY =====================
+    //
+    // Ties the PPP (Raj-Yoga-Karaka) status and Dhan-Yoga wealth-source
+    // houses of EACH running dasha lord together, so a running Mahadasha
+    // (and every level below it) can be read as: "is this lord a PPP
+    // planet, and if it also carries a wealth-house agenda, which house(s)
+    // is the money actually going to come from during its period?"
+    analyzePPPWealthForChain: function (levels, ascSignNum, natalPlanetsMap, lords, nakNamesArr) {
+        const L = lords || this.DEFAULT_LORDS;
+        const clean = (levels || []).filter(l => l && l.lord);
+        const pppPlanets = this.getPPPPlanets(ascSignNum, natalPlanetsMap, L);
+        const rahuKetuPPP = this.getRahuKetuPPP(ascSignNum, natalPlanetsMap, L);
+        const dhanCombosRaw = this.getDhanYogaCombinations(ascSignNum, natalPlanetsMap, L);
+        const dhanCombos = this.getDhanYogaSourceHouses(dhanCombosRaw.combos, natalPlanetsMap);
+
+        const levelAnalysis = clean.map((lvl, i) => {
+            const lord = lvl.lord;
+            const isNode = (lord === 'Rahu' || lord === 'Ketu');
+            const pppInfo = isNode ? (rahuKetuPPP.find(r => r.planet === lord) || null)
+                                   : (pppPlanets.find(p => p.planet === lord) || null);
+            const isPPP = isNode ? !!(pppInfo && (pppInfo.verdict === 'raj_yoga' || pppInfo.verdict === 'highly_auspicious'))
+                                  : !!(pppInfo && pppInfo.isPPP);
+            const involvedCombos = dhanCombos.filter(c => c.lord1 === lord || c.lord2 === lord);
+            const wealthSourceHouses = [];
+            const seenHouse = {};
+            involvedCombos.forEach(c => c.sourceHouses.forEach(sh => {
+                if (!seenHouse[sh.house]) { wealthSourceHouses.push(sh); seenHouse[sh.house] = true; }
+            }));
+            wealthSourceHouses.sort((a, b) => a.house - b.house);
+
+            // Classical strength note: MD gives the FULL result of any yoga
+            // it carries; AD gives a partial share; deeper levels flavour
+            // it further but the MD/AD split is what the source teaching
+            // stresses most for wealth timing.
+            const strengthNote = i === 0
+                ? `As the Mahadasha lord, ${lord} — if it carries a Dhan-Yoga/PPP status — delivers the FULLEST share of that yoga's result in this period.`
+                : `As ${lvl.label} lord (a sub-period), ${lord} delivers only a PARTIAL share of any Dhan-Yoga/PPP result it carries — the Mahadasha lord still sets the overall ceiling.`;
+
+            return {
+                level: lvl.label, lord: lord, isMahadasha: i === 0,
+                isPPP: isPPP, pppInfo: pppInfo,
+                dhanYogaCombos: involvedCombos, wealthSourceHouses: wealthSourceHouses,
+                strengthNote: strengthNote
+            };
+        });
+
+        return { pppPlanets: pppPlanets, rahuKetuPPP: rahuKetuPPP, dhanCombos: dhanCombos, levelAnalysis: levelAnalysis };
+    },
+
     // ===================== 5. FULL CHAIN ANALYSIS =====================
 
     /**
@@ -535,7 +1038,9 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
             };
         });
 
-        return { levels: clean, pairs: pairs, overview: overview, janmaTaraChecks: janmaTaraChecks, levelScores: levelScores };
+        const pppWealth = this.analyzePPPWealthForChain(clean, ascSignNum, natalPlanetsMap, lords, nakNamesArr);
+
+        return { levels: clean, pairs: pairs, overview: overview, janmaTaraChecks: janmaTaraChecks, levelScores: levelScores, pppWealth: pppWealth };
     },
 
     // ===================== 6. HTML RENDERING =====================
@@ -612,6 +1117,107 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
                 </div>`;
     },
 
+    _natureVerdictColor: function (nature) {
+        if (nature === 'benefic' || nature === 'yogakaraka' || nature === 'mixed-favourable') return '#00DD77';
+        if (nature === 'malefic') return '#FF4477';
+        if (nature === 'mixed') return '#FFD700';
+        return '#8899AA';
+    },
+
+    _nullifyStatusColor: function (status) {
+        if (status === 'nullified') return '#00DD77';
+        if (status === 'reduced') return '#FFD700';
+        if (status === 'aggravated') return '#FF4477';
+        return 'var(--muted)';
+    },
+
+    _renderPPPWealthBlock: function (pppWealth) {
+        if (!pppWealth || !pppWealth.levelAnalysis || !pppWealth.levelAnalysis.length) return '';
+
+        const rows = pppWealth.levelAnalysis.map(la => {
+            const pppColor = la.isPPP ? '#FFD700' : 'var(--muted)';
+            const pppChip = la.isPPP
+                ? this._renderChip('⚑ PPP / Raj-Yoga-Karaka', pppColor)
+                : `<span style="color:var(--muted);font-size:9px;">not a PPP planet</span>`;
+            const isNode = (la.lord === 'Rahu' || la.lord === 'Ketu');
+
+            let pppDetail = '';
+            if (la.pppInfo) {
+                const detailText = isNode ? la.pppInfo.detail : la.pppInfo.reason;
+                if (detailText) {
+                    pppDetail = `<div style="margin-top:3px;font-size:9.5px;color:var(--fg);opacity:.9;">${detailText}</div>`;
+                }
+            }
+
+            // ----- WHY benefic/malefic + METHOD used to determine it -----
+            let natureBlock = '';
+            if (isNode && la.pppInfo && la.pppInfo.naisargik) {
+                const nz = la.pppInfo.naisargik;
+                natureBlock = `<div style="margin-top:5px;padding:6px;border-radius:4px;background:rgba(255,255,255,.03);">
+                    <div style="font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Benefic/Malefic — Naisargik (Natural) Nature</div>
+                    <div style="font-size:9px;margin-top:2px;"><b style="color:${this._natureVerdictColor(nz.nature)};">${nz.nature.toUpperCase()}</b> — ${nz.reason}</div>
+                  </div>`;
+            } else if (!isNode && la.pppInfo && la.pppInfo.natureAnalysis) {
+                const na = la.pppInfo.natureAnalysis;
+                natureBlock = `<div style="margin-top:5px;padding:6px;border-radius:4px;background:rgba(255,255,255,.03);">
+                    <div style="font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Benefic/Malefic Determination (Method: Naisargik + Functional)</div>
+                    <div style="font-size:9px;margin-top:3px;"><b style="color:${this._natureVerdictColor(na.naisargik.nature)};">Naisargik: ${na.naisargik.nature.toUpperCase()}</b> — ${na.naisargik.reason}</div>
+                    <div style="font-size:9px;margin-top:3px;"><b style="color:${this._natureVerdictColor(na.functional.nature)};">Functional (this ascendant): ${na.functional.nature.toUpperCase()}</b> — ${na.functional.reason}</div>
+                    <div style="font-size:9px;margin-top:3px;color:var(--fg);opacity:.9;"><b>Overall verdict — ${na.overall.toUpperCase()}:</b> ${na.overallReason}</div>
+                  </div>`;
+            }
+
+            // ----- Kendradhipati Dosha + its NULLIFICATION check -----
+            let doshaBlock = '';
+            if (!isNode && la.pppInfo && la.pppInfo.kendradhipatiDosha) {
+                const kd = la.pppInfo.kendradhipatiDosha;
+                doshaBlock = `<div style="margin-top:3px;font-size:9px;color:#FFA500;">⚠ ${kd.desc}</div>`;
+                if (kd.nullification) {
+                    const nf = kd.nullification;
+                    const sc = this._nullifyStatusColor(nf.status);
+                    const factorLines = nf.factors.length
+                        ? nf.factors.map(f => `<div style="font-size:9px;margin-top:2px;">• ${f.desc}</div>`).join('')
+                        : `<div style="font-size:9px;color:var(--muted);margin-top:2px;">No classical nullifying/aggravating factor detected (checked: exaltation, own-sign, debilitation, retrograde, Trikona-lord conjunction, benefic conjunction) — the Dosha applies at its ordinary strength.</div>`;
+                    doshaBlock += `<div style="margin-top:5px;padding:6px;border-radius:4px;border-left:2px solid ${sc};background:${sc}0F;">
+                        <div style="font-size:8.5px;color:${sc};font-weight:bold;text-transform:uppercase;letter-spacing:.5px;">Kendradhipati Dosha — Nullification Check: ${nf.status}</div>
+                        ${factorLines}
+                      </div>`;
+                }
+            }
+
+            let wealthBlock = '';
+            if (la.wealthSourceHouses.length) {
+                const houseChips = la.wealthSourceHouses.map(sh =>
+                    this._renderChip(`House ${sh.house}`, '#66CCFF')).join('');
+                const comboLines = la.dhanYogaCombos.map(c => `<div style="font-size:9px;color:var(--fg);opacity:.85;margin-top:2px;">${c.detail}</div>`).join('');
+                wealthBlock = `<div style="margin-top:6px;padding-top:5px;border-top:1px dashed rgba(102,204,255,.3);">
+                    <span style="font-size:8.5px;color:var(--muted);">धन योग — WEALTH SOURCE HOUSE(S):</span> ${houseChips}
+                    ${comboLines}
+                  </div>`;
+            } else {
+                wealthBlock = `<div style="margin-top:6px;padding-top:5px;border-top:1px dashed rgba(102,204,255,.15);font-size:9px;color:var(--muted);">No Dhan-Yoga (2-5-9-11 lord combination) traced through this lord.</div>`;
+            }
+
+            return `<div style="margin-top:8px;padding:7px 8px;border:1px solid ${pppColor}44;border-radius:6px;background:${la.isPPP ? 'rgba(255,215,0,.06)' : 'rgba(255,255,255,.02)'};">
+                      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+                        <div style="font-weight:bold;font-size:11px;color:var(--fg);">${la.level} — ${la.lord}</div>
+                        ${pppChip}
+                      </div>
+                      ${pppDetail}
+                      ${natureBlock}
+                      ${doshaBlock}
+                      ${wealthBlock}
+                      <div style="margin-top:4px;font-size:8.5px;color:var(--muted);font-style:italic;">${la.strengthNote}</div>
+                    </div>`;
+        }).join('');
+
+        return `<div class="pred-item" style="border-left:3px solid #FFD700;margin-top:10px;">
+                   <div class="pred-title" style="color:#FFD700;">🕉️ PPP (पूर्ण परमात्मा अंश) ग्रह × धन योग — Mahadasha Wealth-House Analysis</div>
+                   <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">For each running dasha lord: is it a single-planet Raj-Yoga-Karaka ("PPP" planet — pure Kendra-lord sitting in Trikona, or pure Trikona-lord sitting in Kendra, with Rahu/Ketu judged by their own 3-point rule), and does it also carry a 2-5-9-11 Dhan-Yoga — if so, which house(s) will actually deliver the wealth (किस भाव से मिलेगा अपार धन).</div>
+                   ${rows}
+                 </div>`;
+    },
+
     renderHTML: function (analysis) {
         if (!analysis || !analysis.pairs || !analysis.pairs.length) {
             return `<div class="pred-item">Not enough active dasha levels to judge Sah-Dharm/Sambandh (need at least MD+AD).</div>`;
@@ -629,6 +1235,7 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
         }
         html += this._renderJanmaTaraChecks(analysis.janmaTaraChecks);
         html += `</div>`;
+        html += this._renderPPPWealthBlock(analysis.pppWealth);
         return html;
     }
 };

@@ -324,26 +324,27 @@ async function updatePredictionsDisplay() {
       const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
       html += window.makeEditable('astro_made_easy_db', generatedHTML);
     } else if (mode === 'bnn') {
-      // BNN (Bhrigu Nandi Nadi) rules are fixed birth-chart combinations, NOT
-      // transit-based — always analyze the natal chart, never CURRENT_PLANETARY_POSITIONS.
-     // GENERIC_ANALYZER can't meaningfully parse BNN_DB (it's mostly free-text
-      // transcript, not short pattern-matchable fragments like the other DBs),
-      // so this uses the dedicated engine in bnn_engine.js instead (loaded via
-      // index.html as window.BNN_ENGINE — make sure that script tag stays
-      // ABOVE this one).
-      let generatedHTML;
-      if (!window.BNN_ENGINE) {
-        generatedHTML = '<div class="pred-item">Error: bnn_engine.js did not load (check the &lt;script&gt; tag order in index.html — it must load before predictions_ui.js).</div>';
-      } else if (!window.BIRTH_PLANETS) {
-        generatedHTML = '<div class="pred-item">Error: natal chart (BIRTH_PLANETS) is not computed yet. Click "Update" again after the chart finishes loading.</div>';
+     // Primary: full structured natal-chart BNN analysis — the engine
+      // (bnn_logic.js) driving career/money/marriage/health via the
+      // structured combination data (bnn_prediction.js), enriched with
+      // matching raw excerpts pulled from BNN_DB (bnn_db.js).
+      if (typeof window.renderNatalBnnAnalysisHtml === 'function') {
+        html += window.renderNatalBnnAnalysisHtml(window.BIRTH_PLANETS || {}, window.BIRTH_ASC || null);
       } else {
-        const bnnGender = (window.BIRTH && window.BIRTH.gender) || 'male';
-        const bnnChart = window.BNN_ENGINE.buildChart(window.BIRTH_PLANETS, window.BIRTH_ASC || {});
-        const bnnReport = window.BNN_ENGINE.runFullAnalysis(bnnChart, { gender: bnnGender });
-        generatedHTML = bnnReport.html;
-     
+        html += `<div class="pred-item"><div class="pred-title">⚠️ BNN engine unavailable</div><div class="pred-detail">bnn_logic.js / bnn_prediction.js did not load.</div></div>`;
       }
-      html += window.makeEditable('bnn_db', generatedHTML);
+
+      // Secondary: broader keyword/house-driven scan of the full BNN_DB
+      // (not just the topics above) via the generic comprehensive analyzer,
+      // for anything the structured engine doesn't explicitly cover.
+      if (window.GENERIC_ANALYZER) {
+        const dbMap = { "BNN": { data: window.BNN_DB || [], color: 'var(--rose)' } };
+        const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
+        if (generatedHTML && generatedHTML.trim()) {
+          html += `<div style="margin-top:10px;font-size:10px;font-weight:bold;color:var(--gold);padding:6px 0;border-top:1px dashed rgba(255,255,255,.1);">📜 Additional House-wise BNN Source Matches</div>`;
+          html += window.makeEditable('bnn_db', generatedHTML);
+        }
+      }
     } else if (mode === 'kaalpurush') {
       const dbMap = { "Kaalpurush Astrology": { data: window.KAALPURUSH_ASTROLOGY_DB || [], color: '#00FF88' } };
       const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
