@@ -283,6 +283,10 @@ div[id$="Panel"] > * {
 #birthModal.open{display:flex;}
 .modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:6px;
   padding:24px;width:520px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 80px rgba(0,0,0,.8);}
+.modal-box.modal-box-wide{width:800px;}
+.modal-columns{display:grid;grid-template-columns:1fr 200px;gap:20px;align-items:start;}
+.modal-col-left{min-width:0;}
+.modal-col-right{position:sticky;top:0;}
 .modal-title{font-family:Palatino,serif;font-size:16px;font-weight:700;color:var(--gold2);letter-spacing:2px;margin-bottom:16px;}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .form-grid.wide{grid-template-columns:1fr;}
@@ -459,6 +463,9 @@ div[id$="Panel"] > * {
   
   .conj-hdr h2 { font-size: 10px; }
   .modal-box { width: 96vw; padding: 15px; }
+  .modal-box.modal-box-wide { width: 96vw; }
+  .modal-columns { grid-template-columns: 1fr; }
+  .modal-col-right { position: static; }
   .form-grid { grid-template-columns: 1fr; }
   
   /* Make graph full screen on mobile when requested or focused */

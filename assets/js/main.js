@@ -16,11 +16,8 @@ document.getElementById('celebProfession')?.addEventListener('change', (e) => {
   }
 });
 
-document.getElementById('celebList')?.addEventListener('change', (e) => {
-  const name = e.target.value;
-  const profession = document.getElementById('celebProfession')?.value;
+function loadCelebIntoForm(name, profession){
   if(!name || !profession || !window.CELEBRITY_DATABASE) return;
-  
   const celeb = window.CELEBRITY_DATABASE[profession].find(c => c.name === name);
   if(celeb){
     document.getElementById('fName').value = celeb.name;
@@ -31,7 +28,8 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
     document.getElementById('fLon').value = celeb.lon;
     document.getElementById('fUtc').value = celeb.utcOff;
     document.getElementById('fAyan').value = celeb.ayan || 'lahiri';
-    
+    if(celeb.gender && document.getElementById('fGender')) document.getElementById('fGender').value = celeb.gender;
+
     // Highlight that data was loaded
     const res = document.getElementById('calcResult');
     if(res) {
@@ -39,7 +37,16 @@ document.getElementById('celebList')?.addEventListener('change', (e) => {
       res.innerHTML = `Loaded birth data for ${celeb.name}. Click 'Calculate & Close' to update.`;
       res.style.color = 'var(--gold)';
     }
+    // Live-verify: render mini D1/D9 preview so you can check the data while scrolling through the list
+    if(typeof updateBirthPreview === 'function') updateBirthPreview();
   }
+}
+// 'change' fires once a selection is committed; 'input' also fires as some browsers
+// let you arrow/scroll through the open <select> options, so the preview updates live.
+['change','input'].forEach(evt=>{
+  document.getElementById('celebList')?.addEventListener(evt, (e) => {
+    loadCelebIntoForm(e.target.value, document.getElementById('celebProfession')?.value);
+  });
 });
 
 
@@ -597,6 +604,7 @@ window.BIRTH={
   date:new Date(1977,9,7,23,45,0),
   lat:19.0833, lon:72.8333, utcOff:5.5,   // 19N05 / 72E50
   city:'Bombay Santa Cruz, Maharashtra, India',
+  gender:'male',
   ayan:'lahiri', ephem:'swiss', houseSystem:'whole', chartStyle:'north',
   useComputed: true
 };
@@ -1616,7 +1624,7 @@ function drawDChart(cvId, customData){
   // only for the Rasi chart). Houses stay fixed with the Ascendant in House 1; the
   // sign occupying each house rotates with the ascendant, exactly as computed above
   // for the sign-number labels — so we look up bindus for that same rotated sign.
-  const NO_BINDU_CHART_IDS = ['pD9']; // divisional (Navamsha) charts: bindus aren't classically meaningful here
+  const NO_BINDU_CHART_IDS = ['pD9', 'previewD1Canvas', 'previewD9Canvas']; // divisional (Navamsha) charts, and live-preview charts (which may show a different candidate than natal BIRTH), don't get the natal bindu overlay
   const showBindus = document.getElementById('chkShowBindus')?.checked;
   if (showBindus && window.ASHTAKVARGA && BIRTH_PLANETS && BIRTH_ASC && !NO_BINDU_CHART_IDS.includes(cvId)) {
     try {
@@ -3640,6 +3648,7 @@ document.getElementById('calcBirth').addEventListener('click',()=>{
   const name=document.getElementById('fName').value||'Native';
   const dateStr=document.getElementById('fDate').value;
   const timeStr=document.getElementById('fTime').value||'12:00';
+  const gender=document.getElementById('fGender')?.value||'male';
   const city=document.getElementById('fCity').value||'';
   const lat=parseFloat(document.getElementById('fLat').value)||0;
   const lon=parseFloat(document.getElementById('fLon').value)||0;
@@ -3652,7 +3661,7 @@ document.getElementById('calcBirth').addEventListener('click',()=>{
   if(!dateStr){alert('Please enter birth date');return;}
   const[y,mo,d]=dateStr.split('-').map(Number);
   const[hh,mm]=(timeStr+':00').split(':').map(Number);
-  window.BIRTH={name,date:new Date(y,mo-1,d,hh,mm,0),lat,lon,utcOff,city,ayan,ephem,houseSystem:hSys,chartStyle:style,useComputed:true};
+  window.BIRTH={name,date:new Date(y,mo-1,d,hh,mm,0),lat,lon,utcOff,city,gender,ayan,ephem,houseSystem:hSys,chartStyle:style,useComputed:true};
 
   clearCache();recalcBirth();rebuildDashas();window.YOGINI=buildYoginiDasha();
 
@@ -3666,6 +3675,118 @@ document.getElementById('calcBirth').addEventListener('click',()=>{
   document.getElementById('appSub').textContent=`${name} · ${city} · ${dateStr} ${timeStr} · UTC${utcOff>=0?'+':''}${utcOff}h · ${ayan}`;
   updateDchartTitle();renderAll();
   setTimeout(()=>document.getElementById('birthModal').classList.remove('open'),1200);
+});
+
+// ═══════════════════════════════════════════════════════════
+//  GEOCODE CITY → LAT/LON (OpenStreetMap Nominatim, free/no-key)
+// ═══════════════════════════════════════════════════════════
+document.getElementById('btnGeocodeCity')?.addEventListener('click', async ()=>{
+  const btn = document.getElementById('btnGeocodeCity');
+  const cityVal = (document.getElementById('fCity').value || '').trim();
+  const res = document.getElementById('calcResult');
+  if(!cityVal){
+    if(res){res.style.display='block';res.style.color='var(--rose)';res.innerHTML='⚠ Enter a city name first.';}
+    return;
+  }
+  const origLabel = btn.textContent;
+  btn.textContent = '⏳ Locating…'; btn.disabled = true;
+  try{
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(cityVal)}`;
+    const resp = await fetch(url, {headers:{'Accept':'application/json'}});
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const data = await resp.json();
+    if(data && data.length){
+      const lat = parseFloat(data[0].lat), lon = parseFloat(data[0].lon);
+      document.getElementById('fLat').value = lat.toFixed(4);
+      document.getElementById('fLon').value = lon.toFixed(4);
+      if(res){
+        res.style.display='block';res.style.color='var(--cyan)';
+        res.innerHTML = `📍 Found "${data[0].display_name}" → Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}. Please double-check the UTC Offset for this location.`;
+      }
+      if(typeof updateBirthPreview==='function') updateBirthPreview();
+    } else if(res){
+      res.style.display='block';res.style.color='var(--rose)';
+      res.innerHTML = `⚠ No match found for "${cityVal}". Try a more specific name (e.g. "City, Country") or enter Lat/Lon manually.`;
+    }
+  }catch(err){
+    console.error('Geocode failed:', err);
+    if(res){
+      res.style.display='block';res.style.color='var(--rose)';
+      res.innerHTML = '⚠ Could not reach the location lookup service. Please enter Latitude/Longitude manually.';
+    }
+  }finally{
+    btn.textContent = origLabel; btn.disabled = false;
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  LIVE D1/D9 PREVIEW  (verify birth data before saving/applying —
+//  used while scrolling through the celebrity list and when
+//  hovering/loading a saved profile, without touching the live BIRTH chart)
+// ═══════════════════════════════════════════════════════════
+function computePreviewChart(dateStr, timeStr, lat, lon, utcOff, ayan){
+  const [y,mo,d] = dateStr.split('-').map(Number);
+  const [hh,mm] = (timeStr||'12:00').split(':').map(Number);
+  const utH = hh - utcOff + (mm||0)/60;
+  const pjd = jd(y, mo, d, utH);
+  return{
+    jd: pjd,
+    d1Asc: computeAsc(pjd, lat, lon, utcOff, ayan, 1),
+    d1Planets: computeAll(pjd, ayan, 1),
+    d9Asc: computeAsc(pjd, lat, lon, utcOff, ayan, 9),
+    d9Planets: computeAll(pjd, ayan, 9)
+  };
+}
+
+function renderPreviewChart(chart){
+  if(!chart) return;
+  if(document.getElementById('previewD1Canvas')) drawDChart('previewD1Canvas', {planets:chart.d1Planets, asc:chart.d1Asc});
+  if(document.getElementById('previewD9Canvas')) drawDChart('previewD9Canvas', {planets:chart.d9Planets, asc:chart.d9Asc});
+
+  const detailsEl = document.getElementById('previewDetails');
+  if(!detailsEl) return;
+  const moon = chart.d1Planets?.Moon, sun = chart.d1Planets?.Sun;
+  const moonNak = moon ? getNakshatra(moon.sid) : null;
+  const row=(label,val,color)=>`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--muted);">${label}</span><b style="color:${color};text-align:right;">${val}</b></div>`;
+  detailsEl.innerHTML =
+    row('Lagna (D1)', `${chart.d1Asc.sign} ${chart.d1Asc.deg}°`, 'var(--gold)') +
+    row('Moon', `${moon?.sign||'—'} ${moon?.deg||''}°`, 'var(--cyan)') +
+    (moonNak? row('Nakshatra', `${moonNak.name} · Pada ${moonNak.pada}`, 'var(--cyan)') : '') +
+    row('Sun', `${sun?.sign||'—'} ${sun?.deg||''}°`, 'var(--gold2)') +
+    row('Navamsa Lagna (D9)', `${chart.d9Asc.sign} ${chart.d9Asc.deg}°`, 'var(--violet)');
+}
+
+// Reads the current form fields and re-renders the mini preview charts.
+function updateBirthPreview(){
+  try{
+    const dateStr = document.getElementById('fDate')?.value;
+    const timeStr = document.getElementById('fTime')?.value || '12:00';
+    const lat = parseFloat(document.getElementById('fLat')?.value);
+    const lon = parseFloat(document.getElementById('fLon')?.value);
+    const utcOff = parseFloat(document.getElementById('fUtc')?.value);
+    const ayan = document.getElementById('fAyan')?.value || 'lahiri';
+    if(!dateStr || isNaN(lat) || isNaN(lon) || isNaN(utcOff)) return;
+    const chart = computePreviewChart(dateStr, timeStr, lat, lon, utcOff, ayan);
+    renderPreviewChart(chart);
+  }catch(e){ console.error('Live preview update failed:', e); }
+}
+window.updateBirthPreview = updateBirthPreview;
+
+// Preview a saved profile on hover, without overwriting the form (mouse leaves → reverts to current form state)
+function previewSavedProfile(idx){
+  const profiles = getSavedProfiles();
+  const p = profiles[idx]; if(!p) return;
+  try{
+    const chart = computePreviewChart(p.date.split('T')[0], p.time||'12:00', parseFloat(p.lat)||0, parseFloat(p.lon)||0, parseFloat(p.utcOff)||0, p.ayan||'lahiri');
+    renderPreviewChart(chart);
+  }catch(e){ console.error('Saved-profile preview failed:', e); }
+}
+window.previewSavedProfile = previewSavedProfile;
+
+// Live-refresh the preview as the user edits birth fields by hand
+['fDate','fTime','fLat','fLon','fUtc','fAyan'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('input', ()=>updateBirthPreview());
+  document.getElementById(id)?.addEventListener('change', ()=>updateBirthPreview());
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -4100,6 +4221,7 @@ function loadProfile(idx){
   document.getElementById('fName').value=p.name;
   document.getElementById('fDate').value=p.date.split('T')[0];
   document.getElementById('fTime').value=p.time||'12:00';
+  if(document.getElementById('fGender')) document.getElementById('fGender').value=p.gender||'male';
   document.getElementById('fCity').value=p.city;
   document.getElementById('fLat').value=p.lat;
   document.getElementById('fLon').value=p.lon;
@@ -4108,6 +4230,8 @@ function loadProfile(idx){
   document.getElementById('fEphem').value=p.ephem;
   document.getElementById('fHouse').value=p.houseSystem;
   document.getElementById('fStyle').value=p.chartStyle;
+  // Live-verify: render mini D1/D9 preview so you can check the data before applying it
+  if(typeof updateBirthPreview==='function') updateBirthPreview();
 }
 function updateSavedProfilesList(){
   const el=document.getElementById('savedProfilesList');
@@ -4121,6 +4245,10 @@ function updateSavedProfilesList(){
     const item=document.createElement('div');
     item.className='ditem';
     item.style.cursor='pointer';
+    // Hover to verify the chart in the live preview panel without touching the form;
+    // moving away restores whatever the form currently shows.
+    item.setAttribute('onmouseenter', `previewSavedProfile(${i})`);
+    item.setAttribute('onmouseleave', 'updateBirthPreview()');
     item.innerHTML=`
       <div style="flex:1;" onclick="loadProfile(${i})">
         <div style="color:var(--gold2);font-weight:700;">${p.name}</div>
@@ -4796,6 +4924,8 @@ window.deleteProfile=deleteProfile;
 document.getElementById('btnBirthForm').addEventListener('click',()=>{
   updateSavedProfilesList();
   document.getElementById('birthModal').classList.add('open');
+  // Render the live preview for whatever is currently in the form
+  setTimeout(()=>{ if(typeof updateBirthPreview==='function') updateBirthPreview(); }, 50);
 });
 
 document.getElementById('saveBirthProfile').addEventListener('click',()=>{
@@ -4805,6 +4935,7 @@ document.getElementById('saveBirthProfile').addEventListener('click',()=>{
   if(!dateStr){alert('Enter date first');return;}
   const data={
     name, date:dateStr, time:timeStr,
+    gender:document.getElementById('fGender')?.value||'male',
     city:document.getElementById('fCity').value,
     lat:parseFloat(document.getElementById('fLat').value)||0,
     lon:parseFloat(document.getElementById('fLon').value)||0,
