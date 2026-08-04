@@ -191,7 +191,56 @@ async function updatePredictionsDisplay() {
     const birthThisYear = new Date(targetYear, birthDate.getMonth(), birthDate.getDate());
     const solarYear = targetDate < birthThisYear ? targetYear - 1 : targetYear;
 
-    if (mode === 'tushar' && window.TUSHAR_ROY) {
+    let gocharChartConfigsToRender = null;
+
+    if (mode === 'gochar') {
+      await showProgress('Computing Live Transit (Gochar) Analysis...');
+      if (!window.GOCHAR) {
+        html += `<div class="pred-item"><div class="pred-title">⚠️ gochar.js module not found</div></div>`;
+      } else if (!window.BIRTH_PLANETS || !window.BIRTH_ASC) {
+        html += `<div class="pred-item"><div class="pred-title">⚠️ Natal chart not available</div></div>`;
+      } else {
+        try {
+          // Today's/target transit positions + today's own ascendant
+          const transitPlanets = (typeof getPos === 'function') ? getPos(targetDate) : null;
+          let transitAsc = null;
+          if (typeof computeAsc === 'function' && typeof jd === 'function' && window.BIRTH) {
+            const j2 = jd(targetDate.getFullYear(), targetDate.getMonth() + 1, targetDate.getDate(), 12.0);
+            transitAsc = computeAsc(j2, BIRTH.lat, BIRTH.lon, BIRTH.utcOff, BIRTH.ayan, 1);
+          }
+
+          // Natal D9 (Navamsha) for the chart panel
+          let d9Planets = null, d9Asc = null;
+          if (typeof computeAll === 'function' && typeof computeAsc === 'function' && window.BIRTH_JD && window.BIRTH) {
+            d9Planets = computeAll(window.BIRTH_JD, BIRTH.ayan, 9);
+            d9Asc = computeAsc(window.BIRTH_JD, BIRTH.lat, BIRTH.lon, BIRTH.utcOff, BIRTH.ayan, 9);
+          }
+
+          // Current dasha chain (MD/AD/PD/Sookshma)
+          const dashaInfo = window.PREDICTION_FORECASTING ? window.PREDICTION_FORECASTING.getCurrentDashaInfo(targetDate) : null;
+
+          const analysis = window.GOCHAR.analyze({
+            natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC,
+            transitPlanets: transitPlanets, transitAsc: transitAsc,
+            lords: (typeof LORDS !== 'undefined') ? LORDS : null,
+            dashaInfo: dashaInfo, currentDate: targetDate, birthDate: birthDate,
+            birthLagnaLon: window.BIRTH_ASC?.sid
+          });
+
+          const chartConfigs = window.GOCHAR.getChartConfigs({
+            natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC,
+            d9Planets: d9Planets, d9Asc: d9Asc,
+            transitPlanets: transitPlanets, transitAsc: transitAsc
+          });
+          gocharChartConfigsToRender = chartConfigs;
+
+          html += window.GOCHAR.renderHTML(analysis, chartConfigs);
+        } catch (gErr) {
+          console.error('Gochar analysis failed:', gErr);
+          html += `<div class="pred-item"><div class="pred-title">⚠️ Gochar analysis error</div><div class="pred-detail">${gErr.message}</div></div>`;
+        }
+      }
+    } else if (mode === 'tushar' && window.TUSHAR_ROY) {
       await showProgress('Analyzing Natal Horoscope (Tushar Roy)...');
       const d1 = window.CURRENT_PLANETARY_POSITIONS || {};
       const d9 = window.CURRENT_NAVAMSHA_POSITIONS || null;
@@ -639,6 +688,13 @@ function analyzeRajyogasAndBhanga(planets, ascendant) {
     await showProgress('Rendering Prediction Dashboard...');
     content.innerHTML = window.I18N ? window.I18N.t(html) : html;
     clearProgress();
+    // Gochar mode draws its D1/D9/Transit/Rashi-Tulya/Moon canvases now that
+    // the <canvas> elements exist in the DOM (chart drawing needs real DOM nodes).
+    if (mode === 'gochar' && gocharChartConfigsToRender && typeof drawDChart === 'function') {
+      gocharChartConfigsToRender.forEach(cfg => {
+        try { drawDChart(cfg.canvasId, { planets: cfg.planets, asc: cfg.asc }); } catch (dErr) { console.error('Gochar chart draw failed:', cfg.canvasId, dErr); }
+      });
+    }
     console.log('✅ Predictions display updated');
   } catch (err) {
     clearProgress();

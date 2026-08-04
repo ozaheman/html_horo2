@@ -34,7 +34,15 @@ window.CELEBRITY_DATABASE = {
     { name: "Leonardo DiCaprio", date: "1974-11-11", time: "02:47", city: "Los Angeles, CA", lat: 34.05, lon: -118.24, utcOff: -8, ayan: "lahiri" },
     { name: "Tom Cruise", date: "1962-07-03", time: "15:06", city: "Syracuse, NY", lat: 43.04, lon: -76.14, utcOff: -4, ayan: "lahiri" },
     { name: "Brad Pitt", date: "1963-12-18", time: "06:31", city: "Shawnee, OK", lat: 35.32, lon: -96.92, utcOff: -6, ayan: "lahiri" },
-    { name: "Angelina Jolie", date: "1975-06-04", time: "09:09", city: "Los Angeles, CA", lat: 34.05, lon: -118.24, utcOff: -8, ayan: "lahiri" }
+    { name: "Angelina Jolie", date: "1975-06-04", time: "09:09", city: "Los Angeles, CA", lat: 34.05, lon: -118.24, utcOff: -8, ayan: "lahiri" },
+    { name: "Tom Holland", date: "1996-06-01", time: "12:00", city: "Kingston upon Thames, UK", lat: 51.41, lon: -0.30, utcOff: 1, ayan: "lahiri" },
+    { name: "Zendaya", date: "1996-09-01", time: "12:00", city: "Oakland, CA", lat: 37.80, lon: -122.27, utcOff: -7, ayan: "lahiri" },
+    { name: "Prabhas", date: "1979-10-23", time: "12:00", city: "Madras, TN", lat: 13.08, lon: 80.27, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Nani", date: "1984-02-24", time: "12:00", city: "Hyderabad, TS", lat: 17.38, lon: 78.48, utcOff: 5.5, ayan: "lahiri" },
+    { name: "C. Joseph Vijay (Thalapathy Vijay)", date: "1974-06-22", time: "12:00", city: "Madras, TN", lat: 13.08, lon: 80.27, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Ranbir Kapoor", date: "1982-09-28", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Alia Bhatt", date: "1993-03-15", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Ranveer Singh", date: "1985-07-06", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" }
   ],
   "sports man": [
     { name: "Sachin Tendulkar", date: "1973-04-24", time: "13:00", city: "Mumbai", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
@@ -227,6 +235,15 @@ window.CELEBRITY_DATABASE = {
   ],
 
   // ── NEW CATEGORIES ────────────────────────────────────────────
+
+  "doctor": [
+    { name: "Edward Jenner (Father of Vaccination)", date: "1749-05-17", time: "12:00", city: "Berkeley, Gloucestershire, UK", lat: 51.69, lon: -2.46, utcOff: 0, ayan: "lahiri" },
+    { name: "Louis Pasteur", date: "1822-12-27", time: "12:00", city: "Dole, France", lat: 47.10, lon: 5.49, utcOff: 0.37, ayan: "lahiri" },
+    { name: "Joseph Lister (Father of Antiseptic Surgery)", date: "1827-04-05", time: "12:00", city: "West Ham, London, UK", lat: 51.53, lon: 0.01, utcOff: 0, ayan: "lahiri" },
+    { name: "Florence Nightingale", date: "1820-05-12", time: "12:00", city: "Florence, Italy", lat: 43.77, lon: 11.25, utcOff: 0.75, ayan: "lahiri" },
+    { name: "Alexander Fleming (Discoverer of Penicillin)", date: "1881-08-06", time: "12:00", city: "Darvel, Ayrshire, Scotland", lat: 55.61, lon: -4.30, utcOff: -0.29, ayan: "lahiri" },
+    { name: "Dr. Bidhan Chandra Roy (B.C. Roy)", date: "1882-07-01", time: "12:00", city: "Patna, BR", lat: 25.61, lon: 85.14, utcOff: 5.5, ayan: "lahiri" }
+  ],
 
   "rich kids": [
     { name: "Anant Ambani", date: "1995-04-10", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },

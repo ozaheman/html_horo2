@@ -2513,6 +2513,23 @@ function _charanLabel(pada) {
   const ROM = ['','I','II','III','IV'];
   return ROM[pada] || pada;
 }
+// ── Navamsha (D9) rashi from sidereal longitude ──────────────────────────────
+// Classical rule: each 30° sign is split into 9 padas of 3°20' (the SAME width as a
+// nakshatra pada, since 27 nakshatras × 4 padas = 108 = 12 signs × 9). Which of the 9
+// padas the planet falls in (0-8) tells you how far to count from that sign's own
+// navamsha-starting sign: Movable signs start counting from themselves, Fixed signs
+// start from the 9th sign, Dual signs start from the 5th sign. Returns 1-12 (Aries=1).
+function navamshaSignIndex0(sid){
+  const lon = fix360(sid);
+  const signIdx = Math.floor(lon/30) % 12;          // 0-11 (Aries=0)
+  const degInSign = lon % 30;
+  const padaIdx = Math.min(8, Math.floor(degInSign / (30/9))); // 0-8
+  const modality = signIdx % 3;                      // 0=movable,1=fixed,2=dual
+  const startSign = modality===0 ? signIdx : modality===1 ? (signIdx+8)%12 : (signIdx+4)%12;
+  return (startSign + padaIdx) % 12;
+}
+function navamshaRashiNum(sid){ return navamshaSignIndex0(sid) + 1; } // 1-12
+function navamshaRashiName(sid){ return SIGNS[navamshaSignIndex0(sid)]; }
 function _pAbbr(name) {
   const MAP = {Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke'};
   return MAP[name] || (name||'').substring(0,2);
@@ -2531,9 +2548,10 @@ function _lordCell(name, extraStyle='', chart) {
   const np   = _lordNakPada(name, chart);
   const nak4 = np ? (_NAK4[np.nak] || np.nak.substring(0,4)) : '';
   const char = np ? _charanLabel(np.pada) : '';
-  const tip  = np ? `${name} · ${np.nak} Charan ${np.pada} (Pada ${np.pada})` : name;
+   const navR = (np && np.sid != null) ? navamshaRashiNum(np.sid) : '';
+  const tip  = np ? `${name} · ${np.nak} Charan ${np.pada} (Pada ${np.pada}) · Navamsha Rashi ${navR} (${navamshaRashiName(np.sid)})` : name;
   const subLine = nak4
-    ? `<div style="font-size:6.5px;color:var(--muted);font-family:'Courier New',monospace;letter-spacing:.2px;line-height:1;margin-top:1px;">${nak4}·${char}</div>`
+    ? `<div style="font-size:6.5px;color:var(--muted);font-family:'Courier New',monospace;letter-spacing:.2px;line-height:1;margin-top:1px;">${nak4}·${char}<span style="color:var(--gold);opacity:.85;">·R${navR}</span></div>`
     : '';
   return `<td class="ph-sign" title="${tip}" style="font-size:9px;color:${col};font-weight:700;vertical-align:top;padding-top:2px;${extraStyle}">
     ${abbr}${subLine}
@@ -2557,7 +2575,7 @@ function updatePlanetTable(){
     {h:'',       tip:''},
     {h:'Planet', tip:''},
     {h:'Sign·Deg',tip:''},
-    {h:'Nak / Charan', tip:'Nakshatra name · Charan (Pada = quarter of nakshatra)'},
+    {h:'Nak/Ch/Nav', tip:'Nakshatra name · Charan (Pada) · Navamsha Rashi (1-12, e.g. R5 = Leo)'},
     {h:'RL',     tip:'Rashi (Sign) Lord'},
     {h:'NL·Nak·Ch', tip:'Nakshatra Lord · their own Nakshatra & Charan'},
     {h:'SL·Nak·Ch', tip:'Sub Lord · their own Nakshatra & Charan'},
@@ -2585,6 +2603,7 @@ function updatePlanetTable(){
      const ascNakName = ascNak.name || BIRTH_ASC.nak || '';
     const ascPada    = ascNak.pada || BIRTH_ASC.pada || '';
     const ascNak4    = _NAK4[ascNakName] || ascNakName.substring(0,4);
+     const ascNavR    = navamshaRashiNum(ascSid);
     const r=document.createElement('tr');
     r.style.cssText='border-bottom:1px solid rgba(20,20,60,.5);';
     r.innerHTML=`
@@ -2592,8 +2611,8 @@ function updatePlanetTable(){
       <td style="color:#3AF0FF;font-weight:700;font-size:10.5px;white-space:nowrap;">Lg Lagna</td>
       <td style="font-family:Courier New,monospace;font-size:9px;white-space:nowrap;color:#3AF0FF">${BIRTH_ASC.sign.substring(0,3)} ${fmtDeg(parseFloat(BIRTH_ASC.deg))}</td>
    
-       <td style="font-family:Courier New,monospace;font-size:8.5px;color:var(--muted);white-space:nowrap;" title="${ascNakName} · Charan ${ascPada} (Pada ${ascPada})">
-        ${ascNak4}<span style="color:rgba(100,100,160,.7)">·Ch${ascPada}</span>
+       <td style="font-family:Courier New,monospace;font-size:8.5px;color:var(--muted);white-space:nowrap;" title="${ascNakName} · Charan ${ascPada} (Pada ${ascPada}) · Navamsha Rashi ${ascNavR} (${navamshaRashiName(ascSid)})">
+        ${ascNak4}<span style="color:rgba(100,100,160,.7)">·Ch${ascPada}</span><span style="color:var(--gold);opacity:.85;">·R${ascNavR}</span>
       </td>
       <td class="ph-sign" title="${ascRL}" style="font-size:9px;color:${_pCol(ascRL)};font-weight:700;">${_pAbbr(ascRL)}</td>
      ${_lordCell(ascKP.nakLord,'',BIRTH_PLANETS)}
@@ -2623,6 +2642,7 @@ function updatePlanetTable(){
     const nakName = nakInfo.name || '';
     const pada    = nakInfo.pada || '';
     const nak4    = _NAK4[nakName] || nakName.substring(0,4);
+     const navR    = navamshaRashiNum(sid);
     const stsColor = pd.status==='Enemy'  ? '#FF5555'
                    : pd.status==='Own'    ? '#00FF88'
                    : pd.status==='Exalt.' ? '#FFD700'
@@ -2640,8 +2660,8 @@ function updatePlanetTable(){
       <td><span class="ph-dot" style="background:${col};${pd.combust?'border:1.5px solid #FF7700;':''}${isRetro?'box-shadow:0 0 4px #FF9933;':''}"></span></td>
       <td style="color:${col};font-weight:700;font-size:10.5px;white-space:nowrap;">${sym} ${p}${retMark}${combMark}</td>
       <td style="font-family:Courier New,monospace;font-size:9px;white-space:nowrap;color:${col}99">${pd.sign.substring(0,3)} ${fmtDeg(parseFloat(pd.deg))}</td>
-      <td style="font-family:Courier New,monospace;font-size:8.5px;color:var(--muted);white-space:nowrap;" title="${nakName} · Charan ${pada} (Pada ${pada})">
-        ${nak4}<span style="color:rgba(100,100,160,.7)">·Ch${pada}</span>
+      <td style="font-family:Courier New,monospace;font-size:8.5px;color:var(--muted);white-space:nowrap;" title="${nakName} · Charan ${pada} (Pada ${pada}) · Navamsha Rashi ${navR} (${navamshaRashiName(sid)})">
+        ${nak4}<span style="color:rgba(100,100,160,.7)">·Ch${pada}</span><span style="color:var(--gold);opacity:.85;">·R${navR}</span>
       </td>
       <td class="ph-sign" title="${rl}" style="font-size:9px;color:${_pCol(rl)};font-weight:700;">${_pAbbr(rl)}</td>
      ${_lordCell(kp.nakLord,'',BIRTH_PLANETS)}
@@ -2672,12 +2692,13 @@ function updateCurrentTbl(){
     const nakName = pd.nak || '';
     const pada    = pd.pada || '';
     const nak4    = _NAK4[nakName] || nakName.substring(0,4);
+    const navR    = navamshaRashiNum(sid);
     const r=document.createElement('tr');
     r.innerHTML=`<td><span class="ph-dot" style="background:${cfg.color}"></span></td>
       <td style="color:${cfg.color};font-weight:700;font-size:10.5px;white-space:nowrap;">${cfg.sym} ${p}${retMark}</td>
       <td style="font-family:Courier New,monospace;font-size:9px;color:${cfg.color}99">${pd.sign.substring(0,3)} ${pd.deg}°</td>
-      <td style="font-family:Courier New,monospace;font-size:8.5px;color:var(--muted);white-space:nowrap;" title="${nakName} · Charan ${pada}">
-        ${nak4}<span style="color:rgba(100,100,160,.7)">${pada?'·Ch'+pada:''}</span>
+      <td style="font-family:Courier New,monospace;font-size:8.5px;color:var(--muted);white-space:nowrap;" title="${nakName} · Charan ${pada} · Navamsha Rashi ${navR} (${navamshaRashiName(sid)})">
+        ${nak4}<span style="color:rgba(100,100,160,.7)">${pada?'·Ch'+pada:''}</span><span style="color:var(--gold);opacity:.85;">·R${navR}</span>
       </td>
       ${_lordCell(kp.nakLord,'',pos)}
       ${_lordCell(kp.subLord,'',pos)}
@@ -4223,6 +4244,39 @@ function fix360(a){ return ((a % 360) + 360) % 360; }
 // Correct Vimshottari nakshatra-lord cycle: Ashwini->Ketu, Bharani->Venus, Krittika->Sun... (repeats x3)
 const NAK_LORD_SEQ = ['Ketu','Venus','Sun','Moon','Mars','Rahu','Jupiter','Saturn','Mercury'];
 function nakLordOf(nakIdx){ return NAK_LORD_SEQ[((nakIdx%9)+9)%9]; }
+// Classical per-nakshatra metadata (deity, gana, nature) — same order as NAK_NAMES (Ashwini→Revati).
+const NAK_META = [
+  {deity:'Ashwini Kumaras', gana:'Deva',     nature:'Kshipra (Swift)'},
+  {deity:'Yama',            gana:'Manushya', nature:'Ugra (Fierce)'},
+  {deity:'Agni',            gana:'Rakshasa', nature:'Mixed'},
+  {deity:'Brahma',          gana:'Manushya', nature:'Dhruva (Fixed)'},
+  {deity:'Soma',            gana:'Deva',     nature:'Mridu (Soft)'},
+  {deity:'Rudra',           gana:'Manushya', nature:'Tikshna (Dreadful)'},
+  {deity:'Aditi',           gana:'Deva',     nature:'Chara (Movable)'},
+  {deity:'Brihaspati',      gana:'Deva',     nature:'Kshipra (Swift)'},
+  {deity:'Nagas',           gana:'Rakshasa', nature:'Tikshna (Dreadful)'},
+  {deity:'Pitrs',           gana:'Rakshasa', nature:'Ugra (Fierce)'},
+  {deity:'Bhaga',           gana:'Manushya', nature:'Ugra (Fierce)'},
+  {deity:'Aryaman',         gana:'Manushya', nature:'Dhruva (Fixed)'},
+  {deity:'Savitar',         gana:'Deva',     nature:'Kshipra (Swift)'},
+  {deity:'Vishwakarma',     gana:'Rakshasa', nature:'Mridu (Soft)'},
+  {deity:'Vayu',            gana:'Deva',     nature:'Chara (Movable)'},
+  {deity:'Indra-Agni',      gana:'Rakshasa', nature:'Mixed'},
+  {deity:'Mitra',           gana:'Deva',     nature:'Mridu (Soft)'},
+  {deity:'Indra',           gana:'Rakshasa', nature:'Tikshna (Dreadful)'},
+  {deity:'Nirriti',         gana:'Rakshasa', nature:'Tikshna (Dreadful)'},
+  {deity:'Apas',            gana:'Manushya', nature:'Ugra (Fierce)'},
+  {deity:'Vishwadevas',     gana:'Manushya', nature:'Dhruva (Fixed)'},
+  {deity:'Vishnu',          gana:'Deva',     nature:'Chara (Movable)'},
+  {deity:'Vasus',           gana:'Rakshasa', nature:'Chara (Movable)'},
+  {deity:'Varuna',          gana:'Rakshasa', nature:'Chara (Movable)'},
+  {deity:'Aja Ekapada',     gana:'Manushya', nature:'Ugra (Fierce)'},
+  {deity:'Ahir Budhnya',    gana:'Manushya', nature:'Dhruva (Fixed)'},
+  {deity:'Pushan',          gana:'Deva',     nature:'Mridu (Soft)'}
+];
+function nakDeityOf(nakIdx){ return (NAK_META[((nakIdx%27)+27)%27]||{}).deity || ''; }
+// Sign → ruling planet, for rashi-wedge tooltips.
+const SIGN_LORD_NAMES = ['Mars','Venus','Mercury','Moon','Sun','Mercury','Venus','Mars','Jupiter','Saturn','Saturn','Jupiter'];
 const SIGN_ELEMENTS=['Fire','Earth','Air','Water'];
 const SIGN_QUALITIES=['Movable','Fixed','Dual'];
 function signElement(idx){ return SIGN_ELEMENTS[((idx%4)+4)%4]; }
@@ -4231,8 +4285,11 @@ function signQuality(idx){ return SIGN_QUALITIES[((idx%3)+3)%3]; }
 // 5th, a dual sign's is its 9th — i.e. that specific navamsa pada is "Vargottama" for that rashi.
 function vargottamaAmsaNum(signIdx){ return [1,5,9][((signIdx%3)+3)%3]; }
 
+// Classical D9 (Navamsa) starting-sign table: fire signs start their 9-amsa run from Aries,
+// earth from Capricorn, air from Libra, water from Cancer. Indexed by rashi (0=Aries..11=Pisces).
+const D9_STARTS = [0,9,6,3, 0,9,6,3, 0,9,6,3];
+function navamsaSignOf(signIdx, amsaIdx0to8){ return (D9_STARTS[signIdx] + amsaIdx0to8) % 12; }
 const PLANET_ABBR2={Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke'};
-
 // Assemble natal + (optional) live-transit data for the enhanced chakra chart
 function buildChakraData(refMode){
   const natal=[];
@@ -4322,6 +4379,7 @@ function generateChakraChartSVG(dataOrChartData, opts) {
     .rashi-sub{font-size:6.2px;fill:#777;text-anchor:middle;}
     .house-num{font-size:7.5px;font-weight:700;fill:#a67c00;text-anchor:middle;}
     .nak-name{font-size:5.6px;fill:#333;text-anchor:middle;}
+    .nak-deity{font-size:4.1px;fill:#8a5cff;font-style:italic;text-anchor:middle;}
     .nl-name{font-size:6.6px;font-weight:700;fill:#5a3ea6;text-anchor:middle;}
     .planet{font-size:11px;font-weight:800;text-anchor:middle;}
     .planet-deg{font-size:6px;fill:#555;text-anchor:middle;}
@@ -4331,6 +4389,8 @@ function generateChakraChartSVG(dataOrChartData, opts) {
     .ref-label{font-size:7.5px;fill:#a67c00;text-anchor:middle;font-weight:700;}
     .varga-tick{stroke:#ccc;stroke-width:0.6;}
     .varga-tick-v{stroke:#c98b00;stroke-width:1.8;}
+    .varga-num{font-size:5.4px;fill:#888;text-anchor:middle;}
+    .varga-num-v{font-size:6.2px;font-weight:800;fill:#c98b00;text-anchor:middle;}
     .house-ring-num{font-size:6.4px;font-weight:700;text-anchor:middle;dominant-baseline:central;}
     .ring-planet{font-size:5.6px;font-weight:800;text-anchor:middle;dominant-baseline:central;}
     .chakra-legend{font-size:6.6px;font-weight:700;text-anchor:middle;}
@@ -4377,11 +4437,13 @@ function generateChakraChartSVG(dataOrChartData, opts) {
   // ══ Rashi ring: sign name, element/quality, house number relative to chosen reference ══
   for (let i=0;i<12;i++){
     const a0=signAngle(i);
-    const p1=getCoords(R.rashiIn,a0), p2=getCoords(R.vargaOut,a0);
-    svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" class="segBold"/>`;
     const mid=a0+w/2;
     const houseNum=((i-refSignIdx+12)%12)+1;
     const isRef=(i===refSignIdx);
+    const rashiTip = `${SIGNS[i]}\nLord: ${SIGN_LORD_NAMES[i]}\nElement: ${signElement(i)}\nQuality: ${signQuality(i)}\nHouse (from ${refLabel}): ${houseNum}`;
+    svg += `<g><title>${rashiTip}</title>`;
+    const p1=getCoords(R.rashiIn,a0), p2=getCoords(R.vargaOut,a0);
+    svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" class="segBold"/>`;
     if (isRef){
       const arc1=getCoords(R.rashiIn,a0), arc2=getCoords(R.rashiIn,a0+w);
       svg += `<path d="M ${arc1.x} ${arc1.y} A ${R.rashiIn} ${R.rashiIn} 0 0 0 ${arc2.x} ${arc2.y}" fill="none" stroke="#c98b00" stroke-width="2.4"/>`;
@@ -4391,6 +4453,7 @@ function generateChakraChartSVG(dataOrChartData, opts) {
     svg += `<text x="${cp.x}" y="${cp.y+2}" class="rashi-sub">${signElement(i)} · ${signQuality(i)}</text>`;
     cp=getCoords(46,mid);
     svg += `<text x="${cp.x}" y="${cp.y+3}" class="house-num">${houseNum}${isRef?' ✦':''}</text>`;
+    svg += `</g>`;
   }
 
   // ══ Nakshatra ring + Nakshatra-Lord ring (27 divisions each) ══
@@ -4398,26 +4461,47 @@ function generateChakraChartSVG(dataOrChartData, opts) {
     const nakW=-(360/27);
     for (let i=0;i<27;i++){
       const a0=chartStartAngle+i*nakW;
+      const mid=a0+nakW/2;
+      const meta = NAK_META[i] || {};
+      const spanStart = (i*(360/27)).toFixed(2), spanEnd = ((i+1)*(360/27)).toFixed(2);
+      const tip = `${NAK_NAMES[i]} Nakshatra\nDeity: ${meta.deity||'-'}\nLord: ${nakLordOf(i)}\nGana: ${meta.gana||'-'}\nNature: ${meta.nature||'-'}\nSpan: ${spanStart}°–${spanEnd}° sidereal`;
+      svg += `<g>`;
+      svg += `<title>${tip}</title>`;
       const p1=getCoords(R.nakIn,a0), p2=getCoords(R.nlOut,a0);
       svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" class="seg"/>`;
-      const mid=a0+nakW/2;
-      let cp=getCoords((R.nakIn+R.nakOut)/2, mid);
+      let cp=getCoords((R.nakIn+R.nakOut)/2 - 4, mid);
       const shortNak = NAK_NAMES[i].length>7 ? NAK_NAMES[i].slice(0,6)+'…' : NAK_NAMES[i];
       svg += `<text x="${cp.x}" y="${cp.y+2}" class="nak-name" transform="rotate(${mid+90} ${cp.x} ${cp.y})">${shortNak}</text>`;
+      cp=getCoords((R.nakIn+R.nakOut)/2 + 7, mid);
+      const shortDeity = meta.deity && meta.deity.length>10 ? meta.deity.slice(0,9)+'…' : (meta.deity||'');
+      svg += `<text x="${cp.x}" y="${cp.y+2}" class="nak-deity" transform="rotate(${mid+90} ${cp.x} ${cp.y})">${shortDeity}</text>`;
       cp=getCoords((R.nlIn+R.nlOut)/2, mid);
       svg += `<text x="${cp.x}" y="${cp.y+2}" class="nl-name" transform="rotate(${mid+90} ${cp.x} ${cp.y})">${nakLordOf(i)}</text>`;
+      svg += `</g>`;
     }
   }
 
-  // ══ Navamsa ring: 108 ticks (9 per sign); the Vargottama pada is highlighted gold ══
+ // ══ Navamsa ring: 108 padas (9 per sign); each labeled with its navamsa rashi (1-12);
+  //    the Vargottama pada is highlighted gold ══
   if (showVarga){
+    const padaW = w/9; // angular width of one pada/amsa (3°20')
+    let padaCount = 0;
     for (let s=0;s<12;s++){
       const vAmsa=vargottamaAmsaNum(s);
       for (let k=0;k<9;k++){
-        const a=signAngle(s)+(k/9)*w;
-        const p1=getCoords(R.vargaIn,a), p2=getCoords(R.vargaOut,a);
+        padaCount++;
+        const a=signAngle(s)+k*padaW;
+        const aMid=a+padaW/2;
+        const navSign = navamsaSignOf(s,k);
+        const rashiNum = navSign+1;
         const isV=(k+1)===vAmsa;
+        const p1=getCoords(R.vargaIn,a), p2=getCoords(R.vargaOut,a);
+        const padaTip = `${SIGNS[s]} pada ${k+1}/9 (global pada ${padaCount}/108)\nNavamsa falls in: ${SIGNS[navSign]} (Rashi ${rashiNum})${isV?'\n★ Vargottama':''}`;
+        svg += `<g><title>${padaTip}</title>`;
         svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" class="${isV?'varga-tick-v':'varga-tick'}"/>`;
+        const cp=getCoords((R.vargaIn+R.vargaOut)/2, aMid);
+        svg += `<text x="${cp.x}" y="${cp.y+1.6}" class="${isV?'varga-num-v':'varga-num'}" transform="rotate(${aMid+90} ${cp.x} ${cp.y})">${rashiNum}</text>`;
+        svg += `</g>`;
       }
     }
   }
@@ -4446,10 +4530,13 @@ function generateChakraChartSVG(dataOrChartData, opts) {
   if (showTransit && transit && transit.length){
     transit.forEach(p=>{
       const a=lonAngle(p.sid);
+      const tTip = `${p.p} (transit)${p.retro?' ℞ Retrograde':''}\n${SIGNS[p.sn]} ${fmtDeg(fix360(p.sid)%30)} · House ${p.house}\nNakshatra: ${p.nak||'-'} Pada ${p.pada||'-'}\nNak. Lord: ${p.nl||'-'}  Sub Lord: ${p.sl||'-'}`;
+      svg += `<g><title>${tTip}</title>`;
       let c=getCoords((R.transitIn+R.transitOut)/2-6,a);
       svg += `<text x="${c.x}" y="${c.y}" class="planet-t">${p.tx}${p.retro?'℞':''}</text>`;
       c=getCoords((R.transitIn+R.transitOut)/2+9,a);
       svg += `<text x="${c.x}" y="${c.y}" class="planet-t-deg">${fmtDeg(fix360(p.sid)%30)}</text>`;
+      svg += `</g>`;
     });
   }
 
@@ -4457,6 +4544,10 @@ function generateChakraChartSVG(dataOrChartData, opts) {
   natal.forEach(p=>{
     const a=lonAngle(p.sid);
     const col = PCFG[p.p] ? PCFG[p.p].color : '#c0392b';
+    const nTip = p.isAsc
+      ? `Ascendant (Lagna)\n${SIGNS[p.sn]} ${fmtDeg(fix360(p.sid)%30)}`
+      : `${p.p}${p.retro?' ℞ Retrograde':''}\n${SIGNS[p.sn]} ${fmtDeg(fix360(p.sid)%30)} · House ${p.house}\nNakshatra: ${p.nak||'-'} Pada ${p.pada||'-'}\nDeity: ${nakDeityOf(determineNakshatra(p.sid).idx)}\nNak. Lord: ${p.nl||'-'}  Sub Lord: ${p.sl||'-'}`;
+    svg += `<g><title>${nTip}</title>`;
     let c=getCoords((R.natalIn+R.natalOut)/2-10,a);
     const label = p.isAsc ? 'Asc' : (PCFG[p.p]?PCFG[p.p].sym:p.tx);
     svg += `<text x="${c.x}" y="${c.y}" class="planet" style="fill:${p.isAsc?'#c98b00':col};">${label}${p.retro?'℞':''}</text>`;
@@ -4464,6 +4555,7 @@ function generateChakraChartSVG(dataOrChartData, opts) {
       c=getCoords((R.natalIn+R.natalOut)/2+13,a);
       svg += `<text x="${c.x}" y="${c.y}" class="planet-deg">${fmtDeg(fix360(p.sid)%30)}</text>`;
     }
+    svg += `</g>`;
   });
 
   // ══ Center ══
@@ -4505,14 +4597,14 @@ function renderChakraDetailsPanel(built){
   let rows='';
   built.natal.forEach(p=>{
     if(p.isAsc){
-      rows += `<div class="cd-row cd-natal"><b>Ascendant</b><br>${SIGNS[p.sn]} ${fmtDeg(fix360(p.sid)%30)}</div>`;
+      rows += `<div class="cd-row cd-natal"><b>Ascendant</b><br>${SIGNS[p.sn]} ${fmtDeg(fix360(p.sid)%30)} · Nav.Rashi ${navamshaRashiNum(p.sid)} (${navamshaRashiName(p.sid)})</div>`;
       return;
     }
-    rows += `<div class="cd-row cd-natal"><b>${p.p}</b> ${p.retro?'℞':''}<br>${SIGNS[p.sn]} ${fmtDeg(fix360(p.sid)%30)} · H${p.house}<br>${p.nak||''} Pd${p.pada||''} · NL:${p.nl||''} SL:${p.sl||''}</div>`;
+    rows += `<div class="cd-row cd-natal"><b>${p.p}</b> ${p.retro?'℞':''}<br>${SIGNS[p.sn]} ${fmtDeg(fix360(p.sid)%30)} · H${p.house}<br>${p.nak||''} Pd${p.pada||''} (${nakDeityOf(determineNakshatra(p.sid).idx)}) · Nav.Rashi ${navamshaRashiNum(p.sid)} (${navamshaRashiName(p.sid)}) · NL:${p.nl||''} SL:${p.sl||''}</div>`;
   });
   if(chakraShowTransit && built.transit && built.transit.length){
     built.transit.forEach(p=>{
-      rows += `<div class="cd-row cd-transit"><b>${p.p} (transit)</b> ${p.retro?'℞':''}<br>${SIGNS[p.sn]} ${fmtDeg(fix360(p.sid)%30)} · H${p.house}<br>${p.nak||''} Pd${p.pada||''} · NL:${p.nl||''} SL:${p.sl||''}</div>`;
+      rows += `<div class="cd-row cd-transit"><b>${p.p} (transit)</b> ${p.retro?'℞':''}<br>${SIGNS[p.sn]} ${fmtDeg(fix360(p.sid)%30)} · H${p.house}<br>${p.nak||''} Pd${p.pada||''} (${nakDeityOf(determineNakshatra(p.sid).idx)}) · Nav.Rashi ${navamshaRashiNum(p.sid)} (${navamshaRashiName(p.sid)}) · NL:${p.nl||''} SL:${p.sl||''}</div>`;
     });
   }
   if(chakraShowAspects && window._lastChakraAspects && window._lastChakraAspects.length){
@@ -6431,7 +6523,7 @@ let vratFestivalHTML = '';
        <strong style="color:var(--text);font-size:11px;">Vaara:</strong> <span style="color:var(--gold2)">${varaNames[vara]}</span><br>
        <strong style="color:var(--text);font-size:11px;">Tithi:</strong> <span style="color:var(--cyan)">${tithi.num} - ${tithi.name} (${tithi.phase})</span><br>
        <hr style="border:0;border-top:1px solid var(--border);margin:8px 0;">
-       <strong style="color:var(--text);font-size:11px;">Nakshatra:</strong> <span style="color:var(--gold)">${p.Moon.nak}</span> <span style="color:var(--muted);font-size:9px;">(Pada ${p.Moon.pada})</span><br>
+       <strong style="color:var(--text);font-size:11px;">Nakshatra:</strong> <span style="color:var(--gold)">${p.Moon.nak}</span> <span style="color:var(--muted);font-size:9px;">(Pada ${p.Moon.pada} · Navamsha Rashi ${navamshaRashiNum(p.Moon.sid!=null?p.Moon.sid:(p.Moon.sn||0)*30+parseFloat(p.Moon.deg||0))})</span><br>
        <span style="color:var(--muted);font-size:10px;">├ <strong>Anand Adi:</strong> ${curAnand} Yoga</span><br>
        <span style="color:var(--muted);font-size:10px;">└ <strong>Chogadiya:</strong> ${chogData}</span><br>
        <hr style="border:0;border-top:1px solid var(--border);margin:8px 0;">

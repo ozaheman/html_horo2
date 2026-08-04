@@ -188,7 +188,22 @@ window.YOGAS_DATA = [
     mantras: ['Om Shreem Mahalakshmiyai Namaha', 'Om Padmakshi Namaha'],
     deities: ['Lakshmi', 'Venus'],
     keywords: ['Wealth', 'Luxury', 'Prosperity', 'Comfort'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets || !c.asc) return false;
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
+      const ascSn = c.asc.sn || 0;
+      const lord9 = getSignLord(signNames[(ascSn + 8) % 12]);
+      const p9 = c.planets[lord9];
+      if (!p9 || p9.house !== 10) return false;
+      const benefics = window.ASTRO_CONSTANTS.BENEFICS;
+      const conjunct = benefics.filter(b => b !== lord9 && c.planets[b] && c.planets[b].house === 10);
+      const aspecting = benefics.filter(b => b !== lord9 && c.planets[b] && hasAspect(b, c.planets[b].house, 10));
+      if (conjunct.length || aspecting.length) {
+        const via = conjunct.length ? `conjunct with ${conjunct.join(', ')}` : `aspected by ${aspecting.join(', ')}`;
+        return { result: true, rationale: `9th Lord (${lord9}) is placed in the 10th house and is ${via}.` };
+      }
+      return false;
+    },
   },
 
   {
@@ -202,7 +217,22 @@ window.YOGAS_DATA = [
     mantras: ['Om Shreem Mahalakshmiyai Namaha', 'Om Kuberaya Namaha'],
     deities: ['Lakshmi', 'Jupiter', 'Kubera'],
     keywords: ['Wealth', 'Property', 'Assets', 'Prosperity'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets || !c.asc) return false;
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
+      const ascSn = c.asc.sn || 0;
+      const lord2 = getSignLord(signNames[(ascSn + 1) % 12]);
+      const lord5 = getSignLord(signNames[(ascSn + 4) % 12]);
+      const p2 = c.planets[lord2], p5 = c.planets[lord5];
+      if (!p2 || !p5) return false;
+      if (p2.house === 5 && p5.house === 2) {
+        return { result: true, rationale: `2nd Lord (${lord2}) sits in the 5th house while 5th Lord (${lord5}) sits in the 2nd — a direct mutual exchange.` };
+      }
+      if (isKendraTrikona(p2.house) && isKendraTrikona(p5.house)) {
+        return { result: true, rationale: `Both the 2nd Lord (${lord2}, H${p2.house}) and 5th Lord (${lord5}, H${p5.house}) are placed in Kendra/Trikona houses.` };
+      }
+      return false;
+    },
   },
 
   {
@@ -292,7 +322,22 @@ window.YOGAS_DATA = [
     mantras: ['Om Shreem Mahalakshmiyai Namaha', 'Maha Mrityunjaya Mantra', 'Om Kuberaya Namaha'],
     deities: ['Lakshmi', 'Jupiter', 'Kubera'],
     keywords: ['Poverty', 'Struggle', 'Financial loss', 'Instability'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets || !c.asc) return false;
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
+      const ascSn = c.asc.sn || 0;
+      const lord11 = getSignLord(signNames[(ascSn + 10) % 12]);
+      const lord2 = getSignLord(signNames[(ascSn + 1) % 12]);
+      const p11 = c.planets[lord11];
+      const p2 = c.planets[lord2];
+      if (p11 && [6, 8, 12].includes(p11.house)) {
+        return { result: true, rationale: `11th Lord (${lord11}) is placed in House ${p11.house}, a Dusthana, choking off the flow of gains.` };
+      }
+      if (p2 && (p2.status === 'Debil.' || p2.status === 'Enemy') && [6, 8, 12].includes(p2.house)) {
+        return { result: true, rationale: `2nd Lord (${lord2}) is weak (${p2.status}) and placed in a Dusthana (H${p2.house}), undermining wealth accumulation.` };
+      }
+      return false;
+    },
   },
 
   {
@@ -491,7 +536,24 @@ window.YOGAS_DATA = [
     mantras: ['Om Namah Shivaya', 'Maha Mrityunjaya Mantra'],
     deities: ['Shiva', 'Durga'],
     keywords: ['Reversal', 'Gain from loss', 'Unexpected success'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets || !c.asc) return false;
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
+      const ascSn = c.asc.sn || 0;
+      const dusthanas = [6, 8, 12];
+      const findings = [];
+      dusthanas.forEach(h => {
+        const lord = getSignLord(signNames[(ascSn + h - 1) % 12]);
+        const p = c.planets[lord];
+        if (p && dusthanas.includes(p.house)) {
+          findings.push(`${lord} (${h}th Lord) is placed in H${p.house}`);
+        }
+      });
+      if (findings.length) {
+        return { result: true, rationale: `Vipareeta Raj Yoga forms because ${findings.join('; ')} — a Dusthana lord confined within another Dusthana reverses into unexpected gain.` };
+      }
+      return false;
+    },
   },
 
   {
@@ -505,7 +567,24 @@ window.YOGAS_DATA = [
     mantras: ['Mantras for both planets'],
     deities: ['Deities of both planets'],
     keywords: ['Exchange', 'Mutual', 'Powerful link'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets || !c.asc) return false;
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
+      const ascSn = c.asc.sn || 0;
+      for (let h1 = 1; h1 <= 12; h1++) {
+        for (let h2 = h1 + 1; h2 <= 12; h2++) {
+          const lord1 = getSignLord(signNames[(ascSn + h1 - 1) % 12]);
+          const lord2 = getSignLord(signNames[(ascSn + h2 - 1) % 12]);
+          if (lord1 === lord2) continue;
+          const p1 = c.planets[lord1], p2 = c.planets[lord2];
+          if (!p1 || !p2) continue;
+          if (p1.house === h2 && p2.house === h1) {
+            return { result: true, rationale: `House ${h1} Lord (${lord1}) sits in House ${h2}, while House ${h2} Lord (${lord2}) sits in House ${h1} — a mutual sign exchange (Parivartana).` };
+          }
+        }
+      }
+      return false;
+    },
   },
 
   {
@@ -519,7 +598,36 @@ window.YOGAS_DATA = [
     mantras: ['Planet-specific mantras', 'Maha Mrityunjaya Mantra'],
     deities: ['Planet deities', 'Shiva'],
     keywords: ['Cancellation', 'Rise', 'Redemption', 'Strength'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets) return false;
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
+      const dignities = window.ASTRO_CONSTANTS.DIGNITIES;
+      const moon = c.planets.Moon;
+      const planetNames = Object.keys(dignities);
+      for (const pName of planetNames) {
+        const p = c.planets[pName];
+        if (!p || p.sn !== dignities[pName].debilitation) continue;
+        const dign = dignities[pName];
+        const debSignLord = getSignLord(signNames[dign.debilitation]);
+        const exaltSignLord = getSignLord(signNames[dign.exalt]);
+        const debLordPlanet = c.planets[debSignLord];
+        const exaltLordPlanet = c.planets[exaltSignLord];
+
+        const cond1 = (debLordPlanet && isKendra(debLordPlanet.house)) || (exaltLordPlanet && isKendra(exaltLordPlanet.house));
+        let cond2 = false;
+        if (debLordPlanet && exaltLordPlanet) {
+          const rel = ((debLordPlanet.house - exaltLordPlanet.house + 12) % 12) + 1;
+          cond2 = [1, 4, 7, 10].includes(rel);
+        }
+        const cond3 = debLordPlanet && hasAspect(debSignLord, debLordPlanet.house, p.house);
+        const cond4 = isKendra(p.house) || (moon && [1, 4, 7, 10].includes(((p.house - moon.house + 12) % 12) + 1));
+
+        if (cond1 || cond2 || cond3 || cond4) {
+          return { result: true, rationale: `${pName}'s debilitation in ${p.sign} is cancelled (Neecha Bhanga) — its dispositor/exaltation lord is angular, or it is otherwise angular from the Moon/Ascendant, transforming weakness into a powerful Raja Yoga.` };
+        }
+      }
+      return false;
+    },
   },
 
   // ========== HOUSE-BASED YOGAS ==========
@@ -554,7 +662,24 @@ window.YOGAS_DATA = [
     mantras: ['Planet mantras', 'House ruling mantras'],
     deities: ['House ruling deity', 'Jupiter/Venus'],
     keywords: ['Strength', 'Success', 'Positive results'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets || !c.asc) return false;
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
+      const ascSn = c.asc.sn || 0;
+      const benefics = window.ASTRO_CONSTANTS.BENEFICS;
+      for (let h = 1; h <= 12; h++) {
+        const lord = getSignLord(signNames[(ascSn + h - 1) % 12]);
+        const p = c.planets[lord];
+        if (!p) continue;
+        const strong = p.status === 'Own' || p.status === 'Exalt.';
+        if (!strong) continue;
+        const aspecting = benefics.filter(b => b !== lord && c.planets[b] && hasAspect(b, c.planets[b].house, p.house));
+        if (aspecting.length) {
+          return { result: true, rationale: `House ${h}'s Lord (${lord}) is dignified (${p.status}) and receives a benefic aspect from ${aspecting.join(', ')}.` };
+        }
+      }
+      return false;
+    },
   },
 
   // ========== DIGNITY-BASED YOGAS ==========
@@ -570,7 +695,14 @@ window.YOGAS_DATA = [
     mantras: ['Planet mantra'],
     deities: ['Planet deity'],
     keywords: ['Strength', 'Excellence', 'Exaltation'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets) return false;
+      const exalted = Object.keys(c.planets).filter(p => c.planets[p] && c.planets[p].status === 'Exalt.');
+      if (exalted.length) {
+        return { result: true, rationale: `${exalted.join(', ')} ${exalted.length > 1 ? 'are' : 'is'} placed in exaltation, at peak strength.` };
+      }
+      return false;
+    },
   },
 
   {
@@ -584,7 +716,14 @@ window.YOGAS_DATA = [
     mantras: ['Planet mantra'],
     deities: ['Planet deity'],
     keywords: ['Strength', 'Stability', 'Success'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets) return false;
+      const own = Object.keys(c.planets).filter(p => c.planets[p] && c.planets[p].status === 'Own');
+      if (own.length) {
+        return { result: true, rationale: `${own.join(', ')} ${own.length > 1 ? 'are' : 'is'} placed in its own sign, giving stable, consistent strength.` };
+      }
+      return false;
+    },
   },
 
   {
@@ -598,7 +737,17 @@ window.YOGAS_DATA = [
     mantras: ['Planet mantra'],
     deities: ['Planet deity'],
     keywords: ['Purity', 'Strength', 'Undiluted results'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets) return false;
+      const vargottama = Object.keys(c.planets).filter(p => {
+        const pos = c.planets[p];
+        return pos && pos.d1Sn !== undefined && pos.d1Sn === pos.sn;
+      });
+      if (vargottama.length) {
+        return { result: true, rationale: `${vargottama.join(', ')} ${vargottama.length > 1 ? 'occupy' : 'occupies'} the same sign in both the Rashi and Navamsha charts (Vargottama), giving pure, undiluted strength.` };
+      }
+      return false;
+    },
   },
 
   // ========== RETROGRADE YOGAS ==========
@@ -614,7 +763,14 @@ window.YOGAS_DATA = [
     mantras: ['Planet mantra', 'Shanti mantras'],
     deities: ['Planet deity'],
     keywords: ['Intensity', 'Delay', 'Power', 'Internalized'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets) return false;
+      const retro = Object.keys(c.planets).filter(p => c.planets[p] && c.planets[p].retro);
+      if (retro.length) {
+        return { result: true, rationale: `${retro.join(', ')} ${retro.length > 1 ? 'are' : 'is'} retrograde, making its effects more intense, internalized, and delayed.` };
+      }
+      return false;
+    },
   },
 
   // ========== COMBUSTION YOGA ==========
@@ -630,7 +786,14 @@ window.YOGAS_DATA = [
     mantras: ['Planet mantra', 'Maha Mrityunjaya Mantra'],
     deities: ['Planet deity', 'Sun deity'],
     keywords: ['Weakness', 'Burning', 'Hidden qualities'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets) return false;
+      const combust = Object.keys(c.planets).filter(p => p !== 'Sun' && c.planets[p] && c.planets[p].combust);
+      if (combust.length) {
+        return { result: true, rationale: `${combust.join(', ')} ${combust.length > 1 ? 'are' : 'is'} combust, its qualities burned up and hidden by proximity to the Sun.` };
+      }
+      return false;
+    },
   },
 
   // ========== ASPECT YOGAS ==========
@@ -646,7 +809,16 @@ window.YOGAS_DATA = [
     mantras: ['Maha Mrityunjaya Mantra', 'Hanuman Chalisa', 'Shanti mantras'],
     deities: ['Durga', 'Hanuman', 'Shiva'],
     keywords: ['Pressure', 'Obstacles', 'Suffering'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets) return false;
+      const malefics = window.ASTRO_CONSTANTS.MALEFICS;
+      const h2 = malefics.filter(m => c.planets[m] && c.planets[m].house === 2);
+      const h12 = malefics.filter(m => c.planets[m] && c.planets[m].house === 12);
+      if (h2.length && h12.length) {
+        return { result: true, rationale: `The Lagna is hemmed in by malefics in House 2 (${h2.join(', ')}) and House 12 (${h12.join(', ')}).` };
+      }
+      return false;
+    },
   },
 
   {
@@ -660,7 +832,16 @@ window.YOGAS_DATA = [
     mantras: ['Jupiter mantra', 'Venus mantra'],
     deities: ['Jupiter', 'Venus', 'Lakshmi'],
     keywords: ['Protection', 'Support', 'Blessings'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets) return false;
+      const benefics = window.ASTRO_CONSTANTS.BENEFICS;
+      const h2 = benefics.filter(b => c.planets[b] && c.planets[b].house === 2);
+      const h12 = benefics.filter(b => c.planets[b] && c.planets[b].house === 12);
+      if (h2.length && h12.length) {
+        return { result: true, rationale: `The Lagna is flanked by benefics in House 2 (${h2.join(', ')}) and House 12 (${h12.join(', ')}), granting protection and support.` };
+      }
+      return false;
+    },
   },
 
   // ========== NAKSHATRA-BASED YOGAS ==========
@@ -676,7 +857,14 @@ window.YOGAS_DATA = [
     mantras: ['Om Brihaspataye Namaha', 'Pushya Nakshatra mantra'],
     deities: ['Brihaspati', 'Jupiter'],
     keywords: ['Auspicious', 'Nourishing', 'Supportive', 'Prosperity'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets) return false;
+      const inPushya = Object.keys(c.planets).filter(p => c.planets[p] && c.planets[p].nak === 'Pushya');
+      if (inPushya.length) {
+        return { result: true, rationale: `${inPushya.join(', ')} ${inPushya.length > 1 ? 'are' : 'is'} placed in Pushya Nakshatra, the most nourishing and supportive of all stars.` };
+      }
+      return false;
+    },
   },
 
   {
@@ -690,7 +878,14 @@ window.YOGAS_DATA = [
     mantras: ['Om Pitrbhyo Namaha', 'Magha Nakshatra mantra'],
     deities: ['Ancestors (Pitris)', 'Sun'],
     keywords: ['Noble', 'Leadership', 'Ancestry', 'Power'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets) return false;
+      const inMagha = Object.keys(c.planets).filter(p => c.planets[p] && c.planets[p].nak === 'Magha');
+      if (inMagha.length) {
+        return { result: true, rationale: `${inMagha.join(', ')} ${inMagha.length > 1 ? 'are' : 'is'} placed in Magha Nakshatra, connecting the native to ancestral power and authority.` };
+      }
+      return false;
+    },
   },
 
   {
@@ -704,7 +899,14 @@ window.YOGAS_DATA = [
     mantras: ['Om Pushne Namaha', 'Revati Nakshatra mantra'],
     deities: ['Pushan', 'Mercury'],
     keywords: ['Nourishing', 'Wealthy', 'Protected', 'Travel'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets) return false;
+      const inRevati = Object.keys(c.planets).filter(p => c.planets[p] && c.planets[p].nak === 'Revati');
+      if (inRevati.length) {
+        return { result: true, rationale: `${inRevati.join(', ')} ${inRevati.length > 1 ? 'are' : 'is'} placed in Revati Nakshatra, granting nourishment, protection, and success in trade/travel.` };
+      }
+      return false;
+    },
   },
 
   // ========== ADDITIONAL YOGAS ==========
@@ -758,7 +960,20 @@ window.YOGAS_DATA = [
     mantras: ['Om Namah Shivaya', 'Auspiciousness mantra'],
     deities: ['Brahma', 'All Devas'],
     keywords: ['Auspicious', 'Success', 'Starting new work'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      if (!c.planets || !c.asc) return false;
+      const p = c.planets;
+      if (!p.Sun || !p.Moon) return false;
+      const rel = ((p.Moon.house - p.Sun.house + 12) % 12) + 1;
+      if ([6, 8, 12].includes(rel)) return false;
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
+      const lagnaLord = getSignLord(signNames[c.asc.sn || 0]);
+      const pL = p[lagnaLord];
+      if (pL && isKendra(pL.house)) {
+        return { result: true, rationale: `The Lagna Lord (${lagnaLord}) is angular and the Moon avoids the Dusthanas from the Sun — a highly auspicious window for new beginnings.` };
+      }
+      return false;
+    },
   },
 
   {
@@ -773,7 +988,16 @@ window.YOGAS_DATA = [
     mantras: ['Om Budhaya Namaha', 'Om Shukraya Namaha'],
     deities: ['Mercury', 'Venus', 'Saraswati'],
     keywords: ['Perfection', 'Completion', 'Success'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mercury || !p.Venus || !p.Sun || !p.Moon) return false;
+      const strongMercVen = ['Own', 'Exalt.'].includes(p.Mercury.status) && ['Own', 'Exalt.'].includes(p.Venus.status);
+      const rel = ((p.Moon.house - p.Sun.house + 12) % 12) + 1;
+      if (strongMercVen && [1, 4, 7, 10].includes(rel)) {
+        return { result: true, rationale: "Mercury and Venus are both strongly dignified while the Sun-Moon axis is angular — perfect for education, business, or marriage." };
+      }
+      return false;
+    },
   },
 
   {
@@ -788,7 +1012,17 @@ window.YOGAS_DATA = [
     mantras: ['Gayatri Mantra', 'Sun mantra'],
     deities: ['Surya', 'Indra'],
     keywords: ['Achievement', 'Business', 'Success'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Sun) return false;
+      const sunStrong = ['Own', 'Exalt.'].includes(p.Sun.status);
+      const malefics = window.ASTRO_CONSTANTS.MALEFICS;
+      const maleficIn8 = malefics.some(m => p[m] && p[m].house === 8);
+      if (sunStrong && !maleficIn8) {
+        return { result: true, rationale: "The Sun is strongly placed and the 8th house is free of malefics — excellent for trade and major purchases." };
+      }
+      return false;
+    },
   },
 
   {
@@ -803,7 +1037,17 @@ window.YOGAS_DATA = [
     mantras: ['Om Brihaspataye Namaha', 'Harmony mantra'],
     deities: ['Jupiter', 'Venus'],
     keywords: ['Partnership', 'Harmony', 'Marriage'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Jupiter || !p.Moon) return false;
+      const bothKendra = isKendra(p.Jupiter.house) && isKendra(p.Moon.house);
+      const malefics = window.ASTRO_CONSTANTS.MALEFICS;
+      const maleficIn7 = malefics.some(m => p[m] && p[m].house === 7);
+      if (bothKendra && !maleficIn7) {
+        return { result: true, rationale: "Jupiter and the Moon are both angular and the 7th house of partnership is unafflicted — auspicious for marriage and new alliances." };
+      }
+      return false;
+    },
   },
 
   {
@@ -818,7 +1062,16 @@ window.YOGAS_DATA = [
     mantras: ['Om Brihaspataye Namaha', 'Pushya Nakshatra mantra'],
     deities: ['Brihaspati', 'Jupiter'],
     keywords: ['Nourishing', 'Protective', 'Most auspicious'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Moon || p.Moon.nak !== 'Pushya') return false;
+      const jupAspect = p.Jupiter && hasAspect('Jupiter', p.Jupiter.house, p.Moon.house);
+      const mercAspect = p.Mercury && hasAspect('Mercury', p.Mercury.house, p.Moon.house);
+      if (jupAspect || mercAspect) {
+        return { result: true, rationale: `The Moon is in Pushya Nakshatra and receives the aspect of ${jupAspect ? 'Jupiter' : 'Mercury'} — the most nourishing timing window.` };
+      }
+      return false;
+    },
   },
 
   {
@@ -833,7 +1086,16 @@ window.YOGAS_DATA = [
     mantras: ['Om Budhaya Namaha', 'Mercury mantra'],
     deities: ['Mercury', 'Saraswati', 'Ganesha'],
     keywords: ['Communication', 'Learning', 'Writing'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mercury || !p.Sun || !p.Moon) return false;
+      const mercStrong = ['Own', 'Exalt.'].includes(p.Mercury.status);
+      const rel = ((p.Moon.house - p.Sun.house + 12) % 12) + 1;
+      if (mercStrong && ![6, 8, 12].includes(rel)) {
+        return { result: true, rationale: "Mercury is strongly placed and the Sun-Moon relationship is harmonious — good for education, writing, and contracts." };
+      }
+      return false;
+    },
   },
 
   {
@@ -848,7 +1110,17 @@ window.YOGAS_DATA = [
     mantras: ['Gayatri Mantra', 'Om Surya Namaha'],
     deities: ['Surya', 'Indra', 'Authority'],
     keywords: ['Authority', 'Government', 'Leadership'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Sun) return false;
+      if (p.Sun.status !== 'Exalt.') return false;
+      const malefics = window.ASTRO_CONSTANTS.MALEFICS;
+      const afflicted = malefics.some(m => p[m] && hasAspect(m, p[m].house, p.Sun.house));
+      if (!afflicted) {
+        return { result: true, rationale: "The Sun is exalted and free from malefic aspects — excellent for authority and leadership matters." };
+      }
+      return false;
+    },
   },
 
   {
@@ -863,7 +1135,17 @@ window.YOGAS_DATA = [
     mantras: ['Moon mantra', 'Om Chandraya Namaha'],
     deities: ['Moon', 'Lakshmi', 'Durga'],
     keywords: ['Family', 'Emotions', 'Domestic harmony'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Moon) return false;
+      const moonStrong = ['Own', 'Exalt.'].includes(p.Moon.status);
+      const malefics = window.ASTRO_CONSTANTS.MALEFICS;
+      const afflicted = malefics.some(m => p[m] && [2, 8].includes(p[m].house));
+      if (moonStrong && !afflicted) {
+        return { result: true, rationale: "The Moon is strongly placed and Houses 2/8 are free of malefics — favorable for family and domestic matters." };
+      }
+      return false;
+    },
   },
 
   {
@@ -878,7 +1160,16 @@ window.YOGAS_DATA = [
     mantras: ['Om Mangalaya Namaha', 'Mars mantra'],
     deities: ['Mars', 'Hanuman', 'Skanda'],
     keywords: ['Physical', 'Courage', 'Construction'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mars || !p.Sun || !p.Venus) return false;
+      const marsStrong = ['Own', 'Exalt.'].includes(p.Mars.status);
+      const rel = ((p.Sun.house - p.Venus.house + 12) % 12) + 1;
+      if (marsStrong && ![6, 8, 12].includes(rel)) {
+        return { result: true, rationale: "Mars is strongly placed and the Sun-Venus relationship is unafflicted — good for physical undertakings and construction." };
+      }
+      return false;
+    },
   },
 
   {
@@ -893,7 +1184,17 @@ window.YOGAS_DATA = [
     mantras: ['Mercury mantra', 'Om Budhaya Namaha'],
     deities: ['Mercury', 'Saraswati'],
     keywords: ['Commerce', 'Trade', 'Travel'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mercury) return false;
+      const mercStrong = ['Own', 'Exalt.'].includes(p.Mercury.status);
+      const malefics = window.ASTRO_CONSTANTS.MALEFICS;
+      const afflicted = malefics.some(m => p[m] && [3, 6].includes(p[m].house));
+      if (mercStrong && !afflicted) {
+        return { result: true, rationale: "Mercury is strongly placed and Houses 3/6 are unafflicted — favorable for trade and short travel." };
+      }
+      return false;
+    },
   },
 
   {
@@ -908,7 +1209,19 @@ window.YOGAS_DATA = [
     mantras: ['Jupiter mantra', 'Om Brihaspataye Namaha'],
     deities: ['Jupiter', 'Brihaspati', 'Saraswati'],
     keywords: ['Knowledge', 'Expansion', 'Wisdom'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Jupiter || !p.Venus || !p.Moon || !p.Sun) return false;
+      const jupStrong = ['Own', 'Exalt.'].includes(p.Jupiter.status);
+      const venAspect = hasAspect('Venus', p.Venus.house, p.Jupiter.house);
+      const moonLon = (p.Moon.sn || 0) * 30 + (parseFloat(p.Moon.deg) || 0);
+      const sunLon = (p.Sun.sn || 0) * 30 + (parseFloat(p.Sun.deg) || 0);
+      const waxing = ((moonLon - sunLon + 360) % 360) < 180;
+      if (jupStrong && venAspect && waxing) {
+        return { result: true, rationale: "Jupiter is strong, aspected by Venus, and the Moon is waxing — ideal for education, marriage, and expansion." };
+      }
+      return false;
+    },
   },
 
   {
@@ -923,7 +1236,18 @@ window.YOGAS_DATA = [
     mantras: ['Venus mantra', 'Om Shukraya Namaha'],
     deities: ['Venus', 'Lakshmi', 'Cupid'],
     keywords: ['Beauty', 'Art', 'Romance', 'Luxury'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Venus || !p.Moon) return false;
+      const venStrong = ['Own', 'Exalt.'].includes(p.Venus.status);
+      const moonInVenSign = ['Taurus', 'Libra'].includes(p.Moon.sign);
+      const benefics = window.ASTRO_CONSTANTS.BENEFICS;
+      const beneficAspect = benefics.some(b => b !== 'Venus' && p[b] && hasAspect(b, p[b].house, p.Venus.house));
+      if (venStrong && moonInVenSign && beneficAspect) {
+        return { result: true, rationale: "Venus is strongly placed, the Moon rests in a Venusian sign, and a benefic aspects Venus — excellent for marriage and artistic pursuits." };
+      }
+      return false;
+    },
   },
 
   {
@@ -938,7 +1262,21 @@ window.YOGAS_DATA = [
     mantras: ['Saturn mantra', 'Om Shanaischaraya Namaha'],
     deities: ['Saturn', 'Shiva', 'Discipline'],
     keywords: ['Stability', 'Land', 'Long-term'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Saturn || !p.Moon || !p.Sun) return false;
+      const satStrong = ['Own', 'Exalt.'].includes(p.Saturn.status);
+      const moonLon = (p.Moon.sn || 0) * 30 + (parseFloat(p.Moon.deg) || 0);
+      const sunLon = (p.Sun.sn || 0) * 30 + (parseFloat(p.Sun.deg) || 0);
+      const phase = (moonLon - sunLon + 360) % 360;
+      const beyondFirstQuarter = phase > 90;
+      const malefics = window.ASTRO_CONSTANTS.MALEFICS;
+      const maleficIn8 = malefics.some(m => p[m] && p[m].house === 8);
+      if (satStrong && beyondFirstQuarter && !maleficIn8) {
+        return { result: true, rationale: "Saturn is strongly placed, the Moon has passed its first quarter, and the 8th house is unafflicted — good for long-term plans and real estate." };
+      }
+      return false;
+    },
   },
 
   // ========== INAUSPICIOUS TIMING YOGAS ==========
@@ -955,7 +1293,20 @@ window.YOGAS_DATA = [
     mantras: ['Shanti mantras', 'Maha Mrityunjaya'],
     deities: ['Durga', 'Kali'],
     keywords: ['Inauspicious', 'Incomplete', 'Delays'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Moon || !p.Sun) return false;
+      const moonLon = (p.Moon.sn || 0) * 30 + (parseFloat(p.Moon.deg) || 0);
+      const sunLon = (p.Sun.sn || 0) * 30 + (parseFloat(p.Sun.deg) || 0);
+      const diff = (moonLon - sunLon + 360) % 360;
+      const tithi = Math.floor(diff / 12) + 1;
+      const isRiktaTithi = [4, 9, 14].includes(((tithi - 1) % 15) + 1);
+      const rel = ((p.Moon.house - p.Sun.house + 12) % 12) + 1;
+      if (isRiktaTithi && [6, 8, 12].includes(rel)) {
+        return { result: true, rationale: "The Moon falls on a Rikta (empty) Tithi while positioned in a Dusthana from the Sun — avoid starting new ventures now." };
+      }
+      return false;
+    },
   },
 
   {
@@ -970,7 +1321,18 @@ window.YOGAS_DATA = [
     mantras: ['Mercury mantra', 'Shanti mantras'],
     deities: ['Mercury', 'Saraswati'],
     keywords: ['Communication issues', 'Travel delays', 'Study obstacles'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mercury || !p.Moon) return false;
+      const mercAfflicted = p.Mercury.combust || ['Debil.', 'Enemy'].includes(p.Mercury.status);
+      const malefics = window.ASTRO_CONSTANTS.MALEFICS;
+      const maleficIn3or6 = malefics.some(m => p[m] && [3, 6].includes(p[m].house));
+      const moonIn6or8 = [6, 8].includes(p.Moon.house);
+      if (mercAfflicted && maleficIn3or6 && moonIn6or8) {
+        return { result: true, rationale: "Mercury is afflicted, a malefic occupies House 3/6, and the Moon sits in a Dusthana — unfavorable for communication and travel." };
+      }
+      return false;
+    },
   },
 
   {
@@ -985,7 +1347,21 @@ window.YOGAS_DATA = [
     mantras: ['Ganesh mantra', 'Shanti mantras'],
     deities: ['Ganesha', 'Durga'],
     keywords: ['Obstacles', 'Delays', 'Losses'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Moon || !p.Sun) return false;
+      const moonLon = (p.Moon.sn || 0) * 30 + (parseFloat(p.Moon.deg) || 0);
+      const sunLon = (p.Sun.sn || 0) * 30 + (parseFloat(p.Sun.deg) || 0);
+      const diff = (moonLon - sunLon + 360) % 360;
+      const tithi = Math.floor(diff / 12) + 1;
+      const isNandaTithi = ((tithi - 1) % 5) === 0;
+      const malefics = window.ASTRO_CONSTANTS.MALEFICS;
+      const maleficInKendra = malefics.some(m => p[m] && isKendra(p[m].house));
+      if (isNandaTithi && maleficInKendra) {
+        return { result: true, rationale: "The Moon falls on a Nanda Tithi while a malefic occupies an angular house — expect delays and obstacles for new ventures." };
+      }
+      return false;
+    },
   },
 
   // ========== AVATAR YOGAS (10 INCARNATIONS) ==========
@@ -1002,7 +1378,15 @@ window.YOGAS_DATA = [
     mantras: ['Om Namah Shivaya', 'Fish/Water mantras'],
     deities: ['Vishnu (Matsya)', 'Water deities'],
     keywords: ['Protection', 'Rescue', 'Wisdom'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mercury || !p.Jupiter || !p.Moon) return false;
+      const waterSigns = ['Cancer', 'Scorpio', 'Pisces'];
+      if (p.Mercury.sn === p.Jupiter.sn && waterSigns.includes(p.Mercury.sign) && p.Moon.sign === 'Cancer') {
+        return { result: true, rationale: "Mercury and Jupiter are conjunct in a water sign, and the Moon is placed in Cancer — invoking Matsya's protective wisdom." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1017,7 +1401,14 @@ window.YOGAS_DATA = [
     mantras: ['Om Namah Shivaya', 'Kurma mantras'],
     deities: ['Vishnu (Kurma)', 'Saturn'],
     keywords: ['Stability', 'Support', 'Endurance'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Saturn || !p.Moon || !p.Sun) return false;
+      if (p.Saturn.sn === p.Moon.sn && ['Taurus', 'Libra'].includes(p.Sun.sign)) {
+        return { result: true, rationale: "Saturn and the Moon are conjunct while the Sun rests in Taurus or Libra — invoking Kurma's steady endurance." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1032,7 +1423,16 @@ window.YOGAS_DATA = [
     mantras: ['Om Namah Shivaya', 'Khanda mantras'],
     deities: ['Vishnu (Varaha)', 'Mars'],
     keywords: ['Warrior', 'Protection', 'Dharma'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mars || !p.Sun || !p.Mercury || !p.Moon) return false;
+      const earthSigns = ['Taurus', 'Virgo', 'Capricorn'];
+      const mercStrong = ['Own', 'Exalt.'].includes(p.Mercury.status);
+      if (p.Mars.sn === p.Sun.sn && mercStrong && earthSigns.includes(p.Moon.sign)) {
+        return { result: true, rationale: "Mars and the Sun are conjunct, Mercury is strongly placed, and the Moon rests in an earth sign — invoking Varaha's protective strength." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1047,7 +1447,17 @@ window.YOGAS_DATA = [
     mantras: ['Om Namah Shivaya', 'Narasimha mantra'],
     deities: ['Narasimha', 'Fierce Shiva'],
     keywords: ['Fierce', 'Power', 'Fearless'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mars || !p.Sun || !c.asc) return false;
+      const marsStrong = ['Own', 'Exalt.'].includes(p.Mars.status) && isKendra(p.Mars.house);
+      const leoRising = c.asc.sn === 4;
+      const sunExalted = p.Sun.status === 'Exalt.';
+      if (marsStrong && leoRising && sunExalted) {
+        return { result: true, rationale: "Mars is powerfully angular, Leo rises as the Ascendant, and the Sun is exalted — invoking Narasimha's fierce, fearless protection." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1062,7 +1472,17 @@ window.YOGAS_DATA = [
     mantras: ['Om Budhaya Namaha', 'Vamana mantra'],
     deities: ['Vamana', 'Mercury'],
     keywords: ['Strategy', 'Intellect', 'Spirituality'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mercury || !p.Venus || !p.Jupiter) return false;
+      const mercStrong = ['Own', 'Exalt.'].includes(p.Mercury.status) && p.Mercury.sign === 'Virgo';
+      const venIn7 = p.Venus.house === 7;
+      const jupAspects = hasAspect('Jupiter', p.Jupiter.house, p.Mercury.house) || hasAspect('Jupiter', p.Jupiter.house, p.Venus.house);
+      if (mercStrong && venIn7 && jupAspects) {
+        return { result: true, rationale: "Mercury is strong in Virgo, Venus occupies the 7th house, and Jupiter casts its aspect — invoking Vamana's strategic wisdom." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1077,7 +1497,17 @@ window.YOGAS_DATA = [
     mantras: ['Om Namah Shivaya', 'Parasurama mantra'],
     deities: ['Parasurama', 'Mars'],
     keywords: ['Warrior', 'Justice', 'Teacher'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mars || !p.Saturn || !p.Sun) return false;
+      const conj = p.Mars.sn === p.Saturn.sn && ['Own', 'Exalt.'].includes(p.Mars.status);
+      const marsIn10 = p.Mars.house === 10;
+      const sunAspects = hasAspect('Sun', p.Sun.house, p.Mars.house);
+      if (conj && marsIn10 && sunAspects) {
+        return { result: true, rationale: "Mars and Saturn are powerfully conjunct in the 10th house, aspected by the Sun — invoking Parasurama's righteous warrior spirit." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1092,7 +1522,17 @@ window.YOGAS_DATA = [
     mantras: ['Ram Mantra', 'Hanuman Chalisa'],
     deities: ['Rama', 'Sita', 'Vishnu'],
     keywords: ['Righteousness', 'Duty', 'Leadership'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Sun || !p.Jupiter || !p.Saturn || !p.Moon || !p.Mars) return false;
+      const conj = p.Sun.sn === p.Jupiter.sn && ['Own', 'Exalt.'].includes(p.Sun.status);
+      const satAspectsMoon = hasAspect('Saturn', p.Saturn.house, p.Moon.house);
+      const marsIn1 = p.Mars.house === 1;
+      if (conj && satAspectsMoon && marsIn1) {
+        return { result: true, rationale: "Sun and Jupiter are powerfully conjunct, Saturn aspects the Moon, and Mars occupies the 1st house — invoking Rama's dharmic leadership." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1107,7 +1547,16 @@ window.YOGAS_DATA = [
     mantras: ['Hare Krishna Mantra', 'Krishna mantra'],
     deities: ['Krishna', 'Radha', 'Vishnu'],
     keywords: ['Divine play', 'Charm', 'Wisdom'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Moon || !p.Venus || !p.Mercury) return false;
+      const moonVenStrong = ['Own', 'Exalt.'].includes(p.Moon.status) || ['Own', 'Exalt.'].includes(p.Venus.status);
+      const mercAngular = [1, 7].includes(p.Mercury.house);
+      if (moonVenStrong && mercAngular) {
+        return { result: true, rationale: "The Moon or Venus is strongly dignified and Mercury occupies the 1st/7th house — invoking Krishna's charm, wisdom, and divine play." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1122,7 +1571,17 @@ window.YOGAS_DATA = [
     mantras: ['Om Mani Padme Hum', 'Buddha mantra'],
     deities: ['Buddha', 'Mercury', 'Enlightenment'],
     keywords: ['Meditation', 'Enlightenment', 'Non-violence'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mercury || !p.Moon || !p.Saturn) return false;
+      const mercStrong = ['Own', 'Exalt.'].includes(p.Mercury.status);
+      const moonOk = ['Virgo', 'Taurus'].includes(p.Moon.sign);
+      const satAspects = hasAspect('Saturn', p.Saturn.house, p.Moon.house);
+      if (mercStrong && moonOk && satAspects) {
+        return { result: true, rationale: "Mercury is strongly placed, the Moon rests in Virgo/Taurus, and Saturn's restraining aspect is present — invoking Buddha's meditative detachment." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1137,7 +1596,17 @@ window.YOGAS_DATA = [
     mantras: ['Om Namah Shivaya', 'Kalki mantra'],
     deities: ['Kalki', 'Shiva', 'Destruction/Creation'],
     keywords: ['Destruction', 'Regeneration', 'Transformation'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mars || !p.Saturn || !p.Jupiter) return false;
+      const marsSatStrong = ['Own', 'Exalt.'].includes(p.Mars.status) && ['Own', 'Exalt.'].includes(p.Saturn.status);
+      const jupAfflicted = p.Jupiter.combust || ['Debil.', 'Enemy'].includes(p.Jupiter.status);
+      const satPlaced = [7, 10].includes(p.Saturn.house);
+      if (marsSatStrong && jupAfflicted && satPlaced) {
+        return { result: true, rationale: "Mars and Saturn are powerfully placed while Jupiter is afflicted, and Saturn commands the 7th/10th house — invoking Kalki's transformative, cycle-ending power." };
+      }
+      return false;
+    },
   },
 
   // ========== DEITY YOGAS (ADITYAS, RUDRAS, VASUS, etc.) ~30+ ==========
@@ -1155,7 +1624,17 @@ window.YOGAS_DATA = [
     mantras: ['Om Aditya Hridayam', 'Sun mantra'],
     deities: ['Dhata (Aditya)', 'Sun'],
     keywords: ['Creator', 'Sustenance', 'Provision'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Sun || !p.Mars) return false;
+      const sunInAries = p.Sun.sign === 'Aries';
+      const withMercVen = (p.Mercury && p.Mercury.sn === p.Sun.sn) || (p.Venus && p.Venus.sn === p.Sun.sn);
+      const marsExalted = p.Mars.status === 'Exalt.';
+      if (sunInAries && withMercVen && marsExalted) {
+        return { result: true, rationale: "The Sun is in Aries alongside Mercury or Venus, while Mars stands exalted — invoking Dhata's creative sustenance." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1170,7 +1649,16 @@ window.YOGAS_DATA = [
     mantras: ['Om Mitraya Namaha', 'Venus mantra'],
     deities: ['Mitra (Aditya)', 'Venus'],
     keywords: ['Friendship', 'Partnership', 'Love'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Venus || !p.Mercury || !p.Moon) return false;
+      const strong = ['Own', 'Exalt.'].includes(p.Venus.status) && ['Own', 'Exalt.'].includes(p.Mercury.status);
+      const moonOk = ['Libra', 'Taurus'].includes(p.Moon.sign);
+      if (strong && moonOk) {
+        return { result: true, rationale: "Venus and Mercury are both strongly dignified while the Moon rests in a Venusian sign — invoking Mitra's harmonious friendship." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1185,7 +1673,17 @@ window.YOGAS_DATA = [
     mantras: ['Om Aryamne Namaha', 'Jupiter mantra'],
     deities: ['Aryaman (Aditya)', 'Sun'],
     keywords: ['Noble', 'Honor', 'Prestige'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Sun || !p.Jupiter || !p.Mars || !p.Saturn) return false;
+      const strong = ['Own', 'Exalt.'].includes(p.Sun.status) && ['Own', 'Exalt.'].includes(p.Jupiter.status);
+      const marsOk = [1, 10].includes(p.Mars.house);
+      const satAspects = hasAspect('Saturn', p.Saturn.house, p.Mars.house);
+      if (strong && marsOk && satAspects) {
+        return { result: true, rationale: "The Sun and Jupiter are strongly dignified, Mars commands the 1st/10th house, and Saturn's aspect is present — invoking Aryaman's nobility." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1200,7 +1698,18 @@ window.YOGAS_DATA = [
     mantras: ['Om Indraya Namaha', 'Indra mantra'],
     deities: ['Indra (Aditya)', 'Mars', 'Sun'],
     keywords: ['King', 'Power', 'Victory'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Sun || !p.Mars || !p.Jupiter) return false;
+      const strong = ['Own', 'Exalt.'].includes(p.Sun.status) && ['Own', 'Exalt.'].includes(p.Mars.status);
+      const jupOk = [1, 10].includes(p.Jupiter.house);
+      const malefics = window.ASTRO_CONSTANTS.MALEFICS;
+      const afflicted = malefics.some(m => m !== 'Mars' && p[m] && hasAspect(m, p[m].house, p.Jupiter.house));
+      if (strong && jupOk && !afflicted) {
+        return { result: true, rationale: "The Sun and Mars are strongly dignified, Jupiter commands the 1st/10th house free of malefic aspects — invoking Indra's dominion and victory." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1215,7 +1724,17 @@ window.YOGAS_DATA = [
     mantras: ['Om Varunaya Namaha', 'Moon mantra'],
     deities: ['Varuna (Aditya)', 'Moon'],
     keywords: ['Law', 'Order', 'Justice'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Moon) return false;
+      const waterSigns = ['Cancer', 'Scorpio', 'Pisces'];
+      const moonStrong = ['Own', 'Exalt.'].includes(p.Moon.status) && waterSigns.includes(p.Moon.sign);
+      const aspecting = (p.Jupiter && hasAspect('Jupiter', p.Jupiter.house, p.Moon.house)) || (p.Venus && hasAspect('Venus', p.Venus.house, p.Moon.house));
+      if (moonStrong && aspecting) {
+        return { result: true, rationale: "The Moon is strongly placed in a water sign and receives Jupiter's or Venus's aspect — invoking Varuna's cosmic order and justice." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1230,7 +1749,16 @@ window.YOGAS_DATA = [
     mantras: ['Om Ansumanaya Namaha', 'Mercury mantra'],
     deities: ['Ansuman (Aditya)', 'Mercury'],
     keywords: ['Constancy', 'Stability', 'Eternity'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mercury) return false;
+      const mercStrong = ['Own', 'Exalt.'].includes(p.Mercury.status) && p.Mercury.sign === 'Virgo';
+      const aspecting = (p.Venus && hasAspect('Venus', p.Venus.house, p.Mercury.house)) || (p.Jupiter && hasAspect('Jupiter', p.Jupiter.house, p.Mercury.house));
+      if (mercStrong && aspecting) {
+        return { result: true, rationale: "Mercury is strongly placed in Virgo and receives Venus's or Jupiter's aspect — invoking Ansuman's steady constancy." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1245,7 +1773,17 @@ window.YOGAS_DATA = [
     mantras: ['Om Bhagaya Namaha', 'Venus mantra'],
     deities: ['Bhaga (Aditya)', 'Venus', 'Lakshmi'],
     keywords: ['Fortune', 'Abundance', 'Prosperity'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Venus || !p.Moon || !p.Jupiter) return false;
+      const venStrong = ['Own', 'Exalt.'].includes(p.Venus.status) && p.Venus.sign === 'Libra';
+      const moonOk = p.Moon.sign === 'Taurus';
+      const jupAspects = hasAspect('Jupiter', p.Jupiter.house, p.Moon.house);
+      if (venStrong && moonOk && jupAspects) {
+        return { result: true, rationale: "Venus is strongly placed in Libra, the Moon rests in Taurus, and Jupiter's aspect graces it — invoking Bhaga's abundant fortune." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1260,7 +1798,16 @@ window.YOGAS_DATA = [
     mantras: ['Gayatri Mantra', 'Sun mantra'],
     deities: ['Vivasvat (Aditya)', 'Sun'],
     keywords: ['Vision', 'Clarity', 'Enlightenment'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Sun) return false;
+      const sunStrong = ['Own', 'Exalt.'].includes(p.Sun.status) && p.Sun.sign === 'Leo';
+      const aspecting = (p.Mars && hasAspect('Mars', p.Mars.house, p.Sun.house)) || (p.Mercury && hasAspect('Mercury', p.Mercury.house, p.Sun.house));
+      if (sunStrong && aspecting) {
+        return { result: true, rationale: "The Sun is strongly placed in Leo and receives Mars's or Mercury's aspect — invoking Vivasvat's radiant clarity." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1275,7 +1822,17 @@ window.YOGAS_DATA = [
     mantras: ['Om Pushne Namaha', 'Mercury mantra'],
     deities: ['Pushan (Aditya)', 'Mercury'],
     keywords: ['Nourishment', 'Plenty', 'Growth'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mercury || !p.Venus || !p.Moon || !p.Jupiter) return false;
+      const strong = ['Own', 'Exalt.'].includes(p.Mercury.status) && ['Own', 'Exalt.'].includes(p.Venus.status);
+      const moonOk = p.Moon.sign === 'Taurus';
+      const jupAspects = hasAspect('Jupiter', p.Jupiter.house, p.Moon.house);
+      if (strong && moonOk && jupAspects) {
+        return { result: true, rationale: "Mercury and Venus are strongly dignified, the Moon rests in Taurus, and Jupiter's aspect nourishes it — invoking Pushan's abundant growth." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1290,7 +1847,16 @@ window.YOGAS_DATA = [
     mantras: ['Om Twashtre Namaha', 'Mercury mantra'],
     deities: ['Twashtar (Aditya)', 'Mercury'],
     keywords: ['Creation', 'Craft', 'Architecture'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mercury) return false;
+      const mercStrong = ['Own', 'Exalt.'].includes(p.Mercury.status) && p.Mercury.sign === 'Virgo';
+      const aspecting = (p.Venus && hasAspect('Venus', p.Venus.house, p.Mercury.house)) || (p.Saturn && hasAspect('Saturn', p.Saturn.house, p.Mercury.house));
+      if (mercStrong && aspecting) {
+        return { result: true, rationale: "Mercury is strongly placed in Virgo and receives Venus's or Saturn's aspect — invoking Twashtar's supreme craftsmanship." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1305,7 +1871,16 @@ window.YOGAS_DATA = [
     mantras: ['Gayatri Mantra', 'Sun mantra'],
     deities: ['Savitar (Aditya)', 'Sun'],
     keywords: ['Awakening', 'Inspiration', 'Energy'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Sun) return false;
+      const sunStrong = ['Own', 'Exalt.'].includes(p.Sun.status) && p.Sun.sign === 'Leo';
+      const aspecting = (p.Jupiter && hasAspect('Jupiter', p.Jupiter.house, p.Sun.house)) || (p.Mercury && hasAspect('Mercury', p.Mercury.house, p.Sun.house));
+      if (sunStrong && aspecting) {
+        return { result: true, rationale: "The Sun is strongly placed in Leo and stimulated by Jupiter's or Mercury's aspect — invoking Savitar's awakening energy." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1320,7 +1895,18 @@ window.YOGAS_DATA = [
     mantras: ['Gayatri Mantra', 'Sun mantra'],
     deities: ['Marichi (Aditya)', 'Sun'],
     keywords: ['Radiance', 'Light', 'Influence'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Sun || !p.Mercury) return false;
+      const sunStrong = p.Sun.status === 'Exalt.';
+      const mercOk = [1, 10].includes(p.Mercury.house);
+      const malefics = window.ASTRO_CONSTANTS.MALEFICS;
+      const afflicted = malefics.some(m => p[m] && hasAspect(m, p[m].house, p.Sun.house));
+      if (sunStrong && mercOk && !afflicted) {
+        return { result: true, rationale: "The Sun is exalted, Mercury occupies the 1st/10th house, and no malefic aspect touches the Sun — invoking Marichi's brilliant radiance." };
+      }
+      return false;
+    },
   },
 
   // 11 RUDRAS
@@ -1336,7 +1922,17 @@ window.YOGAS_DATA = [
     mantras: ['Om Namah Shivaya', 'Rudra mantra'],
     deities: ['Rudra', 'Shiva'],
     keywords: ['Destruction', 'Transformation', 'Power'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mars || !p.Saturn || !p.Ketu || !p.Mercury) return false;
+      const strong = ['Own', 'Exalt.'].includes(p.Mars.status) && ['Own', 'Exalt.'].includes(p.Saturn.status);
+      const ketuAspects = hasAspect('Ketu', p.Ketu.house, p.Mars.house) || hasAspect('Ketu', p.Ketu.house, p.Saturn.house);
+      const mercWeak = p.Mercury.combust || ['Debil.', 'Enemy'].includes(p.Mercury.status);
+      if (strong && ketuAspects && mercWeak) {
+        return { result: true, rationale: "Mars and Saturn are powerfully placed, Ketu's aspect touches them, and Mercury is weakened — invoking Rudra's fierce transformative power." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1351,7 +1947,17 @@ window.YOGAS_DATA = [
     mantras: ['Hanuman Chalisa', 'Mars mantra'],
     deities: ['Hanuman', 'Rudra', 'Mars'],
     keywords: ['Devotion', 'Courage', 'Service'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mars || !p.Sun) return false;
+      const marsStrong = ['Own', 'Exalt.'].includes(p.Mars.status) && p.Mars.sign === 'Aries';
+      const sunAspects = hasAspect('Sun', p.Sun.house, p.Mars.house);
+      const leoInfluence = p.Sun.sign === 'Leo' || (c.asc && c.asc.sn === 4);
+      if (marsStrong && sunAspects && leoInfluence) {
+        return { result: true, rationale: "Mars is strongly placed in Aries, aspected by the Sun, with Leo's influence present — invoking Hanuman's devoted courage." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1366,7 +1972,17 @@ window.YOGAS_DATA = [
     mantras: ['Om Namah Shivaya', 'Bhairava mantra'],
     deities: ['Bhairava', 'Shiva', 'Mars'],
     keywords: ['Fearless', 'Protection', 'Power'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mars || !p.Saturn || !p.Ketu || !p.Jupiter) return false;
+      const marsSatStrong = ['Own', 'Exalt.'].includes(p.Mars.status) && ['Own', 'Exalt.'].includes(p.Saturn.status);
+      const ketuStrong = ['Scorpio', 'Sagittarius', 'Pisces'].includes(p.Ketu.sign);
+      const jupWeak = p.Jupiter.combust || ['Debil.', 'Enemy'].includes(p.Jupiter.status);
+      if (marsSatStrong && ketuStrong && jupWeak) {
+        return { result: true, rationale: "Mars and Saturn hold intense strength, Ketu is powerfully placed, and Jupiter is weakened — invoking Bhairava's fearless, fierce protection." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1381,7 +1997,17 @@ window.YOGAS_DATA = [
     mantras: ['Om Namah Shivaya', 'Ardhanari mantra'],
     deities: ['Ardhanarishvara', 'Shiva'],
     keywords: ['Balance', 'Union', 'Completeness'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mars || !p.Venus) return false;
+      const marsStrong = ['Own', 'Exalt.'].includes(p.Mars.status);
+      const venStrong = ['Own', 'Exalt.'].includes(p.Venus.status);
+      const conjunct = p.Mars.house === p.Venus.house;
+      if (marsStrong && venStrong && conjunct) {
+        return { result: true, rationale: "Mars and Venus are equally dignified and conjunct in the same house — invoking Ardhanarishvara's balanced union of masculine and feminine energies." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1396,7 +2022,18 @@ window.YOGAS_DATA = [
     mantras: ['Om Namah Shivaya', 'Virabhadra mantra'],
     deities: ['Virabhadra', 'Mars', 'Shiva'],
     keywords: ['Warrior', 'Fierce', 'Commander'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mars || !p.Saturn) return false;
+      const marsStrong = p.Mars.status === 'Exalt.' || p.Mars.status === 'Own';
+      const satOk = [1, 10].includes(p.Saturn.house);
+      const benefics = window.ASTRO_CONSTANTS.BENEFICS;
+      const noBeneficAspect = !benefics.some(b => p[b] && hasAspect(b, p[b].house, p.Mars.house));
+      if (marsStrong && satOk && noBeneficAspect) {
+        return { result: true, rationale: "Mars is powerfully placed, Saturn commands the 1st/10th house, and no benefic softens Mars — invoking Virabhadra's unstoppable warrior force." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1411,7 +2048,16 @@ window.YOGAS_DATA = [
     mantras: ['Om Namah Shivaya', 'Ugra mantra'],
     deities: ['Ugra Rudra', 'Shiva', 'Mars'],
     keywords: ['Fierce', 'Intense', 'Power'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mars || !p.Ketu || !p.Saturn) return false;
+      const conj = p.Mars.sn === p.Ketu.sn && ['Own', 'Exalt.'].includes(p.Mars.status);
+      const satAspects = hasAspect('Saturn', p.Saturn.house, p.Mars.house);
+      if (conj && satAspects) {
+        return { result: true, rationale: "Mars and Ketu are powerfully conjunct, aspected by Saturn — invoking Ugra Rudra's overwhelming destructive intensity." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1426,7 +2072,17 @@ window.YOGAS_DATA = [
     mantras: ['Om Namah Shivaya', 'Mahakala mantra'],
     deities: ['Mahakala', 'Shiva', 'Saturn'],
     keywords: ['Time', 'Liberation', 'Cycles'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Saturn || !p.Moon || !p.Mars) return false;
+      const satStrong = ['Own', 'Exalt.'].includes(p.Saturn.status);
+      const moonAfflicted = p.Moon.combust || ['Debil.', 'Enemy'].includes(p.Moon.status) || (p.Rahu && p.Moon.sn === p.Rahu.sn) || (p.Ketu && p.Moon.sn === p.Ketu.sn);
+      const marsAspects = hasAspect('Mars', p.Mars.house, p.Moon.house);
+      if (satStrong && moonAfflicted && marsAspects) {
+        return { result: true, rationale: "Saturn (Time) is dominant, the Moon (Mind) is afflicted, and Mars casts its aspect — invoking Mahakala's power over cycles and endings." };
+      }
+      return false;
+    },
   },
 
   // 8 VASUS
@@ -1442,7 +2098,17 @@ window.YOGAS_DATA = [
     mantras: ['Gayatri Mantra', 'Fire mantras'],
     deities: ['Agni (Vasu)', 'Sun'],
     keywords: ['Fire', 'Purification', 'Energy'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Sun || !p.Mars || !p.Jupiter) return false;
+      const sunStrong = ['Own', 'Exalt.'].includes(p.Sun.status) && p.Sun.sign === 'Leo';
+      const marsAspects = hasAspect('Mars', p.Mars.house, p.Sun.house);
+      const jupAspects = hasAspect('Jupiter', p.Jupiter.house, p.Sun.house);
+      if (sunStrong && marsAspects && jupAspects) {
+        return { result: true, rationale: "The Sun is strongly placed in Leo, receiving both Mars's and Jupiter's aspects — invoking Agni's purifying energy." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1457,7 +2123,18 @@ window.YOGAS_DATA = [
     mantras: ['Earth mantras', 'Saturn mantras'],
     deities: ['Prithvi (Vasu)', 'Saturn'],
     keywords: ['Earth', 'Stability', 'Foundation'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Saturn || !p.Moon || !p.Venus) return false;
+      const satStrong = ['Own', 'Exalt.'].includes(p.Saturn.status);
+      const earthSigns = ['Taurus', 'Virgo', 'Capricorn'];
+      const moonOk = earthSigns.includes(p.Moon.sign);
+      const venAspects = hasAspect('Venus', p.Venus.house, p.Moon.house);
+      if (satStrong && moonOk && venAspects) {
+        return { result: true, rationale: "Saturn is strongly placed, the Moon rests in an earth sign, and Venus aspects it — invoking Prithvi's grounded stability." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1472,7 +2149,17 @@ window.YOGAS_DATA = [
     mantras: ['Air mantras', 'Mercury mantras'],
     deities: ['Vayu (Vasu)', 'Mercury'],
     keywords: ['Air', 'Movement', 'Speed'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mercury || !p.Jupiter || !p.Saturn) return false;
+      const mercStrong = ['Own', 'Exalt.'].includes(p.Mercury.status);
+      const jupAspects = hasAspect('Jupiter', p.Jupiter.house, p.Mercury.house);
+      const windInfluence = p.Saturn.sn === p.Mercury.sn || (p.Rahu && p.Rahu.sn === p.Mercury.sn) || hasAspect('Saturn', p.Saturn.house, p.Mercury.house);
+      if (mercStrong && jupAspects && windInfluence) {
+        return { result: true, rationale: "Mercury is strongly placed with airy influences, expanded by Jupiter's aspect — invoking Vayu's speed and communication." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1487,7 +2174,17 @@ window.YOGAS_DATA = [
     mantras: ['Wealth mantras', 'Jupiter mantras'],
     deities: ['Dhanista (Vasu)', 'Jupiter'],
     keywords: ['Wealth', 'Prosperity', 'Abundance'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Jupiter || !p.Moon || !p.Venus) return false;
+      const jupOk = ['Own', 'Exalt.'].includes(p.Jupiter.status) && p.Jupiter.sign === 'Sagittarius';
+      const moonOk = p.Moon.sign === 'Taurus';
+      const venAspects = hasAspect('Venus', p.Venus.house, p.Moon.house) || hasAspect('Venus', p.Venus.house, p.Jupiter.house);
+      if (jupOk && moonOk && venAspects) {
+        return { result: true, rationale: "Jupiter is strongly placed in Sagittarius, the Moon rests in Taurus, and Venus's aspect graces one of them — invoking Dhanista's abundant wealth." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1502,7 +2199,17 @@ window.YOGAS_DATA = [
     mantras: ['Indra mantras', 'Leadership mantras'],
     deities: ['Indra (Vasu)', 'Jupiter', 'Mars'],
     keywords: ['Leadership', 'Power', 'Dominion'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mars || !p.Jupiter || !p.Sun || !p.Moon) return false;
+      const strong = ['Own', 'Exalt.'].includes(p.Mars.status) && ['Own', 'Exalt.'].includes(p.Jupiter.status);
+      const sunOk = [1, 10].includes(p.Sun.house);
+      const moonAspects = hasAspect('Moon', p.Moon.house, p.Sun.house);
+      if (strong && sunOk && moonAspects) {
+        return { result: true, rationale: "Mars and Jupiter are strongly dignified, the Sun commands the 1st/10th house, and the Moon's aspect graces it — invoking Indra's supreme dominion." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1517,7 +2224,18 @@ window.YOGAS_DATA = [
     mantras: ['Brilliance mantras', 'Sun mantras'],
     deities: ['Prabha (Vasu)', 'Sun'],
     keywords: ['Brilliance', 'Splendor', 'Intelligence'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Sun || !p.Mercury) return false;
+      const sunStrong = ['Own', 'Exalt.'].includes(p.Sun.status);
+      const mercAspects = hasAspect('Mercury', p.Mercury.house, p.Sun.house) || p.Mercury.sn === p.Sun.sn;
+      const benefics = window.ASTRO_CONSTANTS.BENEFICS;
+      const beneficIn5 = benefics.some(b => p[b] && p[b].house === 5);
+      if (sunStrong && mercAspects && beneficIn5) {
+        return { result: true, rationale: "The Sun is strongly placed, Mercury influences it, and a benefic graces the 5th house of intellect — invoking Prabha's brilliance." };
+      }
+      return false;
+    },
   },
 
   {
@@ -1532,7 +2250,21 @@ window.YOGAS_DATA = [
     mantras: ['Treasure mantras', 'Venus mantras'],
     deities: ['Ratnakara (Vasu)', 'Venus'],
     keywords: ['Treasure', 'Jewels', 'Refinement'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Venus || !p.Mercury || !c.asc) return false;
+      const strong = ['Own', 'Exalt.'].includes(p.Venus.status) && ['Own', 'Exalt.'].includes(p.Mercury.status);
+      if (!strong) return false;
+      const signNames = window.ASTRO_CONSTANTS.SIGNS;
+      const ascSn = c.asc.sn || 0;
+      const lord2 = getSignLord(signNames[(ascSn + 1) % 12]);
+      const lord11 = getSignLord(signNames[(ascSn + 10) % 12]);
+      const aspecting = [lord2, lord11].some(l => p[l] && (hasAspect(l, p[l].house, p.Venus.house) || hasAspect(l, p[l].house, p.Mercury.house)));
+      if (aspecting) {
+        return { result: true, rationale: `Venus and Mercury are strongly dignified and receive an aspect from the lord of wealth (${lord2}) or gains (${lord11}) — invoking Ratnakara's treasure.` };
+      }
+      return false;
+    },
   },
 
   {
@@ -1547,7 +2279,17 @@ window.YOGAS_DATA = [
     mantras: ['Truth mantras', 'Dharma mantras'],
     deities: ['Satya (Vasu)', 'Mercury'],
     keywords: ['Truth', 'Honesty', 'Justice'],
-    evaluate: (c) => false,
+    evaluate: (c) => {
+      const p = c.planets;
+      if (!p || !p.Mercury || !p.Moon || !p.Jupiter) return false;
+      const mercStrong = ['Own', 'Exalt.'].includes(p.Mercury.status);
+      const moonOk = p.Moon.sign === 'Libra';
+      const jupAspects = hasAspect('Jupiter', p.Jupiter.house, p.Mercury.house);
+      if (mercStrong && moonOk && jupAspects) {
+        return { result: true, rationale: "Mercury is strongly placed, the Moon rests in Libra, and Jupiter's righteous aspect graces Mercury — invoking Satya's truthfulness." };
+      }
+      return false;
+    },
     },
 
   // ========== PROPERTY YOGAS (Real Estate / Griha Yogas) ==========
