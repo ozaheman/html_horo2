@@ -240,6 +240,67 @@ async function updatePredictionsDisplay() {
           html += `<div class="pred-item"><div class="pred-title">⚠️ Gochar analysis error</div><div class="pred-detail">${gErr.message}</div></div>`;
         }
       }
+       } else if (mode === 'kp') {
+      await showProgress('Computing KP (Krishnamurti Paddhati) Analysis...');
+      if (!window.KP_PREDICTION) {
+        html += `<div class="pred-item"><div class="pred-title">⚠️ KP_prediction.js module not found</div></div>`;
+      } else if (!window.BIRTH_PLANETS || !window.BIRTH_ASC) {
+        html += `<div class="pred-item"><div class="pred-title">⚠️ Natal chart not available</div></div>`;
+      } else {
+        try {
+          const transitPlanets = (typeof getPos === 'function') ? getPos(targetDate) : null;
+          let transitAsc = null;
+          if (typeof computeAsc === 'function' && typeof jd === 'function' && window.BIRTH) {
+            const j2 = jd(targetDate.getFullYear(), targetDate.getMonth() + 1, targetDate.getDate(), 12.0);
+            transitAsc = computeAsc(j2, BIRTH.lat, BIRTH.lon, BIRTH.utcOff, BIRTH.ayan, 1);
+          }
+
+          let d9Planets = null, d9Asc = null;
+          if (typeof computeAll === 'function' && typeof computeAsc === 'function' && window.BIRTH_JD && window.BIRTH) {
+            d9Planets = computeAll(window.BIRTH_JD, BIRTH.ayan, 9);
+            d9Asc = computeAsc(window.BIRTH_JD, BIRTH.lat, BIRTH.lon, BIRTH.utcOff, BIRTH.ayan, 9);
+          }
+
+          // Current running Mahadasha node (full sub-tree) for the
+          // "search events in current Mahadasha" panel
+          let mdNode = null;
+          if (typeof getVimsh === 'function') {
+            try { mdNode = getVimsh(targetDate); } catch (vErr) { console.error('getVimsh failed:', vErr); }
+          }
+ // Current Mahadasha/Antardasha/Pratyantardasha/Sookshma/Prana lords
+          // for the "verify current effect / sure-shot" dasha confirmation panel.
+          const dashaInfo = window.PREDICTION_FORECASTING ? window.PREDICTION_FORECASTING.getCurrentDashaInfo(targetDate) : null;
+
+          const kpAnalysis = window.KP_PREDICTION.analyze({
+            natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC,
+            lords: (typeof LORDS !== 'undefined') ? LORDS : null,
+            dashaInfo: dashaInfo
+          });
+
+          const chartConfigs = window.GOCHAR ? window.GOCHAR.getChartConfigs({
+            natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC,
+            d9Planets: d9Planets, d9Asc: d9Asc,
+            transitPlanets: transitPlanets, transitAsc: transitAsc
+          }) : [];
+
+          // KP's own Cuspal / Bhava Chalit chart canvases (drawn from the
+          // same natal placement data — see KP_prediction.js module notes
+          // on the equal-house cusp approximation).
+          const kpChartConfigs = window.KP_PREDICTION.getChartConfigs ? window.KP_PREDICTION.getChartConfigs({
+            natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC
+          }) : [];
+
+          gocharChartConfigsToRender = chartConfigs.concat(kpChartConfigs);
+
+          if (window.GOCHAR && chartConfigs.length) {
+            html += window.GOCHAR._renderChartPanels ? window.GOCHAR._renderChartPanels(chartConfigs) : '';
+          }
+          html += window.KP_PREDICTION.renderHTML(kpAnalysis, transitPlanets, mdNode, kpChartConfigs);
+        } catch (kpErr) {
+          console.error('KP analysis failed:', kpErr);
+          html += `<div class="pred-item"><div class="pred-title">⚠️ KP analysis error</div><div class="pred-detail">${kpErr.message}</div></div>`;
+        }
+      }
     } else if (mode === 'tushar' && window.TUSHAR_ROY) {
       await showProgress('Analyzing Natal Horoscope (Tushar Roy)...');
       const d1 = window.CURRENT_PLANETARY_POSITIONS || {};
@@ -688,9 +749,9 @@ function analyzeRajyogasAndBhanga(planets, ascendant) {
     await showProgress('Rendering Prediction Dashboard...');
     content.innerHTML = window.I18N ? window.I18N.t(html) : html;
     clearProgress();
-    // Gochar mode draws its D1/D9/Transit/Rashi-Tulya/Moon canvases now that
+    // Gochar & KP modes draw their D1/D9/Transit/Rashi-Tulya/Moon canvases now that
     // the <canvas> elements exist in the DOM (chart drawing needs real DOM nodes).
-    if (mode === 'gochar' && gocharChartConfigsToRender && typeof drawDChart === 'function') {
+    if ((mode === 'gochar' || mode === 'kp') && gocharChartConfigsToRender && typeof drawDChart === 'function') {
       gocharChartConfigsToRender.forEach(cfg => {
         try { drawDChart(cfg.canvasId, { planets: cfg.planets, asc: cfg.asc }); } catch (dErr) { console.error('Gochar chart draw failed:', cfg.canvasId, dErr); }
       });
