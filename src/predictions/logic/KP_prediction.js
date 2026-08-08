@@ -905,9 +905,17 @@ window.KP_PREDICTION = {
             }
         },
         6: {
+          5: {
+                meaning: 'Job/employment tends to change frequently — real difficulty staying in one job/role for long.',
+                alignment: 'The fix is to consciously tie the job to 5th-house energy — creativity, self-expression, genuine enjoyment/entertainment — rather than approaching it purely as routine/discipline. The same house that "unsettles" the job (5th) is the house that stabilizes it once deliberately engaged: seek or reshape the work so it lets you create, perform, or enjoy the process, and it will hold far more steadily.'
+            },
             7: {
                 meaning: 'A relationship may develop with an employee/colleague; a possible reproductive-organ-related health issue; possible business partnership with an employee; some spouse-related tension is also possible since both 6th and 7th get engaged together.',
                 alignment: 'Discipline in how you interact with people — especially at work — is the single most important practice here; with clear limits in place, none of the above need cause real trouble.'
+            },
+            8: {
+                meaning: 'The 6th (service/routine/competition) and 8th (transformation/depth) link at the CSL/L1-L2 level — the classic astrological/occult-intelligence combination, but manifesting through whatever domain the 6th house is being read for. For health questions it commonly shows as "will need surgery, but the healing itself comes cleanly through the 8th house" (invasive treatment that resolves the problem) rather than pure suffering.',
+                alignment: 'Career-relevant: this person is naturally suited to work where 6th-house routine/service meets 8th-house depth/transformation — surgery, invasive medicine, forensic or investigative work, research, or occult/astrological practice itself. Common-sense (5th house) and depth-intelligence (8th house) linking is what the source teaching calls the "ultimate" astrological brain — but it also means such a mind can look "impractical" to ordinary common-sense people, which is fine and expected.'
             },
             9: {
                 meaning: 'Deep respect for the underprivileged/employee class; very good for holding a steady job, but conflict with employees/subordinates if distance isn\'t maintained.',
@@ -924,7 +932,12 @@ window.KP_PREDICTION = {
             3: {
                 meaning: 'A deep restlessness with staying confined in one place — the person craves movement/travel/relocation ("the 3rd house doesn\'t want four walls").',
                 alignment: 'Embrace travel and change of place deliberately — don\'t stay too long in one home/city (the lecture suggests roughly a year is often enough before the restlessness returns). This is literally where FREEDOM will be felt for this person, rather than by chasing some abstract "ultimate freedom."'
+            },
+            8: {
+                meaning: 'Sudden disappointments, failures, and large unexpected losses — a classical book-reading the teacher explicitly cites as normally very negative.',
+                alignment: 'The specific remedy recorded in the source teaching: quiet, ANONYMOUS charity — done so privately that (per the saying) "not even your own shadow knows" — reliably prevented these sudden losses in the case observed. Intention matters: charity performed transactionally ("I\'ll donate so my luck improves") is recorded as working far less reliably than charity done from genuine inner conviction that quiet giving is simply one\'s path, with no expectation attached.'
             }
+            
         }
     },
 
@@ -1001,7 +1014,115 @@ window.KP_PREDICTION = {
                    <div style="margin-top:8px;padding:6px 8px;border-left:3px solid #66CCFF;background:rgba(102,204,255,.06);font-size:9px;color:var(--text);opacity:.9;">${data.businessNote}</div>
                  </div>`;
     },
+ // ===================== 8¾. CAREER ALIGNMENT =====================
+    //
+    // Applies the same Alignment principle (fix a house's problem THROUGH
+    // that same house's energy, rather than fighting it) specifically to
+    // career, using the 6th (job/service/competition) and 10th (career/
+    // status) CSL chains, plus a "career-type by house emphasis" reading
+    // built from which houses the source lectures explicitly tied to
+    // which kind of work.
+    CAREER_TYPE_BY_HOUSE: {
+        3: { type: 'Marketing / Commission / Agency-Franchise / Documentation', note: 'Strong 3rd-house involvement favours marketing, commission-based work, franchise/agency business, and short-travel-heavy roles.' },
+        5: { type: 'Creative / Entertainment / Speculative / Advisory-Solutions', note: '5th house is the "common sense" and creativity house — careers built around creativity, performance, speculation, or entertaining/engaging others thrive here.' },
+        6: { type: 'Service / Routine Execution / Competitive Roles (jobs, exams, litigation)', note: '6th house governs job/service, competitive exams, and litigation — most job-related questions in practice trace back to the 6th CSL.' },
+        7: { type: 'Business / Trading / Client-Facing Commerce', note: 'A strong 7th house favours transactional, exchange-based business — but per the source teaching, over-emphasizing 7th (business/trading mindset) tends to "empty out" 8th-house depth, which is part of why natural businesspeople and natural occultists/astrologers rarely overlap.' },
+        8: { type: 'Occult / Research / Surgery / Deep Transformation Work', note: '8th house is the house of astrologers, surgeons, researchers, and anyone working with hidden or transformative forces — depth-of-insight professions.' },
+        9: { type: 'Consultancy / Advisory / Higher Education / Publishing', note: '9th house is the universal house of consultancy, in any field.' },
+        10: { type: 'Career / Status / Public Profession (general)', note: 'The default house for career/profession/status/promotion.' },
+        11: { type: 'Ambition-Driven / Network-Based / Gains-Focused Roles', note: '11th house amplifies ambition and expectation wherever it shows up — a chart with 11th strongly active across many CSLs tends toward restless, ambition-driven career paths; the recorded antidote is deliberately curating one\'s social circle, since "your company defines your 11th house."' }
+    },
 
+    /**
+     * Career Alignment analysis: reads the 6th (job/service) and 10th
+     * (career/status) CSL chains, ranks career-TYPE fit by how strongly
+     * each CSL's determining planet's numbers touch the CAREER_TYPE_BY_HOUSE
+     * houses across the whole chart, and applies the two specific,
+     * sourced career remedies:
+     *   - 6th CSL/L1 = 5th → job instability; fix by engaging 5th-house
+     *     (creative/self-expressive) energy in the work itself.
+     *   - 6th CSL/L1 or L2 = 8th → naturally suited to 6-8 combination
+     *     work (surgery, invasive medicine, research, occult/astrology).
+     */
+    getCareerAlignment: function (ascSid, ascSignNum, natalPlanetsMap, lords) {
+        const sixthExplored = this.exploreHouse(6, ascSid, ascSignNum, natalPlanetsMap, lords);
+        const tenthExplored = this.exploreHouse(10, ascSid, ascSignNum, natalPlanetsMap, lords);
+        const sixthChain = this.getL1L2Chain(sixthExplored.resolved.csl, ascSid, natalPlanetsMap);
+        const tenthChain = this.getL1L2Chain(tenthExplored.resolved.csl, ascSid, natalPlanetsMap);
+        const sixthInterpretations = this.getCSL_L1_Interpretation(6, ascSid, natalPlanetsMap);
+
+        const allCusps = this.getAllCusps(ascSid);
+        const planetNumbers = this.getPlanetNumbers(allCusps);
+        const emphasisScore = {};
+        for (let h = 1; h <= 12; h++) {
+            const resolved = this.resolveDeterminingPlanetPrecise(h, allCusps, natalPlanetsMap);
+            if (!resolved) continue;
+            const numbers = planetNumbers[resolved.determiningPlanet] || [];
+            numbers.forEach(n => { if (this.CAREER_TYPE_BY_HOUSE[n]) emphasisScore[n] = (emphasisScore[n] || 0) + 1; });
+        }
+        const rankedCareerTypes = Object.keys(emphasisScore)
+            .map(h => Object.assign({ house: Number(h), score: emphasisScore[h] }, this.CAREER_TYPE_BY_HOUSE[h]))
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 5);
+
+        const jobStabilityFlag = sixthInterpretations.some(i => i.house === 5);
+        const surgeryLinkFlag = sixthInterpretations.some(i => i.house === 8);
+
+        return {
+            sixth: { explored: sixthExplored, chain: sixthChain, interpretations: sixthInterpretations },
+            tenth: { explored: tenthExplored, chain: tenthChain },
+            rankedCareerTypes: rankedCareerTypes, jobStabilityFlag: jobStabilityFlag, surgeryLinkFlag: surgeryLinkFlag
+        };
+    },
+
+    renderCareerAlignment: function (data) {
+        if (!data) return '';
+        const rankRows = data.rankedCareerTypes.map((r, i) => `<div style="margin:3px 0;padding:5px 8px;border-left:3px solid ${i === 0 ? '#00DD77' : '#66CCFF'};background:${i === 0 ? 'rgba(0,221,119,.08)' : 'rgba(102,204,255,.05)'};">
+                <b>#${i + 1}: ${r.type}</b> <span style="font-size:8.5px;color:var(--muted);">(H${r.house}, emphasis score ${r.score})</span>
+                <div style="font-size:9px;color:var(--text);opacity:.85;margin-top:2px;">${r.note}</div>
+              </div>`).join('') || '<div style="font-size:9px;color:var(--muted);">No career-type emphasis pattern detected.</div>';
+
+        const s = data.sixth, t = data.tenth;
+        const sixthBlock = `<div style="margin-top:6px;padding:8px;border:1px solid #FFD70044;border-radius:6px;background:rgba(255,215,0,.05);">
+              <div style="font-size:10px;color:#FFD700;font-weight:bold;">6th House (Job/Service) CSL Chain</div>
+              <div style="font-size:9px;color:var(--text);margin-top:2px;">CSL: <b>${s.explored.resolved.csl}</b>${s.explored.resolved.cslSelfStarred ? ' (self-starred)' : ' → determining planet: <b>' + s.explored.resolved.determiningPlanet + '</b>'}</div>
+              ${s.chain ? `<div style="font-size:8.5px;color:var(--muted);margin-top:2px;">L1 = ${s.chain.L1_planet} (H${s.chain.L1_numbers.join(',H') || '—'}) · L2 = ${s.chain.L2_planet} (H${s.chain.L2_numbers.join(',H') || '—'})</div>` : ''}
+            </div>`;
+
+        const tenthBlock = `<div style="margin-top:6px;padding:8px;border:1px solid #66CCFF44;border-radius:6px;background:rgba(102,204,255,.05);">
+              <div style="font-size:10px;color:#66CCFF;font-weight:bold;">10th House (Career/Status) CSL Chain</div>
+              <div style="font-size:9px;color:var(--text);margin-top:2px;">CSL: <b>${t.explored.resolved.csl}</b>${t.explored.resolved.cslSelfStarred ? ' (self-starred)' : ' → determining planet: <b>' + t.explored.resolved.determiningPlanet + '</b>'}</div>
+              ${t.chain ? `<div style="font-size:8.5px;color:var(--muted);margin-top:2px;">L1 = ${t.chain.L1_planet} (H${t.chain.L1_numbers.join(',H') || '—'}) · L2 = ${t.chain.L2_planet} (H${t.chain.L2_numbers.join(',H') || '—'})</div>` : ''}
+            </div>`;
+
+        const flags = [];
+        if (data.jobStabilityFlag) {
+            const interp = s.interpretations.find(i => i.house === 5);
+            flags.push(`<div style="margin-top:6px;padding:6px 8px;border-left:3px solid #FF4477;background:rgba(255,68,119,.08);">
+                <b style="color:#FF4477;">⚠ Job-Instability Signature Detected</b>
+                <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:2px;">${interp ? interp.meaning : 'Job/employment tends to change frequently.'}</div>
+                <div style="font-size:9px;color:#00DD77;margin-top:3px;"><b>Career Alignment fix:</b> ${interp ? interp.alignment : ''}</div>
+              </div>`);
+        }
+        if (data.surgeryLinkFlag) {
+            const interp = s.interpretations.find(i => i.house === 8);
+            flags.push(`<div style="margin-top:6px;padding:6px 8px;border-left:3px solid #9b6fff;background:rgba(155,111,255,.08);">
+                <b style="color:#9b6fff;">🔬 6-8 Combination Detected (Occult/Surgical/Research Fit)</b>
+                <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:2px;">${interp ? interp.meaning : ''}</div>
+                <div style="font-size:9px;color:#00DD77;margin-top:3px;">${interp ? interp.alignment : ''}</div>
+              </div>`);
+        }
+
+        return `<div class="pred-item" style="border-left:3px solid #66CCFF;margin-top:10px;">
+                   <div class="pred-title" style="color:#66CCFF;">💼 Career Alignment</div>
+                   <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">Career-type fit ranked by which houses the chart's CSL chains emphasize most, plus the specific job-instability and 6-8 occult/surgical-fit signatures from the source lectures.</div>
+                   <div style="font-size:9px;color:var(--muted);font-weight:bold;margin-top:4px;">RANKED CAREER-TYPE FIT:</div>
+                   ${rankRows}
+                   ${sixthBlock}
+                   ${tenthBlock}
+                   ${flags.join('')}
+                 </div>`;
+    },
     // ===================== 9. DUAL-LORDSHIP PLANET DETAIL (supplementary Parashari cross-check) =====================
 
     MOOLATRIKONA_SIGN: { Sun: 4, Moon: 3, Mars: 0, Mercury: 5, Jupiter: 8, Venus: 6, Saturn: 10 },
@@ -1316,7 +1437,92 @@ window.KP_PREDICTION = {
         }
         return candidates;
     },
+// ===================== 11½. UNIFIED EVENT-FINDING PROCESS (KP Promise → Dasha → Gochar) =====================
+    //
+    // THE single orchestrating pipeline for "when will this event happen?",
+    // exactly matching the classical 3-stage method taught across these
+    // lectures:
+    //   STAGE 1 — PROMISE ("will it happen at all?"): checkEventPromise()
+    //             — the natal CSL method. If there's no promise, the
+    //             remaining stages are moot (an unpromised event doesn't
+    //             happen no matter how supportive the dasha or transit is).
+    //   STAGE 2 — MAHADASHA/ANTARDASHA SUPPORT ("during which period?"):
+    //             searchSupportingWindowsInMahadasha() — within the
+    //             CURRENT Mahadasha, which Antardasha/Pratyantardasha/
+    //             Sookshma windows have a lord whose numbers support the
+    //             event's prime house.
+    //   STAGE 3 — GOCHAR / TRANSIT ("exactly when, within that window?"):
+    //             searchTransitWindows() — Jupiter's transit pins the
+    //             YEAR, the Sun's pins the MONTH, the Moon's pins the DAY,
+    //             all searched only inside each Stage-2 window (not the
+    //             whole Mahadasha) so the search stays tight and relevant.
+    // A caller only needs `getPosFn` (the app's global getPos) to run all
+    // 3 stages in one call.
+    findEventWindow: function (params) {
+        params = params || {};
+        const eventType = params.eventType, ascSid = params.ascSid, ascSignNum = params.ascSignNum,
+              natalPlanetsMap = params.natalPlanetsMap, lords = params.lords, mdNode = params.mdNode,
+              getPosFn = params.getPosFn, searchFrom = params.searchFrom, searchTo = params.searchTo;
 
+        const stage1 = this.checkEventPromise(eventType, ascSid, natalPlanetsMap, lords);
+        const stage2 = mdNode ? this.searchSupportingWindowsInMahadasha(mdNode, eventType, ascSid, ascSignNum, natalPlanetsMap, lords) : [];
+
+        const stage3 = [];
+        if (typeof getPosFn === 'function' && stage2.length) {
+            stage2.forEach(win => {
+                const winStart = new Date(win.start).getTime(), winEnd = new Date(win.end).getTime();
+                const from = (searchFrom && searchFrom.getTime() > winStart) ? searchFrom : new Date(winStart);
+                const to = (searchTo && searchTo.getTime() < winEnd) ? searchTo : new Date(winEnd);
+                if (from.getTime() >= to.getTime()) return;
+                const hits = this.searchTransitWindows(eventType, ascSignNum, from, to, getPosFn, 30);
+                const aligned = hits.filter(h => h.allThreeAligned);
+                stage3.push({ subPeriod: win, jupiterYearCandidates: hits, allThreeAligned: aligned });
+            });
+        }
+
+        return { eventType: eventType, stage1_promise: stage1, stage2_dashaSupport: stage2, stage3_transitTiming: stage3 };
+    },
+
+    renderFindEventWindow: function (report) {
+        if (!report) return '';
+        const p = report.stage1_promise;
+        const promiseColor = p ? this._color(p.strength) : '#8899AA';
+        const stage1Html = p ? `<div style="padding:6px 8px;border-left:3px solid ${promiseColor};background:${promiseColor}0A;">
+              <b style="color:${promiseColor};">STAGE 1 — PROMISE: ${p.strength.toUpperCase()}</b>
+              <div style="font-size:9px;color:var(--text);opacity:.85;margin-top:2px;">Prime H${p.primeHouse} CSL = ${p.resolved.csl}${p.resolved.cslSelfStarred ? ' (self-starred)' : ' → ' + p.resolved.determiningPlanet}. Numbers: ${p.determiningPlanetNumbers.join(', ') || '—'}.</div>
+            </div>` : `<div style="font-size:9px;color:var(--muted);">Stage 1 unavailable — unknown event type.</div>`;
+
+        let stage2Html = '<div style="font-size:9px;color:var(--muted);margin-top:6px;">No Mahadasha data supplied — Stage 2 skipped.</div>';
+        if (report.stage2_dashaSupport && report.stage2_dashaSupport.length) {
+            stage2Html = `<div style="margin-top:6px;font-size:9px;color:var(--muted);font-weight:bold;">STAGE 2 — SUPPORTING SUB-PERIODS IN CURRENT MAHADASHA:</div>` +
+                report.stage2_dashaSupport.map(r => `<div style="margin:3px 0;padding:5px 8px;border-left:3px solid #66CCFF;background:rgba(102,204,255,.06);">
+                    <b>${r.level}: ${r.lord}</b> <span style="font-size:8.5px;color:var(--muted);">${new Date(r.start).toDateString()} → ${new Date(r.end).toDateString()}</span>
+                  </div>`).join('');
+        } else if (report.stage2_dashaSupport) {
+            stage2Html = '<div style="font-size:9px;color:var(--muted);margin-top:6px;">No supporting sub-period found in the current Mahadasha.</div>';
+        }
+
+        let stage3Html = '';
+        if (report.stage3_transitTiming && report.stage3_transitTiming.length) {
+            stage3Html = `<div style="margin-top:6px;font-size:9px;color:var(--muted);font-weight:bold;">STAGE 3 — GOCHAR (TRANSIT) TIMING WITHIN THOSE WINDOWS:</div>` +
+                report.stage3_transitTiming.map(s => {
+                    const bestRows = (s.allThreeAligned.length ? s.allThreeAligned : s.jupiterYearCandidates.slice(0, 3))
+                        .map(c => `<div style="font-size:8.5px;color:${c.allThreeAligned ? '#00DD77' : 'var(--muted)'};margin-top:2px;">${c.date.toDateString()} — Jupiter H${c.jupiterHouse}${c.allThreeAligned ? ' · Sun H' + c.sunHouse + ' · Moon H' + c.moonHouse + ' (ALL ALIGNED — strong candidate)' : ' (year-level candidate only)'}</div>`).join('');
+                    return `<div style="margin:4px 0;padding:6px 8px;border-left:3px solid #FFD700;background:rgba(255,215,0,.06);">
+                        <b style="color:#FFD700;">${s.subPeriod.level}: ${s.subPeriod.lord}</b>
+                        ${bestRows || '<div style="font-size:8.5px;color:var(--muted);">No Jupiter transit hit found in this window.</div>'}
+                      </div>`;
+                }).join('');
+        }
+
+        return `<div class="pred-item" style="border-left:3px solid #FF9F43;margin-top:10px;">
+                   <div class="pred-title" style="color:#FF9F43;">🎯 Unified Event-Finding Process — ${(report.eventType || '').replace(/_/g, ' ')}</div>
+                   <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">Stage 1 (KP Promise) → Stage 2 (Mahadasha/Antardasha support) → Stage 3 (Gochar: Jupiter=year, Sun=month, Moon=day).</div>
+                   ${stage1Html}
+                   ${stage2Html}
+                   ${stage3Html}
+                 </div>`;
+    },
     // ===================== 12. HORARY / PRASHNA (1-249 NUMBER SYSTEM) =====================
 
     /**
@@ -1380,7 +1586,98 @@ window.KP_PREDICTION = {
             eventType: eventType, promise: promise, retrogradeWarning: retrogradeWarning
         };
     },
+ // ===================== 12½. CASE STUDY LIBRARY =====================
+    //
+    // Concrete worked examples pulled directly from the source lectures —
+    // kept as a reference library so predictions can be explained the way
+    // the teacher explained them (rule → applied to a real chart →
+    // observed outcome), rather than as abstract theory only. Each entry
+    // names the exact rule used, so `verifyCaseStudyPattern()` below can
+    // re-apply the SAME rule to any chart passed in (useful for confirming
+    // you've understood a rule correctly on your own data).
+    CASE_STUDIES: [
+        {
+            id: 'election_l1_l2',
+            title: 'Election / Competitive-Winner Prediction via L1-L2 (Horary)',
+            source: 'KP Horary Secrets',
+            setup: 'Horary number 24 was used to ask whether a specific ("X") political party would win an election.',
+            method: 'CSL resolved to the Sun. The Sun\'s own L1 (star lord\'s numbers) = house 4, L2 (sub lord\'s numbers) = house 5 — neither is a winning house for the QUERIED party itself.',
+            conclusion: 'Because the queried party\'s own significators landed on non-winning houses (4, 5), and the "opposition" party\'s equivalent houses (counted 7th-from, i.e. 10 and 11 relative to 4 and 5) ARE favourable, the verdict given was: the queried party does NOT win — the opposition does. Demonstrates using the L1/L2 chain plus opposite-party house-counting for competitive yes/no questions.',
+            houseKey: null
+        },
+        {
+            id: 'surgery_horary_44',
+            title: "Father's Surgery — Horary Question",
+            source: 'KP Horary Secrets',
+            setup: 'A student asked (via a horary number, ~44) whether doctors would go ahead with surgery on their father.',
+            method: 'Checked the 6th CSL (disease/treatment) at the L1 level specifically for 8th-house involvement — the stated rule: "without the 8th house showing up, surgery cannot happen."',
+            conclusion: 'The 6th CSL\'s L1 did NOT show the 8th house, so the answer given was: no surgery. This is the specific sub-rule this module encodes as the "surgeryLinkFlag" check inside getCareerAlignment() and can be checked for any chart via getCSL_L1_Interpretation(6, ...).',
+            houseKey: 6
+        },
+        {
+            id: 'job_instability_6_5',
+            title: 'Chronic Job Instability',
+            source: 'KP Horary Secrets / Karma Alignment',
+            setup: 'A person reported repeatedly being unable to hold a job for long — frequent, involuntary job changes.',
+            method: 'The 6th CSL\'s L1 showed house 5.',
+            conclusion: 'Diagnosis: the instability traces to the person not engaging the 5th-house (creative/self-expressive/enjoyable) side of their work. Alignment fix: consciously tie the job to something creatively engaging, rather than only trying to be more disciplined about a joyless role. Encoded directly as `jobStabilityFlag` in getCareerAlignment().',
+            houseKey: 6
+        },
+        {
+            id: 'secret_charity_12_8',
+            title: 'Sudden Losses — 12th CSL Showing the 8th House',
+            source: 'KP Horary Secrets',
+            setup: 'A chart repeatedly produced sudden disappointments, failures, and large unexpected losses.',
+            method: 'The 12th CSL\'s L1 showed the 8th house — a combination a classical reference text calls out explicitly as very negative.',
+            conclusion: 'Applied fix: quiet, anonymous charity performed from genuine inner conviction (not transactionally, "I do this so I avoid loss") reliably prevented the sudden losses in the case observed. Demonstrates Alignment as an ongoing PRACTICE, not a one-time remedy. Encoded in CSL_L1_INTERPRETATIONS[12][8].',
+            houseKey: 12
+        },
+        {
+            id: 'wealth_5_8_pattern',
+            title: '"5-8 Everywhere" Wealth Pattern',
+            source: 'KP Horary Secrets',
+            setup: 'A chart where most/all planets show the 5-8 combination in their own numbers/script — usually read as a poor financial pattern.',
+            method: 'Rather than reading a repeating 5-8 pattern as pure misfortune, it is reframed as one\'s SPECIFIC pair of life-houses (everyone\'s finances run through exactly 2 houses that "feed, amuse, and hurt" them the most).',
+            conclusion: 'The practical fix: build financial life directly around 5-8 activities (creativity/speculation combined with depth/research/transformation), and let money earned specifically THROUGH 5-8 work flow generously back out rather than trying to hoard/save it through unrelated channels. A repeating pattern across a whole chart names your life\'s central axis, not a curse — the same logic applies to any house that keeps repeating across many planets\' scripts (e.g. a dominant 12th house = "the 12th house is the essence of this life").',
+            houseKey: null
+        },
+        {
+            id: 'twelfth_third_restlessness',
+            title: 'Restlessness / Can\'t Stay in One Place',
+            source: 'Karma Alignment (Dhan Prapti ke Upaay)',
+            setup: 'A person could not stay confined to one home/city for long without growing deeply restless.',
+            method: '12th CSL\'s L1 showed house 3.',
+            conclusion: 'Fix: embrace travel and relocation deliberately rather than fighting the restlessness — roughly a year in one place before the urge returns is typical; freedom is felt precisely through movement for this person. Encoded in CSL_L1_INTERPRETATIONS[12][3].',
+            houseKey: 12
+        }
+    ],
 
+    /** Human-readable listing of the case study library. */
+    renderCaseStudies: function () {
+        const rows = this.CASE_STUDIES.map(cs => `<div style="margin:6px 0;padding:8px;border-left:3px solid #9b6fff;background:rgba(155,111,255,.05);border-radius:4px;">
+              <div style="font-weight:bold;color:#9b6fff;font-size:10.5px;">${cs.title}</div>
+              <div style="font-size:8.5px;color:var(--muted);">${cs.source}</div>
+              <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:3px;"><b>Setup:</b> ${cs.setup}</div>
+              <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:2px;"><b>Method:</b> ${cs.method}</div>
+              <div style="font-size:9px;color:#00DD77;margin-top:2px;"><b>Conclusion:</b> ${cs.conclusion}</div>
+            </div>`).join('');
+        return `<details style="margin-top:6px;">
+                  <summary style="cursor:pointer;color:#9b6fff;font-size:10.5px;font-weight:bold;">📚 Case Study Library (worked examples from the source lectures)</summary>
+                  ${rows}
+                </details>`;
+    },
+
+    /**
+     * Re-applies a case study's exact rule (where it's a CSL_L1_INTERPRETATIONS
+     * entry — i.e. `houseKey` is set) to a NEW chart, so you can check
+     * whether the same pattern shows up for a different person.
+     */
+    verifyCaseStudyPattern: function (caseStudyId, ascSid, natalPlanetsMap) {
+        const cs = this.CASE_STUDIES.find(c => c.id === caseStudyId);
+        if (!cs || !cs.houseKey) return { caseStudy: cs, applicable: false, note: 'This case study is not a directly re-appliable CSL/L1 rule (e.g. it involves horary-specific opposite-party counting).' };
+        const hits = this.getCSL_L1_Interpretation(cs.houseKey, ascSid, natalPlanetsMap);
+        return { caseStudy: cs, applicable: true, hits: hits, matchesThisChart: hits.length > 0 };
+    },
     // ===================== 13. TOP-LEVEL: HOUSE EXPLORER (1-12) =====================
 
     /**
@@ -1768,7 +2065,40 @@ window.KP_PREDICTION = {
         const results = this.searchSupportingWindowsInMahadasha(cache.mdNode, evtEl.value, cache.ascSid, cache.ascSignNum, cache.natalPlanetsMap, cache.lords);
         resultEl.innerHTML = this.renderMDSearchResults(results, evtEl.value);
     },
+/**
+     * Interactive UI panel for the unified 3-stage findEventWindow()
+     * pipeline. `getPosFn` defaults to the app's global getPos if not
+     * explicitly supplied.
+     */
+    renderFindEventPanel: function (mdNode, ascSid, ascSignNum, natalPlanetsMap, lords, getPosFn) {
+        this._findEventCache = {
+            mdNode: mdNode, ascSid: ascSid, ascSignNum: ascSignNum, natalPlanetsMap: natalPlanetsMap, lords: lords,
+            getPosFn: getPosFn || (typeof getPos === 'function' ? getPos : null)
+        };
+        const eventOptions = Object.keys(this.EVENT_PRIME_HOUSES).map(e => `<option value="${e}">${e.replace(/_/g, ' ')}</option>`).join('');
+        return `<details style="margin-top:6px;">
+                  <summary style="cursor:pointer;color:#FF9F43;font-size:10.5px;font-weight:bold;">🎯 Find Event Window (KP → Mahadasha/Antardasha → Gochar, full pipeline)</summary>
+                  <div style="font-size:8.5px;color:var(--muted);margin:4px 0;">Runs all 3 stages in one pass: does the chart promise this event (Stage 1), which sub-period in the current Mahadasha supports it (Stage 2), and — if a live getPos function is available — when Jupiter/Sun/Moon transit align within those windows (Stage 3).</div>
+                  <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                    <select id="kpFindEventInput" style="background:var(--bg3,#1a1a2e);border:1px solid var(--border);color:var(--text);font-size:10px;padding:4px;border-radius:3px;">${eventOptions}</select>
+                    <button onclick="window.KP_PREDICTION.runFindEventFromUI()" style="background:#FF9F43;color:#000;border:none;padding:4px 10px;border-radius:3px;font-size:10px;font-weight:bold;cursor:pointer;">Find Window</button>
+                  </div>
+                  <div id="kpFindEventResult" style="margin-top:8px;"></div>
+                </details>`;
+    },
 
+    /** Called from the inline onclick in renderFindEventPanel()'s button. */
+    runFindEventFromUI: function () {
+        const evtEl = document.getElementById('kpFindEventInput');
+        const resultEl = document.getElementById('kpFindEventResult');
+        const cache = this._findEventCache;
+        if (!evtEl || !resultEl || !cache) return;
+        const report = this.findEventWindow({
+            eventType: evtEl.value, ascSid: cache.ascSid, ascSignNum: cache.ascSignNum,
+            natalPlanetsMap: cache.natalPlanetsMap, lords: cache.lords, mdNode: cache.mdNode, getPosFn: cache.getPosFn
+        });
+        resultEl.innerHTML = this.renderFindEventWindow(report);
+    },
     renderHTML: function (data, transitPlanetsMap, mdNode, chartConfigs) {
         if (!data) return '<div class="pred-item">No KP data available.</div>';
         let html = `<div class="pred-item" style="border-left:3px solid #9b6fff;">
@@ -1793,10 +2123,13 @@ window.KP_PREDICTION = {
         }
         html += `</div>`;
         html += this.renderThirdHouseAnalysis(data.thirdHouseAnalysis);
+        html += this.renderCareerAlignment(data.careerAlignment);
         html += this.renderDashaConfirmation(data.dashaConfirmation);
         html += `<div class="pred-item" style="border-left:3px solid #9b6fff;">`;
         html += this.renderMDSearchPanel(mdNode, data.ascSid, data.ascSignNum, data._natalPlanetsMap, data._lords);
+        html += this.renderFindEventPanel(mdNode, data.ascSid, data.ascSignNum, data._natalPlanetsMap, data._lords);
         html += this.renderHoraryPanel(transitPlanetsMap);
+        html += this.renderCaseStudies();
         html += `</div>`;
         return html;
     },
@@ -1830,6 +2163,7 @@ window.KP_PREDICTION = {
         const houseScripts = this.getHouseScripts(houseExplorers);
         const dashaConfirmation = params.dashaInfo ? this.getDashaConfirmation(params.dashaInfo, ascSid, ascSignNum, natalPlanets, L) : null;
         const thirdHouseAnalysis = this.getThirdHouseAnalysis(ascSid, ascSignNum, natalPlanets, L);
+        const careerAlignment = this.getCareerAlignment(ascSid, ascSignNum, natalPlanets, L);
 
         return {
             ascSid: ascSid, ascSignNum: ascSignNum,
@@ -1839,6 +2173,7 @@ window.KP_PREDICTION = {
             cuspTableData: cuspTableData, planetScripts: planetScripts, houseScripts: houseScripts,
             bhavaChalit: bhavaChalit,
             dashaConfirmation: dashaConfirmation, thirdHouseAnalysis: thirdHouseAnalysis,
+            careerAlignment: careerAlignment,
             _natalPlanetsMap: natalPlanets, _lords: L
         };
     }
