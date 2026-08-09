@@ -208,12 +208,12 @@ window.KP_PREDICTION = {
     // houses reinforce the promise; negative houses (esp. 6-10-12, and 8th
     // for almost anything) work against/delay/break it.
     EVENT_PRIME_HOUSES: {
-        marriage: { prime: [7], supporting: [2, 11], negative: [6, 10, 12], note: 'Marriage promise = 2/7/11 combination; 6-10-12 delays/breaks it; 8th anywhere nearby brings complication (e.g. secret relationships, special marriage act).' },
-        second_marriage: { prime: [7], supporting: [2, 9, 11], negative: [6, 8, 10, 12], note: 'If 2-7-11 did not fructify for a first marriage, a second marriage is checked via 2-9-11; 6-8-10-12 signals separation/divorce.' },
+        marriage: { prime: [7], supporting: [2, 11], negative: [6, 10, 12], note: 'Marriage promise = 2/7/11 combination; 6-10-12 delays/breaks it; 8th anywhere nearby brings complication (e.g. secret relationships, special marriage act).', repeatBase: 7 },
+        second_marriage: { prime: [7], supporting: [2, 9, 11], negative: [6, 8, 10, 12], note: 'If 2-7-11 did not fructify for a first marriage, a second marriage is checked via 2-9-11 — also derivable via the general "3 houses forward per repeat occurrence" rule: 2nd spouse = 3rd-from-7th = 9th, 3rd spouse = 3rd-from-9th = 11th. 6-8-10-12 signals separation/divorce.', repeatBase: 7 },
         divorce_separation: { prime: [6, 10, 12], supporting: [8], negative: [], note: 'Separative combination = 6-10-12 (8th nearby aggravates it further); classically the teacher weighs this over blaming the 1st house alone.' },
         property_purchase: { prime: [4], supporting: [11, 12], negative: [8], note: 'Property purchase — primary house 4th (4/11/12 combination); 4th CSL and its star lord must show 4-11-12 involvement for the promise to be confirmed.' },
         property_sale: { prime: [10], supporting: [3, 5], negative: [], note: 'Property SALE (as opposed to purchase) is read from the 10th CSL — a 3-5-10 combination signals selling.' },
-        children: { prime: [5], supporting: [2, 11], negative: [4, 10, 12], note: 'Child-birth promise = 2-5-11 combination (5th prime, esp. for the first child); 4-10-12 signals difficulty/no children. CAVEAT: if the 5th CSL and its star lord are BOTH in a Barren sign (Gemini/Leo/Virgo), even a promise can be hard to fructify without medical help. Twins are suggested when CSL and star lord are both in a Dual sign, especially via Mercury.' },
+        children: { prime: [5], supporting: [2, 11], negative: [4, 10, 12], note: 'Child-birth promise = 2-5-11 combination (5th prime, esp. for the first child); 4-10-12 signals difficulty/no children. CAVEAT: if the 5th CSL and its star lord are BOTH in a Barren sign (Aries/Gemini/Leo/Virgo — Gemini and Leo are the MOST barren of the four), even a promise can be hard to fructify without medical help. Twins are suggested when CSL and star lord are both in a Dual sign, especially via Mercury.', repeatBase: 5 },
         job_service: { prime: [6], supporting: [10, 11], negative: [5, 8, 12], note: 'Job/service = 6th house; 6-10-11 favours winning competition/getting hired; 4-5-12 (or 5-8-12) works against it.' },
         promotion: { prime: [10], supporting: [6, 11], negative: [], note: 'Promotion = 10th house.' },
         wealth_income: { prime: [2], supporting: [6, 10, 11], negative: [5, 8, 12], note: 'The single best wealth combination is 2-6-10-11 ("maalamaal" combination). Its mirror-opposite 5-8-12 signifies financial loss/struggle — "what comes with one hand leaves with the other."' },
@@ -297,22 +297,39 @@ window.KP_PREDICTION = {
         }
         return out;
     },
-// ===================== 2½. TRUE BHAVA CHALIT (SRIPATI MID-POINT METHOD) =====================
+    // ===================== 2½. BHAVA CHALIT — EQUAL BHAVA APPROXIMATION (RECHECKED) =====================
     //
-    // This is a SEPARATE, exact calculation from the §2 equal-house CSL
-    // approximation above (that one is a stand-in for true Placidus cusps,
-    // used only to drive the KP Cuspal-Sub-Lord math). This section
-    // reproduces the classical Sripati/mid-point Bhava Chalit method
-    // verbatim:
-    //   1. The Ascendant degree is the MIDPOINT (Bhava Madhya) of house 1,
-    //      not its start.
+    // CORRECTED DOCUMENTATION: an earlier version of this comment claimed
+    // this was "the classical Sripati mid-point method verbatim" — that
+    // was an overclaim and has been fixed. True Sripati Bhava Madhya uses
+    // UNEQUAL house arcs: each house's midpoint is the arithmetic mean of
+    // two ADJACENT cusps from a real house system (Placidus, etc.), which
+    // are generally NOT 30° apart — the arc widths vary with latitude and
+    // the Ascendant's exact degree. This codebase has no Placidus/oblique-
+    // ascension cusp calculator (confirmed — no such function exists
+    // elsewhere in the app), so true unequal Sripati cusps cannot be
+    // computed here.
+    //
+    // What this module actually computes is the "EQUAL BHAVA" system — a
+    // real, named, legitimately-used KP-adjacent convention (some KP
+    // practitioners use it as a documented fallback when precise Placidus
+    // data isn't available): the Ascendant is treated as house 1's
+    // MIDPOINT (Bhava Madhya) rather than its start, and every house is
+    // given an EQUAL 30° span (15° before to 15° after its midpoint).
+    // This is mathematically identical to plain Equal-House-from-Ascendant,
+    // just re-centered — it is NOT the same as unequal-arc Sripati, and
+    // is presented as its own distinct, honestly-labelled method:
+    //   1. House h's midpoint = Ascendant + (h-1)*30° (mod 360).
     //   2. Every house spans 30°: 15° before its midpoint to 15° after.
-    //   3. House h's midpoint = Ascendant + (h-1)*30° (mod 360); its start/
-    //      end follow from rule 2.
-    //   4. A planet's Bhava (Chalit) house is whichever house's [start,end)
-    //      arc its longitude falls into — which can differ from its plain
+    //   3. A planet's Bhava (Chalit) house is whichever house's [start,end)
+    //      arc its longitude falls into — which CAN differ from its plain
     //      sign-based (Rashi) house when the planet sits in the first/last
-    //      ~15° of a sign ("shift").
+    //      ~15° of a sign ("shift"), exactly as real Bhava Chalit shifts
+    //      work, even though the underlying arc widths here are equal
+    //      rather than genuinely Placidus-derived.
+    // Swap in true Placidus cusps here (feed them into getBhavaChalitCusps
+    // in place of the equal-30° formula) if/when a real house-system
+    // calculator becomes available in this codebase.
     // NOTE on the "whole sign swallowed" idea sometimes described for this
     // method: under this exact equal-30°-per-house model every house
     // boundary is offset from the nearest sign boundary by the SAME
@@ -870,6 +887,176 @@ window.KP_PREDICTION = {
         return out;
     },
 
+    // ===================== 8⅛. LOSS-HOUSE & REPEAT-EVENT RULES =====================
+    //
+    // Two compact, generalizable rules from the consolidated notes:
+    //   RULE A ("नुकसान/Loss") — the LOSS or ENDING of any house's matters
+    //     is read from the 12th house FROM that house (12th being the
+    //     universal "loss/ending" house in every context, not just natally
+    //     the birth-chart's own 12th). Worked example: job = 6th house, so
+    //     job-CHANGE/job-LOSS is read from the 12th-from-6th = 5th house.
+    //   RULE B ("दूसरी बार" — repeat occurrence) — a SECOND (or 3rd, 4th...)
+    //     occurrence of the same kind of event is read 3 houses forward
+    //     from the previous occurrence's house, chained: 1st child = 5th
+    //     → 2nd child = 7th (3rd-from-5th) → 3rd child = 9th; 1st spouse =
+    //     7th → 2nd spouse = 9th → 3rd spouse = 11th.
+    getLossHouse: function (houseNum) {
+        return this._mod12(houseNum + 11); // 12th from houseNum
+    },
+
+    getRepeatEventHouse: function (baseHouse, occurrenceNumber) {
+        // occurrenceNumber: 1 = the base/first occurrence itself.
+        let h = baseHouse;
+        for (let i = 1; i < occurrenceNumber; i++) h = this._mod12(h + 2); // 3rd house forward each time
+        return h;
+    },
+
+
+    //
+    // Built directly from "प्रथम भाव के उपनक्षत्र स्वामी का अध्ययन" (Study of
+    // the 1st House's Cuspal Sub Lord). Core principle stressed repeatedly
+    // in that lecture: the 1st CSL's numbers (via its L1/star-lord, exactly
+    // the same "2 levels deep" rule used everywhere else in this module —
+    // this lecture explicitly confirms/validates that rule: "हम प्रॉमिस सिर्फ
+    // स्टार लॉर्ड लेवल तक चेक करते हैं, इससे आगे नहीं जाना") stay relevant for
+    // your WHOLE LIFE, not just a passing dasha period — they describe
+    // lifelong attachments, priorities, personality and health baseline.
+    FIRST_CSL_L1_HOUSE_TABLE: {
+        1: { meaning: 'Strong physique and personality; overall good general health.', caution: 'Also inclines toward a SELF-CENTERED nature — thoughts habitually circle back to "what\'s in it for me" first.' },
+        2: { meaning: 'Deep attachment to family; a "foodie" by nature; life spent thinking about wealth creation and generating money.' },
+        3: { meaning: 'Attachment to younger siblings; loves travel, especially adventurous/challenging trips; a natural talent for NETWORKING — quickly forms bonds with new people.' },
+        4: { meaning: 'Wants a comfortable, even luxurious, life; strongly home-loving ("doesn\'t want to leave the house"); deep attachment to mother; also supports learning ability, creativity, and a sporty inclination.', caution: 'For HEALTH specifically: the 4th house governs "healing power"/immunity — shown here (especially without 5th/11th support) it can signal LOW IMMUNITY / slower-than-average recovery when ill, even though it otherwise supports comfort and general wellbeing.' },
+        5: { meaning: 'Good general health (one of the 3 primary health-supporting houses, with 1st and 11th); strong learning ability, creativity, sports-orientation.', caution: 'The 5th naturally "pulls" toward the 6th (fun/enjoyment absorbing daily-routine discipline) — such people can get so caught up enjoying themselves that they neglect a steady health regimen.' },
+        6: { meaning: 'One of the 3 primary health-NEGATIVE houses if it works unfavourably — argumentative tendencies, disease-proneness.', caution: 'If the SAME 6th works favourably instead, it produces the opposite: a highly disciplined, routine-oriented, diet-conscious personality (early riser, structured lifestyle) — the same house, read positively rather than negatively.' },
+        7: { meaning: 'Deep devotion/attachment to one\'s partner; a persistent preference for company — even small errands feel better done alongside someone else, rather than alone.' },
+        8: { meaning: 'Gives longevity, but also brings real stress and pressure into life; can point to inherited wealth/property ("dowry"-type inheritance) alongside self-earned money.', caution: 'One of the 3 primary health-NEGATIVE houses. If it links up with OTHER negative houses (esp. the 12th), it can incline toward addiction. If it links with the 6th (disease) AND positive houses like 5th/11th are absent, it signals CHRONIC illness specifically.' },
+        9: { meaning: 'Follows ideals and principles in life; considered a naturally "lucky" person; deep attachment to father; religious/philosophical mindset, follows role-models/idols.' },
+        10: { meaning: 'Extremely career-oriented — life\'s focus centers on career and status; achieves standing largely through self-effort.' },
+        11: { meaning: 'Highly ambitious; desires (especially social/gains-related) tend to eventually get fulfilled; very social, deeply attached to friends.', caution: 'The 11th is ALSO the "fast recovery" house — when it appears alongside the 5th (e.g. numbers like 5 and 11 together), even if illness does strike, recovery tends to be quick.' },
+        12: { meaning: 'Prefers isolation/solitude; inclined toward meditation and charity; often generous to a fault ("spendthrift," especially on charity); can carry a foreign-travel/settlement promise.', caution: 'One of the 3 primary health-NEGATIVE houses — often linked to fluid-retention-type body issues, sudden hospitalization, or needing a doctor unexpectedly.' }
+    },
+
+    HEALTH_HOUSE_GROUPS: { good: [1, 5, 11], decent: [3], bad: [6, 8, 12], immunitySpecial: 4 },
+
+    /**
+     * Dedicated First House (Tanu Bhava) deep-dive: CSL chain, the
+     * lifelong house-attachment readings from the table above, a health
+     * verdict built from the good/bad/immunity/fast-recovery house
+     * groups, and — since the source lecture's own worked example used
+     * Rahu as the 1st CSL — the Rahu/Ketu sign-dispositor blending rule
+     * (nodes additionally carry the results of the planet whose sign
+     * they occupy).
+     */
+    getFirstHouseAnalysis: function (ascSid, ascSignNum, natalPlanetsMap, lords) {
+        const L = this._lords(lords);
+        const explored = this.exploreHouse(1, ascSid, ascSignNum, natalPlanetsMap, L);
+        const chain = this.getL1L2Chain(explored.resolved.csl, ascSid, natalPlanetsMap);
+        const houseSet = chain ? chain.L1_numbers : [];
+        const readings = houseSet.map(h => Object.assign({ house: h }, this.FIRST_CSL_L1_HOUSE_TABLE[h] || {}));
+
+        const goodHealth = houseSet.filter(h => this.HEALTH_HOUSE_GROUPS.good.includes(h) || this.HEALTH_HOUSE_GROUPS.decent.includes(h));
+        const badHealth = houseSet.filter(h => this.HEALTH_HOUSE_GROUPS.bad.includes(h));
+        const immunityFlag = houseSet.includes(this.HEALTH_HOUSE_GROUPS.immunitySpecial);
+        const fastRecoveryFlag = houseSet.includes(5) && houseSet.includes(11);
+        let healthVerdict = 'mixed';
+        if (goodHealth.length && !badHealth.length) healthVerdict = 'favourable';
+        else if (badHealth.length && !goodHealth.length) healthVerdict = 'challenging';
+
+        let nodeBlend = null;
+        const detPlanet = explored.resolved.determiningPlanet;
+        if ((detPlanet === 'Rahu' || detPlanet === 'Ketu') && natalPlanetsMap[detPlanet] && L) {
+            const nodeSignNum = natalPlanetsMap[detPlanet].sn;
+            const dispositor = L[nodeSignNum];
+            nodeBlend = {
+                node: detPlanet, dispositor: dispositor,
+                note: `${detPlanet} additionally carries the results of its sign-dispositor, ${dispositor} (Rahu/Ketu classically deliver the results of the planet whose sign they occupy). ${detPlanet === 'Rahu' ? 'Rahu leans the blend toward materialistic drive/attachment.' : 'Ketu leans the blend toward a more detached/spiritual orientation.'}`
+            };
+        }
+
+        return { explored: explored, chain: chain, readings: readings, goodHealth: goodHealth, badHealth: badHealth, immunityFlag: immunityFlag, fastRecoveryFlag: fastRecoveryFlag, healthVerdict: healthVerdict, nodeBlend: nodeBlend };
+    },
+
+    renderFirstHouseAnalysis: function (data) {
+        if (!data) return '';
+        const c = data.explored.independent ? '#00DD77' : '#8899AA';
+        const readingRows = data.readings.length ? data.readings.map(r => `<div style="margin:4px 0;padding:6px 8px;border-left:3px solid #FFD700;background:rgba(255,215,0,.06);">
+                <b style="color:#FFD700;">Shows House ${r.house}</b>
+                <div style="font-size:9.5px;color:var(--text);opacity:.9;margin-top:2px;">${r.meaning || ''}</div>
+                ${r.caution ? `<div style="font-size:9px;color:#FF9F43;margin-top:2px;">${r.caution}</div>` : ''}
+              </div>`).join('') : '<div style="font-size:9px;color:var(--muted);">No L1 houses resolved for the 1st CSL.</div>';
+        const healthColor = data.healthVerdict === 'favourable' ? '#00DD77' : data.healthVerdict === 'challenging' ? '#FF4477' : '#FFD700';
+
+        return `<div class="pred-item" style="border-left:3px solid #FFD700;margin-top:10px;">
+                   <div class="pred-title" style="color:#FFD700;">🧍 First House (Tanu Bhava) — Dedicated Analysis</div>
+                   <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">The 1st CSL's numbers stay relevant for your WHOLE life — the houses it signifies are lifelong attachment/priority areas, not just a passing period.</div>
+                   <div style="margin-top:6px;padding:8px;border:1px solid ${c}44;border-radius:6px;background:${c}0A;">
+                     CSL: <b>${data.explored.resolved.csl}</b>${data.explored.resolved.cslSelfStarred ? ' (self-starred)' : ' → determining planet: <b>' + data.explored.resolved.determiningPlanet + '</b>'}
+                     ${data.explored.independent ? this._chip('INDEPENDENT HOUSE', '#00DD77') : ''}
+                   </div>
+                   ${data.nodeBlend ? `<div style="margin-top:6px;padding:6px 8px;border-left:3px solid #9b6fff;background:rgba(155,111,255,.06);font-size:9px;color:var(--text);">${data.nodeBlend.note}</div>` : ''}
+                   <div style="margin-top:8px;font-size:9px;color:var(--muted);font-weight:bold;">LIFELONG HOUSE-ATTACHMENT READINGS:</div>
+                   ${readingRows}
+                   <div style="margin-top:8px;padding:8px;border:1px solid ${healthColor}44;border-radius:6px;background:${healthColor}0A;">
+                     <b style="color:${healthColor};">HEALTH VERDICT: ${data.healthVerdict.toUpperCase()}</b>
+                     <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:2px;">Good-health houses touched: H${data.goodHealth.join(',H') || '—'} · Negative-health houses touched: H${data.badHealth.join(',H') || '—'}</div>
+                     ${data.immunityFlag ? `<div style="font-size:9px;color:#FF9F43;margin-top:2px;">⚠ 4th house present — possible LOW IMMUNITY / slower recovery from illness.</div>` : ''}
+                     ${data.fastRecoveryFlag ? `<div style="font-size:9px;color:#00DD77;margin-top:2px;">✓ 5th+11th both present — FAST RECOVERY even if illness does occur.</div>` : ''}
+                   </div>
+                 </div>`;
+    },
+
+    // ===================== 8⅜. MEDICAL / MENTAL-HEALTH INDICATORS =====================
+    //
+    // From "Unlock Daily Predictions with KP Astrology": mental-health
+    // questions specifically need FOUR factors read TOGETHER — the Moon
+    // (as a planet), the 4th cusp (mind), the 5th cusp (intelligence),
+    // and the 1st cusp (body) — never a single factor alone. Specific
+    // affliction-to-condition mapping given in the same lecture: Rahu ->
+    // schizophrenia-type patterns, Mars -> anxiety, Saturn -> depression,
+    // Mercury -> epilepsy.
+    MENTAL_HEALTH_AFFLICTION_MAP: {
+        Rahu: { condition: 'Schizophrenia-type dissociative patterns', note: 'A Rahu linkage into the Moon/1st/4th/5th combination inclines toward schizophrenia-type patterns.' },
+        Mars: { condition: 'Anxiety', note: 'A Mars linkage into the same combination inclines toward anxiety-type patterns.' },
+        Saturn: { condition: 'Depression', note: 'A Saturn linkage into the same combination inclines toward depression-type patterns.' },
+        Mercury: { condition: 'Epilepsy', note: 'A Mercury linkage into the same combination inclines toward epilepsy-type patterns.' }
+    },
+
+    getMedicalIndicators: function (ascSid, ascSignNum, natalPlanetsMap, lords) {
+        const L = this._lords(lords);
+        const moonDetail = (this.getPlanetDetails(ascSid, ascSignNum, natalPlanetsMap, L) || []).find(p => p.planet === 'Moon');
+        const firstExplored = this.exploreHouse(1, ascSid, ascSignNum, natalPlanetsMap, L);
+        const fourthExplored = this.exploreHouse(4, ascSid, ascSignNum, natalPlanetsMap, L);
+        const fifthExplored = this.exploreHouse(5, ascSid, ascSignNum, natalPlanetsMap, L);
+
+        const linkedAfflictions = [];
+        [firstExplored, fourthExplored, fifthExplored].forEach(ex => {
+            const det = ex.resolved.determiningPlanet;
+            if (this.MENTAL_HEALTH_AFFLICTION_MAP[det]) linkedAfflictions.push(Object.assign({ house: ex.house, planet: det }, this.MENTAL_HEALTH_AFFLICTION_MAP[det]));
+        });
+        if (moonDetail && this.MENTAL_HEALTH_AFFLICTION_MAP[moonDetail.nakLord]) {
+            linkedAfflictions.push(Object.assign({ house: "Moon's star lord", planet: moonDetail.nakLord }, this.MENTAL_HEALTH_AFFLICTION_MAP[moonDetail.nakLord]));
+        }
+
+        return { moon: moonDetail, first: firstExplored, fourth: fourthExplored, fifth: fifthExplored, linkedAfflictions: linkedAfflictions };
+    },
+
+    renderMedicalIndicators: function (data) {
+        if (!data) return '';
+        const afflictionRows = data.linkedAfflictions.length ? data.linkedAfflictions.map(a => `<div style="margin:3px 0;padding:5px 8px;border-left:3px solid #FF4477;background:rgba(255,68,119,.08);">
+                <b>${a.planet}</b> linked via ${typeof a.house === 'number' ? 'House ' + a.house : a.house} → <b style="color:#FF4477;">${a.condition}</b>
+                <div style="font-size:8.5px;color:var(--text);opacity:.85;margin-top:2px;">${a.note}</div>
+              </div>`).join('') : '<div style="font-size:9px;color:var(--muted);">No Rahu/Mars/Saturn/Mercury affliction pattern detected across Moon/1st/4th/5th.</div>';
+
+        return `<details style="margin-top:6px;">
+                  <summary style="cursor:pointer;color:#FF4477;font-size:10.5px;font-weight:bold;">🧠 Medical/Mental-Health Indicators (Moon + 1st + 4th + 5th)</summary>
+                  <div style="font-size:8.5px;color:var(--muted);margin:4px 0;">Per the source teaching, mental-health questions specifically need these 4 factors read TOGETHER — never a single planet or cusp alone.</div>
+                  <div style="font-size:9px;color:var(--text);margin-top:4px;">Moon: Star Lord ${data.moon ? data.moon.nakLord : '?'}, Sub Lord ${data.moon ? data.moon.subLord : '?'}</div>
+                  <div style="font-size:9px;color:var(--text);margin-top:2px;">1st Cusp (Body) CSL: ${data.first.resolved.csl} · 4th Cusp (Mind) CSL: ${data.fourth.resolved.csl} · 5th Cusp (Intelligence) CSL: ${data.fifth.resolved.csl}</div>
+                  <div style="margin-top:6px;font-size:9px;color:var(--muted);font-weight:bold;">AFFLICTION-TYPE LINKAGE:</div>
+                  ${afflictionRows}
+                </details>`;
+    },
+
     // ===================== 8½. THIRD HOUSE (SAHAJA BHAVA) — DEDICATED ANALYSIS =====================
     //
     // Built specifically from the "Karma Alignment Technique — Dhan Prapti
@@ -1210,6 +1397,26 @@ window.KP_PREDICTION = {
      * Rashi (sign) lord of that house. Feeds renderCuspTable() and the
      * Cuspal/Bhava Chalit chart panel.
      */
+    /**
+     * Cuspal aspects: which natal planets cast a Vedic special aspect onto
+     * this house (Mars 4th/7th/8th, Jupiter 5th/7th/9th, Saturn 3rd/7th/10th,
+     * others universal 7th) — the "Asp By" column. "Cuspal-Asp" (the
+     * cusp's own outgoing aspect) is taken here as the universal 7th/
+     * opposite house — a documented convention, since a bare cusp (not a
+     * planet) has no special-aspect rule of its own in classical KP.
+     */
+    getCuspAspects: function (houseNum, natalPlanetsMap) {
+        const aspectOffsets = { Mars: [4, 7, 8], Jupiter: [5, 7, 9], Saturn: [3, 7, 10], default: [7] };
+        const aspectedBy = [];
+        Object.keys(natalPlanetsMap || {}).forEach(p => {
+            const pd = natalPlanetsMap[p];
+            if (!pd || pd.house === undefined) return;
+            const offs = aspectOffsets[p] || aspectOffsets.default;
+            if (offs.some(o => this._mod12(pd.house + o - 1) === houseNum)) aspectedBy.push(p);
+        });
+        return { aspectedBy: aspectedBy, cuspalAspectHouse: this._mod12(houseNum + 6) };
+    },
+
     getCuspTableData: function (ascSid, ascSignNum, natalPlanetsMap, lords) {
         const L = this._lords(lords);
         const allCusps = this.getAllCusps(ascSid);
@@ -1221,11 +1428,13 @@ window.KP_PREDICTION = {
             const degInSign = c.sid % 30;
             const occupants = Object.keys(natalPlanetsMap || {}).filter(p => natalPlanetsMap[p] && natalPlanetsMap[p].house === h);
             const houseLord = L ? L[signNum] : null;
+            const significators = this.getSignificators(h, natalPlanetsMap, ascSignNum, L);
+            const aspects = this.getCuspAspects(h, natalPlanetsMap);
             out.push({
                 house: h, sign: this.SIGN_NAMES[signNum], degInSign: degInSign,
-                nakLord: c.nakLord, subLord: c.subLord, subSubLord: c.subSubLord,
+                signLord: houseLord, nakLord: c.nakLord, subLord: c.subLord, subSubLord: c.subSubLord,
                 nlHouses: planetNumbers[c.nakLord] || [], slHouses: planetNumbers[c.subLord] || [],
-                houseLord: houseLord, occupants: occupants
+                houseLord: houseLord, occupants: occupants, significators: significators, aspects: aspects
             });
         }
         return out;
@@ -1272,27 +1481,36 @@ window.KP_PREDICTION = {
 
     renderCuspTable: function (cuspTableData) {
         if (!cuspTableData || !cuspTableData.length) return '';
-        const rows = cuspTableData.map(c => `
+        const rows = cuspTableData.map(c => {
+            const sig = c.significators;
+            return `
             <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-              <td style="padding:4px 6px;font-weight:bold;color:#FF69B4;">H${c.house}</td>
+              <td style="padding:4px 6px;font-weight:bold;color:#FF69B4;">Cusp ${c.house}</td>
               <td style="padding:4px 6px;">${c.sign} ${c.degInSign.toFixed(2)}°</td>
-              <td style="padding:4px 6px;">${c.occupants.join(', ') || '—'}</td>
+              <td style="padding:4px 6px;color:#FFD700;">${c.signLord || '—'}</td>
               <td style="padding:4px 6px;">${c.nakLord}</td>
-              <td style="padding:4px 6px;font-size:8.5px;color:var(--muted);">H${c.nlHouses.join(',H') || '—'}</td>
               <td style="padding:4px 6px;color:#00DD77;font-weight:bold;">${c.subLord}</td>
-              <td style="padding:4px 6px;font-size:8.5px;color:var(--muted);">H${c.slHouses.join(',H') || '—'}</td>
               <td style="padding:4px 6px;">${c.subSubLord}</td>
-              <td style="padding:4px 6px;">${c.houseLord || '—'}</td>
-            </tr>`).join('');
+              <td style="padding:4px 6px;font-size:8.5px;color:var(--cyan,#66CCFF);">${sig.level1_occupants.join(' ') || '—'}</td>
+              <td style="padding:4px 6px;font-size:8.5px;">${sig.level2_starLordOfOccupants.join(' ') || '—'}</td>
+              <td style="padding:4px 6px;font-size:8.5px;">${sig.level1_occupants.join(' ') || '—'}</td>
+              <td style="padding:4px 6px;font-size:8.5px;">${(sig.level4_starLordOfHouseLord ? [sig.level4_starLordOfHouseLord] : []).join(' ') || '—'}</td>
+              <td style="padding:4px 6px;font-size:8.5px;">${sig.level3_houseLord || '—'}</td>
+              <td style="padding:4px 6px;font-size:8px;color:var(--muted);">${c.aspects.aspectedBy.join(' ') || '—'}</td>
+              <td style="padding:4px 6px;font-size:8px;color:var(--muted);">H${c.aspects.cuspalAspectHouse}</td>
+            </tr>`;
+        }).join('');
         return `<details open style="margin-top:6px;">
-                  <summary style="cursor:pointer;color:#FF69B4;font-size:10.5px;font-weight:bold;">📐 Cuspal Table — All 12 House Cusps (NL / CSL / SSL)</summary>
+                  <summary style="cursor:pointer;color:#FF69B4;font-size:10.5px;font-weight:bold;">📐 Cuspal Table — All 12 House Cusps (SignLord / StarLord / SubLord / SSL / Significators / Aspects)</summary>
+                  <div style="font-size:8px;color:var(--muted);margin:4px 0;">Columns A/B/C/D follow the classical 4-level significator scheme: B=OCCU (occupants, strongest), A=Star Lord of occupants, D=Sign/House Lord, C=planet in Sign Lord's own star (weakest) — same data as the "4-level Significators" method, laid out KP-software-style. "Cuspal-Asp" is this module's documented convention: the cusp's own outgoing aspect = the opposite (7th) house, since a bare cusp has no special-aspect rule of its own.</div>
                   <div style="overflow-x:auto;margin-top:6px;">
                   <table style="width:100%;border-collapse:collapse;font-size:9px;color:var(--text);">
                     <thead><tr style="border-bottom:1px solid var(--border);color:var(--muted);text-align:left;">
-                      <th style="padding:4px 6px;">House</th><th style="padding:4px 6px;">Cusp Sign/Deg</th><th style="padding:4px 6px;">Occupants</th>
-                      <th style="padding:4px 6px;">NL</th><th style="padding:4px 6px;">NL's Houses</th>
-                      <th style="padding:4px 6px;">CSL (Sub Lord)</th><th style="padding:4px 6px;">CSL's Houses</th>
-                      <th style="padding:4px 6px;">SSL</th><th style="padding:4px 6px;">House Lord (Rashi)</th>
+                      <th style="padding:4px 6px;">Cusp</th><th style="padding:4px 6px;">Sign/Deg</th><th style="padding:4px 6px;">SignLord</th>
+                      <th style="padding:4px 6px;">StarLord</th><th style="padding:4px 6px;">SubLord</th><th style="padding:4px 6px;">SSL</th>
+                      <th style="padding:4px 6px;">B-OCCU</th><th style="padding:4px 6px;">A-STL of Occu.</th><th style="padding:4px 6px;">Occupants</th>
+                      <th style="padding:4px 6px;">C-In SignLord's Star</th><th style="padding:4px 6px;">D-Lord</th>
+                      <th style="padding:4px 6px;">Asp By</th><th style="padding:4px 6px;">Cuspal-Asp</th>
                     </tr></thead>
                     <tbody>${rows}</tbody>
                   </table>
@@ -1437,6 +1655,53 @@ window.KP_PREDICTION = {
         }
         return candidates;
     },
+    /**
+     * ENHANCED (KP-correct) version of searchTransitWindows(): instead of
+     * checking only the transiting planet's SIGN-based house/aspect, this
+     * checks the transiting planet's own NAKSHATRA LORD's script (the
+     * PROMISE layer — does the star it's passing through signify the
+     * target houses) and its SUB LORD's script (the RESULT layer — does
+     * the finer sub-division agree). This directly implements "use
+     * transit to find nakshatra lord for house activation/promise, then
+     * sub lord for result" — a real validation upgrade over the sign-only
+     * approximation in searchTransitWindows() above (kept for backward
+     * compatibility / as a fallback when natalPlanetsMap isn't available).
+     */
+    searchTransitWindowsKP: function (eventType, ascSid, ascSignNum, fromDate, toDate, getPosFn, stepDays, natalPlanetsMap, lords) {
+        const ev = this.EVENT_PRIME_HOUSES[eventType];
+        if (!ev || typeof getPosFn !== 'function' || !natalPlanetsMap) return [];
+        const targetHouses = ev.prime.concat(ev.supporting || []);
+        const allCusps = this.getAllCusps(ascSid);
+        const planetNumbers = this.getPlanetNumbers(allCusps);
+
+        const readPlanet = (p) => {
+            if (!p || p.sid === undefined) return null;
+            const kp = this._getKPLords(p.sid);
+            const promiseHouses = planetNumbers[kp.nakLord] || [];
+            const resultHouses = planetNumbers[kp.subLord] || [];
+            return { nakLord: kp.nakLord, subLord: kp.subLord, promiseHouses: promiseHouses, resultHouses: resultHouses, promise: promiseHouses.some(h => targetHouses.includes(h)), result: resultHouses.some(h => targetHouses.includes(h)) };
+        };
+
+        const candidates = [];
+        const step = stepDays || 30;
+        for (let t = fromDate.getTime(); t <= toDate.getTime(); t += step * 24 * 3600 * 1000) {
+            const d = new Date(t);
+            let pos;
+            try { pos = getPosFn(d); } catch (e) { continue; }
+            if (!pos) continue;
+
+            const jupiter = readPlanet(pos.Jupiter);
+            if (!jupiter || !jupiter.promise) continue; // Jupiter's promise gates the YEAR-level candidate, same role as before
+            const sun = readPlanet(pos.Sun);
+            const moon = readPlanet(pos.Moon);
+
+            candidates.push({
+                date: d, jupiter: jupiter, sun: sun, moon: moon,
+                allThreeAligned: !!(jupiter.promise && jupiter.result && sun && sun.promise && moon && moon.promise)
+            });
+        }
+        return candidates;
+    },
 // ===================== 11½. UNIFIED EVENT-FINDING PROCESS (KP Promise → Dasha → Gochar) =====================
     //
     // THE single orchestrating pipeline for "when will this event happen?",
@@ -1474,9 +1739,15 @@ window.KP_PREDICTION = {
                 const from = (searchFrom && searchFrom.getTime() > winStart) ? searchFrom : new Date(winStart);
                 const to = (searchTo && searchTo.getTime() < winEnd) ? searchTo : new Date(winEnd);
                 if (from.getTime() >= to.getTime()) return;
-                const hits = this.searchTransitWindows(eventType, ascSignNum, from, to, getPosFn, 30);
+                // Prefer the KP-correct (nakshatra-lord promise + sub-lord
+                // result) search whenever natal data is available; fall
+                // back to the sign/aspect-only method otherwise.
+                const useKP = !!natalPlanetsMap;
+                const hits = useKP
+                    ? this.searchTransitWindowsKP(eventType, ascSid, ascSignNum, from, to, getPosFn, 30, natalPlanetsMap, lords)
+                    : this.searchTransitWindows(eventType, ascSignNum, from, to, getPosFn, 30);
                 const aligned = hits.filter(h => h.allThreeAligned);
-                stage3.push({ subPeriod: win, jupiterYearCandidates: hits, allThreeAligned: aligned });
+                stage3.push({ subPeriod: win, method: useKP ? 'nakshatra-lord+sub-lord (KP-correct)' : 'sign/aspect-only (fallback)', jupiterYearCandidates: hits, allThreeAligned: aligned });
             });
         }
 
@@ -1506,10 +1777,16 @@ window.KP_PREDICTION = {
         if (report.stage3_transitTiming && report.stage3_transitTiming.length) {
             stage3Html = `<div style="margin-top:6px;font-size:9px;color:var(--muted);font-weight:bold;">STAGE 3 — GOCHAR (TRANSIT) TIMING WITHIN THOSE WINDOWS:</div>` +
                 report.stage3_transitTiming.map(s => {
+                    const isKP = !!(s.jupiterYearCandidates[0] && s.jupiterYearCandidates[0].jupiter && s.jupiterYearCandidates[0].jupiter.nakLord);
                     const bestRows = (s.allThreeAligned.length ? s.allThreeAligned : s.jupiterYearCandidates.slice(0, 3))
-                        .map(c => `<div style="font-size:8.5px;color:${c.allThreeAligned ? '#00DD77' : 'var(--muted)'};margin-top:2px;">${c.date.toDateString()} — Jupiter H${c.jupiterHouse}${c.allThreeAligned ? ' · Sun H' + c.sunHouse + ' · Moon H' + c.moonHouse + ' (ALL ALIGNED — strong candidate)' : ' (year-level candidate only)'}</div>`).join('');
+                        .map(c => {
+                            if (isKP) {
+                                return `<div style="font-size:8.5px;color:${c.allThreeAligned ? '#00DD77' : 'var(--muted)'};margin-top:2px;">${c.date.toDateString()} — Jupiter NL ${c.jupiter.nakLord}/SL ${c.jupiter.subLord} (promise${c.jupiter.result ? '+result' : ''})${c.allThreeAligned ? ` · Sun NL ${c.sun.nakLord} · Moon NL ${c.moon.nakLord} (ALL ALIGNED — strong candidate)` : ' (year-level candidate only)'}</div>`;
+                            }
+                            return `<div style="font-size:8.5px;color:${c.allThreeAligned ? '#00DD77' : 'var(--muted)'};margin-top:2px;">${c.date.toDateString()} — Jupiter H${c.jupiterHouse}${c.allThreeAligned ? ' · Sun H' + c.sunHouse + ' · Moon H' + c.moonHouse + ' (ALL ALIGNED — strong candidate)' : ' (year-level candidate only)'}</div>`;
+                        }).join('');
                     return `<div style="margin:4px 0;padding:6px 8px;border-left:3px solid #FFD700;background:rgba(255,215,0,.06);">
-                        <b style="color:#FFD700;">${s.subPeriod.level}: ${s.subPeriod.lord}</b>
+                        <b style="color:#FFD700;">${s.subPeriod.level}: ${s.subPeriod.lord}</b> <span style="font-size:8px;color:var(--muted);">(method: ${s.method || 'legacy'})</span>
                         ${bestRows || '<div style="font-size:8.5px;color:var(--muted);">No Jupiter transit hit found in this window.</div>'}
                       </div>`;
                 }).join('');
@@ -1649,6 +1926,33 @@ window.KP_PREDICTION = {
             method: '12th CSL\'s L1 showed house 3.',
             conclusion: 'Fix: embrace travel and relocation deliberately rather than fighting the restlessness — roughly a year in one place before the urge returns is typical; freedom is felt precisely through movement for this person. Encoded in CSL_L1_INTERPRETATIONS[12][3].',
             houseKey: 12
+        },
+        {
+            id: 'first_csl_rahu_venus',
+            title: '1st CSL is Rahu, Sitting in Venus\'s Nakshatra',
+            source: 'KP Astrology Basic Course — 1st House CSL Study',
+            setup: 'In the lecture\'s worked chart, the 1st house Cuspal Sub Lord is Rahu.',
+            method: 'Per the "2 levels deep" rule (explicitly re-confirmed in this lecture: "we only check promise up to the star lord level, we don\'t go further"), since Rahu is not self-starred, jump to Rahu\'s own star lord — Venus. Venus is the 2nd house\'s rashi lord AND occupies the 8th house natally, so Venus "shows" houses 2 and 8. Separately, since Rahu sits in Mars\'s SIGN (not nakshatra), Rahu additionally blends in Mars\'s nature (Rahu/Ketu classically deliver the results of whichever planet\'s sign they occupy).',
+            conclusion: 'Reading: 2nd house shown → wealth-focused, family-attached, foodie; 8th house shown → stress/pressure in life alongside inherited wealth ("dowry"-type money) on top of self-earned income. The Mars-sign blend adds an energetic, aggressive-capability layer, while Rahu itself (rather than Ketu) tilts the whole picture toward materialistic drive/attachment rather than a spiritual orientation. Encoded as the Rahu/Ketu `nodeBlend` logic inside getFirstHouseAnalysis().',
+            houseKey: 1
+        },
+        {
+            id: 'daily_moon_mars_venus',
+            title: 'Daily Prediction: Moon in Mars\'s Nakshatra, Venus\'s Sub',
+            source: 'Unlock Daily Predictions with KP Astrology',
+            setup: 'On a given day, the Moon was transiting through Mars\'s nakshatra, currently in Venus\'s sub-division.',
+            method: 'Read Mars\'s own script (houses 5, 8, 12, 7, 10 in the worked chart) as the "possible" houses for the day (Nakshatra-Lord/promise layer), then narrow using Venus\'s own script (houses 4, 6, 11, 5, 7, 10 in the same chart) as the Sub-Lord/result layer. The OVERLAP between the two — houses 5, 7, 10 — is what actually manifests most strongly while the Moon stays in that exact Nakshatra+Sub combination.',
+            conclusion: 'Prediction given: 5 (affection) + 7 (partner) → quality time with one\'s partner that day; 10 (career/gain) → business/gain-related thoughts. As soon as the Moon\'s Sub changed from Venus to the Sun (the next lord in sequence), the active overlap shifted to different houses (5, 8, 6 in that example) and the prediction shifted accordingly — entertainment/consultation still favoured (5), but a health caution appeared (6, 8). Demonstrates getDailyPanel()\'s overlap-then-cross-validate method exactly.',
+            houseKey: null
+        },
+        {
+            id: 'mental_health_four_factor',
+            title: 'Mental-Health Reading Needs 4 Factors Together',
+            source: 'Unlock Daily Predictions with KP Astrology (Q&A)',
+            setup: 'A student asked how to specifically judge mental-health issues (depression, anxiety, schizophrenia, epilepsy) in KP.',
+            method: 'Never judge from a single planet. Read the Moon (as a planet), the 4th cusp (mind), the 5th cusp (intelligence), and the 1st cusp (body) TOGETHER. Then match whichever planet links into that combination against a fixed affliction table: Rahu → schizophrenia-type patterns, Mars → anxiety, Saturn → depression, Mercury → epilepsy.',
+            conclusion: 'This 4-factor-plus-affliction-table method is encoded directly in getMedicalIndicators(). The same Q&A also stressed a broader principle worth remembering for ALL predictions, not just medical ones: "कोई भी इवेंट होता है तो एक चीज के कारण नहीं होता" — no event happens due to a single factor; always combine multiple significators before committing to a prediction.',
+            houseKey: null
         }
     ],
 
@@ -1698,7 +2002,8 @@ window.KP_PREDICTION = {
         return {
             house: houseNum, karaka: this.HOUSE_KARAKAS[houseNum], cusp: cusp, resolved: resolved,
             determiningPlanetNumbers: resolved ? (planetNumbers[resolved.determiningPlanet] || []) : [],
-            significators: sig, lordPlacement: lordPlacement, cslTenancy: cslTenancy, independent: independent
+            significators: sig, lordPlacement: lordPlacement, cslTenancy: cslTenancy, independent: independent,
+            lossHouse: this.getLossHouse(houseNum)
         };
     },
 
@@ -1871,6 +2176,209 @@ window.KP_PREDICTION = {
           </div>`;
     },
 
+    // ===================== 13⅚. DASHA BALANCE TABLE (flat, current-period view) =====================
+
+    /**
+     * Flattens the currently-running MD→AD→PD→Sookshma window into a flat
+     * table of rows (Dasa/Bhukti/Antra/Sookshma + start/end dates) — the
+     * "Dasa Balance" layout from standard KP software. Only the CURRENTLY
+     * running Antardasha is expanded (a full Mahadasha would produce
+     * thousands of rows), matching the reference image's own scope.
+     */
+    getDashaBalanceTable: function (mdNode, currentDate, maxRows) {
+        if (!mdNode) return [];
+        const rows = [];
+        const now = currentDate ? new Date(currentDate).getTime() : Date.now();
+        (mdNode.subs || []).forEach(ad => {
+            const adStart = new Date(ad.start).getTime(), adEnd = new Date(ad.end).getTime();
+            if (now < adStart || now >= adEnd) return; // only the currently-running Antardasha
+            (ad.subs || []).forEach(pd => {
+                (pd.subs || []).forEach(sk => {
+                    rows.push({ dasa: mdNode.lord, bhukti: ad.lord, antra: pd.lord, sookshma: sk.lord, start: sk.start, end: sk.end });
+                });
+            });
+        });
+        return maxRows ? rows.slice(0, maxRows) : rows;
+    },
+
+    renderDashaBalanceTable: function (rows) {
+        if (!rows || !rows.length) return '';
+        const bodyRows = rows.map(r => `
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+              <td style="padding:4px 6px;font-size:8.5px;color:var(--muted);">${new Date(r.start).toLocaleDateString()}</td>
+              <td style="padding:4px 6px;font-weight:bold;color:#FFD700;">${r.dasa}</td>
+              <td style="padding:4px 6px;color:#00DD77;">${r.bhukti}</td>
+              <td style="padding:4px 6px;color:#66CCFF;">${r.antra}</td>
+              <td style="padding:4px 6px;color:#FF9F43;">${r.sookshma}</td>
+              <td style="padding:4px 6px;font-size:8.5px;color:var(--muted);">${new Date(r.end).toLocaleDateString()}</td>
+            </tr>`).join('');
+        return `<details style="margin-top:6px;">
+                  <summary style="cursor:pointer;color:#FFD700;font-size:10.5px;font-weight:bold;">📅 Dasha Balance — Current Antardasha's Full Sookshma Breakdown</summary>
+                  <div style="overflow-x:auto;margin-top:6px;">
+                  <table style="width:100%;border-collapse:collapse;font-size:9px;">
+                    <thead><tr style="border-bottom:1px solid var(--border);color:var(--muted);text-align:left;">
+                      <th style="padding:4px 6px;">Start</th><th style="padding:4px 6px;">Dasa</th><th style="padding:4px 6px;">Bhukti</th>
+                      <th style="padding:4px 6px;">Antra</th><th style="padding:4px 6px;">Sookshma</th><th style="padding:4px 6px;">End</th>
+                    </tr></thead>
+                    <tbody>${bodyRows}</tbody>
+                  </table>
+                  </div>
+                </details>`;
+    },
+
+    // ===================== 13⅞. ARGALA (JAIMINI SUPPORT/COUNTER) ANALYSIS =====================
+
+    ARGALA_OFFSETS: [2, 4, 11],
+    VIRODHA_ARGALA_OFFSETS: [12, 10, 3],
+
+    /**
+     * Argala (supporting influence) comes from planets occupying the 2nd,
+     * 4th or 11th house from a given house; Virodha Argala (counter-
+     * influence) comes from the 12th, 10th or 3rd. If Virodha Argala
+     * planets are fewer/weaker than the Argala planets, the support
+     * HOLDS and reinforces that house's promise; otherwise it's cancelled.
+     */
+    getArgala: function (houseNum, natalPlanetsMap) {
+        const argalaHouses = this.ARGALA_OFFSETS.map(o => this._mod12(houseNum + o - 1));
+        const virodhaHouses = this.VIRODHA_ARGALA_OFFSETS.map(o => this._mod12(houseNum + o - 1));
+        const occupantsOf = h => Object.keys(natalPlanetsMap || {}).filter(p => natalPlanetsMap[p] && natalPlanetsMap[p].house === h);
+        const argalaPlanets = argalaHouses.reduce((acc, h) => acc.concat(occupantsOf(h)), []);
+        const virodhaPlanets = virodhaHouses.reduce((acc, h) => acc.concat(occupantsOf(h)), []);
+        const argalaPresent = argalaPlanets.length > 0;
+        const argalaHolds = argalaPresent && virodhaPlanets.length < argalaPlanets.length;
+        const note = !argalaPresent
+            ? `No planets occupy the Argala houses (2nd/4th/11th from House ${houseNum}) — no additional support to evaluate.`
+            : argalaHolds
+                ? `Argala (support) from ${argalaPlanets.join(', ')} HOLDS — Virodha Argala (${virodhaPlanets.join(', ') || 'none'}) isn't strong enough to cancel it, reinforcing House ${houseNum}'s promise.`
+                : `Argala from ${argalaPlanets.join(', ')} is CANCELLED by an equal-or-stronger Virodha Argala from ${virodhaPlanets.join(', ')} — House ${houseNum} doesn't get this extra support.`;
+        return { house: houseNum, argalaHouses: argalaHouses, virodhaHouses: virodhaHouses, argalaPlanets: argalaPlanets, virodhaPlanets: virodhaPlanets, argalaPresent: argalaPresent, argalaHolds: argalaHolds, note: note };
+    },
+
+    renderArgala: function (argalaData) {
+        if (!argalaData) return '';
+        const c = argalaData.argalaHolds ? '#00DD77' : (argalaData.argalaPresent ? '#FF4477' : 'var(--muted)');
+        return `<div style="margin:4px 0;padding:6px 8px;border-left:3px solid ${c};background:${c}0A;">
+            <b style="color:${c};">Argala on House ${argalaData.house}</b>
+            <div style="font-size:8.5px;color:var(--muted);margin-top:2px;">Argala houses (2/4/11 from H${argalaData.house}): H${argalaData.argalaHouses.join(',H')} · Virodha Argala houses (12/10/3 from H${argalaData.house}): H${argalaData.virodhaHouses.join(',H')}</div>
+            <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:2px;">${argalaData.note}</div>
+          </div>`;
+    },
+
+    // ===================== 13⅞⅞. MONTHLY PANEL (SUN TRANSIT, ≈15-30 DAYS) =====================
+
+    /**
+     * Uses the SUN's current transit position (Sun holds one sign for
+     * ~30 days, giving a natural month-level granularity) via the exact
+     * Nakshatra-Lord + Sub-Lord cascading method from "Unlock Daily
+     * Predictions with KP Astrology" — just applied to the Sun instead of
+     * the Moon. Cross-references the overlap houses against the running
+     * Antardasha (Bhukti) and Argala.
+     */
+    getMonthlyPanel: function (transitSunData, dashaInfo, ascSid, ascSignNum, natalPlanetsMap, lords) {
+        if (!transitSunData || transitSunData.sid === undefined) return null;
+        const allCusps = this.getAllCusps(ascSid);
+        const planetNumbers = this.getPlanetNumbers(allCusps);
+        const tenancy = this.getTenancy(natalPlanetsMap);
+
+        const sunKP = this._getKPLords(transitSunData.sid);
+        const nlHouses = planetNumbers[sunKP.nakLord] || [];
+        const slHouses = planetNumbers[sunKP.subLord] || [];
+        const overlap = nlHouses.filter(h => slHouses.includes(h));
+
+        const bhukti = dashaInfo && dashaInfo.antardasha ? dashaInfo.antardasha.lord : null;
+        const bhuktiHouses = bhukti ? (planetNumbers[bhukti] || []) : [];
+        const crossValidated = overlap.filter(h => bhuktiHouses.includes(h));
+        const argala = overlap.map(h => this.getArgala(h, natalPlanetsMap));
+
+        return {
+            transitHouse: this._mod12(transitSunData.sn - ascSignNum + 1),
+            nakLord: sunKP.nakLord, nlHouses: nlHouses, nlTenancy: tenancy[sunKP.nakLord],
+            subLord: sunKP.subLord, slHouses: slHouses, slTenancy: tenancy[sunKP.subLord],
+            overlap: overlap, bhukti: bhukti, bhuktiHouses: bhuktiHouses, crossValidated: crossValidated, argala: argala
+        };
+    },
+
+    renderMonthlyPanel: function (data) {
+        if (!data) return '<div class="pred-item">Sun transit data not available — pass transitPlanets.Sun into analyze().</div>';
+        const nlUnt = data.nlTenancy && !data.nlTenancy.tenanted, slUnt = data.slTenancy && !data.slTenancy.tenanted;
+        const nlChip = this._chip(nlUnt ? 'UNTENANTED' : 'TENANTED', nlUnt ? '#00DD77' : '#FFD700');
+        const slChip = this._chip(slUnt ? 'UNTENANTED' : 'TENANTED', slUnt ? '#00DD77' : '#FFD700');
+        const argalaRows = data.argala.map(a => this.renderArgala(a)).join('');
+        return `<div class="pred-item" style="border-left:3px solid #FFD700;">
+            <div class="pred-title" style="color:#FFD700;">☀️ Monthly Panel — Sun Transit (≈15-30 day window)</div>
+            <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">Sun is transiting House ${data.transitHouse}. Its Nakshatra Lord's script names houses "possible" this month; its Sub Lord narrows to what's actually most likely; where BOTH agree is strongest.</div>
+            <div style="margin-top:4px;"><b>Nakshatra Lord:</b> ${data.nakLord} ${nlChip} — Houses: H${data.nlHouses.join(',H') || '—'}</div>
+            <div style="margin-top:4px;"><b>Sub Lord:</b> ${data.subLord} ${slChip} — Houses: H${data.slHouses.join(',H') || '—'}</div>
+            <div style="margin-top:6px;padding:6px 8px;border-left:3px solid #00DD77;background:rgba(0,221,119,.08);">
+              <b style="color:#00DD77;">Overlap (strongest this month):</b> H${data.overlap.join(', H') || 'none'}
+            </div>
+            ${data.bhukti ? `<div style="margin-top:6px;font-size:9px;color:var(--text);">Running Antardasha (Bhukti): <b>${data.bhukti}</b> — Houses: H${data.bhuktiHouses.join(',H') || '—'}</div>` : ''}
+            ${data.crossValidated.length ? `<div style="margin-top:4px;padding:6px 8px;border-left:3px solid #FF69B4;background:rgba(255,105,180,.08);"><b style="color:#FF69B4;">Cross-validated with Bhukti:</b> H${data.crossValidated.join(', H')} — confirmed at BOTH the monthly-transit and dasha level.</div>` : ''}
+            ${argalaRows}
+          </div>`;
+    },
+
+    // ===================== 13⅞⅞⅞. DAILY PANEL (MOON TRANSIT, DAY-TO-DAY) =====================
+
+    /**
+     * Moon transits ~1 nakshatra/day and multiple Sub Lords within that
+     * day; per "Unlock Daily Predictions with KP Astrology": the Moon's
+     * transiting Nakshatra Lord's script names the houses active TODAY,
+     * its Sub Lord narrows/refines within the day, and the whole reading
+     * should be cross-validated against whichever dasha level is running
+     * RIGHT NOW (deepest available) — "the event should be promised by
+     * your dashas too" before you commit to a specific daily prediction.
+     */
+    getDailyPanel: function (transitMoonData, dashaInfo, ascSid, ascSignNum, natalPlanetsMap, lords) {
+        if (!transitMoonData || transitMoonData.sid === undefined) return null;
+        const allCusps = this.getAllCusps(ascSid);
+        const planetNumbers = this.getPlanetNumbers(allCusps);
+        const tenancy = this.getTenancy(natalPlanetsMap);
+
+        const moonKP = this._getKPLords(transitMoonData.sid);
+        const nlHouses = planetNumbers[moonKP.nakLord] || [];
+        const slHouses = planetNumbers[moonKP.subLord] || [];
+        const overlap = nlHouses.filter(h => slHouses.includes(h));
+
+        const deepestLevel = (dashaInfo && dashaInfo.sukshma) ? { label: 'Sookshma Dasha', lord: dashaInfo.sukshma.lord }
+            : (dashaInfo && dashaInfo.pratyantar) ? { label: 'Pratyantardasha', lord: dashaInfo.pratyantar.lord }
+                : (dashaInfo && dashaInfo.antardasha) ? { label: 'Antardasha', lord: dashaInfo.antardasha.lord } : null;
+        const deepestHouses = deepestLevel ? (planetNumbers[deepestLevel.lord] || []) : [];
+        const crossValidated = overlap.filter(h => deepestHouses.includes(h));
+        const eventDetails = crossValidated.map(h => ({ house: h, karaka: this.HOUSE_KARAKAS[h] }));
+
+        return {
+            transitHouse: this._mod12(transitMoonData.sn - ascSignNum + 1),
+            nakLord: moonKP.nakLord, nlHouses: nlHouses, nlTenancy: tenancy[moonKP.nakLord],
+            subLord: moonKP.subLord, slHouses: slHouses, slTenancy: tenancy[moonKP.subLord],
+            overlap: overlap, deepestLevel: deepestLevel, deepestHouses: deepestHouses,
+            crossValidated: crossValidated, eventDetails: eventDetails
+        };
+    },
+
+    renderDailyPanel: function (data) {
+        if (!data) return '<div class="pred-item">Moon transit data not available — pass transitPlanets.Moon into analyze().</div>';
+        const nlUnt = data.nlTenancy && !data.nlTenancy.tenanted, slUnt = data.slTenancy && !data.slTenancy.tenanted;
+        const nlChip = this._chip(nlUnt ? 'UNTENANTED' : 'TENANTED', nlUnt ? '#00DD77' : '#FFD700');
+        const slChip = this._chip(slUnt ? 'UNTENANTED' : 'TENANTED', slUnt ? '#00DD77' : '#FFD700');
+        const eventRows = data.eventDetails.map(e => `<div style="margin:3px 0;padding:5px 8px;border-left:3px solid #FF69B4;background:rgba(255,105,180,.06);">
+            <b>H${e.house} — ${e.karaka.name}</b>
+            <div style="font-size:8.5px;color:var(--text);opacity:.85;margin-top:2px;">${e.karaka.keywords}</div>
+          </div>`).join('');
+        return `<div class="pred-item" style="border-left:3px solid #66CCFF;">
+            <div class="pred-title" style="color:#66CCFF;">🌙 Daily Panel — Moon Transit (day-to-day)</div>
+            <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">Moon is transiting House ${data.transitHouse}. Its Nakshatra Lord names houses "possible" TODAY (house activation/promise); its Sub Lord narrows further within the day (type of event/result); cross-validate against the deepest running dasha before committing to a prediction.</div>
+            <div style="margin-top:4px;"><b>Nakshatra Lord (house activation):</b> ${data.nakLord} ${nlChip} — Houses: H${data.nlHouses.join(',H') || '—'}</div>
+            <div style="margin-top:4px;"><b>Sub Lord (event detail/result):</b> ${data.subLord} ${slChip} — Houses: H${data.slHouses.join(',H') || '—'}</div>
+            <div style="margin-top:6px;padding:6px 8px;border-left:3px solid #00DD77;background:rgba(0,221,119,.08);">
+              <b style="color:#00DD77;">Overlap (strongest today):</b> H${data.overlap.join(', H') || 'none'}
+            </div>
+            ${data.deepestLevel ? `<div style="margin-top:6px;font-size:9px;color:var(--text);">Deepest running dasha: <b>${data.deepestLevel.label} (${data.deepestLevel.lord})</b> — Houses: H${data.deepestHouses.join(',H') || '—'}</div>` : ''}
+            ${data.crossValidated.length ? `<div style="margin-top:4px;padding:6px 8px;border-left:3px solid #FF69B4;background:rgba(255,105,180,.08);"><b style="color:#FF69B4;">Cross-validated — commit to this:</b> H${data.crossValidated.join(', H')}</div>` : `<div style="margin-top:4px;font-size:9px;color:var(--muted);">No overlap house is also confirmed by the running dasha — treat today's Moon-only reading as tentative, per the source teaching's "event must be promised by your dashas too" rule.</div>`}
+            ${eventRows}
+          </div>`;
+    },
+
     // ===================== 14. RENDERING =====================
 
     _color: function (v) {
@@ -1935,6 +2443,7 @@ window.KP_PREDICTION = {
                 </div>
                 ${p.chain ? `<div style="font-size:8px;color:#66CCFF;margin-top:2px;">L1/L2 chain on ${p.chain.planet}: L1=${p.chain.L1_planet}(H${p.chain.L1_numbers.join(',H') || '—'}) · L2=${p.chain.L2_planet}(H${p.chain.L2_numbers.join(',H') || '—'})${p.chainConfirms ? ' — CONFIRMS at both levels' : ''}</div>` : ''}
                 ${p.goldenClaimants.length ? `<div style="font-size:8px;color:#FFD700;margin-top:2px;">Golden-Rule extra claimants on H${p.primeHouse}: ${p.goldenClaimants.join(', ')}</div>` : ''}
+                ${p.eventInfo.repeatBase ? `<div style="font-size:8px;color:#FF9F43;margin-top:2px;">Repeat-occurrence chain (3 houses forward each time): 1st=H${this.getRepeatEventHouse(p.eventInfo.repeatBase,1)} · 2nd=H${this.getRepeatEventHouse(p.eventInfo.repeatBase,2)} · 3rd=H${this.getRepeatEventHouse(p.eventInfo.repeatBase,3)}</div>` : ''}
                 <div style="font-size:8px;color:var(--muted);margin-top:2px;">${p.eventInfo.note}</div>
               </div>`;
         }).join('');
@@ -1986,6 +2495,7 @@ window.KP_PREDICTION = {
             </div>
             <div style="font-size:8.5px;color:var(--text);opacity:.8;margin-top:4px;">${explored.lordPlacement ? explored.lordPlacement.reading : ''}</div>
             <div style="font-size:8.5px;color:var(--muted);margin-top:4px;">Fruitful significators: ${explored.significators.fruitfulSignificators.map(f => f.planet).join(', ') || '—'}</div>
+            <div style="font-size:8px;color:#FF9F43;margin-top:4px;">Loss/ending of H${explored.house}'s matters is read from H${explored.lossHouse} (12th-from-H${explored.house}).</div>
           </div>`;
     },
 
@@ -2116,16 +2626,23 @@ window.KP_PREDICTION = {
         html += this.renderEventPromises(data.eventPromises);
         html += this.renderIndependentHouses(data.independentHouses);
         html += this.renderGoldenRuleClaims(data.goldenRuleClaims);
+        html += this.renderMedicalIndicators(data.medicalIndicators);
         if (data.houseExplorers && data.houseExplorers.length) {
             html += `<details style="margin-top:6px;"><summary style="cursor:pointer;color:#9b6fff;font-size:10.5px;font-weight:bold;">🧭 House-by-House Explorer (H1-H12)</summary>`;
             data.houseExplorers.forEach(ex => { html += this.renderHouseExplorer(ex); });
             html += `</details>`;
         }
         html += `</div>`;
+        html += this.renderFirstHouseAnalysis(data.firstHouseAnalysis);
         html += this.renderThirdHouseAnalysis(data.thirdHouseAnalysis);
         html += this.renderCareerAlignment(data.careerAlignment);
         html += this.renderDashaConfirmation(data.dashaConfirmation);
+        if (data.monthlyPanel || data.dailyPanel) {
+            html += this.renderMonthlyPanel(data.monthlyPanel);
+            html += this.renderDailyPanel(data.dailyPanel);
+        }
         html += `<div class="pred-item" style="border-left:3px solid #9b6fff;">`;
+        html += this.renderDashaBalanceTable(data.dashaBalanceTable);
         html += this.renderMDSearchPanel(mdNode, data.ascSid, data.ascSignNum, data._natalPlanetsMap, data._lords);
         html += this.renderFindEventPanel(mdNode, data.ascSid, data.ascSignNum, data._natalPlanetsMap, data._lords);
         html += this.renderHoraryPanel(transitPlanetsMap);
@@ -2164,6 +2681,13 @@ window.KP_PREDICTION = {
         const dashaConfirmation = params.dashaInfo ? this.getDashaConfirmation(params.dashaInfo, ascSid, ascSignNum, natalPlanets, L) : null;
         const thirdHouseAnalysis = this.getThirdHouseAnalysis(ascSid, ascSignNum, natalPlanets, L);
         const careerAlignment = this.getCareerAlignment(ascSid, ascSignNum, natalPlanets, L);
+        const firstHouseAnalysis = this.getFirstHouseAnalysis(ascSid, ascSignNum, natalPlanets, L);
+        const medicalIndicators = this.getMedicalIndicators(ascSid, ascSignNum, natalPlanets, L);
+        const dashaBalanceTable = params.mdNode ? this.getDashaBalanceTable(params.mdNode, params.currentDate) : [];
+        const monthlyPanel = (params.transitPlanets && params.transitPlanets.Sun)
+            ? this.getMonthlyPanel(params.transitPlanets.Sun, params.dashaInfo, ascSid, ascSignNum, natalPlanets, L) : null;
+        const dailyPanel = (params.transitPlanets && params.transitPlanets.Moon)
+            ? this.getDailyPanel(params.transitPlanets.Moon, params.dashaInfo, ascSid, ascSignNum, natalPlanets, L) : null;
 
         return {
             ascSid: ascSid, ascSignNum: ascSignNum,
@@ -2173,7 +2697,9 @@ window.KP_PREDICTION = {
             cuspTableData: cuspTableData, planetScripts: planetScripts, houseScripts: houseScripts,
             bhavaChalit: bhavaChalit,
             dashaConfirmation: dashaConfirmation, thirdHouseAnalysis: thirdHouseAnalysis,
-            careerAlignment: careerAlignment,
+            careerAlignment: careerAlignment, firstHouseAnalysis: firstHouseAnalysis,
+            medicalIndicators: medicalIndicators, dashaBalanceTable: dashaBalanceTable,
+            monthlyPanel: monthlyPanel, dailyPanel: dailyPanel,
             _natalPlanetsMap: natalPlanets, _lords: L
         };
     }

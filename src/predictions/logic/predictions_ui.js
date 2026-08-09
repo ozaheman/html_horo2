@@ -274,7 +274,7 @@ async function updatePredictionsDisplay() {
           const kpAnalysis = window.KP_PREDICTION.analyze({
             natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC,
             lords: (typeof LORDS !== 'undefined') ? LORDS : null,
-            dashaInfo: dashaInfo
+            dashaInfo: dashaInfo, transitPlanets: transitPlanets, mdNode: mdNode, currentDate: targetDate
           });
 
           const chartConfigs = window.GOCHAR ? window.GOCHAR.getChartConfigs({
