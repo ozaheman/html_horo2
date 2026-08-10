@@ -88,6 +88,7 @@
     <button class="btn" id="btnNumerology" title="Numerology (Lo Shu Grid) Analysis" style="border-color:rgba(0,191,255,.4);color:rgba(0,191,255,.6);">🔢 NUMEROLOGY</button>
     <button class="btn" id="btnLalKitab" title="Lal Kitab Remedies & Predictions" style="border-color:rgba(255,68,68,.4);color:rgba(255,68,68,.6);">🔴 LAL KITAB</button>
      <button class="btn" id="btnDiseasePredictor" title="Disease Predictor — Indian Astrology and Diseases (Parimal Purkāyastha, 1956)" style="border-color:rgba(255,68,68,.4);color:rgba(255,68,68,.7);">🩺 DISEASES</button>
+    <button class="btn" id="btnMundane" title="Mundane Astrology — National Charts &amp; Event Prediction" style="border-color:rgba(120,180,255,.4);color:rgba(120,180,255,.8);">🌍 MUNDANE</button>
     <button class="btn" id="btnAshtakvarga" title="Ashtakavarga (Bhinnashtaka + Sarvashtaka) Analysis" style="border-color:rgba(0,221,119,.4);color:rgba(0,221,119,.7);">🎯 ASHTAKVARGA</button>
     <button class="btn" id="btnCuspChart" title="Bhava Chalit / Cusp Chart" style="border-color:rgba(255,255,255,.4);color:white;">◬ CUSP CHART</button>
     <button class="btn" id="btnMatching" title="Chart Matching / Synastry (Ashtakoota)" style="border-color:rgba(255,20,147,.4);color:#ff1493;">💞 MATCHING</button>
@@ -446,6 +447,38 @@
   <div id="diseaseContent" style="padding:15px;padding-bottom:100px;">
     <div style="text-align:center;padding:40px 20px;color:var(--muted);font-family:Courier New,monospace;font-size:11px;">
       Click 'Generate' to analyze afflictions, likely disease tendencies, causes, effects, Dasha timing and remedies.
+    </div>
+  </div>
+</div>
+<!-- MUNDANE ASTROLOGY PANEL -->
+<div id="mundanePanel" style="position:fixed;right:0;top:0;bottom:0;width:560px;max-width:100vw;background:rgba(4,4,18,.98);border-left:1px solid var(--border2);z-index:200;transform:translateX(100%);transition:transform .3s cubic-bezier(.25,.46,.45,.94);overflow-y:auto;backdrop-filter:blur(12px);">
+  <div class="conj-hdr">
+    <h2 style="color:rgba(120,180,255,.9)">🌍 MUNDANE ASTROLOGY</h2>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="close-btn" id="closeMundane">✕</button>
+    </div>
+  </div>
+  <div style="padding:8px 12px;font-family:'Courier New',monospace;font-size:9px;color:var(--muted);background:rgba(120,180,255,.05);border-bottom:1px solid var(--border);">
+    National radix (founding chart) + Vimshottari dasha + live transits, scored against an event-signification matrix. Structural analysis, not a certain forecast.
+  </div>
+  <div style="padding:15px;background:rgba(120,180,255,0.05);border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:10px;">
+    <div>
+      <label style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Country</label>
+      <select id="mundaneCountrySel" style="width:100%;margin-top:4px;background:var(--panel);border:1px solid var(--border2);color:var(--text);padding:6px 7px;border-radius:2px;font-size:11px;font-family:'Courier New',monospace;"></select>
+    </div>
+    <div>
+      <label style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Foundational Chart</label>
+      <select id="mundaneChartSel" style="width:100%;margin-top:4px;background:var(--panel);border:1px solid var(--border2);color:var(--text);padding:6px 7px;border-radius:2px;font-size:11px;font-family:'Courier New',monospace;"></select>
+    </div>
+    <div>
+      <label style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Event to Analyze</label>
+      <select id="mundaneEventSel" style="width:100%;margin-top:4px;background:var(--panel);border:1px solid var(--border2);color:var(--text);padding:6px 7px;border-radius:2px;font-size:11px;font-family:'Courier New',monospace;"></select>
+    </div>
+    <button class="btn primary" id="btnGenerateMundane" style="width:100%; border-color:rgba(120,180,255,.6); color:rgba(120,180,255,.9); background:rgba(120,180,255,.1); padding:8px;">⟲ Generate Mundane Report</button>
+  </div>
+  <div id="mundaneContent" style="padding:15px;padding-bottom:100px;">
+    <div style="text-align:center;padding:40px 20px;color:var(--muted);font-family:Courier New,monospace;font-size:11px;">
+      Select a country, its foundational chart, and an event category, then click 'Generate'.
     </div>
   </div>
 </div>
@@ -966,6 +999,7 @@
 <script src="./src/predictions/logic/dasha_transit_relations.js"></script>
 <script src="./src/features/marriage/sahdharm_sambandh_predictor.js"></script>
 <script src="./src/predictions/logic/disease_predictor.js"></script>
+<script src="./src/predictions/logic/mundane_astrology.js"></script>
 <script src="./src/core/panchang_engine.js"></script>
 <script src="./src/core/vrat_festival_engine.js"></script>
 <script src="./src/predictions/logic/business_muhurta_calendar.js"></script>

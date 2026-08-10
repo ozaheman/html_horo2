@@ -177,7 +177,13 @@ function getNakshatra(sidLon){
 const SIGNS=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
 const LORDS=['Mars','Venus','Mercury','Moon','Sun','Mercury','Venus','Mars','Jupiter','Saturn','Saturn','Jupiter'];
 const SIGNSYM=['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
-
+// SIGNS/LORDS/SIGNSYM are declared with `const`, so they do NOT become
+// window.* properties automatically the way `var`/function declarations
+// do in a classic (non-module) script. Other files (e.g. mundane_astrology.js)
+// reference them as window.SIGNS / window.LORDS, so expose them explicitly.
+window.SIGNS = SIGNS;
+window.LORDS = LORDS;
+window.SIGNSYM = SIGNSYM;
 const DIGNITY = {
   Sun: { ex: 10, de: 190, own: [4] },
   Moon: { ex: 33, de: 213, own: [3] },
@@ -1295,7 +1301,11 @@ window.searchActivatedCombined = searchActivatedCombined;
 const VORD=['Ketu','Venus','Sun','Moon','Mars','Rahu','Jupiter','Saturn','Mercury'];
 const VYRS={Ketu:7,Venus:20,Sun:6,Moon:10,Mars:7,Rahu:18,Jupiter:16,Saturn:19,Mercury:17};
 const VCOL={Ketu:'#8B4513',Venus:'#FF69B4',Sun:'#FFA500',Moon:'#9370DB',Mars:'#DC143C',Rahu:'#4A7A7A',Jupiter:'#DAA520',Saturn:'#4682B4',Mercury:'#32CD32'};
-
+// Same window-exposure fix as SIGNS/LORDS/SIGNSYM above — other files
+// reference window.VYRS (and potentially window.VORD/window.VCOL).
+window.VORD = VORD;
+window.VYRS = VYRS;
+window.VCOL = VCOL;
 function buildVimsh(birthDate, moonNakLord, elapsedInLord, totalYrsOfLord){
   const dashas=[];
   let idx=VORD.indexOf(moonNakLord);
@@ -7184,6 +7194,66 @@ if(typeof renderAll === 'function') renderAll();
 
     const report = window.DISEASE_PREDICTOR.generateReport(window.BIRTH_PLANETS, window.BIRTH_ASC, dashaCtx);
     contentEl.innerHTML = window.DISEASE_PREDICTOR.renderHTML(report);
+  });
+
+
+
+  // ═══════════════════════════════════════════════════════════
+  //  MUNDANE ASTROLOGY PANEL
+  // ═══════════════════════════════════════════════════════════
+  function populateMundaneSelects() {
+    const MA = window.MUNDANE_ASTROLOGY;
+    if (!MA) return;
+    const countrySel = document.getElementById('mundaneCountrySel');
+    const chartSel = document.getElementById('mundaneChartSel');
+    const eventSel = document.getElementById('mundaneEventSel');
+    if (!countrySel || countrySel.dataset.populated) {
+      // still refresh chart options if country already selected
+    } else {
+      countrySel.innerHTML = Object.entries(MA.COUNTRIES)
+        .map(([key, c]) => `<option value="${key}">${c.name}</option>`).join('');
+      countrySel.dataset.populated = '1';
+
+      eventSel.innerHTML = Object.entries(MA.EVENTS)
+        .map(([key, e]) => `<option value="${key}">${e.label}</option>`).join('');
+
+      countrySel.addEventListener('change', populateMundaneChartOptions);
+    }
+    populateMundaneChartOptions();
+  }
+  function populateMundaneChartOptions() {
+    const MA = window.MUNDANE_ASTROLOGY;
+    const countrySel = document.getElementById('mundaneCountrySel');
+    const chartSel = document.getElementById('mundaneChartSel');
+    if (!MA || !countrySel || !chartSel) return;
+    const country = MA.COUNTRIES[countrySel.value];
+    if (!country) return;
+    chartSel.innerHTML = Object.entries(country.charts)
+      .map(([key, c]) => `<option value="${key}">${c.label}</option>`).join('');
+  }
+
+  document.getElementById('btnMundane')?.addEventListener('click', () => {
+    document.getElementById('mundanePanel').style.transform = 'translateX(0)';
+    populateMundaneSelects();
+  });
+  document.getElementById('closeMundane')?.addEventListener('click', () => {
+    document.getElementById('mundanePanel').style.transform = 'translateX(100%)';
+  });
+  document.getElementById('btnGenerateMundane')?.addEventListener('click', () => {
+    const contentEl = document.getElementById('mundaneContent');
+    if (!window.MUNDANE_ASTROLOGY) {
+      contentEl.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--muted);font-family:Courier New,monospace;font-size:11px;">Mundane Astrology engine not loaded.</div>';
+      return;
+    }
+    const countryKey = document.getElementById('mundaneCountrySel').value;
+    const chartKey = document.getElementById('mundaneChartSel').value;
+    const eventKey = document.getElementById('mundaneEventSel').value;
+    contentEl.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--muted);font-family:Courier New,monospace;font-size:11px;">Calculating…</div>';
+    try {
+      contentEl.innerHTML = window.MUNDANE_ASTROLOGY.generateReport(countryKey, chartKey, eventKey);
+    } catch (err) {
+      contentEl.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--rose);font-family:Courier New,monospace;font-size:11px;">Error: ${err.message}</div>`;
+    }
   });
 
 

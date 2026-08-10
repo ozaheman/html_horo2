@@ -208,21 +208,111 @@ window.KP_PREDICTION = {
     // houses reinforce the promise; negative houses (esp. 6-10-12, and 8th
     // for almost anything) work against/delay/break it.
     EVENT_PRIME_HOUSES: {
-        marriage: { prime: [7], supporting: [2, 11], negative: [6, 10, 12], note: 'Marriage promise = 2/7/11 combination; 6-10-12 delays/breaks it; 8th anywhere nearby brings complication (e.g. secret relationships, special marriage act).', repeatBase: 7 },
-        second_marriage: { prime: [7], supporting: [2, 9, 11], negative: [6, 8, 10, 12], note: 'If 2-7-11 did not fructify for a first marriage, a second marriage is checked via 2-9-11 — also derivable via the general "3 houses forward per repeat occurrence" rule: 2nd spouse = 3rd-from-7th = 9th, 3rd spouse = 3rd-from-9th = 11th. 6-8-10-12 signals separation/divorce.', repeatBase: 7 },
-        divorce_separation: { prime: [6, 10, 12], supporting: [8], negative: [], note: 'Separative combination = 6-10-12 (8th nearby aggravates it further); classically the teacher weighs this over blaming the 1st house alone.' },
-        property_purchase: { prime: [4], supporting: [11, 12], negative: [8], note: 'Property purchase — primary house 4th (4/11/12 combination); 4th CSL and its star lord must show 4-11-12 involvement for the promise to be confirmed.' },
-        property_sale: { prime: [10], supporting: [3, 5], negative: [], note: 'Property SALE (as opposed to purchase) is read from the 10th CSL — a 3-5-10 combination signals selling.' },
-        children: { prime: [5], supporting: [2, 11], negative: [4, 10, 12], note: 'Child-birth promise = 2-5-11 combination (5th prime, esp. for the first child); 4-10-12 signals difficulty/no children. CAVEAT: if the 5th CSL and its star lord are BOTH in a Barren sign (Aries/Gemini/Leo/Virgo — Gemini and Leo are the MOST barren of the four), even a promise can be hard to fructify without medical help. Twins are suggested when CSL and star lord are both in a Dual sign, especially via Mercury.', repeatBase: 5 },
-        job_service: { prime: [6], supporting: [10, 11], negative: [5, 8, 12], note: 'Job/service = 6th house; 6-10-11 favours winning competition/getting hired; 4-5-12 (or 5-8-12) works against it.' },
-        promotion: { prime: [10], supporting: [6, 11], negative: [], note: 'Promotion = 10th house.' },
-        wealth_income: { prime: [2], supporting: [6, 10, 11], negative: [5, 8, 12], note: 'The single best wealth combination is 2-6-10-11 ("maalamaal" combination). Its mirror-opposite 5-8-12 signifies financial loss/struggle — "what comes with one hand leaves with the other."' },
-        competition_litigation: { prime: [6], supporting: [10, 11], negative: [4, 5, 12], note: 'Winning competitions/court cases = 6-10-11; the losing combination is 4-5-12.' },
-        foreign_travel: { prime: [12], supporting: [3, 9], negative: [], note: '12th = foreign land/settlement; 3rd = short travel; 9th = long-distance travel.' },
-        education: { prime: [4], supporting: [9], negative: [], note: 'KP-specific: primary education house is the 4th (not the 5th as in classical Parashari); 9th governs higher education.' },
-        health_disease: { prime: [1], supporting: [6, 8, 12], negative: [], note: '1st = overall health/vitality baseline; a 6-8-12 combination at the 6th CSL/star-lord level signals disease (esp. chronic if repeated); 5-11 signals a healthy/disease-free period.' },
-        consultancy_advisory: { prime: [9], supporting: [3, 5], negative: [], note: '9th = consultancy of every kind, universally; 3rd/5th reinforce advisory/solutions work.' },
-        debt_loan_recovery: { prime: [6], supporting: [10, 11], negative: [5, 8, 9], note: 'Recovering money owed to you, or securing a loan, needs 6-10-11; a 5-8-9 combination at the 6th CSL/star-lord level signals the money stays stuck.' }
+        marriage: {
+            prime: [7], supporting: [2, 11], negative: [6, 10, 12], repeatBase: 7,
+            note: 'Marriage promise = 2/7/11 combination; 6-10-12 delays/breaks it; 8th anywhere nearby brings complication (e.g. secret relationships, special marriage act).',
+            reference: 'K.S. Krishnamurti, KP Reader Vols. I–VI (CSL axiom); KP Timing-of-Events lecture tradition (2-7-11 / 6-10-12 method).',
+            effect: 'When promised cleanly (prime H7 matched, no negative house contested), marriage tends to happen smoothly during the determining planet\'s dasha/sub-period; a contested promise (6-10-12 or 8th also touched) still tends to happen, but with delay, friction, or complication attached.',
+            remedy: 'Where 6-10-12 or the 8th complicate the 7th CSL, traditional practice offers Venus worship (harmony, relationships) on Fridays and quiet, non-transactional charity connected to marriage/family welfare — offered as a supportive practice, not a guaranteed fix.'
+        },
+        second_marriage: {
+            prime: [7], supporting: [2, 9, 11], negative: [6, 8, 10, 12], repeatBase: 7,
+            note: 'If 2-7-11 did not fructify for a first marriage, a second marriage is checked via 2-9-11 — also derivable via the general "3 houses forward per repeat occurrence" rule: 2nd spouse = 3rd-from-7th = 9th, 3rd spouse = 3rd-from-9th = 11th. 6-8-10-12 signals separation/divorce.',
+            reference: 'K.S. Krishnamurti, KP Reader Vols. I–VI; "repeat occurrence = 3 houses forward" rule from the same Timing-of-Events tradition.',
+            effect: 'A second marriage promised via 2-9-11 tends to follow the same delay/complication pattern as the first if 6-8-10-12 remain involved in the chain.',
+            remedy: 'Same supportive practice as first marriage (Venus worship, non-transactional charity), with particular attention to whichever of 6-8-10-12 is repeating from the earlier failed promise, since that is the pattern actually asking to be addressed.'
+        },
+        divorce_separation: {
+            prime: [6, 10, 12], supporting: [8], negative: [],
+            note: 'Separative combination = 6-10-12 (8th nearby aggravates it further); classically the teacher weighs this over blaming the 1st house alone.',
+            reference: 'KP Timing-of-Events lecture tradition (6-10-12 separative combination).',
+            effect: 'A clean 6-10-12 (or 8th-reinforced) combination tends toward actual separation/divorce fructifying during the determining planet\'s period, rather than staying at the level of mere friction.',
+            remedy: 'Astrology names the timing pattern; it does not replace honest communication or professional relationship counseling. Where offered, traditional practice is 7th-lord and Venus worship on Fridays alongside active mediation, not ritual alone.'
+        },
+        property_purchase: {
+            prime: [4], supporting: [11, 12], negative: [8],
+            note: 'Property purchase — primary house 4th (4/11/12 combination); 4th CSL and its star lord must show 4-11-12 involvement for the promise to be confirmed.',
+            reference: 'K.S. Krishnamurti, KP Reader Vols. I–VI; KP Timing-of-Events tradition (4-11-12 property combination).',
+            effect: 'A clean 4-11-12 promise tends to close during the determining planet\'s dasha/sub-period; 8th involvement tends to add legal/title complications or last-minute renegotiation rather than blocking the purchase outright.',
+            remedy: 'Where 8th-house complication appears alongside the 4th CSL, traditional practice pairs a plain legal/title due-diligence review of the specific property with Moon worship (domestic harmony) on Mondays before finalizing — the legal check is not optional even when the astrology looks favourable.'
+        },
+        property_sale: {
+            prime: [10], supporting: [3, 5], negative: [],
+            note: 'Property SALE (as opposed to purchase) is read from the 10th CSL — a 3-5-10 combination signals selling.',
+            reference: 'KP Timing-of-Events lecture tradition (10th-CSL, 3-5-10 sale combination).',
+            effect: 'A clean 3-5-10 combination at the 10th CSL tends to produce an actual sale during that period, often at favourable terms if the 11th also touches in.',
+            remedy: 'No strong remedy tradition attaches to a sale beyond timing patience — proceed once the 10th CSL/L1/L2 chain confirms rather than forcing a sale during an unsupportive sub-period.'
+        },
+        children: {
+            prime: [5], supporting: [2, 11], negative: [4, 10, 12], repeatBase: 5,
+            note: 'Child-birth promise = 2-5-11 combination (5th prime, esp. for the first child); 4-10-12 signals difficulty/no children. CAVEAT: if the 5th CSL and its star lord are BOTH in a Barren sign (Aries/Gemini/Leo/Virgo — Gemini and Leo are the MOST barren of the four), even a promise can be hard to fructify without medical help. Twins are suggested when CSL and star lord are both in a Dual sign, especially via Mercury.',
+            reference: 'K.S. Krishnamurti, KP Reader Vols. I–VI (2-5-11 combination; Barren/Fruitful/Dual sign classification).',
+            effect: 'A clean 2-5-11 promise (without Barren-sign complication) tends to deliver childbirth during the determining planet\'s period; Barren-sign involvement narrows the window and often needs medical support to align the timing.',
+            remedy: 'Where the 5th CSL/star lord sit in Barren signs, medical fertility consultation comes FIRST — astrology here supports timing, it never substitutes for medical care. Alongside that, traditional practice is Jupiter worship (natural karaka of children) on Thursdays and patience through better-aligned sub-periods.'
+        },
+        job_service: {
+            prime: [6], supporting: [10, 11], negative: [5, 8, 12],
+            note: 'Job/service = 6th house; 6-10-11 favours winning competition/getting hired; 4-5-12 (or 5-8-12) works against it.',
+            reference: 'KP Timing-of-Events lecture tradition (6-10-11 vs 4-5-12/5-8-12).',
+            effect: 'A clean 6-10-11 promise tends to deliver hiring/placement during that period; 5-8-12 (or 4-5-12) involvement tends to produce instability — frequent job changes or a difficult, short-lived placement — rather than outright failure to find work.',
+            remedy: 'Where 5-8-12 (or 4-5-12) dominates the 6th CSL, traditional practice is disciplined routine (Saturn\'s domain) plus Mars/Hanuman worship on Tuesdays for the persistence to ride out a competitive window, rather than switching jobs impulsively mid-affliction.'
+        },
+        promotion: {
+            prime: [10], supporting: [6, 11], negative: [],
+            note: 'Promotion = 10th house.',
+            reference: 'KP Timing-of-Events lecture tradition (10th-house promotion rule).',
+            effect: 'A clean 10th-house promise tends to deliver the promotion/status change during the determining planet\'s own dasha/sub-period.',
+            remedy: 'No specific remedy tradition attaches beyond the general 10th-house practice of Sun worship (status, recognition) on Sundays and visible, consistent performance during the supportive period.'
+        },
+        wealth_income: {
+            prime: [2], supporting: [6, 10, 11], negative: [5, 8, 12],
+            note: 'The single best wealth combination is 2-6-10-11 ("maalamaal" combination). Its mirror-opposite 5-8-12 signifies financial loss/struggle — "what comes with one hand leaves with the other."',
+            reference: 'KP Timing-of-Events lecture tradition (2-6-10-11 "maalamaal" combination and its 5-8-12 mirror).',
+            effect: 'A clean 2-6-10-11 promise tends to produce steady, compounding gain during that period; a 5-8-12 mirror pattern tends to produce gains that arrive and then leak away just as fast.',
+            remedy: 'Where the 5-8-12 mirror pattern dominates, the specific remedy recorded in the source teaching is quiet, ANONYMOUS charity performed from genuine inner conviction (not transactional bargaining) — see the 12th-CSL/8th-house case study for the full worked example.'
+        },
+        competition_litigation: {
+            prime: [6], supporting: [10, 11], negative: [4, 5, 12],
+            note: 'Winning competitions/court cases = 6-10-11; the losing combination is 4-5-12.',
+            reference: 'KP Timing-of-Events lecture tradition (6-10-11 vs 4-5-12).',
+            effect: 'A clean 6-10-11 promise tends to favour winning the competition/case during that period; 4-5-12 involvement tends to favour the other side or produce a drawn-out, costly process.',
+            remedy: 'Where 4-5-12 dominates the 6th CSL/L1, traditional practice favours Mars worship (courage, the 6th\'s natural co-karaka) on Tuesdays and scrupulous documentation (3rd-house support) rather than escalating from a weak position.'
+        },
+        foreign_travel: {
+            prime: [12], supporting: [3, 9], negative: [],
+            note: '12th = foreign land/settlement; 3rd = short travel; 9th = long-distance travel.',
+            reference: 'KP Timing-of-Events lecture tradition (12-3-9 travel combination).',
+            effect: 'A clean 12-3-9 combination tends to produce the travel/settlement during the determining planet\'s period — 12th alone favours longer settlement, 3rd/9th alone favour shorter trips.',
+            remedy: 'No strong remedy tradition attaches beyond the general 12th-house practice of Ketu/Saturn worship and quiet charity toward travellers or those settling abroad, offered as supportive rather than corrective.'
+        },
+        education: {
+            prime: [4], supporting: [9], negative: [],
+            note: 'KP-specific: primary education house is the 4th (not the 5th as in classical Parashari); 9th governs higher education.',
+            reference: 'K.S. Krishnamurti, KP Reader Vols. I–VI — explicit KP departure from classical Parashari 5th-house education rule.',
+            effect: 'A clean 4-9 combination tends to produce steady educational progress/qualification completion during that period.',
+            remedy: 'Persistent 4th-CSL affliction is traditionally supported by Mercury worship (learning, communication) on Wednesdays and addressing the concrete study-environment factors the 4th house governs (home stability) rather than ritual alone.'
+        },
+        health_disease: {
+            prime: [1], supporting: [6, 8, 12], negative: [],
+            note: '1st = overall health/vitality baseline; a 6-8-12 combination at the 6th CSL/star-lord level signals disease (esp. chronic if repeated); 5-11 signals a healthy/disease-free period.',
+            reference: 'KP Timing-of-Events lecture tradition (6-8-12 disease combination). This is a TIMING signal only — never a diagnosis.',
+            effect: 'A repeated 6-8-12 pattern at the 6th CSL/star-lord level tends to coincide with active illness during that period; a clean 5-11 pattern tends to coincide with a genuinely healthy stretch. Always confirm with a qualified medical professional — this reading is not a diagnosis and should never delay seeking care.',
+            remedy: 'This is a supportive/traditional layer only, never a substitute for medical diagnosis and treatment. Where a repeated 6-8-12 pattern shows, traditional practice is Saturn worship (patience, the 6th\'s co-karaka) on Saturdays and disciplined routine — alongside, never instead of, seeing a doctor.'
+        },
+        consultancy_advisory: {
+            prime: [9], supporting: [3, 5], negative: [],
+            note: '9th = consultancy of every kind, universally; 3rd/5th reinforce advisory/solutions work.',
+            reference: 'KP Timing-of-Events lecture tradition (9th-house universal consultancy rule).',
+            effect: 'A strong, clean 9th-house promise tends to produce visible advisory/consultancy success (reputation, client flow) during that period.',
+            remedy: 'No specific remedy tradition attaches beyond the general 9th-house practice of ethical, well-sourced advice-giving (Jupiter\'s domain) — Jupiter worship on Thursdays is the traditional support for advisory/consultancy careers broadly.'
+        },
+        debt_loan_recovery: {
+            prime: [6], supporting: [10, 11], negative: [5, 8, 9],
+            note: 'Recovering money owed to you, or securing a loan, needs 6-10-11; a 5-8-9 combination at the 6th CSL/star-lord level signals the money stays stuck.',
+            reference: 'KP Timing-of-Events lecture tradition (6-10-11 vs 5-8-9 recovery combination).',
+            effect: 'A clean 6-10-11 promise tends to produce actual recovery/loan approval during that period; 5-8-9 involvement tends to keep the money stuck regardless of how strongly it is chased.',
+            remedy: 'Where 5-8-9 dominates the 6th CSL/star-lord level, traditional practice is patient, undramatic follow-up (Saturn\'s domain) rather than confrontation, paired with Saturn worship on Saturdays.'
+        }
     },
 
     // Reference to the 6 dashaSeq/dashaYrs used by getKPLords, duplicated
@@ -650,13 +740,30 @@ window.KP_PREDICTION = {
         if (promised && matchedNegative.length === 0) strength = (matchedSupporting.length > 0 || chainConfirms) ? 'strong promise' : 'promise present';
         else if (promised && matchedNegative.length > 0) strength = 'promise present but contested (negative houses also touched)';
 
+        // Explicit METHOD line — which of the module's rules actually fired for this verdict.
+        const methodParts = [`Prime House ${primeHouse}'s CSL (${resolved.csl}) resolved via the "2 levels deep" rule${resolved.cslSelfStarred ? ' (self-starred, so CSL itself stands)' : ' to determining planet ' + resolved.determiningPlanet}.`];
+        if (chainConfirms) methodParts.push('L1/L2 chain cross-check on the same CSL independently confirms (both levels show a prime house).');
+        if (goldenClaimants.length) methodParts.push(`Golden-Rule scan (§4½) surfaced ${goldenClaimants.length} additional claimant planet(s) on the prime house.`);
+        const method = methodParts.join(' ');
+
+        // Explicit RESULT verdict — one line, independent of the styling/color logic in strength.
+        const result = !promised
+            ? `NOT PROMISED — ${detPlanet}'s numbers (H${detNumbers.join(',H') || '—'}) do not touch prime H${ev.prime.join(',H')}, and no L1/L2 or Golden-Rule confirmation was found either.`
+            : (matchedNegative.length > 0 || invitesEighth)
+                ? `PROMISED BUT CONTESTED — confirmed via H${matchedPrime.concat(chainConfirms ? ['L1/L2'] : []).join(', H') || 'chain/Golden-Rule'}, but negative house(s) H${matchedNegative.join(',H') || (invitesEighth ? '8' : '')} are also touched, so expect delay/friction rather than a clean outcome.`
+                : `PROMISED — confirmed via H${matchedPrime.join(',H') || 'L1/L2 chain / Golden-Rule claim'}, with no contesting negative house touched.`;
+
         return {
             eventType: eventType, primeHouse: primeHouse, cusp: allCusps[primeHouse],
             resolved: resolved, determiningPlanet: detPlanet, determiningPlanetNumbers: detNumbers,
             chain: chain, l1Matches: l1Matches, l2Matches: l2Matches, chainConfirms: chainConfirms,
             goldenClaimants: goldenClaimants,
             matchedPrime: matchedPrime, matchedSupporting: matchedSupporting, matchedNegative: matchedNegative,
-            invitesEighth: invitesEighth, promised: promised, strength: strength, eventInfo: ev
+            invitesEighth: invitesEighth, promised: promised, strength: strength, eventInfo: ev,
+            method: method, result: result,
+            reference: ev.reference || null,
+            effect: ev.effect || null,
+            remedy: (matchedNegative.length > 0 || invitesEighth) ? (ev.remedy || null) : null
         };
     },
 
@@ -1015,11 +1122,13 @@ window.KP_PREDICTION = {
     // schizophrenia-type patterns, Mars -> anxiety, Saturn -> depression,
     // Mercury -> epilepsy.
     MENTAL_HEALTH_AFFLICTION_MAP: {
-        Rahu: { condition: 'Schizophrenia-type dissociative patterns', note: 'A Rahu linkage into the Moon/1st/4th/5th combination inclines toward schizophrenia-type patterns.' },
-        Mars: { condition: 'Anxiety', note: 'A Mars linkage into the same combination inclines toward anxiety-type patterns.' },
-        Saturn: { condition: 'Depression', note: 'A Saturn linkage into the same combination inclines toward depression-type patterns.' },
-        Mercury: { condition: 'Epilepsy', note: 'A Mercury linkage into the same combination inclines toward epilepsy-type patterns.' }
+        Rahu: { condition: 'Schizophrenia-type dissociative patterns', note: 'A Rahu linkage into the Moon/1st/4th/5th combination inclines toward schizophrenia-type patterns.', remedy: 'Supportive traditional practice only — Durga worship and calming, grounding routines are the recorded support for Rahu-linked patterns. This NEVER substitutes for psychiatric evaluation and treatment; please see a qualified mental-health professional.' },
+        Mars: { condition: 'Anxiety', note: 'A Mars linkage into the same combination inclines toward anxiety-type patterns.', remedy: 'Supportive traditional practice only — Hanuman worship and physical exertion/exercise (Mars\'s domain) are the recorded support for Mars-linked patterns. This NEVER substitutes for professional evaluation; please see a qualified mental-health professional.' },
+        Saturn: { condition: 'Depression', note: 'A Saturn linkage into the same combination inclines toward depression-type patterns.', remedy: 'Supportive traditional practice only — Shani/Hanuman worship and steady, structured daily routine (Saturn\'s domain) are the recorded support for Saturn-linked patterns. This NEVER substitutes for professional evaluation; please see a qualified mental-health professional.' },
+        Mercury: { condition: 'Epilepsy', note: 'A Mercury linkage into the same combination inclines toward epilepsy-type patterns.', remedy: 'Supportive traditional practice only — Vishnu/Mercury worship is the recorded support for Mercury-linked patterns. This is a NEUROLOGICAL condition requiring proper medical diagnosis and treatment — astrology never substitutes for that.' }
     },
+
+    MEDICAL_REFERENCE: 'Source teaching: "Unlock Daily Predictions with KP Astrology" — Moon + 1st + 4th + 5th read together, never a single factor alone. This entire section is a traditional TIMING/pattern layer, not a diagnosis, and never replaces consultation with a qualified doctor or mental-health professional.',
 
     getMedicalIndicators: function (ascSid, ascSignNum, natalPlanetsMap, lords) {
         const L = this._lords(lords);
@@ -1045,6 +1154,7 @@ window.KP_PREDICTION = {
         const afflictionRows = data.linkedAfflictions.length ? data.linkedAfflictions.map(a => `<div style="margin:3px 0;padding:5px 8px;border-left:3px solid #FF4477;background:rgba(255,68,119,.08);">
                 <b>${a.planet}</b> linked via ${typeof a.house === 'number' ? 'House ' + a.house : a.house} → <b style="color:#FF4477;">${a.condition}</b>
                 <div style="font-size:8.5px;color:var(--text);opacity:.85;margin-top:2px;">${a.note}</div>
+                <div style="font-size:8.5px;color:#00DD77;margin-top:3px;"><b>Remedy (supportive only):</b> ${a.remedy}</div>
               </div>`).join('') : '<div style="font-size:9px;color:var(--muted);">No Rahu/Mars/Saturn/Mercury affliction pattern detected across Moon/1st/4th/5th.</div>';
 
         return `<details style="margin-top:6px;">
@@ -1054,6 +1164,7 @@ window.KP_PREDICTION = {
                   <div style="font-size:9px;color:var(--text);margin-top:2px;">1st Cusp (Body) CSL: ${data.first.resolved.csl} · 4th Cusp (Mind) CSL: ${data.fourth.resolved.csl} · 5th Cusp (Intelligence) CSL: ${data.fifth.resolved.csl}</div>
                   <div style="margin-top:6px;font-size:9px;color:var(--muted);font-weight:bold;">AFFLICTION-TYPE LINKAGE:</div>
                   ${afflictionRows}
+                  <div style="font-size:7.5px;color:var(--muted);margin-top:6px;font-style:italic;border-top:1px dashed rgba(255,255,255,0.08);padding-top:4px;">${this.MEDICAL_REFERENCE}</div>
                 </details>`;
     },
 
@@ -1288,7 +1399,8 @@ window.KP_PREDICTION = {
             flags.push(`<div style="margin-top:6px;padding:6px 8px;border-left:3px solid #FF4477;background:rgba(255,68,119,.08);">
                 <b style="color:#FF4477;">⚠ Job-Instability Signature Detected</b>
                 <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:2px;">${interp ? interp.meaning : 'Job/employment tends to change frequently.'}</div>
-                <div style="font-size:9px;color:#00DD77;margin-top:3px;"><b>Career Alignment fix:</b> ${interp ? interp.alignment : ''}</div>
+                <div style="font-size:9px;color:#00DD77;margin-top:3px;"><b>Career Alignment fix (remedy):</b> ${interp ? interp.alignment : ''}</div>
+                <div style="font-size:7.5px;color:var(--muted);margin-top:3px;font-style:italic;"><b>Reference:</b> 6th CSL/L1=5th pattern, source teaching on Career Alignment (Alignment principle: fix a house's problem through that same house's energy).</div>
               </div>`);
         }
         if (data.surgeryLinkFlag) {
@@ -1296,7 +1408,8 @@ window.KP_PREDICTION = {
             flags.push(`<div style="margin-top:6px;padding:6px 8px;border-left:3px solid #9b6fff;background:rgba(155,111,255,.08);">
                 <b style="color:#9b6fff;">🔬 6-8 Combination Detected (Occult/Surgical/Research Fit)</b>
                 <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:2px;">${interp ? interp.meaning : ''}</div>
-                <div style="font-size:9px;color:#00DD77;margin-top:3px;">${interp ? interp.alignment : ''}</div>
+                <div style="font-size:9px;color:#00DD77;margin-top:3px;"><b>Effect:</b> ${interp ? interp.alignment : ''}</div>
+                <div style="font-size:7.5px;color:var(--muted);margin-top:3px;font-style:italic;"><b>Reference:</b> 6th CSL/L1 or L2=8th pattern, source teaching on Career Alignment (6-8 depth-of-insight professions).</div>
               </div>`);
         }
 
@@ -2445,6 +2558,13 @@ window.KP_PREDICTION = {
                 ${p.goldenClaimants.length ? `<div style="font-size:8px;color:#FFD700;margin-top:2px;">Golden-Rule extra claimants on H${p.primeHouse}: ${p.goldenClaimants.join(', ')}</div>` : ''}
                 ${p.eventInfo.repeatBase ? `<div style="font-size:8px;color:#FF9F43;margin-top:2px;">Repeat-occurrence chain (3 houses forward each time): 1st=H${this.getRepeatEventHouse(p.eventInfo.repeatBase,1)} · 2nd=H${this.getRepeatEventHouse(p.eventInfo.repeatBase,2)} · 3rd=H${this.getRepeatEventHouse(p.eventInfo.repeatBase,3)}</div>` : ''}
                 <div style="font-size:8px;color:var(--muted);margin-top:2px;">${p.eventInfo.note}</div>
+                <div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,0.08);">
+                  <div style="font-size:8.5px;color:#9b6fff;"><b>Method:</b> <span style="color:var(--text);opacity:.85;">${p.method}</span></div>
+                  <div style="font-size:8.5px;color:${c};margin-top:2px;"><b>Result:</b> <span style="color:var(--text);opacity:.9;">${p.result}</span></div>
+                  ${p.effect ? `<div style="font-size:8.5px;color:#66CCFF;margin-top:2px;"><b>Effect:</b> <span style="color:var(--text);opacity:.85;">${p.effect}</span></div>` : ''}
+                  ${p.remedy ? `<div style="font-size:8.5px;color:#00DD77;margin-top:2px;"><b>Remedy:</b> <span style="color:var(--text);opacity:.85;">${p.remedy}</span></div>` : ''}
+                  ${p.reference ? `<div style="font-size:7.5px;color:var(--muted);margin-top:2px;font-style:italic;"><b>Reference:</b> ${p.reference}</div>` : ''}
+                </div>
               </div>`;
         }).join('');
         return `<details style="margin-top:6px;">
