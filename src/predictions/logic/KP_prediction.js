@@ -567,7 +567,78 @@ window.KP_PREDICTION = {
         Object.keys(numbers).forEach(p => numbers[p].sort((a, b) => a - b));
         return numbers;
     },
+// ===================== 3½. RAHU/KETU "SCRIPT" -- SIGN-DISPOSITOR RULE (RECONFIRMED) =====================
+    //
+    // RECONFIRMED against the "Karma Alignment Technique -- Balancing
+    // Mahadasha" lecture, which works through a running Ketu Mahadasha
+    // and explicitly says: check Ketu's own Nakshatra (Star Lord) first
+    // -- that's the normal involvement layer, same as any planet -- but
+    // because Rahu/Ketu do not own any sign, their MOST POWERFUL results
+    // ("सबसे पावरफुल के तू किसके रिजल्ट से रहा है") flow through their
+    // SIGN DISPOSITOR (the classical rashi-lord of the sign Rahu/Ketu
+    // physically sits in). Concretely, that means TWO additional house-
+    // sources beyond the node's own Nakshatra Lord:
+    //   (a) the HOUSE the dispositor is natally PLACED IN, and
+    //   (b) the houses the dispositor itself OWNS/is CSL-of (its own
+    //       "numbers") -- the lecture's example names "however many
+    //       houses [the dispositor] has given" as the channel for the
+    //       node's strongest results.
+    // Full script build for a Rahu/Ketu determining planet is therefore:
+    //   Node's own Nakshatra Lord (standard 2-level promise rule, unchanged)
+    //   UNION Node's sign-dispositor's placement house
+    //   UNION Node's sign-dispositor's owned houses
+    //   UNION Node's sign-dispositor's own CSL-of ("numbers") houses
+    // This is DISTINCT FROM (and complements) the RAHU_KETU_COMBINATIONS
+    // conjunction-based Karma-Alignment readings elsewhere in this module
+    // -- that system reads specific NATAL CONJUNCTIONS (Saturn+Rahu, etc);
+    // this section reads the GENERAL house-script every Rahu/Ketu carries
+    // by virtue of the sign it occupies, needed any time a node turns up
+    // as a CSL/determining planet for ANY house.
+    getNodeDispositorHouses: function (node, ascSid, ascSignNum, natalPlanetsMap, lords) {
+        const L = this._lords(lords);
+        const pd = natalPlanetsMap && natalPlanetsMap[node];
+        if (!pd || pd.sn === undefined || !L) return null;
+        const dispositor = L[pd.sn];
+        if (!dispositor) return null;
+        const dispositorData = natalPlanetsMap[dispositor];
+        const dispositorPlacementHouse = dispositorData ? dispositorData.house : null;
 
+        const ownedHouses = [];
+        for (let h = 1; h <= 12; h++) { if (L[(ascSignNum + h - 1) % 12] === dispositor) ownedHouses.push(h); }
+
+        const allCusps = this.getAllCusps(ascSid);
+        const rawPlanetNumbers = this.getPlanetNumbers(allCusps); // unblended base lookup -- avoids recursion
+        const cslHouses = rawPlanetNumbers[dispositor] || [];
+
+        const combinedHouses = Array.from(new Set([dispositorPlacementHouse, ...ownedHouses, ...cslHouses].filter(h => h !== null && h !== undefined))).sort((a, b) => a - b);
+
+        return {
+            node: node, sign: this.SIGN_NAMES[pd.sn], dispositor: dispositor,
+            dispositorPlacementHouse: dispositorPlacementHouse,
+            dispositorOwnedHouses: ownedHouses, dispositorCSLHouses: cslHouses,
+            combinedHouses: combinedHouses,
+            explanation: `${node} sits in ${this.SIGN_NAMES[pd.sn]} (dispositor ${dispositor}). ${dispositor} is natally placed in H${dispositorPlacementHouse != null ? dispositorPlacementHouse : '?'}, owns ${ownedHouses.length ? 'H' + ownedHouses.join(',H') : 'no house'}, and is CSL of ${cslHouses.length ? 'H' + cslHouses.join(',H') : 'no house'} -- ${node}'s most powerful results flow through this combined set: H${combinedHouses.join(', H') || 'none'}.`
+        };
+    },
+
+    /**
+     * Takes an existing planetNumbers map (from getPlanetNumbers above)
+     * and returns an ENHANCED COPY where Rahu's and Ketu's own number-
+     * lists are unioned with their sign-dispositor's combined houses (see
+     * getNodeDispositorHouses). Apply this at any consumption point where
+     * a node might be the determining/final planet whose "numbers" get
+     * checked against an event's required houses.
+     */
+    applyNodeDispositorBlend: function (planetNumbers, ascSid, ascSignNum, natalPlanetsMap, lords) {
+        const enhanced = Object.assign({}, planetNumbers);
+        ['Rahu', 'Ketu'].forEach(node => {
+            const info = this.getNodeDispositorHouses(node, ascSid, ascSignNum, natalPlanetsMap, lords);
+            if (!info) return;
+            const existing = enhanced[node] || [];
+            enhanced[node] = Array.from(new Set(existing.concat(info.combinedHouses))).sort((a, b) => a - b);
+        });
+        return enhanced;
+    },
     // ===================== 4. CSL 2-LEVEL "PROMISE" READ =====================
 
     /**
@@ -708,7 +779,9 @@ window.KP_PREDICTION = {
         const ev = this.EVENT_PRIME_HOUSES[eventType];
         if (!ev) return null;
         const allCusps = this.getAllCusps(ascSid);
-        const planetNumbers = this.getPlanetNumbers(allCusps);
+        const ascSignNum = Math.floor((((ascSid % 360) + 360) % 360) / 30);
+        const planetNumbers = this.applyNodeDispositorBlend(this.getPlanetNumbers(allCusps), ascSid, ascSignNum, natalPlanetsMap, lords);
+
 
         const primeHouse = ev.prime[0];
         const resolved = this.resolveDeterminingPlanetPrecise(primeHouse, allCusps, natalPlanetsMap);
@@ -1491,11 +1564,20 @@ window.KP_PREDICTION = {
             // "CSL present in house" — the Cuspal Sub Lord of the house cusp this
             // planet is physically sitting in (colors the planet's own results).
             const houseCSL = allCusps[pd.house] ? allCusps[pd.house].subLord : null;
+            // Sign-dispositor: the Rashi Lord of the sign this planet occupies, and
+            // WHICH HOUSE that dispositor itself is natally placed in. Every planet
+            // has one, but it carries the most weight for Rahu/Ketu specifically —
+            // since a node owns no sign of its own, its results are classically read
+            // through (a) its own NL/SL above, AND (b) the planet whose sign it sits
+            // in, filtered through THAT planet's own house placement.
+            const signLord = L ? L[pd.sn] : null;
+            const signLordHouse = (signLord && natalPlanetsMap[signLord]) ? natalPlanetsMap[signLord].house : null;
             return {
                 planet: p, available: true, house: pd.house, sign: pd.sign,
                 nakLord: kp.nakLord, subLord: kp.subLord, subSubLord: kp.subSubLord,
                 tenancy: tenancy[p], ownsHouses: owns, csl_of_houses: planetNumbers[p] || [],
-                nlSignifies: nlSignifies, slSignifies: slSignifies, houseCSL: houseCSL
+                nlSignifies: nlSignifies, slSignifies: slSignifies, houseCSL: houseCSL,
+                signLord: signLord, signLordHouse: signLordHouse
             };
         });
     },
@@ -1645,9 +1727,11 @@ window.KP_PREDICTION = {
               <td style="padding:4px 6px;">${p.subSubLord}</td>
               <td style="padding:4px 6px;">${p.csl_of_houses.length ? 'H' + p.csl_of_houses.join(',H') : '—'}</td>
               <td style="padding:4px 6px;">${p.houseCSL || '—'}</td>
+              <td style="padding:4px 6px;color:${(p.planet === 'Rahu' || p.planet === 'Ketu') ? '#FF9F43' : 'var(--text)'};">${p.signLord || '—'}${p.signLordHouse ? ' (H' + p.signLordHouse + ')' : ''}</td>
             </tr>`).join('');
         return `<details open style="margin-top:6px;">
                   <summary style="cursor:pointer;color:#9b6fff;font-size:10.5px;font-weight:bold;">🪐 Planet-in-House Table (NL / Sub Lord / CSL detail)</summary>
+                  <div style="font-size:8px;color:var(--muted);margin:4px 0;">"Sign Lord (House)" = the Rashi Lord of the planet's own sign, and which house THAT lord sits in — carries the most weight for Rahu/Ketu, which own no sign and read their results through this dispositor chain.</div>
                   <div style="overflow-x:auto;margin-top:6px;">
                   <table style="width:100%;border-collapse:collapse;font-size:9px;color:var(--text);">
                     <thead><tr style="border-bottom:1px solid var(--border);color:var(--muted);text-align:left;">
@@ -1655,6 +1739,7 @@ window.KP_PREDICTION = {
                       <th style="padding:4px 6px;">NL</th><th style="padding:4px 6px;">NL Signifies</th>
                       <th style="padding:4px 6px;">Sub Lord</th><th style="padding:4px 6px;">SL Signifies</th>
                       <th style="padding:4px 6px;">SSL</th><th style="padding:4px 6px;">Planet is CSL of</th><th style="padding:4px 6px;">House's own CSL</th>
+                      <th style="padding:4px 6px;">Sign Lord (House)</th>
                     </tr></thead>
                     <tbody>${rows}</tbody>
                   </table>
@@ -2111,19 +2196,158 @@ window.KP_PREDICTION = {
         const tenancy = this.getTenancy(natalPlanetsMap);
         const cslTenancy = resolved ? tenancy[resolved.csl] : null;
         const independent = !!(cslTenancy && !cslTenancy.tenanted);
-        const planetNumbers = this.getPlanetNumbers(allCusps);
+        const planetNumbers = this.applyNodeDispositorBlend(this.getPlanetNumbers(allCusps), ascSid, ascSignNum, natalPlanetsMap, lords);
+        const isNodeDeterminant = resolved && (resolved.determiningPlanet === 'Rahu' || resolved.determiningPlanet === 'Ketu');
+        const nodeDispositorInfo = isNodeDeterminant ? this.getNodeDispositorHouses(resolved.determiningPlanet, ascSid, ascSignNum, natalPlanetsMap, lords) : null;
         return {
             house: houseNum, karaka: this.HOUSE_KARAKAS[houseNum], cusp: cusp, resolved: resolved,
             determiningPlanetNumbers: resolved ? (planetNumbers[resolved.determiningPlanet] || []) : [],
             significators: sig, lordPlacement: lordPlacement, cslTenancy: cslTenancy, independent: independent,
-            lossHouse: this.getLossHouse(houseNum)
+            lossHouse: this.getLossHouse(houseNum), obstacleHouse: this.getObstacleHouse(houseNum),
+            nodeDispositorInfo: nodeDispositorInfo
         };
+    },
+ /**
+     * RULE A½ ("अष्टम/Obstacle") -- the 8th house FROM ANY BHAVA brings
+     * disappointments and obstacles to that bhava's matters (distinct
+     * from the 12th-from/Loss rule: the 12th ENDS/negates a promise
+     * outright, while the 8th-from disrupts/delays it with sudden shocks
+     * and hidden hurdles without necessarily ending it).
+     */
+    getObstacleHouse: function (houseNum) {
+        return this._mod12(houseNum + 7); // 8th from houseNum
+    },
+    // ===================== 13⅜. RAHU/KETU KARMA-ALIGNMENT COMBINATIONS =====================
+    //
+    // Source: Rahul Kaushik's "Karma Alignment Technique" (KAT) teaching.
+    // Rather than reading a Rahu/Ketu-linked combination as simply a
+    // "good yoga" or "bad yoga," KAT reads each one for its PRACTICAL
+    // channel — what kind of work, habit, or behavior lines up with that
+    // combination's natural energy so it expresses constructively.
+    // Detection here is by natal CONJUNCTION (same house) — the simplest,
+    // most classical reading of "linked with."
+
+    RAHU_KETU_COMBINATIONS: {
+        'Saturn+Rahu': {
+            planets: ['Saturn', 'Rahu'],
+            method: 'Natal conjunction of Saturn (karma-karaka, sustained work) with Rahu (enormous, abnormal-scale expansion) in the same house.',
+            prediction: 'A rare capacity to expand any work taken up to a scale far beyond what Saturn or Jupiter alone would produce — success here is never "normal," it runs abnormally large. The same abnormality applies to loss: when work collapses under this combination, it collapses at an equally large scale.',
+            effect: 'A predictable "crossover" point tends to arrive after initial success, bringing confusion and insecurity and a strong temptation to abandon the current work for something else. Those who push straight through that crossover without switching direction tend to reach the very top of their field; those who switch at the crossover tend to lose the gains built up till then.',
+            remedy: 'Three measures recorded for this combination: (1) don\'t publicly announce or "broadcast" plans before they\'re achieved — Rahu here draws social-level envy/scrutiny that specifically disrupts work announced too early; let results speak first. (2) Channel the vision-generating tendency through foreign/overseas association, online work, data, AI/machine-learning, or large-scale digital marketing — the environments this combination naturally uses to generate "big vision" thinking. (3) At the crossover point, the discipline is simply to keep expanding the SAME work rather than switching direction.',
+            warning: 'If conduct turns unethical or antisocial while this combination is active, the classical caution is a major CHRONIC illness (Saturn = disease-karaka, scaled abnormally large by Rahu) rather than a difficult death. A recorded early-warning sign: new or worsening joint problems (arthritis-type symptoms) tend to appear around when conduct turns unethical. This is a traditional behavioral/timing observation, not a medical diagnosis — any joint or health symptom deserves an actual medical evaluation regardless of the astrology.',
+            reference: 'Rahul Kaushik, Karma Alignment Technique (KAT) — "Saturn-Rahu Combination" lecture.'
+        },
+        'Mercury+Rahu': {
+            planets: ['Mercury', 'Rahu'],
+            method: 'Natal conjunction of Mercury (intellect, analysis) with Rahu (non-traditional, pattern-based processing) in the same house.',
+            prediction: 'A thinking style that matches how AI/machine-learning models actually operate — pattern-matching across large non-traditional data rather than step-by-step traditional reasoning. This combination tends to do unusually well specifically in AI, machine learning, and data science (a Mercury-Ketu native\'s more traditional, linear thinking style doesn\'t fit these fields the same way).',
+            effect: 'Career and study choices in data-heavy, non-traditional, or technology-forward fields tend to outperform choices in traditional analytical roles for this combination.',
+            remedy: 'Lean into data science, AI/ML, or analytics work — presented as the natural channel for the combination rather than something to correct.',
+            reference: 'Rahul Kaushik, Karma Alignment Technique (KAT) — Mercury-Rahu vs. Mercury-Ketu comparison.'
+        },
+        'Venus+Rahu': {
+            planets: ['Venus', 'Rahu'],
+            method: 'Natal conjunction of Venus (wealth, comfort) with Rahu (abnormal scale) in the same house.',
+            prediction: 'The highest peak wealth levels tend to belong to Venus-Rahu natives rather than Venus-Ketu natives — but the same abnormal scale applies to loss: whoever can earn at an abnormal scale under this combination can also lose at an abnormal scale.',
+            effect: 'Wealth swings, both up and down, tend to run much larger than a typical Venus placement would suggest.',
+            remedy: 'Because gains and losses both run large, deliberate diversification matters more than usual — see the Venus-Ketu multiple-account technique below, which applies equally well here.',
+            reference: 'Rahul Kaushik, Karma Alignment Technique (KAT) — Venus-Rahu wealth-scale example.'
+        },
+        'Venus+Ketu': {
+            planets: ['Venus', 'Ketu'],
+            method: 'Natal conjunction of Venus (wealth, comfort) with Ketu ("cutting"/fragmenting quality) in the same house.',
+            prediction: 'Peak wealth levels here tend to run somewhat lower than a Venus-Rahu native\'s, but Ketu\'s "cutting" quality shows up specifically around how money is STORED rather than how much is earned.',
+            effect: 'Money concentrated in a single place is more exposed to Ketu\'s fragmenting tendency (unexpected loss, access issues, a single point of failure).',
+            remedy: 'The specific technique recorded: split savings across multiple (three or four) bank accounts rather than keeping it concentrated in one place, so a genuine financial need can still be met even if any single account is disrupted — channeling Ketu\'s "cutting" nature into deliberate diversification instead of leaving it to cause loss.',
+            reference: 'Rahul Kaushik, Karma Alignment Technique (KAT) — Venus-Ketu multiple-bank-account remedy.'
+        },
+        'Saturn+Moon+Ketu': {
+            planets: ['Saturn', 'Moon', 'Ketu'],
+            method: 'Natal conjunction of Saturn (karma-karaka) with BOTH Moon and Ketu (each independently a "destiny-disruptor" placement) in the same house.',
+            prediction: 'A combination the source teaching treats as naturally uncomfortable at a mental/emotional level — but with a clear constructive channel rather than only a caution.',
+            effect: 'Work that involves unsettling or shifting OTHER people\'s minds/thought patterns (counseling-adjacent work) is recorded as a genuinely successful direction for this combination, not merely a compromise.',
+            remedy: 'The documented channel is clinical psychology / counseling-type work. Where that isn\'t practical, two related supports are recorded: (1) bathing in a spiritually-significant river (Ganga jal is the specific example — Moon is water-karaka, Ketu is spirituality-karaka, so Moon+Ketu reads as "spiritually significant water"); (2) an Ayurvedic lifestyle and diet built around root vegetables (Moon = food-karaka, Ketu = Ayurveda-karaka) — recorded as workable even living abroad, where a literal river bath isn\'t practical.',
+            reference: 'Rahul Kaushik, Karma Alignment Technique (KAT) — Saturn-Moon-Ketu worked example.'
+        },
+        'Mercury+Mars': {
+            planets: ['Mercury', 'Mars'],
+            method: 'Natal conjunction of Mercury (intellect, study) with Mars (physical energy, competitive drive) in the same house.',
+            prediction: 'A documented, repeatable pattern: when this combination is ALSO actively engaged in sports/physical competition, academic performance tends to improve alongside it rather than suffer — the physical outlet supports rather than distracts from study.',
+            effect: 'Removing the physical/sports outlet (e.g. a change that cuts out sports to "focus on studies") is recorded as coinciding with WORSE academic performance for this combination, not better — the opposite of the intended effect. Where strong academic pressure is combined with an afflicted Moon-Mars-Rahu pattern, the source teaching notes real risk of severe anxiety — this is exactly the kind of pattern where a genuine outlet (sport, physical activity) plus professional support matters, never astrology alone.',
+            remedy: 'Keep a physical/sports outlet actively part of the routine rather than replacing it with more study time. If anxiety, panic, or thoughts of self-harm are actually present, that calls for a mental-health professional first — the sports outlet is a supportive habit, not a substitute for care.',
+            reference: 'Rahul Kaushik, Karma Alignment Technique (KAT) — Mercury-Mars sports/education pattern.'
+        },
+        'Saturn+Mars': {
+            planets: ['Saturn', 'Mars'],
+            method: 'Natal conjunction of Saturn (structure, endurance) with Mars (conflict, competitive/aggressive drive) in the same house.',
+            prediction: 'A tendency toward friction/conflict at work when this combination runs unmanaged.',
+            effect: 'A grounding/calming practice is recorded as measurably reducing workplace conflict and improving career outcomes for this specific combination.',
+            remedy: 'The specific technique recorded: sleep on a firm, grounded surface (traditionally, the floor) rather than a soft/elevated one — the stated rationale is that a firm sleeping surface supports spinal alignment, which is linked to calmer stress-hormone regulation, in effect a physical grounding habit several natives with this combination independently reported as reducing career-related conflict.',
+            reference: 'Rahul Kaushik, Karma Alignment Technique (KAT) — Saturn-Mars grounding remedy.'
+        }
+    },
+
+    RAHU_GENERAL_REMEDY: 'A remedy recorded for Rahu generally, independent of any specific combination: meet criticism and insults gracefully rather than reactively — the source teaching frames accepting criticism well as an automatic form of karma purification, particularly valuable for natives with a prominent Rahu, since it accomplishes through others\' words what would otherwise take deliberate effort to achieve.',
+    KETU_GENERAL_NOTE: 'Ketu, in this teaching, is treated as fundamentally different from Rahu: Ketu IS nature itself and never disrupts a genuinely natural balance — where Ketu looks difficult, the traditional read is redirection (channeling what it cuts away) rather than correction of something "wrong."',
+
+    /**
+     * "2-7-12 from karaka" relational-strength rule from the Karma
+     * Alignment Technique's Bhagya Nadi method: for any significator
+     * planet, the house 2nd-from-it carries the strongest forward-
+     * looking ("what sustains/comes next") weight, the house directly
+     * opposite (7th-from-it) carries a near-equal mirrored weight, and
+     * the house 12th-from-it carries the weakest, backward-looking
+     * ("what came before") weight. Returned as the three related house
+     * numbers — the source teaching gives the weighting qualitatively
+     * (~75% / ~70% / ~20-25%), not as an exact formula.
+     */
+    getKarakaRelationalHouses: function (karakaHouse) {
+        return {
+            sustaining: this._mod12(karakaHouse + 1),  // 2nd from karaka — strongest, forward-looking
+            mirror: this._mod12(karakaHouse + 6),       // 7th from karaka — near-equal, direct opposite
+            past: this._mod12(karakaHouse - 1)           // 12th from karaka — weakest, backward-looking
+        };
+    },
+
+    /**
+     * Detects which of the RAHU_KETU_COMBINATIONS above are present in
+     * the natal chart, purely by CONJUNCTION (same house).
+     */
+    getRahuKetuCombinations: function (natalPlanetsMap) {
+        if (!natalPlanetsMap) return [];
+        const found = [];
+        Object.keys(this.RAHU_KETU_COMBINATIONS).forEach(key => {
+            const combo = this.RAHU_KETU_COMBINATIONS[key];
+            const houses = combo.planets.map(p => natalPlanetsMap[p] && natalPlanetsMap[p].house).filter(h => h !== undefined);
+            if (houses.length === combo.planets.length && houses.every(h => h === houses[0])) {
+                found.push(Object.assign({ key: key, house: houses[0] }, combo));
+            }
+        });
+        return found;
+    },
+
+    renderRahuKetuCombinations: function (combos) {
+        const rows = (combos || []).map(c => `<div style="margin:6px 0;padding:8px;border-left:3px solid #9b6fff;background:rgba(155,111,255,.06);">
+            <b style="color:#9b6fff;">${c.planets.join(' + ')} in House ${c.house}</b>
+            <div style="font-size:8.5px;color:var(--muted);margin-top:2px;"><b>Method:</b> ${c.method}</div>
+            <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:4px;"><b>Prediction:</b> ${c.prediction}</div>
+            <div style="font-size:9px;color:#66CCFF;margin-top:4px;"><b>Effect:</b> ${c.effect}</div>
+            <div style="font-size:9px;color:#00DD77;margin-top:4px;"><b>Remedy:</b> ${c.remedy}</div>
+            ${c.warning ? `<div style="font-size:9px;color:#FF4477;margin-top:4px;"><b>⚠ Watch for:</b> ${c.warning}</div>` : ''}
+            <div style="font-size:7.5px;color:var(--muted);margin-top:4px;font-style:italic;"><b>Reference:</b> ${c.reference}</div>
+          </div>`).join('');
+        return `<details style="margin-top:6px;">
+                  <summary style="cursor:pointer;color:#9b6fff;font-size:10.5px;font-weight:bold;">🐉 Rahu/Ketu Karma-Alignment Combinations</summary>
+                  <div style="font-size:8.5px;color:var(--muted);margin:4px 0;">${this.RAHU_GENERAL_REMEDY}</div>
+                  <div style="font-size:8.5px;color:var(--muted);margin:4px 0;">${this.KETU_GENERAL_NOTE}</div>
+                  ${rows || '<div style="font-size:9px;color:var(--muted);">No natal Saturn/Mercury/Venus/Mars/Moon conjunction with Rahu or Ketu detected — the two general notes above still apply to anyone with a prominent Rahu or Ketu.</div>'}
+                </details>`;
     },
 
     // ===================== 13½. NARRATIVE SCRIPTS (per-planet, per-house) =====================
 
-    /** Full-sentence narrative per planet, built from the same data as getPlanetDetails(). */
-    getPlanetScripts: function (planetDetails) {
+    /** Full-sentence narrative per planet, built from the same data as getPlanetDetails(). rahuKetuCombos (optional) is getRahuKetuCombinations()'s output, used to enrich Rahu's and Ketu's own scripts specifically. */
+    getPlanetScripts: function (planetDetails, rahuKetuCombos) {
         if (!planetDetails) return [];
         return planetDetails.filter(p => p.available).map(p => {
             const tenLine = (p.tenancy && !p.tenancy.tenanted)
@@ -2141,7 +2365,19 @@ window.KP_PREDICTION = {
             const houseCslLine = p.houseCSL
                 ? `The house ${p.planet} physically occupies (H${p.house}) is itself ruled by CSL ${p.houseCSL}, so ${p.planet}'s placement results are additionally filtered through ${p.houseCSL}'s promise for H${p.house}.`
                 : '';
-            const script = [`${p.planet} is placed in ${p.sign}, House ${p.house}.`, tenLine, ownLine, cslLine, nlLine, slLine, ssLine, houseCslLine].filter(Boolean).join(' ');
+            // Rahu/Ketu-specific Karma-Alignment enrichment (§13⅜) — their own nature note,
+            // plus any detected natal combination that names THIS planet.
+            let rkLine = '';
+            if (p.planet === 'Rahu') {
+                rkLine = this.RAHU_GENERAL_REMEDY;
+            } else if (p.planet === 'Ketu') {
+                rkLine = this.KETU_GENERAL_NOTE;
+            }
+            const rkCombos = (rahuKetuCombos || []).filter(c => c.planets.includes(p.planet));
+            const rkComboLine = rkCombos.length
+                ? `Natal combination(s) involving ${p.planet}: ${rkCombos.map(c => c.planets.filter(pl => pl !== p.planet).join('+') + ' in H' + c.house).join('; ')} — ${rkCombos.map(c => c.prediction).join(' ')}`
+                : '';
+            const script = [`${p.planet} is placed in ${p.sign}, House ${p.house}.`, tenLine, ownLine, cslLine, nlLine, slLine, ssLine, houseCslLine, rkLine, rkComboLine].filter(Boolean).join(' ');
             return { planet: p.planet, script: script };
         });
     },
@@ -2255,6 +2491,8 @@ window.KP_PREDICTION = {
         return { levels: levelData, commonHouses: common, mdAdOverlap: mdAdOverlap, verdict: verdict };
     },
 
+    KARMA_ALIGNMENT_PRINCIPLE: 'Karma Alignment Technique\'s single recorded master remedy: proactively bring whichever house is showing NEGATIVE at the Sub Lord (Final Result) level of your running dasha/antardasha INTO your actual work or daily routine, ahead of time, rather than waiting for the period to force it on you passively. The recorded pattern: when that house\'s affairs are already deliberately part of one\'s profession/routine before the period peaks, the same house that would otherwise cause loss or friction instead becomes a source of status and income during that period — in short, act in line with your dasha planet\'s nature rather than waiting for it to act on you.',
+
     renderDashaConfirmation: function (conf) {
         if (!conf) return `<div class="pred-item"><div class="pred-title">⚠️ Dasha info not available</div><div class="pred-detail" style="font-size:9px;color:var(--muted);">Requires PREDICTION_FORECASTING.getCurrentDashaInfo() — ensure dashas have been built (rebuildDashas()).</div></div>`;
         const lvColor = { Mahadasha: '#FFD700', Antardasha: '#00DD77', Pratyantardasha: '#66CCFF', 'Sookshma Dasha': '#FF9F43', 'Prana Dasha': '#FF69B4' };
@@ -2286,6 +2524,7 @@ window.KP_PREDICTION = {
               <b style="color:${verdictColor};">${conf.verdict.toUpperCase()}</b>
               <div style="font-size:9.5px;color:var(--text);opacity:.9;margin-top:4px;">${verdictText}</div>
             </div>
+            <div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,0.08);font-size:8.5px;color:var(--muted);"><b>Karma Alignment principle:</b> ${this.KARMA_ALIGNMENT_PRINCIPLE}</div>
           </div>`;
     },
 
@@ -2419,9 +2658,9 @@ window.KP_PREDICTION = {
         const argalaRows = data.argala.map(a => this.renderArgala(a)).join('');
         return `<div class="pred-item" style="border-left:3px solid #FFD700;">
             <div class="pred-title" style="color:#FFD700;">☀️ Monthly Panel — Sun Transit (≈15-30 day window)</div>
-            <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">Sun is transiting House ${data.transitHouse}. Its Nakshatra Lord's script names houses "possible" this month; its Sub Lord narrows to what's actually most likely; where BOTH agree is strongest.</div>
-            <div style="margin-top:4px;"><b>Nakshatra Lord:</b> ${data.nakLord} ${nlChip} — Houses: H${data.nlHouses.join(',H') || '—'}</div>
-            <div style="margin-top:4px;"><b>Sub Lord:</b> ${data.subLord} ${slChip} — Houses: H${data.slHouses.join(',H') || '—'}</div>
+            <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">Source: Sun, transiting House ${data.transitHouse}. Per the Source/Involvement/Final-Result method — its Nakshatra Lord's script names houses "possible" (Involvement) this month; its Sub Lord narrows to what's actually most likely (Final Result); where BOTH agree is strongest.</div>
+            <div style="margin-top:4px;"><b>Nakshatra Lord (Involvement):</b> ${data.nakLord} ${nlChip} — Houses: H${data.nlHouses.join(',H') || '—'}</div>
+            <div style="margin-top:4px;"><b>Sub Lord (Final Result):</b> ${data.subLord} ${slChip} — Houses: H${data.slHouses.join(',H') || '—'}</div>
             <div style="margin-top:6px;padding:6px 8px;border-left:3px solid #00DD77;background:rgba(0,221,119,.08);">
               <b style="color:#00DD77;">Overlap (strongest this month):</b> H${data.overlap.join(', H') || 'none'}
             </div>
@@ -2480,9 +2719,9 @@ window.KP_PREDICTION = {
           </div>`).join('');
         return `<div class="pred-item" style="border-left:3px solid #66CCFF;">
             <div class="pred-title" style="color:#66CCFF;">🌙 Daily Panel — Moon Transit (day-to-day)</div>
-            <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">Moon is transiting House ${data.transitHouse}. Its Nakshatra Lord names houses "possible" TODAY (house activation/promise); its Sub Lord narrows further within the day (type of event/result); cross-validate against the deepest running dasha before committing to a prediction.</div>
-            <div style="margin-top:4px;"><b>Nakshatra Lord (house activation):</b> ${data.nakLord} ${nlChip} — Houses: H${data.nlHouses.join(',H') || '—'}</div>
-            <div style="margin-top:4px;"><b>Sub Lord (event detail/result):</b> ${data.subLord} ${slChip} — Houses: H${data.slHouses.join(',H') || '—'}</div>
+            <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">Source: Moon, transiting House ${data.transitHouse}. Per the Source/Involvement/Final-Result method — its Nakshatra Lord names houses "possible" TODAY (Involvement); its Sub Lord narrows further within the day (Final Result); cross-validate against the deepest running dasha before committing to a prediction.</div>
+            <div style="margin-top:4px;"><b>Nakshatra Lord — Involvement (house activation):</b> ${data.nakLord} ${nlChip} — Houses: H${data.nlHouses.join(',H') || '—'}</div>
+            <div style="margin-top:4px;"><b>Sub Lord — Final Result (event detail/result):</b> ${data.subLord} ${slChip} — Houses: H${data.slHouses.join(',H') || '—'}</div>
             <div style="margin-top:6px;padding:6px 8px;border-left:3px solid #00DD77;background:rgba(0,221,119,.08);">
               <b style="color:#00DD77;">Overlap (strongest today):</b> H${data.overlap.join(', H') || 'none'}
             </div>
@@ -2615,7 +2854,9 @@ window.KP_PREDICTION = {
             </div>
             <div style="font-size:8.5px;color:var(--text);opacity:.8;margin-top:4px;">${explored.lordPlacement ? explored.lordPlacement.reading : ''}</div>
             <div style="font-size:8.5px;color:var(--muted);margin-top:4px;">Fruitful significators: ${explored.significators.fruitfulSignificators.map(f => f.planet).join(', ') || '—'}</div>
+            ${explored.nodeDispositorInfo ? `<div style="font-size:8px;color:#9b6fff;margin-top:4px;">🐍 Node script (${explored.resolved.determiningPlanet}): ${explored.nodeDispositorInfo.explanation}</div>` : ''}
             <div style="font-size:8px;color:#FF9F43;margin-top:4px;">Loss/ending of H${explored.house}'s matters is read from H${explored.lossHouse} (12th-from-H${explored.house}).</div>
+            <div style="font-size:8px;color:#FF6B6B;margin-top:2px;">Obstacles/disappointment (without necessarily ending it) for H${explored.house}'s matters come via H${explored.obstacleHouse} (8th-from-H${explored.house}).</div>
           </div>`;
     },
 
@@ -2742,6 +2983,7 @@ window.KP_PREDICTION = {
         html += this.renderHouseKarakaTable();
         html += this.renderPlanetDetails(data.planetDetails);
         html += this.renderPlanetScripts(data.planetScripts);
+        html += this.renderRahuKetuCombinations(data.rahuKetuCombinations);
         html += this.renderHouseScripts(data.houseScripts);
         html += this.renderEventPromises(data.eventPromises);
         html += this.renderIndependentHouses(data.independentHouses);
@@ -2796,7 +3038,8 @@ window.KP_PREDICTION = {
         for (let h = 1; h <= 12; h++) houseExplorers.push(this.exploreHouse(h, ascSid, ascSignNum, natalPlanets, L));
         const cuspTableData = this.getCuspTableData(ascSid, ascSignNum, natalPlanets, L);
         const bhavaChalit = this.getBhavaChalitPlacements(ascSid, ascSignNum, natalPlanets);
-        const planetScripts = this.getPlanetScripts(planetDetails);
+        const rahuKetuCombinations = this.getRahuKetuCombinations(natalPlanets);
+        const planetScripts = this.getPlanetScripts(planetDetails, rahuKetuCombinations);
         const houseScripts = this.getHouseScripts(houseExplorers);
         const dashaConfirmation = params.dashaInfo ? this.getDashaConfirmation(params.dashaInfo, ascSid, ascSignNum, natalPlanets, L) : null;
         const thirdHouseAnalysis = this.getThirdHouseAnalysis(ascSid, ascSignNum, natalPlanets, L);
@@ -2815,7 +3058,7 @@ window.KP_PREDICTION = {
             independentHouses: independentHouses, houseExplorers: houseExplorers,
             goldenRuleClaims: goldenRuleClaims, houseLordPlacements: houseLordPlacements,
             cuspTableData: cuspTableData, planetScripts: planetScripts, houseScripts: houseScripts,
-            bhavaChalit: bhavaChalit,
+            bhavaChalit: bhavaChalit, rahuKetuCombinations: rahuKetuCombinations,
             dashaConfirmation: dashaConfirmation, thirdHouseAnalysis: thirdHouseAnalysis,
             careerAlignment: careerAlignment, firstHouseAnalysis: firstHouseAnalysis,
             medicalIndicators: medicalIndicators, dashaBalanceTable: dashaBalanceTable,

@@ -1911,6 +1911,58 @@ if (pMeta.patelStatus) {
     } catch (e) {
       console.warn('Varshaphala analysis failed:', e);
     }
+
+    // ============================================================
+    // 17. SUDARSHAN CHAKRA CHART (Lagna + Chandra + Surya combined view)
+    // ============================================================
+    try {
+      if (window.SUDARSHAN_CHAKRA && typeof window.SUDARSHAN_CHAKRA.renderChakraSection === 'function') {
+        const scTransitPlanets = (typeof getPos === 'function') ? getPos(new Date()) : null;
+        const scNatalData = window.SUDARSHAN_CHAKRA.getChakraData(planets, ascData);
+        const scTransitData = scTransitPlanets ? window.SUDARSHAN_CHAKRA.getTransitChakraData(planets, ascData, scTransitPlanets) : null;
+        const scChartConfigs = window.SUDARSHAN_CHAKRA.getChartConfigs(planets, ascData, scTransitPlanets);
+
+        html += window.SUDARSHAN_CHAKRA.renderChakraSection(scNatalData, scTransitData, scChartConfigs);
+
+        // Self-scheduled bounded retry draw loop — mirrors the "key chart"
+        // pattern used earlier in this file (section 9). This module's HTML
+        // is returned to the caller and may land in the DOM a tick or two
+        // after this function returns, so a single fixed-delay setTimeout
+        // isn't reliable; poll for the canvases instead, same as above.
+        if (scChartConfigs && scChartConfigs.length) {
+          (function scheduleSudarshanChartDraw() {
+            let attempts = 0;
+            const maxAttempts = 30; // ~3s worth of retries at 100ms apart
+            function tryDraw() {
+              attempts++;
+              let allFound = true;
+              scChartConfigs.forEach(function(cfg) {
+                const canvas = document.getElementById(cfg.canvasId);
+                if (!canvas) { allFound = false; return; }
+                if (canvas.dataset.drawn === '1') return; // already drawn, don't redraw every retry
+                if (typeof window.drawDChart !== 'function') { allFound = false; return; }
+                try {
+                  window.drawDChart(cfg.canvasId, { planets: cfg.planets, asc: cfg.asc });
+                  canvas.dataset.drawn = '1';
+                } catch (e) {
+                  console.error('Error drawing Sudarshan Chakra chart', cfg.canvasId, e);
+                  canvas.dataset.drawn = '1'; // don't retry a chart that threw — data issue, not a timing issue
+                }
+              });
+              if (!allFound && attempts < maxAttempts) {
+                setTimeout(tryDraw, 100);
+              } else if (!allFound) {
+                console.warn('STEP2STEP_PANCHANG: some Sudarshan Chakra canvases never appeared in the DOM after', maxAttempts, 'attempts — check that the returned HTML was actually inserted.');
+              }
+            }
+            setTimeout(tryDraw, 100);
+          })();
+        }
+      }
+    } catch (e) {
+      console.warn('Sudarshan Chakra analysis failed:', e);
+    }
+
     return html;
   }
 };

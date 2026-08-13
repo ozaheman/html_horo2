@@ -734,8 +734,20 @@ function analyzeRajyogasAndBhanga(planets, ascendant) {
         if (timing) html += renderMarriageTimingSection(timing);
       }
 
-      // 7. SUDARSHAN CHAKRA INFO
-      html += renderSudarshanChakraInfoSection();
+      // 7. SUDARSHAN CHAKRA INFO   
+      if (window.SUDARSHAN_CHAKRA && typeof window.SUDARSHAN_CHAKRA.renderChakraSection === 'function' && window.BIRTH_PLANETS && window.BIRTH_ASC) {
+        const sudarshanTransit = (typeof getPos === 'function') ? getPos(targetDate) : null;
+        const sudarshanNatalData = window.SUDARSHAN_CHAKRA.getChakraData(window.BIRTH_PLANETS, window.BIRTH_ASC);
+        const sudarshanTransitData = sudarshanTransit ? window.SUDARSHAN_CHAKRA.getTransitChakraData(window.BIRTH_PLANETS, window.BIRTH_ASC, sudarshanTransit) : null;
+        const sudarshanChartConfigs = window.SUDARSHAN_CHAKRA.getChartConfigs(window.BIRTH_PLANETS, window.BIRTH_ASC, sudarshanTransit);
+        // Drawn in its own pass below (after the HTML is in the DOM), independent
+        // of the gochar/kp-only chart draw loop, since this section renders for
+        // every mode.
+        window.__sudarshanChartConfigs = sudarshanChartConfigs;
+        html += window.SUDARSHAN_CHAKRA.renderChakraSection(sudarshanNatalData, sudarshanTransitData, sudarshanChartConfigs);
+      } else {
+        html += renderSudarshanChakraInfoSection();
+      }
     }
     
     // Check Natal Sahams (Only if explicitly checked and NOT already rendered in Varshaphala above)
@@ -755,6 +767,15 @@ function analyzeRajyogasAndBhanga(planets, ascendant) {
       gocharChartConfigsToRender.forEach(cfg => {
         try { drawDChart(cfg.canvasId, { planets: cfg.planets, asc: cfg.asc }); } catch (dErr) { console.error('Gochar chart draw failed:', cfg.canvasId, dErr); }
       });
+    }
+    // Sudarshan Chakra Chart draws independently of mode (it renders for every
+    // mode as section 7 above), so it gets its own pass rather than piggybacking
+    // on the gochar/kp-only loop above.
+    if (window.__sudarshanChartConfigs && typeof drawDChart === 'function') {
+      window.__sudarshanChartConfigs.forEach(cfg => {
+        try { drawDChart(cfg.canvasId, { planets: cfg.planets, asc: cfg.asc }); } catch (dErr) { console.error('Sudarshan chart draw failed:', cfg.canvasId, dErr); }
+      });
+      window.__sudarshanChartConfigs = null;
     }
     console.log('✅ Predictions display updated');
   } catch (err) {
