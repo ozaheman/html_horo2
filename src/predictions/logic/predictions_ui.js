@@ -296,6 +296,32 @@ async function updatePredictionsDisplay() {
             html += window.GOCHAR._renderChartPanels ? window.GOCHAR._renderChartPanels(chartConfigs) : '';
           }
           html += window.KP_PREDICTION.renderHTML(kpAnalysis, transitPlanets, mdNode, kpChartConfigs);
+          // KP Part 2 — advanced/supplementary rules not covered by
+          // KP_prediction.js (Dasha Pravesh, BTR 1-9 connectivity, Sun
+          // Bhava-Chalit Soul Purpose, Karakatva blending, Share Market,
+          // Remedies/donations, dedicated Twin-Birth check, Dual-Sign 15°
+          // rule, Competitive Prashna defeat-houses, 12th-CSL investment
+          // formula, 2nd-CSL wealth-source table, Jupiter Yearly panel).
+          // Purely additive — degrades gracefully if inputs are missing.
+          if (window.KP_PREDICTION_2) {
+            try {
+              const kp2Analysis = window.KP_PREDICTION_2.analyze2({
+                natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC,
+                lords: (typeof LORDS !== 'undefined') ? LORDS : null,
+                dashaInfo: dashaInfo, transitPlanets: transitPlanets,
+                // Dasha Pravesh needs the transiting Sun's longitude at the
+                // exact moment of the currently-running sub-period's start;
+                // as a practical approximation this reuses today's transit
+                // Sun position and the running Antardasha lord.
+                transitPlanetSid: (transitPlanets && transitPlanets.Sun) ? transitPlanets.Sun.sid : undefined,
+                subPeriodLord: (dashaInfo && dashaInfo.antardasha) ? dashaInfo.antardasha.lord : null
+              });
+              html += window.KP_PREDICTION_2.renderHTML2(kp2Analysis);
+            } catch (kp2Err) {
+              console.error('KP Part 2 analysis failed:', kp2Err);
+              html += `<div class="pred-item"><div class="pred-title">⚠️ KP Part 2 analysis error</div><div class="pred-detail">${kp2Err.message}</div></div>`;
+            }
+          }
         } catch (kpErr) {
           console.error('KP analysis failed:', kpErr);
           html += `<div class="pred-item"><div class="pred-title">⚠️ KP analysis error</div><div class="pred-detail">${kpErr.message}</div></div>`;

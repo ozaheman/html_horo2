@@ -958,6 +958,42 @@ window.KP_PREDICTION = {
      * signify the same house are listed too, but flagged as weaker/
      * dependent significators (supplementary occupant+star-lord check).
      */
+    /**
+     * GENERAL "HOUSE ACTIVATION" METHOD -- from "House Activation / 8th
+     * House Secrets": a house "awakens" (जागृति) when a planet connected
+     * to it runs its Mahadasha/Antardasha/Pratyantardasha. Per the
+     * lecture's exact method:
+     *   1. List every planet OCCUPYING the house (natally), plus the
+     *      house's SIGN LORD (rashi swami) -- together these are the
+     *      house's "connected planets."
+     *   2. Find every OTHER planet whose own NAKSHATRA LORD (star lord)
+     *      is one of those connected planets -- THESE are the
+     *      "activator planets." Whenever an activator planet runs its
+     *      MD/AD/PD, it delivers this house's result FIRST (since a
+     *      planet's first-and-strongest result is always its own star
+     *      lord's result).
+     * This generalizes to ANY house (used here mainly for 8th/12th, but
+     * works identically for all twelve).
+     */
+    getHouseActivatorPlanets: function (houseNum, natalPlanetsMap, ascSignNum, lords) {
+        const L = this._lords(lords);
+        const occupants = Object.keys(natalPlanetsMap || {}).filter(p => natalPlanetsMap[p] && natalPlanetsMap[p].house === houseNum);
+        const signLord = L ? L[(ascSignNum + houseNum - 1) % 12] : null;
+        const connectedPlanets = Array.from(new Set(occupants.concat(signLord ? [signLord] : [])));
+
+        const activators = [];
+        Object.keys(natalPlanetsMap || {}).forEach(p => {
+            const pd = natalPlanetsMap[p];
+            if (!pd || pd.sid === undefined) return;
+            const myStarLord = this._getKPLords(pd.sid).nakLord;
+            if (connectedPlanets.includes(myStarLord)) {
+                activators.push({ planet: p, ownHouse: pd.house, activatesVia: myStarLord });
+            }
+        });
+
+        return { house: houseNum, occupants: occupants, signLord: signLord, connectedPlanets: connectedPlanets, activatorPlanets: activators };
+    },
+
     getFruitfulSignificators: function (houseNum, natalPlanetsMap, ascSignNum, lords) {
         const sig = this.getSignificators(houseNum, natalPlanetsMap, ascSignNum, lords);
         const signifyingPlanets = new Set([...sig.level1_occupants, sig.level3_houseLord].filter(Boolean));
@@ -1259,6 +1295,16 @@ window.KP_PREDICTION = {
     // (L1) / SUB LORD (L2) level — i.e. it uses getL1L2Chain() on the
     // house's Cuspal Sub Lord itself.
     CSL_L1_INTERPRETATIONS: {
+        2: {
+            8: {
+                meaning: 'Poor food habits — heavy or irregular non-vegetarian/unhealthy eating across the day — with real long-term health cost when combined with a matching 12th-house signal (see house 12 entry below).',
+                alignment: 'Consciously shift toward sattvic (pure, light) food for yourself, and separately perform food donation (Annadaan) — completely anonymously, not disclosed even to close family. Publicized or transactional charity does not carry the same protective weight; only genuinely secret giving reliably neutralizes this combination.'
+            },
+            12: {
+                meaning: 'Same poor-food-habits signature as the 8th-house entry above, reinforced — expenditure/consumption habits around food specifically need attention.',
+                alignment: 'Identical remedy: eat sattvic food, and give Annadaan anonymously — done together (2nd CSL touching BOTH 8 and 12) this combination is considered strong enough to "consume/ruin a life" left unaddressed, per the source teaching\'s own wording.'
+            }
+        },
         3: {
             6: {
                 meaning: 'Hostility/friction with younger siblings.',
@@ -1285,8 +1331,8 @@ window.KP_PREDICTION = {
                 alignment: 'Discipline in how you interact with people — especially at work — is the single most important practice here; with clear limits in place, none of the above need cause real trouble.'
             },
             8: {
-                meaning: 'The 6th (service/routine/competition) and 8th (transformation/depth) link at the CSL/L1-L2 level — the classic astrological/occult-intelligence combination, but manifesting through whatever domain the 6th house is being read for. For health questions it commonly shows as "will need surgery, but the healing itself comes cleanly through the 8th house" (invasive treatment that resolves the problem) rather than pure suffering.',
-                alignment: 'Career-relevant: this person is naturally suited to work where 6th-house routine/service meets 8th-house depth/transformation — surgery, invasive medicine, forensic or investigative work, research, or occult/astrological practice itself. Common-sense (5th house) and depth-intelligence (8th house) linking is what the source teaching calls the "ultimate" astrological brain — but it also means such a mind can look "impractical" to ordinary common-sense people, which is fine and expected.'
+                meaning: 'The 6th (service/routine/competition) and 8th (transformation/depth) link at the CSL/L1-L2 level — the classic astrological/occult-intelligence combination, but manifesting through whatever domain the 6th house is being read for. For health questions it commonly shows as "will need surgery, but the healing itself comes cleanly through the 8th house" (invasive treatment that resolves the problem) rather than pure suffering. FINANCIAL CAUTION (from a separate case study): 6th = lending money at interest/loans given out; 8th = whatever it touches becomes CHRONIC/prolonged — so this combination specifically warns against making interest-based lending your income source or profession. Occasional informal lending as a favour is fine; treating "living off interest" as a livelihood is not — the health/life cost tends to surface once the relevant dasha activates, even if no problem is visible yet.',
+                alignment: 'Career-relevant: this person is naturally suited to work where 6th-house routine/service meets 8th-house depth/transformation — surgery, invasive medicine, forensic or investigative work, research, or occult/astrological practice itself. Common-sense (5th house) and depth-intelligence (8th house) linking is what the source teaching calls the "ultimate" astrological brain — but it also means such a mind can look "impractical" to ordinary common-sense people, which is fine and expected. Avoid building a livelihood around interest-based lending specifically — redirect that same 6-8 depth/service energy into the fields above instead.'
             },
             9: {
                 meaning: 'Deep respect for the underprivileged/employee class; very good for holding a steady job, but conflict with employees/subordinates if distance isn\'t maintained.',
@@ -1385,7 +1431,289 @@ window.KP_PREDICTION = {
                    <div style="margin-top:8px;padding:6px 8px;border-left:3px solid #66CCFF;background:rgba(102,204,255,.06);font-size:9px;color:var(--text);opacity:.9;">${data.businessNote}</div>
                  </div>`;
     },
- // ===================== 8¾. CAREER ALIGNMENT =====================
+ // ===================== 8⅝. EIGHTH HOUSE (RANDHRA BHAVA) -- DEDICATED ANALYSIS =====================
+    //
+    // Built from "House Activation / 8th House Secrets" (Rahul Kaushik).
+    // The 8th is one of the two houses (with the 12th) the lecture calls
+    // out as most consequential to get "in your favour" -- when both are
+    // favourable, "it's as if God himself is standing with you."
+
+    /**
+     * Pain/suffering TYPE table: when a planet sits in house X and that
+     * SAME planet's own Nakshatra Lord is posited in the 8th house, this
+     * names what KIND of suffering that planet's dasha/bhukti brings.
+     * (This is a NATAL-PLACEMENT + NL-in-8th table -- distinct from the
+     * CSL-based promise-check method used elsewhere in this module.)
+     */
+    EIGHTH_HOUSE_PAIN_TYPE_TABLE: {
+        1: 'Physical pain -- bodily suffering, health-related trouble.',
+        2: 'Financial and family-related pain -- money and household stress together.',
+        3: 'Pain connected to younger siblings, neighbours, or documentation-related trouble.',
+        4: 'Pain connected to VEHICLES (accidents, theft while driving -- extra caution advised) and PROPERTY (litigation, a stuck/entangled property deal, often over documentation).',
+        5: 'Pain connected to children, or to speculative activity (share trading).',
+        6: 'Pain connected to your job/workplace -- if a businessperson, this is specifically BLOCKED PAYMENTS (money owed to you gets stuck); also possible harm (financial or physical) caused by your own employees/subordinates.',
+        7: 'Pain connected to spouse/marriage or to a business partner.',
+        9: 'Pain connected to father -- and because the 8th also governs sudden events, this tends to arrive SUDDENLY/unexpectedly.',
+        10: 'Pain connected to career/profession/business.',
+        11: 'Pain/frustration connected to desire-fulfilment, gains, or profit realization not landing as expected.',
+        12: 'Requires EXTRA vigilance -- 12th house matters (expenditure, investment, foreign relocation) are constantly in active use, AND the 12th also houses your hidden enemies (people secretly working against you); be unusually careful during this planet\'s periods.'
+    },
+
+    /**
+     * Investment-quality check: if the 8th CSL (or its chain) gives
+     * numbers like 2, 6, 11 -> investments return excellent value; if it
+     * gives numbers like 5, 8, 12 -> the same money tends to be lost/
+     * wasted. (2nd = your own money; 8th = "the other party\'s" money --
+     * per the lecture, 8th is literally 2nd-from-7th, i.e. the money of
+     * "whoever you are transacting/interacting with.")
+     */
+    getEighthHouseInvestmentQuality: function (chainHouses) {
+        const good = [2, 6, 11].filter(h => chainHouses.includes(h));
+        const bad = [5, 8, 12].filter(h => chainHouses.includes(h));
+        let verdict = 'mixed/unclear';
+        if (good.length && !bad.length) verdict = 'favourable -- investments tend to appreciate well';
+        else if (bad.length && !good.length) verdict = 'unfavourable -- money placed here tends to be lost or wasted';
+        return { matchedGood: good, matchedBad: bad, verdict: verdict };
+    },
+
+    /**
+     * Hidden-enemy protection check: if the 8th CSL (or its chain) shows
+     * 6 -> anyone secretly plotting against you suffers the loss instead
+     * (6th = loss to "the opponent," since 6th is 12th-from-7th); shows
+     * 10 -> attempts to harm your reputation instead RAISE your status
+     * (the more people criticize you, the higher you climb -- the
+     * lecture's example is a national-level politician with exactly this
+     * combination); shows 11 -> you gain despite the attempt. Shows 7 ->
+     * CAUTION: your own hidden/secret activities are at risk of being
+     * exposed publicly (7th = "the public"/everyone you interact with).
+     */
+    getEighthHouseEnemyProtection: function (chainHouses) {
+        const notes = [];
+        if (chainHouses.includes(6)) notes.push({ house: 6, verdict: 'good', text: 'Shows house 6 -- anyone secretly plotting against you suffers the loss themselves instead of you.' });
+        if (chainHouses.includes(10)) notes.push({ house: 10, verdict: 'good', text: 'Shows house 10 -- attempts to damage your reputation instead RAISE your status; the more you are criticized, the higher you climb.' });
+        if (chainHouses.includes(11)) notes.push({ house: 11, verdict: 'good', text: 'Shows house 11 -- you gain (desire-fulfilment) despite any attempt to harm you.' });
+        if (chainHouses.includes(7)) notes.push({ house: 7, verdict: 'caution', text: 'Shows house 7 -- CAUTION: your own hidden/secret activities are at risk of coming out in front of everyone; be careful with secretive dealings during this period.' });
+        return notes;
+    },
+
+    /**
+     * 8th-house Karma Alignment (KAT) fields/activities -- constructively
+     * "consuming" 8th-house energy through profession or daily practice.
+     */
+    EIGHTH_HOUSE_KAT_FIELDS: [
+        'Astrology / occult studies (even casually reading an astrology book at your desk during work stress measurably eases 8th-house pressure)',
+        'Taxation department work / GST work',
+        'Chartered Accountancy',
+        'Audit work',
+        'Digital media, digital marketing (the self-transformation/presentation-transformation involved before "going live" publicly is itself 8th-house energy)',
+        'Artificial Intelligence and Machine Learning work',
+        'Data research and data analytics',
+        'Surgery, invasive/technical medicine',
+        'Manufacturing / production work',
+        'Handling other people\'s money -- investment advisory, chit-funds/committees, insolvency work, insurance agency'
+    ],
+
+    /**
+     * Business-funding rule: when the currently-running MD or AD's own
+     * Nakshatra Lord is posited in the 8th house AND the person is
+     * considering starting a business, the guidance is: do NOT self-fund
+     * -- seek external investors/crowdfunding instead, because 8th house
+     * = "the other party\'s money," and funding WILL come during this period.
+     */
+    checkEighthHouseFundingWindow: function (dashaInfo, natalPlanetsMap, ascSignNum, lords) {
+        if (!dashaInfo) return null;
+        const check = (label, lord) => {
+            if (!lord) return null;
+            const pd = natalPlanetsMap[lord];
+            if (!pd || pd.sid === undefined) return null;
+            const nl = this._getKPLords(pd.sid).nakLord;
+            const nlHouse = natalPlanetsMap[nl] ? natalPlanetsMap[nl].house : null;
+            return { level: label, lord: lord, starLord: nl, starLordHouse: nlHouse, eighthHouseActive: nlHouse === 8 };
+        };
+        const results = [check('Mahadasha', dashaInfo.mahadasha && dashaInfo.mahadasha.lord), check('Antardasha', dashaInfo.antardasha && dashaInfo.antardasha.lord)].filter(Boolean);
+        const active = results.filter(r => r.eighthHouseActive);
+        return {
+            checks: results, fundingWindowOpen: active.length > 0,
+            note: active.length ? `${active.map(a => a.level).join(' and ')} lord's own star lord (${active[0].starLord}) sits in the 8th house -- this is a strong window for seeking external funding/investors/crowdfunding rather than self-financing a new venture; per the source teaching, funding sought now tends to actually arrive.` : 'No currently-running MD/AD lord has its own star lord in the 8th house -- no special funding-window signal active right now.'
+        };
+    },
+
+    getEighthHouseAnalysis: function (ascSid, ascSignNum, natalPlanetsMap, lords, dashaInfo) {
+        const explored = this.exploreHouse(8, ascSid, ascSignNum, natalPlanetsMap, lords);
+        const chain = this.getL1L2Chain(explored.resolved.csl, ascSid, natalPlanetsMap);
+        const chainHouses = chain ? Array.from(new Set(chain.L1_numbers.concat(chain.L2_numbers))) : [];
+        const activation = this.getHouseActivatorPlanets(8, natalPlanetsMap, ascSignNum, lords);
+        const painFindings = activation.activatorPlanets.map(a => ({
+            planet: a.planet, ownHouse: a.ownHouse, activatesVia: a.activatesVia,
+            painType: this.EIGHTH_HOUSE_PAIN_TYPE_TABLE[a.ownHouse] || 'General 8th-house suffering (type not specifically catalogued for this house placement).'
+        }));
+        const investmentQuality = this.getEighthHouseInvestmentQuality(chainHouses);
+        const enemyProtection = this.getEighthHouseEnemyProtection(chainHouses);
+        const fundingWindow = dashaInfo ? this.checkEighthHouseFundingWindow(dashaInfo, natalPlanetsMap, ascSignNum, lords) : null;
+
+        return {
+            house: 8, karaka: this.HOUSE_KARAKAS[8], explored: explored, chain: chain, chainHouses: chainHouses,
+            activation: activation, painFindings: painFindings, investmentQuality: investmentQuality,
+            enemyProtection: enemyProtection, fundingWindow: fundingWindow, katFields: this.EIGHTH_HOUSE_KAT_FIELDS
+        };
+    },
+
+    renderEighthHouseAnalysis: function (data) {
+        if (!data) return '';
+        const c = data.explored.independent ? '#00DD77' : '#8899AA';
+        const painRows = data.painFindings.length ? data.painFindings.map(p => `<div style="margin:3px 0;padding:5px 8px;border-left:3px solid #FF4477;background:rgba(255,68,119,.06);">
+                <b>${p.planet}</b> <span style="font-size:8.5px;color:var(--muted);">(in H${p.ownHouse}, star lord ${p.activatesVia} sits in H8)</span>
+                <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:2px;">${p.painType}</div>
+              </div>`).join('') : '<div style="font-size:9px;color:var(--muted);">No planet\'s star lord sits in the 8th house -- no specific 8th-house activator identified.</div>';
+
+        const invColor = data.investmentQuality.verdict.startsWith('favourable') ? '#00DD77' : data.investmentQuality.verdict.startsWith('unfavourable') ? '#FF4477' : '#FFD700';
+        const enemyRows = data.enemyProtection.length ? data.enemyProtection.map(e => `<div style="font-size:9px;color:${e.verdict === 'good' ? '#00DD77' : '#FF9F43'};margin-top:3px;">${e.text}</div>`).join('') : '<div style="font-size:9px;color:var(--muted);">No specific hidden-enemy-protection or exposure signature found in the 8th CSL chain.</div>';
+
+        return `<div class="pred-item" style="border-left:3px solid #9b6fff;margin-top:10px;">
+                   <div class="pred-title" style="color:#9b6fff;">🕳️ Eighth House (Randhra Bhava) -- Dedicated Analysis</div>
+                   <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">${data.karaka.keywords}</div>
+                   <div style="margin-top:6px;padding:8px;border:1px solid ${c}44;border-radius:6px;background:${c}0A;">
+                     CSL: <b>${data.explored.resolved.csl}</b>${data.explored.resolved.cslSelfStarred ? ' (self-starred)' : ' -> determining planet: <b>' + data.explored.resolved.determiningPlanet + '</b>'}
+                     ${data.explored.independent ? this._chip('INDEPENDENT HOUSE', '#00DD77') : ''}
+                     ${data.chain ? `<div style="font-size:8.5px;color:var(--muted);margin-top:4px;">L1 = ${data.chain.L1_planet} (H${data.chain.L1_numbers.join(',H') || '—'}) · L2 = ${data.chain.L2_planet} (H${data.chain.L2_numbers.join(',H') || '—'})</div>` : ''}
+                   </div>
+
+                   <div style="margin-top:8px;font-size:9px;color:var(--muted);font-weight:bold;">HOUSE ACTIVATION -- WHO/WHAT BRINGS THE PAIN:</div>
+                   <div style="font-size:8.5px;color:var(--text);opacity:.8;margin:2px 0 4px;">Connected planets (occupants + sign lord of H8): ${data.activation.connectedPlanets.join(', ') || 'none'}</div>
+                   ${painRows}
+
+                   <div style="margin-top:8px;padding:8px;border:1px solid ${invColor}44;border-radius:6px;background:${invColor}0A;">
+                     <b style="color:${invColor};">INVESTMENT QUALITY: ${data.investmentQuality.verdict.toUpperCase()}</b>
+                     <div style="font-size:8.5px;color:var(--text);opacity:.9;margin-top:2px;">Matched good (2/6/11): H${data.investmentQuality.matchedGood.join(',H') || '—'} · Matched bad (5/8/12): H${data.investmentQuality.matchedBad.join(',H') || '—'}</div>
+                   </div>
+
+                   <div style="margin-top:6px;font-size:9px;color:var(--muted);font-weight:bold;">HIDDEN-ENEMY PROTECTION:</div>
+                   ${enemyRows}
+
+                   ${data.fundingWindow ? `<div style="margin-top:8px;padding:6px 8px;border-left:3px solid #66CCFF;background:rgba(102,204,255,.06);font-size:9px;color:var(--text);">💰 <b>Business Funding Window:</b> ${data.fundingWindow.note}</div>` : ''}
+
+                   <div style="margin-top:8px;font-size:9px;color:var(--muted);font-weight:bold;">KARMA ALIGNMENT (constructively use 8th-house energy):</div>
+                   <div style="font-size:8.5px;color:var(--text);opacity:.9;margin-top:2px;">${data.katFields.join(' · ')}</div>
+
+                   <div style="margin-top:8px;padding:6px 8px;border-left:3px solid #FFD700;background:rgba(255,215,0,.06);font-size:8.5px;color:var(--text);opacity:.9;">
+                     <b>Action-Reaction philosophy (8th &amp; 12th as karma\'s clearest example):</b> the 8th house is the ACTION (an intentional act, positive or negative in its use); the 12th house is the REACTION that returns. If you use the 8th house\'s energy WELL (occult study, transformation, taxation/audit/data work, etc.), longevity and blessing follow (the classical "आयुष्मान भव" blessing itself uplifts the 8th house). If you try to harm someone via secretive/8th-house means but THEIR 8th house is strong, the harm cannot land -- it returns to you instead.
+                   </div>
+                 </div>`;
+    },
+
+    // ===================== 8¾ⁱ. TWELFTH HOUSE (VYAYA BHAVA) -- DEDICATED ANALYSIS =====================
+    //
+    // Built from "12th House Secrets" (Rahul Kaushik). With the 8th, this
+    // is the other house the lecture calls out as most consequential --
+    // "if these two houses are in your favour, life becomes far simpler."
+
+    /**
+     * Foreign-settlement check: the lecture derives the combination by
+     * chaining classical rules -- leaving home = a LOSS of the 4th house
+     * (12th-from-4th = 3rd, matching this module\'s own getLossHouse rule);
+     * long-distance = the 9th house; foreign land itself = the 8th house
+     * (its natural/default significator). So 12th CSL (or its chain)
+     * showing 3, 8, 9 -> real possibility of settling abroad (not all
+     * three numbers are required -- 2 of 3 is generally enough per the
+     * lecture\'s own horary demo). Conversely, 2 and 4 together in the
+     * same chain are named as the specific combination that BLOCKS/
+     * prevents someone from going abroad.
+     */
+    getTwelfthHouseForeignSettlement: function (chainHouses) {
+        const supportHouses = [3, 8, 9].filter(h => chainHouses.includes(h));
+        const blockHouses = [2, 4].filter(h => chainHouses.includes(h));
+        const possible = supportHouses.length >= 2;
+        return {
+            matchedSupport: supportHouses, matchedBlock: blockHouses, possible: possible,
+            verdict: possible ? 'Real possibility of foreign settlement/travel' : (blockHouses.length === 2 ? 'Blocked/prevented from going abroad by this combination' : 'No clear foreign-settlement signature')
+        };
+    },
+
+    /**
+     * Quick natal-PLACEMENT read for the Moon specifically (distinct from
+     * the CSL-based method) -- the lecture uses these as stand-alone
+     * "cold reading" style predictions tied to the expenditure/12th-house
+     * theme.
+     */
+    MOON_HOUSE_QUICK_READS: {
+        4: 'Big spender by nature -- and paradoxically, the more freely such a person spends, the wealthier they tend to be; spending capacity itself signals a strong wealth-flow.',
+        7: 'Money flows IN, but expenditures are already "pre-arranged" to match or exceed it as it arrives -- steady flow both ways, rarely a shortage, but not big accumulation either.',
+        8: 'Classic marker for literally possessing FOREIGN CURRENCY -- dollars, pounds, etc. -- in one\'s wallet, purse, or home drawer (8th aspects the 2nd/wealth by the universal 7th-house aspect, and 8th is also "12th-from-9th," i.e. the natural opposite of the 9th\'s moral/legal/domestic-currency nature -- hence a link to foreign/"illegal-tender-at-home" money).',
+        12: 'Tends to consciously hold back from laughing/enjoying too freely, from a subconscious sense that "too much joy now means sadness later" -- can show same-day emotional swings (very high spirits in the morning, notably low by evening).'
+    },
+
+    /**
+     * Spend-to-receive principle: if the relevant CSL/chain shows
+     * 12th-house-supportive numbers, the guidance is to actively SPEND or
+     * INVEST rather than hoard -- hoarding blocks the inflow the chart
+     * already promises; spending/investing keeps it circulating.
+     */
+    getTwelfthHouseSpendToReceive: function (chainHouses) {
+        const supportive = [2, 11].filter(h => chainHouses.includes(h));
+        return {
+            matched: supportive,
+            applies: supportive.length > 0,
+            note: supportive.length ? 'This chain supports the "spend to receive" principle -- actively spending or investing (rather than hoarding) keeps the promised inflow circulating back; sitting on the money tends to stall it instead.' : 'No specific 12th-house spend-to-receive signature found in this chain.'
+        };
+    },
+
+    getTwelfthHouseAnalysis: function (ascSid, ascSignNum, natalPlanetsMap, lords) {
+        const explored = this.exploreHouse(12, ascSid, ascSignNum, natalPlanetsMap, lords);
+        const chain = this.getL1L2Chain(explored.resolved.csl, ascSid, natalPlanetsMap);
+        const chainHouses = chain ? Array.from(new Set(chain.L1_numbers.concat(chain.L2_numbers))) : [];
+        const activation = this.getHouseActivatorPlanets(12, natalPlanetsMap, ascSignNum, lords);
+        const foreignSettlement = this.getTwelfthHouseForeignSettlement(chainHouses);
+        const spendToReceive = this.getTwelfthHouseSpendToReceive(chainHouses);
+        const moonHouse = natalPlanetsMap.Moon ? natalPlanetsMap.Moon.house : null;
+        const moonQuickRead = moonHouse ? this.MOON_HOUSE_QUICK_READS[moonHouse] : null;
+
+        // 2nd CSL touching 8th/12th -> bad food-habit health warning + secret Annadaan remedy
+        const secondExplored = this.exploreHouse(2, ascSid, ascSignNum, natalPlanetsMap, lords);
+        const secondChain = this.getL1L2Chain(secondExplored.resolved.csl, ascSid, natalPlanetsMap);
+        const secondChainHouses = secondChain ? Array.from(new Set(secondChain.L1_numbers.concat(secondChain.L2_numbers))) : [];
+        const badFoodHabitFlag = secondChainHouses.includes(8) && secondChainHouses.includes(12);
+
+        return {
+            house: 12, karaka: this.HOUSE_KARAKAS[12], explored: explored, chain: chain, chainHouses: chainHouses,
+            activation: activation, foreignSettlement: foreignSettlement, spendToReceive: spendToReceive,
+            moonHouse: moonHouse, moonQuickRead: moonQuickRead, badFoodHabitFlag: badFoodHabitFlag
+        };
+    },
+
+    renderTwelfthHouseAnalysis: function (data) {
+        if (!data) return '';
+        const c = data.explored.independent ? '#00DD77' : '#8899AA';
+        const fsColor = data.foreignSettlement.possible ? '#00DD77' : (data.foreignSettlement.matchedBlock.length === 2 ? '#FF4477' : '#FFD700');
+
+        return `<div class="pred-item" style="border-left:3px solid #FF9F43;margin-top:10px;">
+                   <div class="pred-title" style="color:#FF9F43;">🧳 Twelfth House (Vyaya Bhava) -- Dedicated Analysis</div>
+                   <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">${data.karaka.keywords}</div>
+                   <div style="margin-top:6px;padding:8px;border:1px solid ${c}44;border-radius:6px;background:${c}0A;">
+                     CSL: <b>${data.explored.resolved.csl}</b>${data.explored.resolved.cslSelfStarred ? ' (self-starred)' : ' -> determining planet: <b>' + data.explored.resolved.determiningPlanet + '</b>'}
+                     ${data.explored.independent ? this._chip('INDEPENDENT HOUSE', '#00DD77') : ''}
+                     ${data.chain ? `<div style="font-size:8.5px;color:var(--muted);margin-top:4px;">L1 = ${data.chain.L1_planet} (H${data.chain.L1_numbers.join(',H') || '—'}) · L2 = ${data.chain.L2_planet} (H${data.chain.L2_numbers.join(',H') || '—'})</div>` : ''}
+                   </div>
+
+                   <div style="margin-top:8px;padding:8px;border:1px solid ${fsColor}44;border-radius:6px;background:${fsColor}0A;">
+                     <b style="color:${fsColor};">FOREIGN SETTLEMENT: ${data.foreignSettlement.verdict}</b>
+                     <div style="font-size:8.5px;color:var(--text);opacity:.9;margin-top:2px;">Support houses (3/8/9) matched: H${data.foreignSettlement.matchedSupport.join(',H') || '—'} · Block houses (2/4) matched: H${data.foreignSettlement.matchedBlock.join(',H') || '—'}</div>
+                   </div>
+
+                   ${data.spendToReceive.applies ? `<div style="margin-top:6px;padding:6px 8px;border-left:3px solid #66CCFF;background:rgba(102,204,255,.06);font-size:9px;color:var(--text);">💸 ${data.spendToReceive.note}</div>` : ''}
+
+                   ${data.moonQuickRead ? `<div style="margin-top:6px;padding:6px 8px;border-left:3px solid #9b6fff;background:rgba(155,111,255,.06);font-size:9px;color:var(--text);"><b>🌙 Moon in H${data.moonHouse}:</b> ${data.moonQuickRead}</div>` : ''}
+
+                   ${data.badFoodHabitFlag ? `<div style="margin-top:6px;padding:6px 8px;border-left:3px solid #FF4477;background:rgba(255,68,119,.08);font-size:9px;color:var(--text);">
+                      <b style="color:#FF4477;">⚠ 2nd CSL touches BOTH 8th and 12th:</b> signature for poor food habits (heavy/irregular non-vegetarian or unhealthy eating) that can seriously damage health over time.
+                      <div style="margin-top:3px;color:#00DD77;"><b>Remedy:</b> eat sattvic (pure, light) food yourself, AND separately donate food (Annadaan) to those in need -- done <b>completely anonymously</b> (not even close family should know which charity, where, or how much). Publicized/transactional charity does not carry the same protective effect; only genuinely secret giving does.</div>
+                    </div>` : ''}
+
+                   <div style="margin-top:8px;font-size:9px;color:var(--muted);font-weight:bold;">HOUSE ACTIVATION:</div>
+                   <div style="font-size:8.5px;color:var(--text);opacity:.8;margin:2px 0 4px;">Connected planets (occupants + sign lord of H12): ${data.activation.connectedPlanets.join(', ') || 'none'} · Activator planets: ${data.activation.activatorPlanets.map(a => a.planet).join(', ') || 'none'}</div>
+                 </div>`;
+    },
+
+// ===================== 8¾. CAREER ALIGNMENT =====================
     //
     // Applies the same Alignment principle (fix a house's problem THROUGH
     // that same house's energy, rather than fighting it) specifically to
@@ -2061,6 +2389,56 @@ window.KP_PREDICTION = {
             eventType: eventType, promise: promise, retrogradeWarning: retrogradeWarning
         };
     },
+
+    /**
+     * MULTI-OPTION HORARY COMPARISON — from the "which purchase option is
+     * best" case study (12th House Secrets): when someone is choosing
+     * between several competing options (e.g. gold vs flat vs land vs
+     * car), take a SEPARATE horary number for EACH option, resolve each
+     * option's own horary Ascendant/CSL chain, and rank the options by
+     * how strongly their chain matches a target combination (defaults to
+     * the wealth/gain combination 2, 6, 11) — the option with the
+     * strongest match is astrologically the best choice.
+     */
+    compareHoraryOptions: function (options, transitPlanetsMap, targetHouses) {
+        const target = targetHouses || [2, 6, 11];
+        const results = (options || []).map(opt => {
+            const resolved = this.horaryNumberToLongitude(opt.number);
+            if (!resolved) return { label: opt.label, number: opt.number, error: 'Invalid horary number.' };
+            const horaryAscSid = resolved.longitude;
+            const allCusps = this.getAllCusps(horaryAscSid);
+            const planetNumbers = this.getPlanetNumbers(allCusps);
+            const cusp1 = allCusps[1];
+            const chain = this.getL1L2Chain(cusp1.subLord, horaryAscSid, transitPlanetsMap);
+            const chainHouses = chain ? Array.from(new Set(chain.L1_numbers.concat(chain.L2_numbers))) : [];
+            const matched = target.filter(h => chainHouses.includes(h));
+            return {
+                label: opt.label, number: opt.number, csl: cusp1.subLord,
+                chain: chain, chainHouses: chainHouses, matched: matched,
+                score: matched.length, fullMatch: matched.length === target.length
+            };
+        });
+        return results.sort((a, b) => (b.score || 0) - (a.score || 0));
+    },
+
+    renderHoraryComparison: function (results, targetHouses) {
+        if (!results || !results.length) return '';
+        const target = targetHouses || [2, 6, 11];
+        const rows = results.map((r, i) => {
+            if (r.error) return `<div style="margin:3px 0;padding:5px 8px;border-left:3px solid var(--muted);">${r.label} (#${r.number}): ${r.error}</div>`;
+            const c = i === 0 ? '#00DD77' : 'var(--muted)';
+            return `<div style="margin:3px 0;padding:6px 8px;border-left:3px solid ${c};background:${i === 0 ? 'rgba(0,221,119,.08)' : 'rgba(255,255,255,.02)'};">
+                <b style="color:${c};">${i === 0 ? '🏆 ' : ''}${r.label}</b> <span style="font-size:8.5px;color:var(--muted);">(#${r.number}, CSL ${r.csl})</span>
+                <div style="font-size:8.5px;color:var(--text);opacity:.85;margin-top:2px;">Matched H${target.join(',H')} target: H${r.matched.join(',H') || '—'} (${r.score}/${target.length})</div>
+              </div>`;
+        }).join('');
+        return `<div class="pred-item" style="border-left:3px solid #00DD77;margin-top:10px;">
+                   <div class="pred-title" style="color:#00DD77;">⚖️ Multi-Option Horary Comparison</div>
+                   <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">Each option gets its own horary number; ranked by how strongly its resulting chart matches the target combination (default: wealth/gain H${target.join(',H')}).</div>
+                   ${rows}
+                 </div>`;
+    },
+
  // ===================== 12½. CASE STUDY LIBRARY =====================
     //
     // Concrete worked examples pulled directly from the source lectures —
@@ -2150,6 +2528,33 @@ window.KP_PREDICTION = {
             setup: 'A student asked how to specifically judge mental-health issues (depression, anxiety, schizophrenia, epilepsy) in KP.',
             method: 'Never judge from a single planet. Read the Moon (as a planet), the 4th cusp (mind), the 5th cusp (intelligence), and the 1st cusp (body) TOGETHER. Then match whichever planet links into that combination against a fixed affliction table: Rahu → schizophrenia-type patterns, Mars → anxiety, Saturn → depression, Mercury → epilepsy.',
             conclusion: 'This 4-factor-plus-affliction-table method is encoded directly in getMedicalIndicators(). The same Q&A also stressed a broader principle worth remembering for ALL predictions, not just medical ones: "कोई भी इवेंट होता है तो एक चीज के कारण नहीं होता" — no event happens due to a single factor; always combine multiple significators before committing to a prediction.',
+            houseKey: null
+        },
+        {
+            id: 'eighth_csl_status_rise_via_criticism',
+            title: '8th CSL Showing 10th House — Status Rises Through Criticism',
+            source: 'House Activation / 8th House Secrets',
+            setup: 'A national-level politician\'s chart was examined for how hidden enemies/critics affected their career.',
+            method: 'The 8th CSL (hidden-enemy house) connected to the 10th house (career/status/reputation) rather than to a negative house.',
+            conclusion: 'Because the 8th CSL showed the 10th house specifically, every attempt by opponents to damage this person\'s reputation through criticism instead RAISED their public status — "the more people criticized them, the higher they climbed." Demonstrated directly in getEighthHouseEnemyProtection(): 8th CSL showing 6 = the attacker suffers instead; showing 10 = your status rises from the attack; showing 11 = you gain despite it; showing 7 = caution, your own secrets risk exposure.',
+            houseKey: 8
+        },
+        {
+            id: 'sixth_csl_interest_money_astrologer',
+            title: "6th CSL Showing 8th — Never Earn Through Interest/Lending",
+            source: 'House Activation / 8th House Secrets (case study with a colleague astrologer)',
+            setup: 'A person was earning steady income by lending money at interest, with no visible problems at the time of reading.',
+            method: '6th house = lending money, loans given, interest income; 8th house = whatever it touches becomes CHRONIC/prolonged. Their 6th CSL showed the 8th house.',
+            conclusion: 'Verdict given: this person should NEVER make interest-based lending their income source/profession — even though nothing had gone wrong yet, the health/life cost surfaces once the relevant dasha activates ("wait for the dasha to come"). Occasional informal lending as a favour remains fine; the caution is specifically about treating "living off interest" as a livelihood, since 8th-house income is classically unearned (no direct effort), and 6th linking to 8th means routine effort gets replaced by effort-free income at a real karmic cost. Encoded as the financial-caution addendum in CSL_L1_INTERPRETATIONS[6][8].',
+            houseKey: 6
+        },
+        {
+            id: 'moon_eighth_foreign_currency',
+            title: 'Moon in the 8th House — Foreign Currency in Hand',
+            source: '12th House Secrets',
+            setup: 'A live consultation where the astrologer predicted, from the natal chart alone, that the client would be holding foreign currency (British pounds) in their wallet or at home.',
+            method: 'Moon in the 8th house. Reasoning chain: 8th aspects the 2nd house (wealth) by the universal 7th-house aspect; separately, the 8th house is "12th-from-9th" — the natural opposite of the 9th house\'s moral/legal/domestic-currency nature — linking the 8th to foreign or "not-legal-tender-at-home" money specifically.',
+            conclusion: 'The client confirmed they were in fact holding British pounds at that moment — a specific, verifiable "cold reading"-style natal-placement prediction. Encoded as MOON_HOUSE_QUICK_READS[8] alongside quick reads for Moon in the 4th (big spender = wealthy), 7th (balanced in-out flow), and 12th (holds back joy, same-day emotional swing) houses.',
             houseKey: null
         }
     ],
@@ -2900,6 +3305,41 @@ window.KP_PREDICTION = {
         resultEl.innerHTML = this.renderHoraryResult(horary);
     },
 
+    /**
+     * Interactive multi-option comparison panel (up to 4 slots) —
+     * "which of these purchase options is astrologically best?"
+     */
+    renderHoraryComparisonPanel: function (transitPlanetsMap) {
+        this._horaryComparisonCache = transitPlanetsMap || {};
+        const slot = (i) => `<div style="display:flex;gap:4px;align-items:center;margin-top:4px;">
+            <input id="kpHoraryCompLabel${i}" type="text" placeholder="Option ${i} label (e.g. Gold)" style="width:130px;background:var(--bg3,#1a1a2e);border:1px solid var(--border);color:var(--text);font-size:10px;padding:4px;border-radius:3px;">
+            <input id="kpHoraryCompNum${i}" type="number" min="1" max="243" placeholder="#" style="width:60px;background:var(--bg3,#1a1a2e);border:1px solid var(--border);color:var(--text);font-size:10px;padding:4px;border-radius:3px;">
+          </div>`;
+        return `<details style="margin-top:6px;">
+                  <summary style="cursor:pointer;color:#00DD77;font-size:10.5px;font-weight:bold;">⚖️ Compare Multiple Options (Horary) — "Which is best?"</summary>
+                  <div style="font-size:8.5px;color:var(--muted);margin:4px 0;">Give each competing option (e.g. Gold vs Flat vs Land vs Car) its own horary number 1-243; ranked by which resolves to the strongest wealth/gain (2-6-11) chart. Leave a slot's number blank to skip it.</div>
+                  ${slot(1)}${slot(2)}${slot(3)}${slot(4)}
+                  <button onclick="window.KP_PREDICTION.runHoraryComparisonFromUI()" style="margin-top:6px;background:#00DD77;color:#000;border:none;padding:4px 10px;border-radius:3px;font-size:10px;font-weight:bold;cursor:pointer;">Compare</button>
+                  <div id="kpHoraryCompResult" style="margin-top:8px;"></div>
+                </details>`;
+    },
+
+    runHoraryComparisonFromUI: function () {
+        const resultEl = document.getElementById('kpHoraryCompResult');
+        if (!resultEl) return;
+        const options = [];
+        for (let i = 1; i <= 4; i++) {
+            const labelEl = document.getElementById('kpHoraryCompLabel' + i);
+            const numEl = document.getElementById('kpHoraryCompNum' + i);
+            if (!labelEl || !numEl) continue;
+            const number = parseInt(numEl.value, 10);
+            if (number && number >= 1) options.push({ label: labelEl.value || ('Option ' + i), number: number });
+        }
+        if (options.length < 2) { resultEl.innerHTML = '<div style="color:#FF4477;font-size:9px;">Enter at least 2 options with valid numbers.</div>'; return; }
+        const results = this.compareHoraryOptions(options, this._horaryComparisonCache || {});
+        resultEl.innerHTML = this.renderHoraryComparison(results);
+    },
+
     renderMDSearchPanel: function (mdNode, ascSid, ascSignNum, natalPlanetsMap, lords) {
         this._mdSearchCache = { mdNode: mdNode, ascSid: ascSid, ascSignNum: ascSignNum, natalPlanetsMap: natalPlanetsMap, lords: lords };
         if (!mdNode) return `<details style="margin-top:6px;"><summary style="cursor:pointer;color:#66CCFF;font-size:10.5px;font-weight:bold;">🔍 Search Events in Current Mahadasha</summary><div style="font-size:9px;color:var(--muted);margin-top:6px;">No Mahadasha data supplied.</div></details>`;
@@ -2997,6 +3437,8 @@ window.KP_PREDICTION = {
         html += `</div>`;
         html += this.renderFirstHouseAnalysis(data.firstHouseAnalysis);
         html += this.renderThirdHouseAnalysis(data.thirdHouseAnalysis);
+        html += this.renderEighthHouseAnalysis(data.eighthHouseAnalysis);
+        html += this.renderTwelfthHouseAnalysis(data.twelfthHouseAnalysis);
         html += this.renderCareerAlignment(data.careerAlignment);
         html += this.renderDashaConfirmation(data.dashaConfirmation);
         if (data.monthlyPanel || data.dailyPanel) {
@@ -3008,6 +3450,7 @@ window.KP_PREDICTION = {
         html += this.renderMDSearchPanel(mdNode, data.ascSid, data.ascSignNum, data._natalPlanetsMap, data._lords);
         html += this.renderFindEventPanel(mdNode, data.ascSid, data.ascSignNum, data._natalPlanetsMap, data._lords);
         html += this.renderHoraryPanel(transitPlanetsMap);
+        html += this.renderHoraryComparisonPanel(transitPlanetsMap);
         html += this.renderCaseStudies();
         html += `</div>`;
         return html;
@@ -3051,6 +3494,8 @@ window.KP_PREDICTION = {
             ? this.getMonthlyPanel(params.transitPlanets.Sun, params.dashaInfo, ascSid, ascSignNum, natalPlanets, L) : null;
         const dailyPanel = (params.transitPlanets && params.transitPlanets.Moon)
             ? this.getDailyPanel(params.transitPlanets.Moon, params.dashaInfo, ascSid, ascSignNum, natalPlanets, L) : null;
+        const eighthHouseAnalysis = this.getEighthHouseAnalysis(ascSid, ascSignNum, natalPlanets, L, params.dashaInfo);
+        const twelfthHouseAnalysis = this.getTwelfthHouseAnalysis(ascSid, ascSignNum, natalPlanets, L);
 
         return {
             ascSid: ascSid, ascSignNum: ascSignNum,
@@ -3063,6 +3508,7 @@ window.KP_PREDICTION = {
             careerAlignment: careerAlignment, firstHouseAnalysis: firstHouseAnalysis,
             medicalIndicators: medicalIndicators, dashaBalanceTable: dashaBalanceTable,
             monthlyPanel: monthlyPanel, dailyPanel: dailyPanel,
+            eighthHouseAnalysis: eighthHouseAnalysis, twelfthHouseAnalysis: twelfthHouseAnalysis,
             _natalPlanetsMap: natalPlanets, _lords: L
         };
     }

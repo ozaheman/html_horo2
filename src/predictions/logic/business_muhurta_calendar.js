@@ -601,5 +601,265 @@ window.BUSINESS_MUHURTA = {
         this._wireCalendarGenerator({ lat, lon, utcOffsetHours });
     }
 };
+/**
+ * ─────────────────────────────────────────────────────────────
+ * KP MUHURTA ANALYSIS (personalized — uses the querent's OWN natal chart)
+ * ─────────────────────────────────────────────────────────────
+ * Different in KIND from window.BUSINESS_MUHURTA above, which scores a
+ * date purely by classical Panchang nakshatra/tithi QUALITIES — the same
+ * for every person on Earth. This implements the KP (Krishnamurti
+ * Paddhati) muhurta method instead: a moment is auspicious for YOU, for a
+ * SPECIFIC event, only when the transiting Moon's Nakshatra Lord (Star
+ * Lord) and Sub Lord signify that event's houses IN YOUR OWN natal chart.
+ * The same clock-moment can be excellent for one person's marriage and
+ * meaningless for someone else's, because it depends on whose chart is
+ * being checked against.
+ *
+ * Method (per the source teaching):
+ *   1. Each event has a house combination (e.g. marriage = 2, 7, 11) and
+ *      a set of negating houses (marriage: 6, 10, 12) to strictly avoid.
+ *   2. From the natal chart, find which planets SIGNIFY those houses —
+ *      own them as Rashi Lord, and/or are Cuspal Sub Lord (CSL) of them.
+ *   3. Scan candidate date/times: the transiting Moon's Star Lord sets
+ *      the broad (daily) window, its Sub Lord narrows to the precise
+ *      (hourly) window. Both matching the event's houses is the
+ *      strongest confirmation.
+ *   4. A window where the Moon's Star Lord OR Sub Lord instead signifies
+ *      one of the event's NEGATING houses is flagged to avoid — the
+ *      source teaching records this as strict enough to disrupt a
+ *      ceremony (e.g. wedding rituals breaking off mid-way) if ignored.
+ *
+ * Reuses window.PANCHANG_ENGINE.compute(date, lat, lon, utcOffsetHours)
+ * (already used by BUSINESS_MUHURTA above) for the transiting Moon's
+ * exact sidereal longitude at any candidate date/time — no separate
+ * ephemeris dependency. The Vimshottari star/sub/sub-sub-lord cascade is
+ * otherwise self-contained here (mirrors KP_prediction.js's method) so
+ * this file has no load-order dependency on KP_prediction.js.
+ *
+ * INTEGRATION (mirrors BUSINESS_MUHURTA.mount):
+ *
+ *     window.KP_MUHURTA.mount('kpMuhurtaContainerId');
+ */
+window.KP_MUHURTA = {
 
+    EVENTS: {
+        marriage: { label: '💍 Marriage / Wedding Ceremony', houses: [2, 7, 11], negate: [6, 10, 12], note: 'Avoid the negating window strictly — the source teaching records a Moon transit into 6/10/12 at the exact muhurat as breaking the ceremony (rituals not completing, or breaking off mid-way).' },
+        property_purchase: { label: '🏠 Property Purchase / Registration', houses: [4, 11], negate: [8, 12], note: '4 = the property itself, 11 = successful gain/fulfillment of the purchase.' },
+        business_startup: { label: '🏢 Business Launch / Startup', houses: [2, 6, 10, 11], negate: [8, 12], note: 'The full wealth combination — 2 (capital), 6 (competitive edge), 10 (the venture itself), 11 (gains).' },
+        travel: { label: '✈️ Travel Departure', houses: [3, 9, 11], negate: [8, 12], note: '3 = short travel, 9 = long-distance travel, 11 = a fulfilling/successful trip.' },
+        surgery: { label: '🏥 Surgery / Medical Procedure', houses: [1, 5, 9], negate: [6, 8, 12], note: '1 = the body itself, 5 = healing/immunity, 9 = protection — chosen for a safe procedure and fast recovery. This supports timing only; WHETHER and WHEN a procedure is medically necessary is always a decision for a qualified doctor, never this tool.' },
+        conceiving: { label: '👶 Conceiving a Child', houses: [2, 5, 11], negate: [4, 10, 12], note: 'Must be checked against the MOTHER\'s (wife\'s) natal chart specifically, not the father\'s, since she is the one conceiving — pass her chart as natalPlanets/natalAsc.', useChart: 'mother' },
+        exam_competition: { label: '📝 Exam / Competitive Test', houses: [3, 6, 11], negate: [4, 5, 12], note: '3 = the study/online medium, 6 = victory over competition, 11 = fulfillment of the desired result.' },
+        product_launch: { label: '📣 Product Launch / Marketing Push', houses: [3, 11], negate: [], note: 'The announcement (3) should lead toward reach/fulfillment (11); either house can lead as long as both are present in the window.' }
+    },
+
+    // ---- self-contained KP lord math (mirrors KP_prediction.js's, kept
+    // local so this file has no hard load-order dependency on it) ----
+
+    _DASHA_SEQ: ['Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury'],
+    _DASHA_YRS: { Ketu: 7, Venus: 20, Sun: 6, Moon: 10, Mars: 7, Rahu: 18, Jupiter: 16, Saturn: 19, Mercury: 17 },
+    _NAK_SIZE: 360 / 27,
+    _SIGN_LORDS: ['Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter'],
+
+    _norm360: function (d) { return ((d % 360) + 360) % 360; },
+
+    /** Star Lord (NL) / Sub Lord (SL) / Sub-Sub Lord (SSL) for a sidereal longitude, via the standard Vimshottari-proportion cascade. */
+    _getKPLords: function (sid) {
+        const lon = this._norm360(sid);
+        const nakIndex = Math.floor(lon / this._NAK_SIZE);
+        const nakLordIdx = nakIndex % 9;
+        const degIntoNak = lon - nakIndex * this._NAK_SIZE;
+        const TOTAL = 120;
+
+        let subLordIdx = nakLordIdx, subStart = 0, subSpanFound = 0;
+        for (let i = 0; i < 9; i++) {
+            const seqIdx = (nakLordIdx + i) % 9;
+            const span = (this._DASHA_YRS[this._DASHA_SEQ[seqIdx]] / TOTAL) * this._NAK_SIZE;
+            if (degIntoNak >= subStart && degIntoNak < subStart + span) { subLordIdx = seqIdx; subSpanFound = span; break; }
+            subStart += span;
+            subSpanFound = span; // in case of float rounding on the very last slice
+        }
+        const degIntoSub = degIntoNak - subStart;
+
+        let subSubLordIdx = subLordIdx, ssStart = 0;
+        for (let i = 0; i < 9; i++) {
+            const seqIdx = (subLordIdx + i) % 9;
+            const span = (this._DASHA_YRS[this._DASHA_SEQ[seqIdx]] / TOTAL) * subSpanFound;
+            if (degIntoSub >= ssStart && degIntoSub < ssStart + span) { subSubLordIdx = seqIdx; break; }
+            ssStart += span;
+        }
+
+        return { nakLord: this._DASHA_SEQ[nakLordIdx], subLord: this._DASHA_SEQ[subLordIdx], subSubLord: this._DASHA_SEQ[subSubLordIdx] };
+    },
+
+    /**
+     * Which houses a planet SIGNIFIES in the natal chart: houses it owns
+     * as Rashi Lord + houses whose cusp it is Cuspal Sub Lord (CSL) of
+     * (equal-house cusp approximation — Ascendant + (house-1)*30° — same
+     * documented approximation KP_prediction.js uses for CSL derivation).
+     */
+    getSignificatorHouses: function (natalPlanets, natalAsc) {
+        if (!natalPlanets || !natalAsc || natalAsc.sn === undefined) return null;
+        const ascSn = natalAsc.sn;
+        const ascSid = natalAsc.sid !== undefined ? natalAsc.sid : ascSn * 30;
+
+        const owns = {};
+        for (let h = 1; h <= 12; h++) {
+            const signNum = ((ascSn + h - 1) % 12 + 12) % 12;
+            const lord = this._SIGN_LORDS[signNum];
+            (owns[lord] = owns[lord] || []).push(h);
+        }
+        const cslOf = {};
+        for (let h = 1; h <= 12; h++) {
+            const cuspSid = this._norm360(ascSid + (h - 1) * 30);
+            const kp = this._getKPLords(cuspSid);
+            (cslOf[kp.subLord] = cslOf[kp.subLord] || []).push(h);
+        }
+        const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
+        const out = {};
+        planets.forEach(p => {
+            out[p] = Array.from(new Set([].concat(owns[p] || [], cslOf[p] || []))).sort((a, b) => a - b);
+        });
+        return out;
+    },
+
+    /**
+     * Scans a date range for KP-favourable muhurats for one event, using
+     * PANCHANG_ENGINE.compute() for the transiting Moon's exact position
+     * at each candidate hour, judged against the natal significators from
+     * getSignificatorHouses() above.
+     */
+    scanForEvent: function (eventId, natalPlanets, natalAsc, startDate, endDate, lat, lon, utcOffsetHours, hoursToCheck) {
+        const ev = this.EVENTS[eventId];
+        if (!ev || !window.PANCHANG_ENGINE) return [];
+        const sig = this.getSignificatorHouses(natalPlanets, natalAsc);
+        if (!sig) return [];
+        const housesOf = (planet) => sig[planet] || [];
+        const anyMatch = (planet, list) => housesOf(planet).some(h => list.includes(h));
+        const matchedHouses = (planet, list) => housesOf(planet).filter(h => list.includes(h));
+
+        const hoursList = (hoursToCheck && hoursToCheck.length) ? hoursToCheck : [6, 9, 12, 15, 18, 21];
+        const results = [];
+        const cur = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+        const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+        let guard = 0;
+        while (cur <= end && guard < 3660) { // ~10 year hard safety cap
+            hoursList.forEach(hh => {
+                const evalMoment = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate(), hh, 0, 0);
+                let panchang;
+                try { panchang = window.PANCHANG_ENGINE.compute(evalMoment, lat, lon, utcOffsetHours); } catch (e) { return; }
+                if (!panchang || panchang.moonSid === undefined) return;
+                const moonKP = this._getKPLords(panchang.moonSid);
+
+                const nlNegates = ev.negate.length && anyMatch(moonKP.nakLord, ev.negate);
+                const slNegates = ev.negate.length && anyMatch(moonKP.subLord, ev.negate);
+                const nlSupports = anyMatch(moonKP.nakLord, ev.houses);
+                const slSupports = anyMatch(moonKP.subLord, ev.houses);
+
+                let verdict, reason;
+                if (nlNegates || slNegates) {
+                    const badPlanet = nlNegates ? moonKP.nakLord : moonKP.subLord;
+                    const badRole = nlNegates ? "Star Lord" : "Sub Lord";
+                    const badHouses = matchedHouses(badPlanet, ev.negate);
+                    verdict = 'avoid';
+                    reason = `Moon's ${badRole} (${badPlanet}) signifies negating House${badHouses.length > 1 ? 's' : ''} ${badHouses.join(',')} for this event — avoid this window.`;
+                } else if (nlSupports && slSupports) {
+                    verdict = 'excellent';
+                    reason = `Both Moon's Star Lord (${moonKP.nakLord}) and Sub Lord (${moonKP.subLord}) signify this event's houses — the strongest KP-confirmed window.`;
+                } else if (nlSupports || slSupports) {
+                    const goodPlanet = nlSupports ? moonKP.nakLord : moonKP.subLord;
+                    const goodRole = nlSupports ? "Star Lord" : "Sub Lord";
+                    verdict = 'good';
+                    reason = `Moon's ${goodRole} (${goodPlanet}) signifies this event's houses.`;
+                } else {
+                    return; // neutral window — not shown, keeps results focused
+                }
+                results.push({ date: new Date(cur), time: evalMoment, moonNL: moonKP.nakLord, moonSL: moonKP.subLord, verdict: verdict, reason: reason });
+            });
+            cur.setDate(cur.getDate() + 1);
+            guard++;
+        }
+        const order = { excellent: 0, good: 1, avoid: 2 };
+        return results.sort((a, b) => (order[a.verdict] - order[b.verdict]) || (a.time - b.time));
+    },
+
+    _verdictColor: function (v) { return v === 'excellent' ? '#00DD77' : v === 'good' ? '#FFD700' : '#FF4477'; },
+
+    renderResults: function (eventId, results) {
+        const ev = this.EVENTS[eventId];
+        if (!ev) return '';
+        if (!results || !results.length) {
+            return `<div style="font-size:9px;color:var(--muted);margin-top:6px;">No excellent/good/avoid windows found in this range at the checked hours — widen the date range or add more hours.</div>`;
+        }
+        const rows = results.slice(0, 40).map(r => {
+            const c = this._verdictColor(r.verdict);
+            return `<div style="margin:3px 0;padding:5px 8px;border-left:3px solid ${c};background:${c}0A;">
+                <b style="color:${c};">${r.date.toDateString()} — ${String(r.time.getHours()).padStart(2, '0')}:00</b> <span style="color:${c};font-weight:bold;">${r.verdict.toUpperCase()}</span>
+                <div style="font-size:8.5px;color:var(--text);opacity:.85;margin-top:2px;">Moon Star Lord: ${r.moonNL} · Sub Lord: ${r.moonSL}</div>
+                <div style="font-size:8px;color:var(--muted);margin-top:2px;">${r.reason}</div>
+              </div>`;
+        }).join('');
+        return `<div style="margin-top:6px;">
+                  <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">${ev.note}</div>
+                  ${rows}
+                  ${results.length > 40 ? `<div style="font-size:8px;color:var(--muted);margin-top:4px;">…and ${results.length - 40} more windows (excellent/good sorted first).</div>` : ''}
+                </div>`;
+    },
+
+    /** Event picker + date range UI. wirePanel() below hooks up the Scan button. */
+    renderPanel: function () {
+        const options = Object.keys(this.EVENTS).map(id => `<option value="${id}">${this.EVENTS[id].label}</option>`).join('');
+        return `<div class="pred-item" style="border-left:3px solid #9b6fff;background:rgba(155,111,255,.05);">
+            <div class="pred-title" style="color:#9b6fff;">🪔 KP Muhurta Analysis (Personalized)</div>
+            <div style="font-size:9px;color:var(--muted);margin-bottom:8px;">
+              Unlike the Business Muhurta scores above (same classical nakshatra/tithi rules for everyone), this checks the transiting Moon's Star Lord and Sub Lord against YOUR OWN natal chart's significators for the chosen event — the same date can be excellent for you and meaningless for someone else.
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:8px;">
+              <div><label style="font-size:8px;color:var(--muted);display:block;">Event</label><select id="kpMuhurtaEvent" style="padding:4px;">${options}</select></div>
+              <div><label style="font-size:8px;color:var(--muted);display:block;">From</label><input type="date" id="kpMuhurtaStart" style="padding:4px;"></div>
+              <div><label style="font-size:8px;color:var(--muted);display:block;">To</label><input type="date" id="kpMuhurtaEnd" style="padding:4px;"></div>
+              <button id="kpMuhurtaScanBtn" style="padding:5px 10px;background:#9b6fff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:9px;">Scan</button>
+            </div>
+            <div id="kpMuhurtaResults"></div>
+          </div>`;
+    },
+
+    /** Wires the Scan button. natalPlanets/natalAsc/lat/lon/utcOffsetHours default to window.BIRTH_PLANETS/BIRTH_ASC/BIRTH.*; pass explicit ones (e.g. the mother's chart for "conceiving") via opts. */
+    wirePanel: function (opts) {
+        opts = opts || {};
+        const btn = document.getElementById('kpMuhurtaScanBtn');
+        if (!btn) return;
+        const startEl = document.getElementById('kpMuhurtaStart'), endEl = document.getElementById('kpMuhurtaEnd');
+        const today = new Date();
+        const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        if (startEl && !startEl.value) startEl.value = fmt(today);
+        if (endEl && !endEl.value) endEl.value = fmt(new Date(today.getTime() + 30 * 86400000));
+
+        btn.addEventListener('click', () => {
+            const eventId = document.getElementById('kpMuhurtaEvent').value;
+            const start = new Date(startEl.value);
+            const end = new Date(endEl.value);
+            const natalPlanets = opts.natalPlanets || window.BIRTH_PLANETS;
+            const natalAsc = opts.natalAsc || window.BIRTH_ASC;
+            const lat = opts.lat !== undefined ? opts.lat : (window.BIRTH ? window.BIRTH.lat : 0);
+            const lon = opts.lon !== undefined ? opts.lon : (window.BIRTH ? window.BIRTH.lon : 0);
+            const utcOffsetHours = opts.utcOffsetHours !== undefined ? opts.utcOffsetHours : (window.BIRTH ? window.BIRTH.utcOff : -start.getTimezoneOffset() / 60);
+            const resultsEl = document.getElementById('kpMuhurtaResults');
+            if (!natalPlanets || !natalAsc) { resultsEl.innerHTML = '<div style="color:#FF4477;font-size:9px;">Natal chart data not available.</div>'; return; }
+            resultsEl.innerHTML = '<div style="font-size:9px;color:var(--muted);">Scanning…</div>';
+            setTimeout(() => {
+                const results = window.KP_MUHURTA.scanForEvent(eventId, natalPlanets, natalAsc, start, end, lat, lon, utcOffsetHours);
+                resultsEl.innerHTML = window.KP_MUHURTA.renderResults(eventId, results);
+            }, 10);
+        });
+    },
+
+    /** Convenience: render + wire in one call, mirrors BUSINESS_MUHURTA.mount(). */
+    mount: function (containerId, opts) {
+        const el = document.getElementById(containerId);
+        if (!el) { console.warn('KP_MUHURTA.mount: container not found:', containerId); return; }
+        el.innerHTML = this.renderPanel();
+        this.wirePanel(opts);
+    }
+};
 if (typeof module !== 'undefined' && module.exports) module.exports = window.BUSINESS_MUHURTA;
