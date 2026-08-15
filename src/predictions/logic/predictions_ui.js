@@ -296,6 +296,7 @@ async function updatePredictionsDisplay() {
             html += window.GOCHAR._renderChartPanels ? window.GOCHAR._renderChartPanels(chartConfigs) : '';
           }
           html += window.KP_PREDICTION.renderHTML(kpAnalysis, transitPlanets, mdNode, kpChartConfigs);
+
           // KP Part 2 — advanced/supplementary rules not covered by
           // KP_prediction.js (Dasha Pravesh, BTR 1-9 connectivity, Sun
           // Bhava-Chalit Soul Purpose, Karakatva blending, Share Market,
@@ -320,6 +321,26 @@ async function updatePredictionsDisplay() {
             } catch (kp2Err) {
               console.error('KP Part 2 analysis failed:', kp2Err);
               html += `<div class="pred-item"><div class="pred-title">⚠️ KP Part 2 analysis error</div><div class="pred-detail">${kp2Err.message}</div></div>`;
+            }
+          }
+
+          // KP Part 3 — extended KAT conjunctions (Jupiter+Rahu,
+          // Sun+Rahu, Mars+Ketu, Mars+Rahu), four-trine conjunction
+          // reading, full 3-rule retrograde filter, tiered 5th-house
+          // money/childbirth grading, and the curated horary library.
+          if (window.KP_PREDICTION_3) {
+            try {
+              const kp3Analysis = window.KP_PREDICTION_3.analyze3({
+                natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC,
+                // Retrograde-filter check defaults to the running Antardasha
+                // lord (the significator whose delivery is currently in question).
+                retroCheckPlanet: (dashaInfo && dashaInfo.antardasha) ? dashaInfo.antardasha.lord : null,
+                transitTriggerPlanets: transitPlanets
+              });
+              html += window.KP_PREDICTION_3.renderHTML3(kp3Analysis);
+            } catch (kp3Err) {
+              console.error('KP Part 3 analysis failed:', kp3Err);
+              html += `<div class="pred-item"><div class="pred-title">⚠️ KP Part 3 analysis error</div><div class="pred-detail">${kp3Err.message}</div></div>`;
             }
           }
         } catch (kpErr) {
@@ -1727,5 +1748,3 @@ async function updateMarriagePanel() {
     console.error("runMarriageAnalysis not found in marriage.js");
   }
 }
-
-
