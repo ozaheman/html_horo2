@@ -208,110 +208,388 @@ window.KP_PREDICTION = {
     // houses reinforce the promise; negative houses (esp. 6-10-12, and 8th
     // for almost anything) work against/delay/break it.
     EVENT_PRIME_HOUSES: {
-        marriage: {
-            prime: [7], supporting: [2, 11], negative: [6, 10, 12], repeatBase: 7,
-            note: 'Marriage promise = 2/7/11 combination; 6-10-12 delays/breaks it; 8th anywhere nearby brings complication (e.g. secret relationships, special marriage act).',
-            reference: 'K.S. Krishnamurti, KP Reader Vols. I–VI (CSL axiom); KP Timing-of-Events lecture tradition (2-7-11 / 6-10-12 method).',
-            effect: 'When promised cleanly (prime H7 matched, no negative house contested), marriage tends to happen smoothly during the determining planet\'s dasha/sub-period; a contested promise (6-10-12 or 8th also touched) still tends to happen, but with delay, friction, or complication attached.',
-            remedy: 'Where 6-10-12 or the 8th complicate the 7th CSL, traditional practice offers Venus worship (harmony, relationships) on Fridays and quiet, non-transactional charity connected to marriage/family welfare — offered as a supportive practice, not a guaranteed fix.'
+        // --- HOUSE 1: SELF, VITALITY, HEALTH & LONGEVITY ---
+        health_vitality_h1: {
+            house: 1, category: 'Health', subCategory: 'General Vitality & Recovery',
+            prime: [1], supporting: [5, 9, 11], negative: [6, 8, 12, 4],
+            note: '1st CSL Star Lord involving 1, 5, 9, 11 guarantees strong vitality and rapid healing. 4 negates 5th healing engine; 6-8-12 indicates disease vulnerability.',
+            reference: 'K.S. Krishnamurti, KP Reader Vol. III; Rahul Kaushik, 1st House CSL Study.',
+            effect: 'Clean 1-5-9-11 delivers robust immunity; 6-8-12 indicates chronic vulnerability.',
+            remedy: 'Exercise daily (Mars) and maintain strict routine (Saturn). Donate items for afflicted planets during daylight.'
         },
-        second_marriage: {
-            prime: [7], supporting: [2, 9, 11], negative: [6, 8, 10, 12], repeatBase: 7,
-            note: 'If 2-7-11 did not fructify for a first marriage, a second marriage is checked via 2-9-11 — also derivable via the general "3 houses forward per repeat occurrence" rule: 2nd spouse = 3rd-from-7th = 9th, 3rd spouse = 3rd-from-9th = 11th. 6-8-10-12 signals separation/divorce.',
-            reference: 'K.S. Krishnamurti, KP Reader Vols. I–VI; "repeat occurrence = 3 houses forward" rule from the same Timing-of-Events tradition.',
-            effect: 'A second marriage promised via 2-9-11 tends to follow the same delay/complication pattern as the first if 6-8-10-12 remain involved in the chain.',
-            remedy: 'Same supportive practice as first marriage (Venus worship, non-transactional charity), with particular attention to whichever of 6-8-10-12 is repeating from the earlier failed promise, since that is the pattern actually asking to be addressed.'
+        longevity_lifespan_h1: {
+            house: 1, category: 'Health', subCategory: 'Longevity (>66 Years)',
+            prime: [1], supporting: [3, 5, 8, 11], negative: [2, 7, 12],
+            note: 'Long life requires 1st CSL linking to 1, 3, 5, 8, 11 without Maraka (2, 7) or Badhaka prominence.',
+            reference: 'K.S. Krishnamurti, KP Reader Vol. III (Longevity Formulas).',
+            effect: 'Promised long lifespan and stamina through crisis.',
+            remedy: 'Regular Mahamrityunjaya Mantra recitation when Maraka periods run.'
         },
-        divorce_separation: {
-            prime: [6, 10, 12], supporting: [8], negative: [],
-            note: 'Separative combination = 6-10-12 (8th nearby aggravates it further); classically the teacher weighs this over blaming the 1st house alone.',
-            reference: 'KP Timing-of-Events lecture tradition (6-10-12 separative combination).',
-            effect: 'A clean 6-10-12 (or 8th-reinforced) combination tends toward actual separation/divorce fructifying during the determining planet\'s period, rather than staying at the level of mere friction.',
-            remedy: 'Astrology names the timing pattern; it does not replace honest communication or professional relationship counseling. Where offered, traditional practice is 7th-lord and Venus worship on Fridays alongside active mediation, not ritual alone.'
+        disease_chronic_h1: {
+            house: 1, category: 'Health', subCategory: 'Chronic Sickness & Hospitalization',
+            prime: [6], supporting: [8, 12], negative: [5, 11],
+            note: '1st CSL connecting to 6 (sickness), 8 (pain/surgery), 12 (hospitalization) without 5, 11 recovery.',
+            reference: 'Rahul Kaushik, Astro-Medical Significations.',
+            effect: 'Chronic physical ailments requiring medical hospitalization.',
+            remedy: 'Voluntarily purchase and donate medicines to poor, sick patients (satisfies 6+12).'
         },
-        property_purchase: {
-            prime: [4], supporting: [11, 12], negative: [8],
-            note: 'Property purchase — primary house 4th (4/11/12 combination); 4th CSL and its star lord must show 4-11-12 involvement for the promise to be confirmed.',
-            reference: 'K.S. Krishnamurti, KP Reader Vols. I–VI; KP Timing-of-Events tradition (4-11-12 property combination).',
-            effect: 'A clean 4-11-12 promise tends to close during the determining planet\'s dasha/sub-period; 8th involvement tends to add legal/title complications or last-minute renegotiation rather than blocking the purchase outright.',
-            remedy: 'Where 8th-house complication appears alongside the 4th CSL, traditional practice pairs a plain legal/title due-diligence review of the specific property with Moon worship (domestic harmony) on Mondays before finalizing — the legal check is not optional even when the astrology looks favourable.'
+        accident_injury_h1: {
+            house: 1, category: 'Health', subCategory: 'Accidents & Bodily Trauma',
+            prime: [8], supporting: [1, 4, 12], negative: [5, 11],
+            note: '1st CSL linking to 4 (vehicle/land), 8 (shocks), 12 (hospital) with Mars/Saturn.',
+            reference: 'KP Reader Vol. IV (Accidents & Danger).',
+            effect: 'Sudden vehicular accidents or physical injury.',
+            remedy: 'Donate red masur dal on Tuesdays; avoid aggressive driving.'
         },
-        property_sale: {
-            prime: [10], supporting: [3, 5], negative: [],
-            note: 'Property SALE (as opposed to purchase) is read from the 10th CSL — a 3-5-10 combination signals selling.',
-            reference: 'KP Timing-of-Events lecture tradition (10th-CSL, 3-5-10 sale combination).',
-            effect: 'A clean 3-5-10 combination at the 10th CSL tends to produce an actual sale during that period, often at favourable terms if the 11th also touches in.',
-            remedy: 'No strong remedy tradition attaches to a sale beyond timing patience — proceed once the 10th CSL/L1/L2 chain confirms rather than forcing a sale during an unsupportive sub-period.'
+        mental_depression_h1: {
+            house: 1, category: 'Health', subCategory: 'Mental Anxiety & Depression',
+            prime: [1], supporting: [4, 8, 12], negative: [5, 11],
+            note: '1st & 4th CSLs afflicted by Saturn/Rahu linking to 8, 12 without 5, 11 recovery.',
+            reference: 'Rahul Kaushik, Mental Health 4-Factor Confluence.',
+            effect: 'Subconscious panic, sleep disorders, and chronic depression.',
+            remedy: 'Grounding routines; sleep on firm surface (Saturn); avoid isolation.'
         },
-        children: {
-            prime: [5], supporting: [2, 11], negative: [4, 10, 12], repeatBase: 5,
-            note: 'Child-birth promise = 2-5-11 combination (5th prime, esp. for the first child); 4-10-12 signals difficulty/no children. CAVEAT: if the 5th CSL and its star lord are BOTH in a Barren sign (Aries/Gemini/Leo/Virgo — Gemini and Leo are the MOST barren of the four), even a promise can be hard to fructify without medical help. Twins are suggested when CSL and star lord are both in a Dual sign, especially via Mercury.',
-            reference: 'K.S. Krishnamurti, KP Reader Vols. I–VI (2-5-11 combination; Barren/Fruitful/Dual sign classification).',
-            effect: 'A clean 2-5-11 promise (without Barren-sign complication) tends to deliver childbirth during the determining planet\'s period; Barren-sign involvement narrows the window and often needs medical support to align the timing.',
-            remedy: 'Where the 5th CSL/star lord sit in Barren signs, medical fertility consultation comes FIRST — astrology here supports timing, it never substitutes for medical care. Alongside that, traditional practice is Jupiter worship (natural karaka of children) on Thursdays and patience through better-aligned sub-periods.'
-        },
-        job_service: {
-            prime: [6], supporting: [10, 11], negative: [5, 8, 12],
-            note: 'Job/service = 6th house; 6-10-11 favours winning competition/getting hired; 4-5-12 (or 5-8-12) works against it.',
-            reference: 'KP Timing-of-Events lecture tradition (6-10-11 vs 4-5-12/5-8-12).',
-            effect: 'A clean 6-10-11 promise tends to deliver hiring/placement during that period; 5-8-12 (or 4-5-12) involvement tends to produce instability — frequent job changes or a difficult, short-lived placement — rather than outright failure to find work.',
-            remedy: 'Where 5-8-12 (or 4-5-12) dominates the 6th CSL, traditional practice is disciplined routine (Saturn\'s domain) plus Mars/Hanuman worship on Tuesdays for the persistence to ride out a competitive window, rather than switching jobs impulsively mid-affliction.'
-        },
-        promotion: {
-            prime: [10], supporting: [6, 11], negative: [],
-            note: 'Promotion = 10th house.',
-            reference: 'KP Timing-of-Events lecture tradition (10th-house promotion rule).',
-            effect: 'A clean 10th-house promise tends to deliver the promotion/status change during the determining planet\'s own dasha/sub-period.',
-            remedy: 'No specific remedy tradition attaches beyond the general 10th-house practice of Sun worship (status, recognition) on Sundays and visible, consistent performance during the supportive period.'
-        },
-        wealth_income: {
+
+        // --- HOUSE 2: WEALTH, LIQUIDITY, FAMILY & RECOVERY ---
+        wealth_accumulation_h2: {
+            house: 2, category: 'Finance', subCategory: 'Extreme Wealth Accumulation',
             prime: [2], supporting: [6, 10, 11], negative: [5, 8, 12],
-            note: 'The single best wealth combination is 2-6-10-11 ("maalamaal" combination). Its mirror-opposite 5-8-12 signifies financial loss/struggle — "what comes with one hand leaves with the other."',
-            reference: 'KP Timing-of-Events lecture tradition (2-6-10-11 "maalamaal" combination and its 5-8-12 mirror).',
-            effect: 'A clean 2-6-10-11 promise tends to produce steady, compounding gain during that period; a 5-8-12 mirror pattern tends to produce gains that arrive and then leak away just as fast.',
-            remedy: 'Where the 5-8-12 mirror pattern dominates, the specific remedy recorded in the source teaching is quiet, ANONYMOUS charity performed from genuine inner conviction (not transactional bargaining) — see the 12th-CSL/8th-house case study for the full worked example.'
+            note: '2nd CSL Star Lord involving 2, 6, 10, 11 is the ultimate "maalamaal" financial formula.',
+            reference: 'KP Reader Vol. IV (Financial Prospects); Rahul Kaushik, Importance of 2nd CSL.',
+            effect: 'Compounding cash reserves, high salary, and massive bank liquidity.',
+            remedy: 'Spend constructively on business needs; do not hoard out of fear.'
         },
-        competition_litigation: {
+        financial_loss_h2: {
+            house: 2, category: 'Finance', subCategory: 'Cash Leaks & Volatility',
+            prime: [12], supporting: [5, 8], negative: [2, 11],
+            note: '2nd CSL Star Lord involving 5 (loss of work), 8 (stuck capital), 12 (loss) drains liquidity.',
+            reference: 'Rahul Kaushik, Dhan Prapti K Upay.',
+            effect: 'Rapid cash outflow, stuck market funds, and unstable bank balance.',
+            remedy: 'Lock surplus liquidity into non-liquid bank Fixed Deposits (FDs) to satisfy 12th.'
+        },
+        asset_recovery_h2: {
+            house: 2, category: 'Finance', subCategory: 'Recovery of Stolen/Lost Gold & Assets',
+            prime: [2], supporting: [6, 11], negative: [5, 8, 12],
+            note: '2nd CSL Star Lord signifying 2, 6, 11 recovers stolen valuables and lost jewelry.',
+            reference: 'KP Horary Reader (Recovery of Missing Property).',
+            effect: 'Stolen or misplaced family gold and assets are found and returned.',
+            remedy: 'Scrupulous police verification and systematic audit.'
+        },
+
+        // --- HOUSE 3: CONTRACTS, MARKETING, VISAS & SIBLINGS ---
+        contracts_tenders_h3: {
+            house: 3, category: 'Career', subCategory: 'Winning Contracts & Government Tenders',
+            prime: [3], supporting: [6, 10, 11], negative: [5, 12],
+            note: '3rd CSL (formal bid) involving 6 (beating competitors), 10 (authority), 11 (winning contract).',
+            reference: 'KP Reader Vol. IV; Rahul Kaushik, Government Tender Sutras.',
+            effect: 'Successfully awarded commercial or government infrastructure tenders.',
+            remedy: 'Ensure scrupulous legal vetting of tender quotation paperwork.'
+        },
+        visa_approval_h3: {
+            house: 3, category: 'Travel/Visa', subCategory: 'Visa & Passport Approval',
+            prime: [3], supporting: [9, 11, 12], negative: [8, 12],
+            note: '3rd CSL Star Lord involving 3 (documents), 9 (long travel), 11 (clearance) clears visa.',
+            reference: 'KP Timing-of-Events (Travel & Documentation).',
+            effect: 'Embassy clears international visa and travel passport files.',
+            remedy: 'Verify documentary authenticity before filing.'
+        },
+        sibling_friction_h3: {
+            house: 3, category: 'General', subCategory: 'Sibling Dispute & Litigation',
+            prime: [3], supporting: [6, 8], negative: [11],
+            note: '3rd CSL Star Lord signifying 6 (enmity) and 8 (disputes) triggers sibling conflict.',
+            reference: 'Rahul Kaushik, 3rd CSL Alignment.',
+            effect: 'Younger siblings initiate property partition or business litigation.',
+            remedy: 'Maintain clear physical, financial, and emotional boundaries with siblings.'
+        },
+
+        // --- HOUSE 4: REAL ESTATE, VEHICLES, EDUCATION & RELOCATION ---
+        property_purchase_h4: {
+            house: 4, category: 'Property', subCategory: 'Purchasing Real Estate / Land',
+            prime: [4], supporting: [11, 12], negative: [3, 8, 12],
+            note: '4th CSL Star Lord involving 4 (property) and 11 (gain) with 12 (investment) registers land.',
+            reference: 'KP Reader Vol. IV; Rahul Kaushik, Property Investment Formulas.',
+            effect: 'Successful registration and acquisition of real estate property.',
+            remedy: 'Conduct full title search and environmental due diligence before buying.'
+        },
+        property_sale_h4: {
+            house: 4, category: 'Property', subCategory: 'Profitable Property Sale',
+            prime: [10], supporting: [3, 5, 10], negative: [4],
+            note: 'Property sale is buyer\'s 4th (10th CSL). 3 (loss of home), 5 (buyer\'s gain), 10 (buyer\'s home).',
+            reference: 'KP Timing-of-Events (Property Sale Formula).',
+            effect: 'Favorable contract signed with qualified real estate buyer.',
+            remedy: 'List property through verified commercial brokers.'
+        },
+        vehicle_purchase_h4: {
+            house: 4, category: 'Property', subCategory: 'Vehicle Purchase (Car/Bike)',
+            prime: [4], supporting: [11, 12], negative: [3, 8],
+            note: '4th CSL involving 4 and 11 with Venus/Moon confirms purchasing vehicles.',
+            reference: 'KP Reader Vol. IV (Conveyances).',
+            effect: 'New conveyance or automobile purchased during discount cycle.',
+            remedy: 'Ensure complete mechanical inspection and vehicle insurance.'
+        },
+        residence_relocation_h4: {
+            house: 4, category: 'Property', subCategory: 'Sudden Change of Residence',
+            prime: [4], supporting: [1, 3, 8, 12], negative: [4],
+            note: '4th CSL signifying 1, 3 (leaving base), 8 (sudden), 12 (distance) forces move.',
+            reference: 'Rahul Kaushik, Relocation Sutras.',
+            effect: 'Sudden relocation due to landlord notice, exams, or career postings.',
+            remedy: 'Choose flexible rental arrangements.'
+        },
+
+        // --- HOUSE 5: CHILDREN, SPECULATION, ROMANCE & CREATIVITY ---
+        childbirth_first_h5: {
+            house: 5, category: 'Children', subCategory: '1st Child Conception & Birth',
+            prime: [5], supporting: [2, 11], negative: [1, 4, 10], repeatBase: 5,
+            note: '5th CSL Star Lord involving 2 (family), 5 (pregnancy), 11 (gain) confirms childbirth in mother\'s chart.',
+            reference: 'KP Reader Vol. IV & VI (Childbirth & Barren Signs).',
+            effect: 'Smooth natural conception and delivery of first child.',
+            remedy: 'If CSL is in Barren signs (1, 3, 5, 6), consult fertility doctors early.'
+        },
+        childbirth_second_h5: {
+            house: 5, category: 'Children', subCategory: '2nd Child Conception (7th Cusp)',
+            prime: [7], supporting: [2, 11], negative: [1, 6, 10], repeatBase: 5,
+            note: '2nd child is 3rd from 5th = 7th Cusp. 7th CSL Star Lord signifying 2, 7, 11 promises birth.',
+            reference: 'KP Timing-of-Events (Repeat Occurrences: 3 houses forward).',
+            effect: 'Successful birth of second child.',
+            remedy: 'Jupiter worship on Thursdays.'
+        },
+        childbirth_third_h5: {
+            house: 5, category: 'Children', subCategory: '3rd Child Conception (9th Cusp)',
+            prime: [9], supporting: [2, 11], negative: [1, 8, 10], repeatBase: 5,
+            note: '3rd child is 3rd from 7th = 9th Cusp. 9th CSL Star Lord signifying 2, 9, 11 promises birth.',
+            reference: 'KP Timing-of-Events.',
+            effect: 'Successful birth of third child.',
+            remedy: 'Jupiter worship and charitable acts for children.'
+        },
+        childbirth_ivf_h5: {
+            house: 5, category: 'Children', subCategory: 'IVF & Clinical Conception',
+            prime: [5], supporting: [4, 8, 12, 2, 11], negative: [1, 10],
+            note: '5th CSL connecting to clinical houses (4, 8, 12) along with 2, 5, 11 confirms birth via IVF.',
+            reference: 'Rahul Kaushik, Medical Childbirth Formulas.',
+            effect: 'Child conception achieved successfully through clinical IVF/ICSI assistance.',
+            remedy: 'Schedule embryo transfer on Moon transiting 2, 5, 11 significators.'
+        },
+        miscarriage_risk_h5: {
+            house: 5, category: 'Children', subCategory: 'Miscarriage Risk',
+            prime: [5], supporting: [4, 8], negative: [2, 11],
+            note: '5th CSL Sub-Lord involving 4 (negation of 5th) and 8 (surgical trauma) indicates pregnancy loss.',
+            reference: 'KP Reader Vol. IV.',
+            effect: 'High risk of pregnancy complications or termination.',
+            remedy: 'Strict medical bed-rest and spiritual protection prayers.'
+        },
+        stock_market_speculation_h5: {
+            house: 5, category: 'Finance', subCategory: 'Stock Market Speculation Profits',
+            prime: [5], supporting: [2, 6, 11], negative: [5, 8, 12, 4],
+            note: '5th CSL Star Lord signifying 2, 5, 6, 11 promises immense wealth through equity trading.',
+            reference: 'Rahul Kaushik, Share Market Nifty Money Sensex.',
+            effect: 'Substantial trading profits in equity and derivative markets.',
+            remedy: 'Never trade on days Moon transits the 4th house (loses trading desire/crash).'
+        },
+
+        // --- HOUSE 6: EMPLOYMENT, COMPETITIONS, DEBTS & LITIGATION ---
+        job_employment_h6: {
+            house: 6, category: 'Career', subCategory: 'Corporate Job & Competitive Exams',
+            prime: [6], supporting: [2, 10, 11], negative: [5, 9, 12],
+            note: '6th CSL Star Lord involving 2, 6, 10, 11 secures corporate employment and clears exams.',
+            reference: 'KP Reader Vol. IV; Rahul Kaushik, 6th CSL Secrets.',
+            effect: 'Job appointment letter issued and competitive examination cleared.',
+            remedy: 'Place pictures of small, happy children on work desk if 5th house causes job instability.'
+        },
+        litigation_victory_h6: {
+            house: 6, category: 'Legal', subCategory: 'Winning Court Case / Election',
             prime: [6], supporting: [10, 11], negative: [4, 5, 12],
-            note: 'Winning competitions/court cases = 6-10-11; the losing combination is 4-5-12.',
-            reference: 'KP Timing-of-Events lecture tradition (6-10-11 vs 4-5-12).',
-            effect: 'A clean 6-10-11 promise tends to favour winning the competition/case during that period; 4-5-12 involvement tends to favour the other side or produce a drawn-out, costly process.',
-            remedy: 'Where 4-5-12 dominates the 6th CSL/L1, traditional practice favours Mars worship (courage, the 6th\'s natural co-karaka) on Tuesdays and scrupulous documentation (3rd-house support) rather than escalating from a weak position.'
+            note: '6th CSL Star Lord signifying 6, 10, 11 guarantees defeat of legal rival or election opponent.',
+            reference: 'Rahul Kaushik, Competitive Prashna Formulas.',
+            effect: 'Decisive victory in commercial litigation, election, or arbitration.',
+            remedy: 'Maintain rigorous legal documentation (3rd house).'
         },
-        foreign_travel: {
-            prime: [12], supporting: [3, 9], negative: [],
-            note: '12th = foreign land/settlement; 3rd = short travel; 9th = long-distance travel.',
-            reference: 'KP Timing-of-Events lecture tradition (12-3-9 travel combination).',
-            effect: 'A clean 12-3-9 combination tends to produce the travel/settlement during the determining planet\'s period — 12th alone favours longer settlement, 3rd/9th alone favour shorter trips.',
-            remedy: 'No strong remedy tradition attaches beyond the general 12th-house practice of Ketu/Saturn worship and quiet charity toward travellers or those settling abroad, offered as supportive rather than corrective.'
+        litigation_defeat_h6: {
+            house: 6, category: 'Legal', subCategory: 'Defeat in Dispute (Opponent Wins)',
+            prime: [7], supporting: [4, 5, 12], negative: [6, 10, 11],
+            note: '6th CSL signifying 4, 5, 12 gives status (4=opp 10th) and victory (12=opp 6th) to opponent.',
+            reference: 'Rahul Kaushik, Defeat House Formula.',
+            effect: 'Opponent wins the lawsuit or election; querent loses.',
+            remedy: 'Seek out-of-court mutual settlement (5, 11).'
         },
-        education: {
-            prime: [4], supporting: [9], negative: [],
-            note: 'KP-specific: primary education house is the 4th (not the 5th as in classical Parashari); 9th governs higher education.',
-            reference: 'K.S. Krishnamurti, KP Reader Vols. I–VI — explicit KP departure from classical Parashari 5th-house education rule.',
-            effect: 'A clean 4-9 combination tends to produce steady educational progress/qualification completion during that period.',
-            remedy: 'Persistent 4th-CSL affliction is traditionally supported by Mercury worship (learning, communication) on Wednesdays and addressing the concrete study-environment factors the 4th house governs (home stability) rather than ritual alone.'
+        debt_recovery_h6: {
+            house: 6, category: 'Finance', subCategory: 'Debt & Stuck Payment Recovery',
+            prime: [6], supporting: [2, 11], negative: [5, 8, 12],
+            note: '6th CSL Star Lord involving 2, 6, 11 clears overdue debtor invoices and recovers loans.',
+            reference: 'KP Reader Vol. IV (Recovery of Debts).',
+            effect: 'Overdue commercial payments and stuck market capital fully recovered.',
+            remedy: 'Issue firm, scheduled reminders without confrontation.'
         },
-        health_disease: {
-            prime: [1], supporting: [6, 8, 12], negative: [],
-            note: '1st = overall health/vitality baseline; a 6-8-12 combination at the 6th CSL/star-lord level signals disease (esp. chronic if repeated); 5-11 signals a healthy/disease-free period.',
-            reference: 'KP Timing-of-Events lecture tradition (6-8-12 disease combination). This is a TIMING signal only — never a diagnosis.',
-            effect: 'A repeated 6-8-12 pattern at the 6th CSL/star-lord level tends to coincide with active illness during that period; a clean 5-11 pattern tends to coincide with a genuinely healthy stretch. Always confirm with a qualified medical professional — this reading is not a diagnosis and should never delay seeking care.',
-            remedy: 'This is a supportive/traditional layer only, never a substitute for medical diagnosis and treatment. Where a repeated 6-8-12 pattern shows, traditional practice is Saturn worship (patience, the 6th\'s co-karaka) on Saturdays and disciplined routine — alongside, never instead of, seeing a doctor.'
+
+        // --- HOUSE 7: MARRIAGE, SPOUSE, DIVORCE & PARTNERSHIPS ---
+        marriage_first_h7: {
+            house: 7, category: 'Marriage', subCategory: '1st Marriage & Union',
+            prime: [7], supporting: [2, 11], negative: [1, 6, 10, 12], repeatBase: 7,
+            note: '7th CSL Star Lord involving 2, 7, 11 confirms formal marriage. 6-10-12 denies or breaks it.',
+            reference: 'KP Reader Vol. IV; Rahul Kaushik, Marriage Timing Sutras.',
+            effect: 'Formal marital wedding ceremony successfully finalized.',
+            remedy: 'Offer non-transactional charity on Friday mornings (Venus).'
         },
-        consultancy_advisory: {
-            prime: [9], supporting: [3, 5], negative: [],
-            note: '9th = consultancy of every kind, universally; 3rd/5th reinforce advisory/solutions work.',
-            reference: 'KP Timing-of-Events lecture tradition (9th-house universal consultancy rule).',
-            effect: 'A strong, clean 9th-house promise tends to produce visible advisory/consultancy success (reputation, client flow) during that period.',
-            remedy: 'No specific remedy tradition attaches beyond the general 9th-house practice of ethical, well-sourced advice-giving (Jupiter\'s domain) — Jupiter worship on Thursdays is the traditional support for advisory/consultancy careers broadly.'
+        marriage_second_h7: {
+            house: 7, category: 'Marriage', subCategory: '2nd Marriage / Re-marriage (9th Cusp)',
+            prime: [9], supporting: [2, 11], negative: [1, 8, 10, 12], repeatBase: 7,
+            note: '2nd marriage is 3rd from 7th = 9th Cusp. 9th CSL Star Lord involving 2, 9, 11 promises re-marriage.',
+            reference: 'KP Timing-of-Events (Repeat Occurrences).',
+            effect: 'Second marriage solemnized with enduring stability.',
+            remedy: 'Address the repeating negative house from the first union.'
         },
-        debt_loan_recovery: {
-            prime: [6], supporting: [10, 11], negative: [5, 8, 9],
-            note: 'Recovering money owed to you, or securing a loan, needs 6-10-11; a 5-8-9 combination at the 6th CSL/star-lord level signals the money stays stuck.',
-            reference: 'KP Timing-of-Events lecture tradition (6-10-11 vs 5-8-9 recovery combination).',
-            effect: 'A clean 6-10-11 promise tends to produce actual recovery/loan approval during that period; 5-8-9 involvement tends to keep the money stuck regardless of how strongly it is chased.',
-            remedy: 'Where 5-8-9 dominates the 6th CSL/star-lord level, traditional practice is patient, undramatic follow-up (Saturn\'s domain) rather than confrontation, paired with Saturn worship on Saturdays.'
+        marriage_third_h7: {
+            house: 7, category: 'Marriage', subCategory: '3rd Marriage (11th Cusp)',
+            prime: [11], supporting: [2, 11], negative: [1, 10, 12], repeatBase: 7,
+            note: '3rd marriage is 3rd from 9th = 11th Cusp. 11th CSL Star Lord involving 2, 11 confirms union.',
+            reference: 'KP Timing-of-Events.',
+            effect: 'Third marital partnership established.',
+            remedy: 'Venus worship and relationship counseling.'
+        },
+        marriage_fourth_h7: {
+            house: 7, category: 'Marriage', subCategory: '4th Marriage (1st Cusp)',
+            prime: [1], supporting: [2, 11], negative: [6, 12], repeatBase: 7,
+            note: '4th marriage is 3rd from 11th = 1st Cusp. 1st CSL Star Lord involving 1, 2, 11 confirms union.',
+            reference: 'KP Timing-of-Events.',
+            effect: 'Fourth marital partnership established.',
+            remedy: 'Venus worship and spiritual alignment.'
+        },
+        marital_divorce_h7: {
+            house: 7, category: 'Marriage', subCategory: 'Marital Divorce & Separation',
+            prime: [6], supporting: [10, 12, 8], negative: [2, 7, 11],
+            note: '7th CSL in 6 (separate beds/dispute) and 12 (legal/residential exit) causes divorce.',
+            reference: 'Rahul Kaushik, Divorce & Separation Indicators.',
+            effect: 'Legal decree of divorce and permanent physical separation.',
+            remedy: 'Execute out-of-court mutual consent settlement (5, 9, 11, 12).'
+        },
+        business_partnership_h7: {
+            house: 7, category: 'Career', subCategory: 'Commercial Business Partnerships',
+            prime: [7], supporting: [2, 10, 11], negative: [6, 12],
+            note: '7th CSL Star Lord involving 2, 7, 10, 11 establishes highly lucrative enterprise partnerships.',
+            reference: 'KP Reader Vol. IV (Commercial Partnerships).',
+            effect: 'Smooth commercial partnerships yielding continuous dividend profits.',
+            remedy: 'Draft explicit operating agreements defining exit terms.'
+        },
+
+        // --- HOUSE 8: INHERITANCE, SURGERY, FUNDING & OCCULT ---
+        inheritance_legacy_h8: {
+            house: 8, category: 'Finance', subCategory: 'Inheritance & Unearned Assets',
+            prime: [8], supporting: [2, 11], negative: [1, 4, 10],
+            note: '8th CSL Star Lord signifying 2, 8, 11 brings ancestral wealth, legacy, PF, and insurance payouts.',
+            reference: 'KP Reader Vol. IV; Rahul Kaushik, 8th House Secrets.',
+            effect: 'Receipt of substantial ancestral property, gratuity, and insurance settlements.',
+            remedy: 'Maintain truthfulness in estate probate documentation.'
+        },
+        surgery_procedure_h8: {
+            house: 8, category: 'Health', subCategory: 'Surgical Incision & Operations',
+            prime: [8], supporting: [6, 12], negative: [7, 11],
+            note: '6th/8th CSL involving 8th house (cutting/trauma) confirms surgery. 7 (12th from 8th) avoids it.',
+            reference: 'Rahul Kaushik, Surgical Timing Sutras.',
+            effect: 'Surgeons perform surgical operation to resolve physical condition.',
+            remedy: 'Select surgery Muhurat on 1, 5, 9 significator days for rapid bodily recovery.'
+        },
+        venture_funding_h8: {
+            house: 8, category: 'Finance', subCategory: 'Venture Capital & Angel Funding',
+            prime: [8], supporting: [2, 11], negative: [5, 12],
+            note: '8th house is other people\'s money. 8th CSL signifying 2, 8, 11 secures venture capital.',
+            reference: 'Rahul Kaushik, Business Funding Window.',
+            effect: 'Angel investors and venture debt funds disburse startup capital.',
+            remedy: 'Pitch investors during Mahadasha/Antardasha whose star lord sits in 8th house.'
+        },
+
+        // --- HOUSE 9: CONSULTANCY, PUBLISHING, HIGHER STUDIES & PILGRIMAGES ---
+        consultancy_advisory_h9: {
+            house: 9, category: 'Career', subCategory: 'Professional Consultancy & Astrology',
+            prime: [9], supporting: [1, 5, 10, 11], negative: [8, 6],
+            note: '9th CSL connecting to 1 (self), 9 (wisdom), 10 (status) with 5 (solutions) confirms top advisor.',
+            reference: 'Rahul Kaushik, Universal House of Consultancy.',
+            effect: 'Distinguished career as high-fee management consultant, astrologer, or lawyer.',
+            remedy: 'Study and conduct research in solitude; keep healthy boundary from clients.'
+        },
+        publishing_book_h9: {
+            house: 9, category: 'Career', subCategory: 'Book & Academic Paper Publishing',
+            prime: [9], supporting: [3, 11], negative: [8, 12],
+            note: '9th CSL linking to 3 (writing/manuscript) and 11 confirms international book publication.',
+            reference: 'KP Reader Vol. IV (Publishing & Authorship).',
+            effect: 'Publishing house signs contract; manuscript achieves wide distribution.',
+            remedy: 'Scrutinize publishing royalty contract terms.'
+        },
+        pilgrimage_spiritual_h9: {
+            house: 9, category: 'Travel/Visa', subCategory: 'Spiritual Pilgrimage & Shrines',
+            prime: [9], supporting: [3, 5, 11], negative: [2, 6],
+            note: '9th CSL Star Lord involving 3 (travel), 5 (devotion), 9 (shrines) confirms pilgrimage.',
+            reference: 'KP Timing-of-Events (Pilgrimages).',
+            effect: 'Completion of sacred Himalayan or overseas spiritual pilgrimage.',
+            remedy: 'Donate food and yellow chana dal at holy shrines.'
+        },
+
+        // --- HOUSE 10: CAREER STATUS, PROMOTION, AUTHORITY & FAME ---
+        career_promotion_h10: {
+            house: 10, category: 'Career', subCategory: 'Executive Promotion & Status Elevation',
+            prime: [10], supporting: [2, 6, 11], negative: [5, 9, 12],
+            note: '10th CSL Star Lord involving 2, 6, 10, 11 delivers corporate promotions and executive ranks.',
+            reference: 'KP Reader Vol. IV; Rahul Kaushik, 10th CSL Career Blueprint.',
+            effect: 'Elevation to board-level leadership, government post, or executive promotion.',
+            remedy: 'Align work with Karakatva of 10th CSL planet (Venus=media, Jupiter=consulting, Saturn=industry).'
+        },
+        job_resignation_h10: {
+            house: 10, category: 'Career', subCategory: 'Job Switch & Resignation',
+            prime: [10], supporting: [5, 9, 11], negative: [6, 10],
+            note: '10th CSL Star Lord involving 5 (12th from 6th) and 9 (12th from 10th) confirms job resignation.',
+            reference: 'KP Reader Vol. IV (Change of Profession).',
+            effect: 'Voluntary resignation from current employer and transition to new firm.',
+            remedy: 'Secure written offer before submitting formal resignation.'
+        },
+        public_defamation_h10: {
+            house: 10, category: 'Career', subCategory: 'Public Defamation & Loss of Post',
+            prime: [10], supporting: [8, 12], negative: [5, 11],
+            note: '10th CSL Star Lord involving 8 (humiliation) and 12 (loss of office) causes disgrace.',
+            reference: 'Rahul Kaushik, Defamation & 10th CSL Affliction.',
+            effect: 'Public defamation, vigilance raid, or sudden termination from authority chair.',
+            remedy: 'Keep astrology texts on desk (8th) and perform anonymous Gupt Daan (12th).'
+        },
+
+        // --- HOUSE 11: DESIRE FULFILLMENT, PROFITS & NETWORKS ---
+        desire_fulfillment_h11: {
+            house: 11, category: 'General', subCategory: 'Universal Fulfillment of Ambitions',
+            prime: [11], supporting: [1, 2, 10], negative: [12, 5, 8],
+            note: '11th CSL Star Lord signifying 1, 2, 11 guarantees primary life goals will be fully realized.',
+            reference: 'KP Reader Vol. III & IV; Rahul Kaushik, Labha Bhava Mastery.',
+            effect: 'Effortless realization of business revenue, honors, and life ambitions.',
+            remedy: 'Maintain ethical integrity; curating social network defined by 11th house.'
+        },
+        disease_recovery_h11: {
+            house: 11, category: 'Health', subCategory: 'Rapid Disease Recovery',
+            prime: [11], supporting: [1, 5], negative: [6, 8, 12],
+            note: '11th CSL signifying 1, 5, 11 is the fastest recovery signature from medical crises.',
+            reference: 'KP Medical Astrology Sutras.',
+            effect: 'Swift, complete medical recovery and restoration of vitality.',
+            remedy: 'Follow structured nutritional regimen (5th house).'
+        },
+
+        // --- HOUSE 12: FOREIGN SETTLEMENT, INVESTMENTS & MOKSHA ---
+        foreign_settlement_h12: {
+            house: 12, category: 'Travel/Visa', subCategory: 'Permanent Foreign Residency & PR',
+            prime: [12], supporting: [3, 9], negative: [4, 8, 11],
+            note: '12th CSL Star Lord signifying 3 (departure), 9 (long travel), 12 (foreign land) grants PR.',
+            reference: 'KP Reader Vol. IV; Rahul Kaushik, 12th House Secrets.',
+            effect: 'Permanent foreign immigration, green card clearance, and overseas settlement.',
+            remedy: 'Display maps or pictures of foreign destinations in workspace.'
+        },
+        investment_appreciation_h12: {
+            house: 12, category: 'Finance', subCategory: 'Long-Term Capital Investment Growth',
+            prime: [12], supporting: [4, 11], negative: [5, 8],
+            note: '12th CSL (investment) and its Star Lord in 4 (property) and 11 (gain) multiplies capital.',
+            reference: 'Rahul Kaushik, 12th CSL Investment Formula.',
+            effect: 'Long-term land or equity investments purchased in lakhs appreciate into crores.',
+            remedy: 'Deploy capital into tangible real estate or unlisted infrastructure bonds.'
+        },
+        spiritual_moksha_h12: {
+            house: 12, category: 'General', subCategory: 'Spiritual Liberation (Moksha)',
+            prime: [12], supporting: [12], negative: [2, 11],
+            note: '12th CSL connecting to 12th across Planet, Star, and Sub confirms total spiritual let-go.',
+            reference: 'KP Reader Vol. IV (Moksha & Spiritual Solitude).',
+            effect: 'Spiritual awakening, profound meditation insights, and detachment from materialism.',
+            remedy: 'Daily silent meditation and anonymous philanthropic giving.'
         }
     },
 
@@ -598,26 +876,67 @@ window.KP_PREDICTION = {
         const L = this._lords(lords);
         const pd = natalPlanetsMap && natalPlanetsMap[node];
         if (!pd || pd.sn === undefined || !L) return null;
+
+        const nodeHouse = pd.house;
         const dispositor = L[pd.sn];
         if (!dispositor) return null;
+
         const dispositorData = natalPlanetsMap[dispositor];
         const dispositorPlacementHouse = dispositorData ? dispositorData.house : null;
 
-        const ownedHouses = [];
-        for (let h = 1; h <= 12; h++) { if (L[(ascSignNum + h - 1) % 12] === dispositor) ownedHouses.push(h); }
-
+        // Base CSL numbers computed without recursive node-blending
         const allCusps = this.getAllCusps(ascSid);
-        const rawPlanetNumbers = this.getPlanetNumbers(allCusps); // unblended base lookup -- avoids recursion
+        const rawPlanetNumbers = this.getPlanetNumbers(allCusps);
         const cslHouses = rawPlanetNumbers[dispositor] || [];
 
-        const combinedHouses = Array.from(new Set([dispositorPlacementHouse, ...ownedHouses, ...cslHouses].filter(h => h !== null && h !== undefined))).sort((a, b) => a - b);
+        const ownedHouses = [];
+        if (L && ascSignNum !== undefined) {
+            for (let h = 1; h <= 12; h++) {
+                if (L[(ascSignNum + h - 1) % 12] === dispositor) ownedHouses.push(h);
+            }
+        }
+
+        // Conjunctions (planets in same house)
+        const conjunctPlanets = Object.keys(natalPlanetsMap).filter(p => p !== node && natalPlanetsMap[p] && natalPlanetsMap[p].house === nodeHouse);
+        const conjunctHouses = [];
+        conjunctPlanets.forEach(cp => {
+            if (rawPlanetNumbers[cp]) conjunctHouses.push(...rawPlanetNumbers[cp]);
+            for (let h = 1; h <= 12; h++) { if (L[(ascSignNum + h - 1) % 12] === cp) conjunctHouses.push(h); }
+        });
+
+        // Aspects on the node
+        const aspectOffsets = { Mars: [4, 7, 8], Jupiter: [5, 7, 9], Saturn: [3, 7, 10], default: [7] };
+        const aspectingPlanets = [];
+        const aspectHouses = [];
+        Object.keys(natalPlanetsMap).forEach(p => {
+            if (p === node || p === 'Rahu' || p === 'Ketu') return;
+            const plData = natalPlanetsMap[p];
+            if (!plData || plData.house === undefined) return;
+            const offs = aspectOffsets[p] || aspectOffsets.default;
+            if (offs.some(o => this._mod12(plData.house + o - 1) === nodeHouse)) {
+                aspectingPlanets.push(p);
+                if (rawPlanetNumbers[p]) aspectHouses.push(...rawPlanetNumbers[p]);
+                for (let h = 1; h <= 12; h++) { if (L[(ascSignNum + h - 1) % 12] === p) aspectHouses.push(h); }
+            }
+        });
+
+        // Node's own Star Lord
+        const nodeKP = this._getKPLords(pd.sid);
+        const starLordHouses = rawPlanetNumbers[nodeKP.nakLord] || [];
+
+        const combinedHouses = Array.from(new Set([
+            nodeHouse, dispositorPlacementHouse, ...ownedHouses, ...cslHouses,
+            ...conjunctHouses, ...aspectHouses, ...starLordHouses
+        ].filter(h => h !== null && h !== undefined))).sort((a, b) => a - b);
 
         return {
             node: node, sign: this.SIGN_NAMES[pd.sn], dispositor: dispositor,
             dispositorPlacementHouse: dispositorPlacementHouse,
             dispositorOwnedHouses: ownedHouses, dispositorCSLHouses: cslHouses,
+            conjunctPlanets: conjunctPlanets, aspectingPlanets: aspectingPlanets,
+            starLord: nodeKP.nakLord,
             combinedHouses: combinedHouses,
-            explanation: `${node} sits in ${this.SIGN_NAMES[pd.sn]} (dispositor ${dispositor}). ${dispositor} is natally placed in H${dispositorPlacementHouse != null ? dispositorPlacementHouse : '?'}, owns ${ownedHouses.length ? 'H' + ownedHouses.join(',H') : 'no house'}, and is CSL of ${cslHouses.length ? 'H' + cslHouses.join(',H') : 'no house'} -- ${node}'s most powerful results flow through this combined set: H${combinedHouses.join(', H') || 'none'}.`
+            explanation: `${node} sits in H${nodeHouse} (${this.SIGN_NAMES[pd.sn]} ruled by ${dispositor}). Proxies: Conjunct [${conjunctPlanets.join(', ') || 'none'}], Aspected by [${aspectingPlanets.join(', ') || 'none'}], Star Lord [${nodeKP.nakLord}]. Houses signified: H${combinedHouses.join(', H') || 'none'}.`
         };
     },
 
@@ -2852,15 +3171,16 @@ window.KP_PREDICTION = {
         if (!dashaInfo) return null;
         const L = this._lords(lords);
         const allCusps = this.getAllCusps(ascSid);
-        const planetNumbers = this.getPlanetNumbers(allCusps);
+        //const planetNumbers = this.getPlanetNumbers(allCusps);
+        const planetNumbers = this.applyNodeDispositorBlend(this.getPlanetNumbers(allCusps), ascSid, ascSignNum, natalPlanetsMap, lords);
         const tenancy = this.getTenancy(natalPlanetsMap);
 
         const LEVELS = [
-            { key: 'mahadasha', label: 'Mahadasha' },
-            { key: 'antardasha', label: 'Antardasha' },
-            { key: 'pratyantar', label: 'Pratyantardasha' },
-            { key: 'sukshma', label: 'Sookshma Dasha' },
-            { key: 'prana', label: 'Prana Dasha' }
+            { key: 'mahadasha', label: 'Mahadasha', weight: 'Macro Involvement / Broad Theme' },
+            { key: 'antardasha', label: 'Antardasha', weight: 'Timeline & Specific Result Confirmation' },
+            { key: 'pratyantar', label: 'Pratyantardasha', weight: 'Delivery Window (Weeks)' },
+            { key: 'sukshma', label: 'Sookshma Dasha', weight: 'Micro-Timing Trigger (Days)' },
+            { key: 'prana', label: 'Prana Dasha', weight: 'Exact Hour Trigger' }
         ];
 
         const levelData = [];
@@ -2868,21 +3188,35 @@ window.KP_PREDICTION = {
             const period = dashaInfo[lv.key];
             if (!period || !period.lord) return;
             const lord = period.lord;
+            const lordData = natalPlanetsMap[lord];
+            let nakLord = null, subLord = null;
+            if (lordData && lordData.sid !== undefined) {
+                const kp = this._getKPLords(lordData.sid);
+                nakLord = kp.nakLord;
+                subLord = kp.subLord;
+            }
             const owns = [];
             if (L) for (let h = 1; h <= 12; h++) { if (L[(ascSignNum + h - 1) % 12] === lord) owns.push(h); }
             const cslNumbers = planetNumbers[lord] || [];
+            const involvementHouses = nakLord ? (planetNumbers[nakLord] || []) : [];
+            const confirmationHouses = subLord ? (planetNumbers[subLord] || []) : [];
+            const totalSignified = Array.from(new Set([...owns, ...cslNumbers, ...involvementHouses, ...confirmationHouses])).sort((a, b) => a - b);
             const houses = Array.from(new Set([...owns, ...cslNumbers])).sort((a, b) => a - b);
             levelData.push({
-                level: lv.label, lord: lord, start: period.start, end: period.end,
-                ownsHouses: owns, cslNumbers: cslNumbers, houses: houses,
+                level: lv.label, lord: lord, weight: lv.weight,start: period.start, end: period.end,
+                start: period.start, end: period.end,
+                nakLord: nakLord, involvementHouses: involvementHouses,
+                subLord: subLord, confirmationHouses: confirmationHouses,
+                ownsHouses: owns, cslNumbers: cslNumbers, totalSignified: totalSignified,houses: houses,
                 tenancy: tenancy[lord] || null
             });
         });
 
         if (!levelData.length) return null;
 
-        // Intersection across EVERY currently-running level = strongest confirmation.
+        /* // Intersection across EVERY currently-running level = strongest confirmation.
         let common = levelData[0].houses.slice();
+        
         for (let i = 1; i < levelData.length; i++) common = common.filter(h => levelData[i].houses.includes(h));
 
         // Softer bar: does the Antardasha at least support the Mahadasha's theme?
@@ -2893,6 +3227,20 @@ window.KP_PREDICTION = {
         if (common.length > 0) verdict = 'sure shot';
         else if (mdAdOverlap.length > 0) verdict = 'partial support';
 
+        return { levels: levelData, commonHouses: common, mdAdOverlap: mdAdOverlap, verdict: verdict }; */
+        // Confluence: Check overlap across running Dasha tiers
+        let common = levelData[0].totalSignified.slice();
+        for (let i = 1; i < levelData.length; i++) common = common.filter(h => levelData[i].totalSignified.includes(h));
+
+        const mdHouses = levelData[0] ? levelData[0].totalSignified : [];
+        const adHouses = levelData[1] ? levelData[1].totalSignified : [];
+        const mdAdOverlap = adHouses.filter(h => mdHouses.includes(h));
+
+        let verdict = 'DORMANT / UNCONFIRMED';
+        if (common.length >= 2) verdict = 'SURE SHOT (FULL CONFLUENCE)';
+        else if (common.length === 1) verdict = 'STRONG PROMISE';
+        else if (mdAdOverlap.length > 0) verdict = 'PARTIAL SUPPORT';
+
         return { levels: levelData, commonHouses: common, mdAdOverlap: mdAdOverlap, verdict: verdict };
     },
 
@@ -2900,6 +3248,7 @@ window.KP_PREDICTION = {
 
     renderDashaConfirmation: function (conf) {
         if (!conf) return `<div class="pred-item"><div class="pred-title">⚠️ Dasha info not available</div><div class="pred-detail" style="font-size:9px;color:var(--muted);">Requires PREDICTION_FORECASTING.getCurrentDashaInfo() — ensure dashas have been built (rebuildDashas()).</div></div>`;
+        const vColor = conf.verdict.startsWith('SURE') ? '#00DD77' : conf.verdict.startsWith('STRONG') ? '#00CED1' : conf.verdict.startsWith('PARTIAL') ? '#FFD700' : '#FF4477';
         const lvColor = { Mahadasha: '#FFD700', Antardasha: '#00DD77', Pratyantardasha: '#66CCFF', 'Sookshma Dasha': '#FF9F43', 'Prana Dasha': '#FF69B4' };
         const rows = conf.levels.map(lv => {
             const c = lvColor[lv.level] || '#9b6fff';
@@ -2910,6 +3259,9 @@ window.KP_PREDICTION = {
                 <span style="font-size:8.5px;color:var(--muted);">${lv.start ? new Date(lv.start).toDateString() : ''}${lv.end ? ' → ' + new Date(lv.end).toDateString() : ''}</span>
                 <div style="font-size:9px;color:var(--text);opacity:.85;margin-top:2px;">
                   Owns H${lv.ownsHouses.join(',H') || '—'} · CSL of H${lv.cslNumbers.join(',H') || '—'} → Combined significations: H${lv.houses.join(', H') || '—'}
+                                  <b>Involvement (NL ${lv.nakLord}):</b> H${lv.involvementHouses.join(',H') || '—'} · 
+                  <b>Confirmation (SL ${lv.subLord}):</b> H${lv.confirmationHouses.join(',H') || '—'}
+
                 </div>
               </div>`;
         }).join('');
@@ -2928,11 +3280,48 @@ window.KP_PREDICTION = {
             <div style="margin-top:8px;padding:8px;border:1px solid ${verdictColor}44;border-radius:6px;background:${verdictColor}0A;">
               <b style="color:${verdictColor};">${conf.verdict.toUpperCase()}</b>
               <div style="font-size:9.5px;color:var(--text);opacity:.9;margin-top:4px;">${verdictText}</div>
+              ${conf.commonHouses.length ? 'Common Houses active across all 5 tiers: <b>H' + conf.commonHouses.join(', H') + '</b>.' : 'No single house is common to all 5 tiers.'}
+                ${conf.mdAdOverlap.length ? ' MD/AD Alignment: <b>H' + conf.mdAdOverlap.join(', H') + '</b>.' : ''}
+                
             </div>
             <div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,0.08);font-size:8.5px;color:var(--muted);"><b>Karma Alignment principle:</b> ${this.KARMA_ALIGNMENT_PRINCIPLE}</div>
           </div>`;
     },
+// =========================================================================
+    // 4. FULL SIGNIFICATION & TRANSIT PANELS
+    // =========================================================================
+    getPlanetSignifiedHouses: function (planet, allCusps, ascSid, ascSignNum, natalPlanetsMap, lords) {
+        if (!planet) return [];
+        const L = this._lords(lords);
+        const blendedNumbers = this.applyNodeDispositorBlend(this.getPlanetNumbers(allCusps), ascSid, ascSignNum, natalPlanetsMap, lords);
+        const cslHouses = blendedNumbers[planet] || [];
 
+        const ownedHouses = [];
+        if (L && ascSignNum !== undefined) {
+            for (let h = 1; h <= 12; h++) {
+                if (L[(ascSignNum + h - 1) % 12] === planet) ownedHouses.push(h);
+            }
+        }
+
+        const pd = natalPlanetsMap && natalPlanetsMap[planet];
+        const placementHouse = pd && pd.house ? [pd.house] : [];
+
+        return Array.from(new Set([...cslHouses, ...ownedHouses, ...placementHouse])).sort((a, b) => a - b);
+    },
+
+    _getTransitHouse: function (planetData, ascSid, ascSignNum) {
+        if (!planetData) return null;
+        const lon = planetData.sid !== undefined ? planetData.sid : (planetData.longitude !== undefined ? planetData.longitude : null);
+        if (lon !== null) {
+            const pSign = Math.floor(this._norm360(lon) / 30);
+            const aSign = ascSignNum !== undefined ? ascSignNum : Math.floor(this._norm360(ascSid) / 30);
+            return this._mod12(pSign - aSign + 1);
+        }
+        if (planetData.sn !== undefined && ascSignNum !== undefined) {
+            return this._mod12(planetData.sn - ascSignNum + 1);
+        }
+        return null;
+    },
     // ===================== 13⅚. DASHA BALANCE TABLE (flat, current-period view) =====================
 
     /**
@@ -3037,21 +3426,35 @@ window.KP_PREDICTION = {
         const planetNumbers = this.getPlanetNumbers(allCusps);
         const tenancy = this.getTenancy(natalPlanetsMap);
 
-        const sunKP = this._getKPLords(transitSunData.sid);
-        const nlHouses = planetNumbers[sunKP.nakLord] || [];
-        const slHouses = planetNumbers[sunKP.subLord] || [];
+                const sunLon = transitSunData.sid !== undefined ? transitSunData.sid : transitSunData.longitude;
+
+        const sunKP = this._getKPLords(sunLon);
+        
+        //const sunKP = this._getKPLords(transitSunData.sid);
+        const nlHouses = this.getPlanetSignifiedHouses(sunKP.nakLord, allCusps, ascSid, ascSignNum, natalPlanetsMap, lords);
+        const slHouses = this.getPlanetSignifiedHouses(sunKP.subLord, allCusps, ascSid, ascSignNum, natalPlanetsMap, lords);
         const overlap = nlHouses.filter(h => slHouses.includes(h));
 
-        const bhukti = dashaInfo && dashaInfo.antardasha ? dashaInfo.antardasha.lord : null;
-        const bhuktiHouses = bhukti ? (planetNumbers[bhukti] || []) : [];
+        const bhukti = dashaInfo && dashaInfo.antardasha ? dashaInfo.antardasha.lord : (dashaInfo && dashaInfo.bhukti ? dashaInfo.bhukti.lord : null);
+        const bhuktiHouses = bhukti ? this.getPlanetSignifiedHouses(bhukti, allCusps, ascSid, ascSignNum, natalPlanetsMap, lords) : [];
         const crossValidated = overlap.filter(h => bhuktiHouses.includes(h));
+        const transitHouse = this._getTransitHouse(transitSunData, ascSid, ascSignNum);
+const houseThemes = (crossValidated.length ? crossValidated : overlap).map(h => ({
+            house: h,
+            name: this.HOUSE_KARAKAS[h] ? this.HOUSE_KARAKAS[h].name : `House ${h}`,
+            keywords: this.HOUSE_KARAKAS[h] ? this.HOUSE_KARAKAS[h].keywords : ''
+        }));        
         const argala = overlap.map(h => this.getArgala(h, natalPlanetsMap));
 
         return {
-            transitHouse: this._mod12(transitSunData.sn - ascSignNum + 1),
+            //transitHouse: this._mod12(transitSunData.sn - ascSignNum + 1),
+            transitHouse: transitHouse,
+            sunLon: sunLon,
             nakLord: sunKP.nakLord, nlHouses: nlHouses, nlTenancy: tenancy[sunKP.nakLord],
             subLord: sunKP.subLord, slHouses: slHouses, slTenancy: tenancy[sunKP.subLord],
-            overlap: overlap, bhukti: bhukti, bhuktiHouses: bhuktiHouses, crossValidated: crossValidated, argala: argala
+            overlap: overlap, bhukti: bhukti, bhuktiHouses: bhuktiHouses, crossValidated: crossValidated, argala: argala,
+                        houseThemes: houseThemes
+
         };
     },
 
@@ -3060,7 +3463,10 @@ window.KP_PREDICTION = {
         const nlUnt = data.nlTenancy && !data.nlTenancy.tenanted, slUnt = data.slTenancy && !data.slTenancy.tenanted;
         const nlChip = this._chip(nlUnt ? 'UNTENANTED' : 'TENANTED', nlUnt ? '#00DD77' : '#FFD700');
         const slChip = this._chip(slUnt ? 'UNTENANTED' : 'TENANTED', slUnt ? '#00DD77' : '#FFD700');
-        const argalaRows = data.argala.map(a => this.renderArgala(a)).join('');
+ const themeRows = data.houseThemes.map(t => `<div style="margin:3px 0;padding:4px 6px;border-left:2px solid #FFD700;background:rgba(255,215,0,.05);font-size:9px;">
+            <b>H${t.house} — ${t.name}:</b> <span style="color:var(--muted);">${t.keywords}</span>
+          </div>`).join('');        
+          const argalaRows = data.argala.map(a => this.renderArgala(a)).join('');
         return `<div class="pred-item" style="border-left:3px solid #FFD700;">
             <div class="pred-title" style="color:#FFD700;">☀️ Monthly Panel — Sun Transit (≈15-30 day window)</div>
             <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">Source: Sun, transiting House ${data.transitHouse}. Per the Source/Involvement/Final-Result method — its Nakshatra Lord's script names houses "possible" (Involvement) this month; its Sub Lord narrows to what's actually most likely (Final Result); where BOTH agree is strongest.</div>
@@ -3071,6 +3477,7 @@ window.KP_PREDICTION = {
             </div>
             ${data.bhukti ? `<div style="margin-top:6px;font-size:9px;color:var(--text);">Running Antardasha (Bhukti): <b>${data.bhukti}</b> — Houses: H${data.bhuktiHouses.join(',H') || '—'}</div>` : ''}
             ${data.crossValidated.length ? `<div style="margin-top:4px;padding:6px 8px;border-left:3px solid #FF69B4;background:rgba(255,105,180,.08);"><b style="color:#FF69B4;">Cross-validated with Bhukti:</b> H${data.crossValidated.join(', H')} — confirmed at BOTH the monthly-transit and dasha level.</div>` : ''}
+            ${themeRows ? `<div style="margin-top:6px;font-size:9px;font-weight:bold;color:var(--muted);">ACTIVE LIFE DEPARTMENTS THIS MONTH:</div>${themeRows}` : ''}
             ${argalaRows}
           </div>`;
     },
@@ -3092,6 +3499,8 @@ window.KP_PREDICTION = {
         const planetNumbers = this.getPlanetNumbers(allCusps);
         const tenancy = this.getTenancy(natalPlanetsMap);
 
+        const moonLon = transitMoonData.sid !== undefined ? transitMoonData.sid : transitMoonData.longitude;
+        
         const moonKP = this._getKPLords(transitMoonData.sid);
         const nlHouses = planetNumbers[moonKP.nakLord] || [];
         const slHouses = planetNumbers[moonKP.subLord] || [];
@@ -3100,12 +3509,23 @@ window.KP_PREDICTION = {
         const deepestLevel = (dashaInfo && dashaInfo.sukshma) ? { label: 'Sookshma Dasha', lord: dashaInfo.sukshma.lord }
             : (dashaInfo && dashaInfo.pratyantar) ? { label: 'Pratyantardasha', lord: dashaInfo.pratyantar.lord }
                 : (dashaInfo && dashaInfo.antardasha) ? { label: 'Antardasha', lord: dashaInfo.antardasha.lord } : null;
-        const deepestHouses = deepestLevel ? (planetNumbers[deepestLevel.lord] || []) : [];
+        //const deepestHouses = deepestLevel ? (planetNumbers[deepestLevel.lord] || []) : [];
+        const deepestHouses = deepestLevel ? this.getPlanetSignifiedHouses(deepestLevel.lord, allCusps, ascSid, ascSignNum, natalPlanetsMap, lords) : [];
+
         const crossValidated = overlap.filter(h => deepestHouses.includes(h));
         const eventDetails = crossValidated.map(h => ({ house: h, karaka: this.HOUSE_KARAKAS[h] }));
+        const transitHouse = this._getTransitHouse(transitMoonData, ascSid, ascSignNum);
+
+        const activeThemes = (crossValidated.length ? crossValidated : overlap).map(h => ({
+            house: h,
+            name: this.HOUSE_KARAKAS[h] ? this.HOUSE_KARAKAS[h].name : `House ${h}`,
+            keywords: this.HOUSE_KARAKAS[h] ? this.HOUSE_KARAKAS[h].keywords : ''
+        }));
+
 
         return {
             transitHouse: this._mod12(transitMoonData.sn - ascSignNum + 1),
+            moonLon: moonLon,
             nakLord: moonKP.nakLord, nlHouses: nlHouses, nlTenancy: tenancy[moonKP.nakLord],
             subLord: moonKP.subLord, slHouses: slHouses, slTenancy: tenancy[moonKP.subLord],
             overlap: overlap, deepestLevel: deepestLevel, deepestHouses: deepestHouses,
@@ -3118,6 +3538,8 @@ window.KP_PREDICTION = {
         const nlUnt = data.nlTenancy && !data.nlTenancy.tenanted, slUnt = data.slTenancy && !data.slTenancy.tenanted;
         const nlChip = this._chip(nlUnt ? 'UNTENANTED' : 'TENANTED', nlUnt ? '#00DD77' : '#FFD700');
         const slChip = this._chip(slUnt ? 'UNTENANTED' : 'TENANTED', slUnt ? '#00DD77' : '#FFD700');
+        
+        
         const eventRows = data.eventDetails.map(e => `<div style="margin:3px 0;padding:5px 8px;border-left:3px solid #FF69B4;background:rgba(255,105,180,.06);">
             <b>H${e.house} — ${e.karaka.name}</b>
             <div style="font-size:8.5px;color:var(--text);opacity:.85;margin-top:2px;">${e.karaka.keywords}</div>
