@@ -1043,6 +1043,216 @@ window.SAHDHARM_SAMBANDH_PREDICTOR = {
         return { levels: clean, pairs: pairs, overview: overview, janmaTaraChecks: janmaTaraChecks, levelScores: levelScores, pppWealth: pppWealth };
     },
 
+    // ===================== 7. SEVENTH HOUSE / SPOUSE NATURE ANALYSIS =====================
+    //
+    // Source: "Married Life and Astrology — 7th House, 7th Lord and Venus
+    // Role" (Rahul Kaushik). Distinct in PURPOSE from the Sah-Dharm/
+    // Sambandh/Tara-Milan dasha-chain analysis above (which judges
+    // TIMING/period compatibility) — this is a static natal reading of
+    // what kind of spouse and married life the chart promises, via the
+    // classical 4-way planet classification the module already computes
+    // in getPlanetNature() above:
+    //   • Naisargik (natural) benefic/malefic  → the SPOUSE'S PERSONAL
+    //     NATURE/temperament — independent of house lordship.
+    //   • Functional (house-lordship, specific to THIS ascendant) →
+    //     the QUALITY/GROWTH of the married life itself — independent
+    //     of the planet's natural character.
+    // These two axes are read SEPARATELY and can disagree: a naturally
+    // harsh planet (Mars/Saturn) that is functionally benefic here still
+    // gives a good, growing marriage despite an outwardly sharp-tempered
+    // spouse; a naturally gentle planet (Jupiter/Venus) that is
+    // functionally malefic here gives a pleasant spouse but a marriage
+    // that struggles to grow.
+    //
+    // SEVERITY RULE (source teaching's key escalation point): a single
+    // planet wearing MULTIPLE "hats" at once — occupying the 7th house
+    // AND conjunct the 7th lord AND/OR conjunct Venus — gives a far more
+    // definitive result than several different, mutually-unrelated
+    // planets each causing a separate milder issue (they act as
+    // disconnected forces rather than one unified influence). A planet
+    // that only ASPECTS the 7th house/7th lord (rather than occupying or
+    // conjoining) gives the same KIND of reading but FADED/weaker.
+
+    /** Every planet influencing the 7th house/7th lord/Venus, tagged with WHICH role(s) ("hats") it plays. */
+    _findSeventhHouseInfluencers: function (ascSignNum, natalPlanetsMap, lords) {
+        const L = lords || this.DEFAULT_LORDS;
+        const seventhLord = L[(ascSignNum + 6) % 12];
+        const lagnaLord = L[ascSignNum];
+        const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
+        const roles = {};
+        const addHat = (planet, hat) => {
+            roles[planet] = roles[planet] || { hats: [] };
+            if (!roles[planet].hats.includes(hat)) roles[planet].hats.push(hat);
+        };
+
+        planets.forEach(p => {
+            const pd = natalPlanetsMap[p];
+            if (!pd || pd.house === undefined) return;
+            if (pd.house === 7) addHat(p, 'occupies 7th house');
+            if (p !== seventhLord && natalPlanetsMap[seventhLord] && pd.sn === natalPlanetsMap[seventhLord].sn) addHat(p, `conjunct 7th lord (${seventhLord})`);
+            if (p !== 'Venus' && natalPlanetsMap.Venus && pd.sn === natalPlanetsMap.Venus.sn) addHat(p, 'conjunct Venus (karaka)');
+            const aspects = this._vedicAspectHouses(p, pd.house);
+            if (aspects.includes(7) && pd.house !== 7) addHat(p, 'aspects 7th house (faded)');
+        });
+
+        return { seventhLord: seventhLord, lagnaLord: lagnaLord, roles: roles };
+    },
+
+    /**
+     * Full 7th-house/7th-lord/Venus marriage-quality analysis for one
+     * ascendant sign number. Called once for the natal Lagna and again
+     * for the Moon (Chandra Kundli) by analyzeSeventhHouse() below, per
+     * the source teaching's cross-verification method.
+     */
+    analyzeSeventhHouseFor: function (ascSignNum, natalPlanetsMap, lords) {
+        const L = lords || this.DEFAULT_LORDS;
+        const found = this._findSeventhHouseInfluencers(ascSignNum, natalPlanetsMap, L);
+        const seventhLordHouse = natalPlanetsMap[found.seventhLord] ? natalPlanetsMap[found.seventhLord].house : null;
+
+        const influencers = Object.keys(found.roles).map(planet => {
+            const hats = found.roles[planet].hats;
+            const intensity = hats.some(h => !h.includes('faded')) ? 'full' : 'faded';
+            const nature = this.getPlanetNature(planet, ascSignNum, natalPlanetsMap, L);
+            return { planet: planet, hats: hats, intensity: intensity, multiHat: hats.length >= 2, nature: nature };
+        }).sort((a, b) => b.hats.length - a.hats.length);
+
+        const names = influencers.map(i => i.planet);
+        const patterns = [];
+        if (names.includes('Saturn') && names.includes('Ketu')) {
+            patterns.push({ key: 'saturn_ketu', label: 'Saturn + Ketu', reading: 'Classically reads as sorrow, emotional distance, and a detachment/renunciation undertone (viraag) in married life — Saturn signifies grief/isolation, Ketu signifies severance.' });
+        }
+        if (names.includes('Rahu') && names.includes('Mars')) {
+            patterns.push({ key: 'rahu_mars', label: 'Rahu + Mars', reading: 'Classically reads as deception or being misled (dhokha) in married life — Rahu\'s illusion combined with Mars\'s impulsive drive.' });
+        }
+        if (names.includes('Sun') && (names.includes('Jupiter') || names.includes('Mars'))) {
+            patterns.push({ key: 'sun_fire', label: `Sun + ${names.includes('Jupiter') ? 'Jupiter' : 'Mars'}`, reading: 'Classically reads as sharpness, ego-driven friction, or anger (ugrata) surfacing in married life — small disagreements can escalate quickly.' });
+        }
+        if (names.includes('Sun') && this.getOwnedHouses('Sun', ascSignNum, L).includes(10)) {
+            patterns.push({ key: 'sun_10th_reputation', label: 'Sun as 10th lord', reading: 'Because the Sun here also rules the 10th house (status/reputation), disputes in married life tend to specifically touch ego and public reputation rather than staying private.' });
+        }
+
+        const energeticMalefics = influencers.filter(i => ['Mars', 'Sun'].includes(i.planet) && i.nature.naisargik.nature === 'malefic');
+        const coldMalefics = influencers.filter(i => ['Saturn', 'Rahu'].includes(i.planet));
+        let healthNote = null;
+        if (coldMalefics.length && !energeticMalefics.length) {
+            healthNote = { type: 'chronic', desc: `${coldMalefics.map(i => i.planet).join(', ')} ("cold" graha) influencing the 7th house classically points toward chronic, slow-developing health strain for the spouse rather than sudden illness.` };
+        } else if (energeticMalefics.length) {
+            healthNote = { type: 'energetic', desc: `${energeticMalefics.map(i => i.planet).join(', ')} influencing the 7th house classically reads as excess energy, aggression, or a short temper for the spouse — NOT illness; Mars and Sun are said to energize rather than debilitate.` };
+        }
+
+        const sixthLord = L[(ascSignNum + 5) % 12];
+        const sixthConnection = (seventhLordHouse === 6) || !!(natalPlanetsMap[found.seventhLord] && natalPlanetsMap[sixthLord] && natalPlanetsMap[found.seventhLord].sn === natalPlanetsMap[sixthLord].sn);
+
+        const eighthLord = L[(ascSignNum + 7) % 12];
+        const eighthConnection = (seventhLordHouse === 8) || !!(natalPlanetsMap[found.seventhLord] && natalPlanetsMap[eighthLord] && natalPlanetsMap[found.seventhLord].sn === natalPlanetsMap[eighthLord].sn);
+        let eighthFriendship = null;
+        if (eighthConnection && window.GRAHA_MAITRI && window.GRAHA_MAITRI.PERMANENT_FRIENDSHIP[found.seventhLord]) {
+            eighthFriendship = window.GRAHA_MAITRI.PERMANENT_FRIENDSHIP[found.seventhLord][eighthLord] || 'Neutral';
+        }
+
+        const twelfthLord = L[(ascSignNum + 11) % 12];
+        const lagnaSeventhConjunct = !!(natalPlanetsMap[found.lagnaLord] && natalPlanetsMap[found.seventhLord] && natalPlanetsMap[found.lagnaLord].sn === natalPlanetsMap[found.seventhLord].sn);
+        const twelfthLink = lagnaSeventhConjunct && (found.lagnaLord === twelfthLord || found.seventhLord === twelfthLord ||
+            !!(natalPlanetsMap[twelfthLord] && natalPlanetsMap[found.lagnaLord] && natalPlanetsMap[twelfthLord].sn === natalPlanetsMap[found.lagnaLord].sn));
+
+        return {
+            ascSignNum: ascSignNum, seventhLord: found.seventhLord, seventhLordHouse: seventhLordHouse, lagnaLord: found.lagnaLord,
+            influencers: influencers, patterns: patterns, healthNote: healthNote,
+            sixthConnection: sixthConnection,
+            eighthConnection: eighthConnection, eighthFriendship: eighthFriendship,
+            lagnaSeventhConjunct: lagnaSeventhConjunct, foreignTravelSignal: lagnaSeventhConjunct && twelfthLink
+        };
+    },
+
+    /**
+     * Full analysis: the natal (D1) 7th-house reading PLUS the Chandra
+     * Kundli (Moon-chart) cross-check the source teaching recommends —
+     * repeating the same method using the Moon's own sign as the
+     * reference ascendant. Agreement between the two is flagged as
+     * confirming the reading.
+     */
+    analyzeSeventhHouse: function (ascSignNum, natalPlanetsMap, lords) {
+        const L = lords || this.DEFAULT_LORDS;
+        const natal = this.analyzeSeventhHouseFor(ascSignNum, natalPlanetsMap, L);
+        let chandraKundli = null, agrees = null;
+        if (natalPlanetsMap.Moon && natalPlanetsMap.Moon.sn !== undefined) {
+            chandraKundli = this.analyzeSeventhHouseFor(natalPlanetsMap.Moon.sn, natalPlanetsMap, L);
+            agrees = (natal.seventhLord === chandraKundli.seventhLord) ||
+                (!!natal.influencers[0] && !!chandraKundli.influencers[0] && natal.influencers[0].planet === chandraKundli.influencers[0].planet) ||
+                (natal.sixthConnection === chandraKundli.sixthConnection && natal.eighthConnection === chandraKundli.eighthConnection);
+        }
+        return { natal: natal, chandraKundli: chandraKundli, agrees: agrees };
+    },
+
+    _overallNatureColor: function (overall) {
+        if (overall === 'yogakaraka' || overall === 'benefic' || overall === 'mixed-favourable') return '#00DD77';
+        if (overall === 'malefic') return '#FF4477';
+        return '#FFD700';
+    },
+
+    _renderSeventhHouseInfluencer: function (inf) {
+        const c = this._overallNatureColor(inf.nature.overall);
+        const intensityChip = inf.intensity === 'faded' ? this._renderChip('FADED (aspect only)', '#8888AA') : this._renderChip('FULL INFLUENCE', c);
+        const multiHatChip = inf.multiHat ? this._renderChip(`${inf.hats.length}× ROLES — STRONGER RESULT`, '#FF69B4') : '';
+        return `<div style="margin:6px 0;padding:8px;border-left:3px solid ${c};background:${c}0A;">
+            <b style="color:${c};">${inf.planet}</b> ${intensityChip} ${multiHatChip}
+            <div style="font-size:8.5px;color:var(--muted);margin-top:2px;">${inf.hats.join(' · ')}</div>
+            <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:4px;"><b>Spouse's nature</b> (naisargik): ${inf.nature.naisargik.reason}</div>
+            <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:3px;"><b>Marriage quality/growth</b> (functional): ${inf.nature.functional.reason}</div>
+            <div style="font-size:8.5px;color:${c};margin-top:3px;font-style:italic;">${inf.nature.overallReason}</div>
+          </div>`;
+    },
+
+    _renderSeventhHouseFor: function (a, label) {
+        if (!a) return '';
+        let html = `<div style="margin-top:8px;">
+            <div style="font-size:10px;font-weight:bold;color:#FFD700;margin-bottom:4px;">${label} — 7th Lord: ${a.seventhLord}${a.seventhLordHouse ? ' (in House ' + a.seventhLordHouse + ')' : ''}</div>`;
+        if (!a.influencers.length) {
+            html += `<div style="font-size:9px;color:var(--muted);">No planet occupies, conjoins, or aspects the 7th house/7th lord/Venus — a quiet 7th house, read primarily from the 7th lord's own placement and nakshatra.</div>`;
+        } else {
+            html += a.influencers.map(i => this._renderSeventhHouseInfluencer(i)).join('');
+        }
+        if (a.patterns.length) {
+            html += a.patterns.map(p => `<div style="margin:4px 0;padding:6px 8px;border-left:3px solid #FF4477;background:rgba(255,68,119,.08);"><b style="color:#FF4477;">${p.label}</b><div style="font-size:8.5px;color:var(--text);opacity:.9;margin-top:2px;">${p.reading}</div></div>`).join('');
+        }
+        if (a.healthNote) {
+            html += `<div style="margin:4px 0;padding:6px 8px;border-left:3px solid #66CCFF;background:rgba(102,204,255,.08);"><b style="color:#66CCFF;">Health tendency (spouse):</b><div style="font-size:8.5px;color:var(--text);opacity:.9;margin-top:2px;">${a.healthNote.desc}</div></div>`;
+        }
+        if (a.sixthConnection) {
+            html += `<div style="margin:4px 0;padding:6px 8px;border-left:3px solid #FFA500;background:rgba(255,165,0,.08);"><b style="color:#FFA500;">6th-house connection:</b><div style="font-size:8.5px;color:var(--text);opacity:.9;margin-top:2px;">The 7th lord connects to the 6th house/6th lord — spouse (and the marriage) goes through genuine struggle (debt, health, competition), but classically this is a "work-through-it-together" struggle rather than a permanent failure.</div></div>`;
+        }
+        if (a.eighthConnection) {
+            const friendNote = a.eighthFriendship
+                ? (a.eighthFriendship === 'Friend' ? `The 8th lord is a natural FRIEND of the 7th lord — treat this as contextual, not automatically negative: likely deep involvement in research/occult matters, or deep involvement with the spouse's own maternal family/home, rather than misfortune.`
+                    : a.eighthFriendship === 'Enemy' ? `The 8th lord is a natural ENEMY of the 7th lord — here the 8th-house connection reads closer to the classical negative (obstacles, longevity concerns for the union) rather than the neutral "involvement" reading.`
+                        : `The 8th lord is naturally NEUTRAL toward the 7th lord — a mild version of the 8th-house connection; judge alongside the other factors above.`)
+                : `Friendliness between the 7th lord and 8th lord could not be checked (window.GRAHA_MAITRI not loaded) — per the source teaching, this determines whether the reading is contextual (deep involvement) or genuinely negative.`;
+            html += `<div style="margin:4px 0;padding:6px 8px;border-left:3px solid #9b6fff;background:rgba(155,111,255,.08);"><b style="color:#9b6fff;">8th-house connection:</b><div style="font-size:8.5px;color:var(--text);opacity:.9;margin-top:2px;">${friendNote}</div></div>`;
+        }
+        if (a.foreignTravelSignal) {
+            html += `<div style="margin:4px 0;padding:6px 8px;border-left:3px solid #00DD77;background:rgba(0,221,119,.08);"><b style="color:#00DD77;">Foreign travel signal:</b><div style="font-size:8.5px;color:var(--text);opacity:.9;margin-top:2px;">Lagna lord and 7th lord sit together (as close as two significators can be) AND connect to the 12th lord — classically read as travel/settlement abroad together as a couple after marriage.</div></div>`;
+        }
+        html += `</div>`;
+        return html;
+    },
+
+    renderSeventhHouseAnalysis: function (analysis) {
+        if (!analysis || !analysis.natal) return '';
+        let html = `<div class="pred-item" style="border-left:3px solid #FFD700;">
+            <div class="pred-title" style="color:#FFD700;">💍 7th House / 7th Lord / Venus — Married Life Analysis</div>
+            <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">Every influencing planet is read on TWO separate axes: its Naisargik (natural) nature → the spouse's personal temperament, and its Functional (house-lordship) nature for this ascendant → the quality/growth of the marriage itself. The two can disagree — a naturally sharp planet can still mean an excellent, growing marriage, and vice versa.</div>`;
+        html += this._renderSeventhHouseFor(analysis.natal, 'Birth Chart (D1)');
+        if (analysis.chandraKundli) {
+            html += this._renderSeventhHouseFor(analysis.chandraKundli, 'Chandra Kundli (Moon Chart) Cross-Check');
+            html += `<div style="margin-top:6px;padding:6px 8px;border-left:3px solid ${analysis.agrees ? '#00DD77' : '#8888AA'};background:${analysis.agrees ? 'rgba(0,221,119,.08)' : 'rgba(136,136,170,.08)'};">
+                <b style="color:${analysis.agrees ? '#00DD77' : '#8888AA'};">${analysis.agrees ? 'CONFIRMED' : 'NOT CLEARLY CONFIRMED'} across D1 and Chandra Kundli</b>
+                <div style="font-size:8.5px;color:var(--text);opacity:.85;margin-top:2px;">${analysis.agrees ? 'Both the birth chart and the Moon chart point to a similar reading — per the source teaching, this cross-verification strengthens confidence in the prediction.' : 'The birth chart and Moon chart readings diverge — per the source teaching, weigh the birth chart (D1) as primary and treat the Moon-chart reading as a secondary, softer signal.'}</div>
+              </div>`;
+        }
+        html += `</div>`;
+        return html;
+    },
+
     // ===================== 6. HTML RENDERING =====================
 
     _natureColor: function (nature) {

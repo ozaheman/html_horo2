@@ -157,10 +157,10 @@ window.KP_PREDICTION = {
             notes: 'Primary house for advisory/consulting-adjacent "solution providers" and creative/artistic income.'
         },
         6: {
-            name: 'Roga Bhava (Service/Disease/Debt/Competition)',
+            name: 'Roga Bhava (Service/Disease/Debt/Competition) — "The House of Great Fortune"',
             karakas: ['Mars', 'Saturn'],
-            keywords: 'Job/service, service-oriented business, doctors, lawyers, disease, enemies, debt/loans, competition/litigation, daily routine, exercise/diet',
-            notes: 'One of the 3 houses (6-8-12) said to "run today\'s world." Governs whether you can actually COLLECT money owed for your effort (customer/market payments).'
+            keywords: 'Job/service, service-oriented business, doctors, lawyers, disease, enemies, debt/loans, competition/litigation, daily routine, exercise/diet, PAYMENT RECEIVED for your service/product',
+            notes: 'One of the 3 houses (6-8-12) said to "run today\'s world." Per "6th House Miracles": the 2nd (accumulated wealth) and 11th (gains) houses are meaningless if the 6th doesn\'t work, because the 6th is literally the house of "the money you receive from your customer/employer with respect to the service or product you provide" — salary AND business payment both flow through here first. If 9th house is the fortune of your SOUL, the 6th is the fortune of your KARMA/effort. Also the universal "House of Fight/Competition" — every win-or-lose, competition-or-litigation question in life traces back to this house.'
         },
         7: {
             name: 'Kalatra Bhava (Spouse/Partnerships)',
@@ -421,21 +421,20 @@ window.KP_PREDICTION = {
         },
 
         // --- HOUSE 7: MARRIAGE, SPOUSE, DIVORCE & PARTNERSHIPS ---
-        marriage_first_h7: {
-            house: 7, category: 'Marriage', subCategory: '1st Marriage & Union',
-            prime: [7], supporting: [2, 11], negative: [1, 6, 10, 12], repeatBase: 7,
-            note: '7th CSL Star Lord involving 2, 7, 11 confirms formal marriage. 6-10-12 denies or breaks it.',
-            reference: 'KP Reader Vol. IV; Rahul Kaushik, Marriage Timing Sutras.',
-            effect: 'Formal marital wedding ceremony successfully finalized.',
-            remedy: 'Offer non-transactional charity on Friday mornings (Venus).'
+        marriage_h7: {
+            prime: [7], supporting: [2, 11], negative: [6, 10, 12], repeatBase: 7,
+            note: 'Marriage promise = 2/7/11 combination; 6-10-12 delays/breaks it; 8th anywhere nearby brings complication (e.g. secret relationships, special marriage act).',
+            reference: 'K.S. Krishnamurti, KP Reader Vols. I–VI (CSL axiom); KP Timing-of-Events lecture tradition (2-7-11 / 6-10-12 method).',
+            effect: 'When promised cleanly (prime H7 matched, no negative house contested), marriage tends to happen smoothly during the determining planet\'s dasha/sub-period; a contested promise (6-10-12 or 8th also touched) still tends to happen, but with delay, friction, or complication attached.',
+            remedy: 'Where 6-10-12 or the 8th complicate the 7th CSL, traditional practice offers Venus worship (harmony, relationships) on Fridays and quiet, non-transactional charity connected to marriage/family welfare — offered as a supportive practice, not a guaranteed fix.'
         },
         marriage_second_h7: {
             house: 7, category: 'Marriage', subCategory: '2nd Marriage / Re-marriage (9th Cusp)',
-            prime: [9], supporting: [2, 11], negative: [1, 8, 10, 12], repeatBase: 7,
-            note: '2nd marriage is 3rd from 7th = 9th Cusp. 9th CSL Star Lord involving 2, 9, 11 promises re-marriage.',
-            reference: 'KP Timing-of-Events (Repeat Occurrences).',
-            effect: 'Second marriage solemnized with enduring stability.',
-            remedy: 'Address the repeating negative house from the first union.'
+            prime: [7], supporting: [2,9, 11], negative: [1, 8, 10, 12], repeatBase: 7,
+            note: 'If 2-7-11 did not fructify for a first marriage, a second marriage is checked via 2-9-11 — also derivable via the general "3 houses forward per repeat occurrence" rule: 2nd spouse = 3rd-from-7th = 9th, 3rd spouse = 3rd-from-9th = 11th. 6-8-10-12 signals separation/divorce.2nd marriage is 3rd from 7th = 9th Cusp. 9th CSL Star Lord involving 2, 9, 11 promises re-marriage.',
+            reference: 'K.S. Krishnamurti, KP Reader Vols. I–VI; "repeat occurrence = 3 houses forward" rule from the same Timing-of-Events tradition. KP Timing-of-Events (Repeat Occurrences).',
+            effect: 'A second marriage promised via 2-9-11 tends to follow the same delay/complication pattern as the first if 6-8-10-12 remain involved in the chain. Second marriage solemnized with enduring stability.',
+            remedy: 'Same supportive practice as first marriage (Venus worship, non-transactional charity), with particular attention to whichever of 6-8-10-12 is repeating from the earlier failed promise, since that is the pattern actually asking to be addressed. Address the repeating negative house from the first union.'
         },
         marriage_third_h7: {
             house: 7, category: 'Marriage', subCategory: '3rd Marriage (11th Cusp)',
@@ -453,9 +452,9 @@ window.KP_PREDICTION = {
             effect: 'Fourth marital partnership established.',
             remedy: 'Venus worship and spiritual alignment.'
         },
-        marital_divorce_h7: {
+        marital_paertnership_divorce_h7: {
             house: 7, category: 'Marriage', subCategory: 'Marital Divorce & Separation',
-            prime: [6], supporting: [10, 12, 8], negative: [2, 7, 11],
+            prime: [6,10,12], supporting: [8], negative: [2, 7, 11],
             note: '7th CSL in 6 (separate beds/dispute) and 12 (legal/residential exit) causes divorce.',
             reference: 'Rahul Kaushik, Divorce & Separation Indicators.',
             effect: 'Legal decree of divorce and permanent physical separation.',
@@ -476,8 +475,8 @@ window.KP_PREDICTION = {
             prime: [8], supporting: [2, 11], negative: [1, 4, 10],
             note: '8th CSL Star Lord signifying 2, 8, 11 brings ancestral wealth, legacy, PF, and insurance payouts.',
             reference: 'KP Reader Vol. IV; Rahul Kaushik, 8th House Secrets.',
-            effect: 'Receipt of substantial ancestral property, gratuity, and insurance settlements.',
-            remedy: 'Maintain truthfulness in estate probate documentation.'
+            effect: 'A clean 6-10-12 (or 8th-reinforced) combination tends toward actual separation/divorce fructifying during the determining planet\'s period, rather than staying at the level of mere friction.Receipt of substantial ancestral property, gratuity, and insurance settlements.',
+            remedy: 'Astrology names the timing pattern; it does not replace honest communication or professional relationship counseling. Where offered, traditional practice is 7th-lord and Venus worship on Fridays alongside active mediation, not ritual alone.Maintain truthfulness in estate probate documentation.'
         },
         surgery_procedure_h8: {
             house: 8, category: 'Health', subCategory: 'Surgical Incision & Operations',
@@ -885,11 +884,14 @@ window.KP_PREDICTION = {
         const dispositorPlacementHouse = dispositorData ? dispositorData.house : null;
 
         // Base CSL numbers computed without recursive node-blending
+        const ownedHouses = [];
+        for (let h = 1; h <= 12; h++) { if (L[(ascSignNum + h - 1) % 12] === dispositor) ownedHouses.push(h); }
+
         const allCusps = this.getAllCusps(ascSid);
         const rawPlanetNumbers = this.getPlanetNumbers(allCusps);
         const cslHouses = rawPlanetNumbers[dispositor] || [];
 
-        const ownedHouses = [];
+        //const ownedHouses = [];
         if (L && ascSignNum !== undefined) {
             for (let h = 1; h <= 12; h++) {
                 if (L[(ascSignNum + h - 1) % 12] === dispositor) ownedHouses.push(h);
@@ -924,10 +926,11 @@ window.KP_PREDICTION = {
         const nodeKP = this._getKPLords(pd.sid);
         const starLordHouses = rawPlanetNumbers[nodeKP.nakLord] || [];
 
-        const combinedHouses = Array.from(new Set([
+        /* const combinedHouses = Array.from(new Set([
             nodeHouse, dispositorPlacementHouse, ...ownedHouses, ...cslHouses,
             ...conjunctHouses, ...aspectHouses, ...starLordHouses
-        ].filter(h => h !== null && h !== undefined))).sort((a, b) => a - b);
+        ].filter(h => h !== null && h !== undefined))).sort((a, b) => a - b); */
+        const combinedHouses = Array.from(new Set([dispositorPlacementHouse, ...ownedHouses, ...cslHouses].filter(h => h !== null && h !== undefined))).sort((a, b) => a - b);
 
         return {
             node: node, sign: this.SIGN_NAMES[pd.sn], dispositor: dispositor,
@@ -936,7 +939,9 @@ window.KP_PREDICTION = {
             conjunctPlanets: conjunctPlanets, aspectingPlanets: aspectingPlanets,
             starLord: nodeKP.nakLord,
             combinedHouses: combinedHouses,
-            explanation: `${node} sits in H${nodeHouse} (${this.SIGN_NAMES[pd.sn]} ruled by ${dispositor}). Proxies: Conjunct [${conjunctPlanets.join(', ') || 'none'}], Aspected by [${aspectingPlanets.join(', ') || 'none'}], Star Lord [${nodeKP.nakLord}]. Houses signified: H${combinedHouses.join(', H') || 'none'}.`
+            /* explanation: `${node} sits in H${nodeHouse} (${this.SIGN_NAMES[pd.sn]} ruled by ${dispositor}). Proxies: Conjunct [${conjunctPlanets.join(', ') || 'none'}], Aspected by [${aspectingPlanets.join(', ') || 'none'}], Star Lord [${nodeKP.nakLord}]. Houses signified: H${combinedHouses.join(', H') || 'none'}.` */
+            explanation: `${node} sits in ${this.SIGN_NAMES[pd.sn]} (dispositor ${dispositor}). ${dispositor} is natally placed in H${dispositorPlacementHouse != null ? dispositorPlacementHouse : '?'}, owns ${ownedHouses.length ? 'H' + ownedHouses.join(',H') : 'no house'}, and is CSL of ${cslHouses.length ? 'H' + cslHouses.join(',H') : 'no house'} -- ${node}'s most powerful results flow through this combined set: H${combinedHouses.join(', H') || 'none'}.`
+
         };
     },
 
@@ -2031,7 +2036,297 @@ window.KP_PREDICTION = {
                    <div style="font-size:8.5px;color:var(--text);opacity:.8;margin:2px 0 4px;">Connected planets (occupants + sign lord of H12): ${data.activation.connectedPlanets.join(', ') || 'none'} · Activator planets: ${data.activation.activatorPlanets.map(a => a.planet).join(', ') || 'none'}</div>
                  </div>`;
     },
+// ===================== 8¾ᶦᶦ. SIXTH HOUSE (ROGA BHAVA) -- DEDICATED ANALYSIS =====================
+    //
+    // Built from "6th House Miracles" (Rahul Kaushik). Central thesis:
+    // the 6th is "The House of Great Fortune" -- 2nd (saved wealth) and
+    // 11th (gains) mean nothing if the 6th doesn't work, because payment
+    // for your OWN service/product/job always flows through the 6th
+    // first. The 6th is ALSO the universal "House of Fight" -- every
+    // win-or-lose question in life (elections, court cases, matches,
+    // debates, wars) is read from the 6th CSL alone.
 
+    /**
+     * PAYMENT / FEE-COLLECTION quality check: if the 6th CSL chain shows
+     * 2, 6, 11 -> full, generous payment is received for services/
+     * products/salary. If it shows 5, 8, 12 -> struggles collecting
+     * payment; the 5th specifically (12th-from-6th, i.e. this module's
+     * own getLossHouse(6) === 5) is the WORST variant -- a signature for
+     * people (astrologers are named explicitly) who cannot even bring
+     * themselves to ASK for payment, let alone collect it. The identical
+     * check applies to BUSINESS "blocked/stuck payment" (recovering money
+     * owed by customers on credit/rolling terms) -- same 6th CSL, same
+     * combination, same verdict.
+     */
+    getSixthHousePaymentQuality: function (chainHouses) {
+        const good = [2, 6, 11].filter(h => chainHouses.includes(h));
+        const bad = [5, 8, 12].filter(h => chainHouses.includes(h));
+        const worstSignature = chainHouses.includes(5); // getLossHouse(6) === 5
+        let verdict = 'mixed/unclear';
+        if (good.length && !bad.length) verdict = 'favourable -- payment for services/salary/products is received well';
+        else if (bad.length && !good.length) verdict = 'unfavourable -- real struggle collecting full payment';
+        return {
+            matchedGood: good, matchedBad: bad, verdict: verdict, worstSignature: worstSignature,
+            worstSignatureNote: worstSignature ? 'House 5 present (12th-from-6th) — the specific signature for struggling to even ASK for payment, not just collect it; common among astrologers/counsellors/advisors who under-charge or give away their work for free.' : null
+        };
+    },
+
+    /**
+     * THE WIN/LOSE COMBINATION -- the lecture's single most emphasized
+     * rule: for ANY competitive question (election, court case, sports
+     * match, business rivalry, debate, even war), read ONLY the 6th
+     * Cuspal Sub Lord — NEVER the Mahadasha/Antardasha/Pratyantardasha
+     * for the WIN/LOSE promise itself (dasha layers are for TIMING only).
+     *   WINNING combination = 6 (opponent's loss), 10 (your status),
+     *                          11 (your desire fulfilled)
+     *   LOSING combination  = 5 (opponent's gain, "their 11th"),
+     *                          4 (opponent's status, "their 10th"),
+     *                          12 (your loss, "their 6th")
+     * These are fixed universal constants, independent of any specific
+     * chart's house cusps.
+     */
+    WIN_COMBINATION: [6, 10, 11],
+    LOSE_COMBINATION: [5, 4, 12],
+
+    getWinLoseVerdict: function (chainHouses) {
+        const winMatched = this.WIN_COMBINATION.filter(h => chainHouses.includes(h));
+        const loseMatched = this.LOSE_COMBINATION.filter(h => chainHouses.includes(h));
+        let verdict = 'unclear';
+        if (winMatched.length > loseMatched.length) verdict = 'WIN';
+        else if (loseMatched.length > winMatched.length) verdict = 'LOSE';
+        return { winMatched: winMatched, loseMatched: loseMatched, verdict: verdict };
+    },
+
+    /**
+     * HORARY win/lose analysis -- deliberately bypasses Mahadasha/
+     * Antardasha entirely per the lecture's explicit instruction, and
+     * uses ONLY the 6th house of the HORARY chart (not the event-type
+     * promise-check machinery used elsewhere in this module).
+     *
+     * ETHICAL-USE WARNING (from the source lecture, preserved verbatim in
+     * spirit): this method is for genuine personal queries with real
+     * stake -- NOT for gambling/betting on sports outcomes for profit.
+     * The lecture explicitly warns this will "fail miserably" when used
+     * with a self-interested/gambling motive; it is described as working
+     * reliably only when asked with a calm, genuine mind and no ulterior
+     * financial motive riding on the answer.
+     */
+    analyzeWinLoseHorary: function (number, transitPlanetsMap) {
+        const resolved = this.horaryNumberToLongitude(number);
+        if (!resolved) return null;
+        const horaryAscSid = resolved.longitude;
+        const allCusps = this.getAllCusps(horaryAscSid);
+        const sixthCusp = allCusps[6];
+        const chain = this.getL1L2Chain(sixthCusp.subLord, horaryAscSid, transitPlanetsMap);
+        const chainHouses = chain ? Array.from(new Set(chain.L1_numbers.concat(chain.L2_numbers))) : [];
+        const winLose = this.getWinLoseVerdict(chainHouses);
+
+        let retrogradeWarning = null;
+        if (chain) {
+            const detData = transitPlanetsMap[chain.L1_planet];
+            if (detData && detData.retro === true) {
+                retrogradeWarning = `${chain.L1_planet} (the 6th CSL's star lord) is RETROGRADE — per KP's horary rule this classically pushes the answer toward reversal/delay/No, regardless of the house-number verdict above.`;
+            }
+        }
+
+        return {
+            number: number, horaryAscSid: horaryAscSid, sixthCSL: sixthCusp.subLord,
+            chain: chain, chainHouses: chainHouses, winLose: winLose, retrogradeWarning: retrogradeWarning,
+            ethicalNote: 'This method is for genuine personal stakes only -- not for gambling/betting on sports or elections for financial gain. Per the source teaching it reliably works only with a calm mind and no self-interested motive attached to the answer.'
+        };
+    },
+
+    /**
+     * Compares win/lose horary numbers across MULTIPLE simultaneous
+     * conflicts (e.g. 3 separate court cases against 3 different
+     * people) -- the lecture notes a single natal chart's 6th CSL can't
+     * cleanly distinguish between several concurrent conflicts, so a
+     * SEPARATE horary number per conflict is recommended.
+     */
+    compareWinLoseHorary: function (options, transitPlanetsMap) {
+        return (options || []).map(opt => {
+            const result = this.analyzeWinLoseHorary(opt.number, transitPlanetsMap);
+            return result ? Object.assign({ label: opt.label }, result) : { label: opt.label, number: opt.number, error: 'Invalid horary number.' };
+        });
+    },
+
+    /**
+     * DISEASE-RECOVERY horary (the ONLY two disease questions the source
+     * lecture teaches -- deliberately excludes any "will this illness be
+     * fatal / how long will they live with this illness" prediction,
+     * with the teacher explicitly declining to teach that variant because
+     * it tends to be misused and creates unnecessary anxiety):
+     *   Q1: "Will I get relief from this illness?"
+     *   Q2: "Can I live a disease-free life?"
+     * Three houses matter: 1st (the body), 5th (ends the disease -- 5th
+     * is 12th-from-6th, i.e. getLossHouse(6)), 11th (fast recovery).
+     * A 6, 8, 12 combination instead blocks BOTH the disease-ending and
+     * the recovery, and separately signals hospitalization expense.
+     * DIPLOMATIC LANGUAGE RULE: never tell the person bluntly "you will
+     * not recover" -- phrase it as "there is some struggle, please take
+     * extra care" (the same Word-Transformation alignment principle used
+     * elsewhere in this module for sensitive predictions).
+     */
+    analyzeDiseaseRecoveryHorary: function (number, transitPlanetsMap) {
+        const resolved = this.horaryNumberToLongitude(number);
+        if (!resolved) return null;
+        const horaryAscSid = resolved.longitude;
+        const allCusps = this.getAllCusps(horaryAscSid);
+        const sixthCusp = allCusps[6];
+        const chain = this.getL1L2Chain(sixthCusp.subLord, horaryAscSid, transitPlanetsMap);
+        const chainHouses = chain ? Array.from(new Set(chain.L1_numbers.concat(chain.L2_numbers))) : [];
+
+        const recoveryHouses = [1, 5, 11].filter(h => chainHouses.includes(h));
+        const blockedHouses = [6, 8, 12].filter(h => chainHouses.includes(h));
+        const recovers = recoveryHouses.length > blockedHouses.length;
+
+        let remedy = null;
+        if (!recovers && chain) {
+            remedy = {
+                planets: [sixthCusp.subLord, chain.L1_planet],
+                note: `Donate generously in the name of ${sixthCusp.subLord} and ${chain.L1_planet} (their associated items/causes), AND consciously reduce each planet\'s own negative expression (e.g. anger/conflict for Mars, unethical shortcuts for Saturn/Rahu, over-indulgence for Venus) -- alongside medical treatment, not instead of it.`
+            };
+        }
+
+        return {
+            number: number, horaryAscSid: horaryAscSid, sixthCSL: sixthCusp.subLord, chain: chain, chainHouses: chainHouses,
+            recoveryHouses: recoveryHouses, blockedHouses: blockedHouses, recovers: recovers,
+            diplomaticPhrasing: recovers ? 'You will get relief; recovery is promised.' : 'There is some struggle here — please take extra care and follow medical guidance closely.',
+            remedy: remedy,
+            scopeNote: 'This method deliberately answers ONLY "will I get relief" / "can I live disease-free" — it does not (and should not) attempt to predict whether a prolonged illness will be fatal.'
+        };
+    },
+
+    /**
+     * SURGERY horary yes/no -- a direct application of this module's
+     * existing getLossHouse(8)===7 rule (the 8th, surgery's house, is
+     * negated by its own 12th-from, the 7th): if the 6th CSL chain shows
+     * house 8 strongly, surgery will happen; if it shows house 7 instead
+     * of 8, surgery is negated/will not happen.
+     */
+    analyzeSurgeryHorary: function (number, transitPlanetsMap) {
+        const resolved = this.horaryNumberToLongitude(number);
+        if (!resolved) return null;
+        const horaryAscSid = resolved.longitude;
+        const allCusps = this.getAllCusps(horaryAscSid);
+        const sixthCusp = allCusps[6];
+        const chain = this.getL1L2Chain(sixthCusp.subLord, horaryAscSid, transitPlanetsMap);
+        const chainHouses = chain ? Array.from(new Set(chain.L1_numbers.concat(chain.L2_numbers))) : [];
+        const showsEighth = chainHouses.includes(8);
+        const showsSeventh = chainHouses.includes(7);
+        let verdict = 'unclear';
+        if (showsEighth && !showsSeventh) verdict = 'Surgery WILL happen';
+        else if (showsSeventh) verdict = 'Surgery will NOT happen (7th negates the 8th)';
+        return { number: number, sixthCSL: sixthCusp.subLord, chain: chain, chainHouses: chainHouses, showsEighth: showsEighth, showsSeventh: showsSeventh, verdict: verdict };
+    },
+
+    /**
+     * KALAPURUSH BODY-PART MAPPING -- the classical natural-zodiac
+     * body-part-per-sign table, used for the "which body part gives me
+     * trouble" horary demonstration: take the 6th CSL's planet and its
+     * own Nakshatra Lord, find which SIGN each sits in, and read off the
+     * body part.
+     */
+    KALAPURUSH_BODY_PARTS: {
+        0: 'Head', 1: 'Face / throat', 2: 'Arms / hands / shoulders', 3: 'Chest',
+        4: 'Heart / upper back', 5: 'Abdomen', 6: 'Lower back / kidneys', 7: 'Reproductive organs',
+        8: 'Thighs', 9: 'Knees', 10: 'Calves / ankles', 11: 'Feet'
+    },
+
+    getSixthCSLBodyPart: function (number, transitPlanetsMap) {
+        const resolved = this.horaryNumberToLongitude(number);
+        if (!resolved) return null;
+        const horaryAscSid = resolved.longitude;
+        const allCusps = this.getAllCusps(horaryAscSid);
+        const sixthCusp = allCusps[6];
+        const cslPlanet = sixthCusp.subLord;
+        const cslData = transitPlanetsMap[cslPlanet];
+        const nl = sixthCusp.nakLord;
+        const nlData = transitPlanetsMap[nl];
+        const cslSign = cslData && cslData.sn !== undefined ? cslData.sn : null;
+        const nlSign = nlData && nlData.sn !== undefined ? nlData.sn : null;
+        return {
+            number: number, cslPlanet: cslPlanet, cslSign: cslSign, cslBodyPart: cslSign !== null ? this.KALAPURUSH_BODY_PARTS[cslSign] : null,
+            nakLord: nl, nlSign: nlSign, nlBodyPart: nlSign !== null ? this.KALAPURUSH_BODY_PARTS[nlSign] : null
+        };
+    },
+
+    getSixthHouseAnalysis: function (ascSid, ascSignNum, natalPlanetsMap, lords) {
+        const explored = this.exploreHouse(6, ascSid, ascSignNum, natalPlanetsMap, lords);
+        const chain = this.getL1L2Chain(explored.resolved.csl, ascSid, natalPlanetsMap);
+        const chainHouses = chain ? Array.from(new Set(chain.L1_numbers.concat(chain.L2_numbers))) : [];
+        const activation = this.getHouseActivatorPlanets(6, natalPlanetsMap, ascSignNum, lords);
+        const paymentQuality = this.getSixthHousePaymentQuality(chainHouses);
+        const winLose = this.getWinLoseVerdict(chainHouses);
+
+        return {
+            house: 6, karaka: this.HOUSE_KARAKAS[6], explored: explored, chain: chain, chainHouses: chainHouses,
+            activation: activation, paymentQuality: paymentQuality, winLose: winLose
+        };
+    },
+
+    renderSixthHouseAnalysis: function (data) {
+        if (!data) return '';
+        const c = data.explored.independent ? '#00DD77' : '#8899AA';
+        const payColor = data.paymentQuality.verdict.startsWith('favourable') ? '#00DD77' : data.paymentQuality.verdict.startsWith('unfavourable') ? '#FF4477' : '#FFD700';
+
+        return `<div class="pred-item" style="border-left:3px solid #66CCFF;margin-top:10px;">
+                   <div class="pred-title" style="color:#66CCFF;">⚔️ Sixth House (Roga Bhava) -- Dedicated Analysis</div>
+                   <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">${data.karaka.keywords}</div>
+                   <div style="margin-top:6px;padding:8px;border:1px solid ${c}44;border-radius:6px;background:${c}0A;">
+                     CSL: <b>${data.explored.resolved.csl}</b>${data.explored.resolved.cslSelfStarred ? ' (self-starred)' : ' -> determining planet: <b>' + data.explored.resolved.determiningPlanet + '</b>'}
+                     ${data.explored.independent ? this._chip('INDEPENDENT HOUSE', '#00DD77') : ''}
+                     ${data.chain ? `<div style="font-size:8.5px;color:var(--muted);margin-top:4px;">L1 = ${data.chain.L1_planet} (H${data.chain.L1_numbers.join(',H') || '—'}) · L2 = ${data.chain.L2_planet} (H${data.chain.L2_numbers.join(',H') || '—'})</div>` : ''}
+                   </div>
+
+                   <div style="margin-top:8px;padding:8px;border:1px solid ${payColor}44;border-radius:6px;background:${payColor}0A;">
+                     <b style="color:${payColor};">PAYMENT/FEE-COLLECTION: ${data.paymentQuality.verdict.toUpperCase()}</b>
+                     <div style="font-size:8.5px;color:var(--text);opacity:.9;margin-top:2px;">Matched good (2/6/11): H${data.paymentQuality.matchedGood.join(',H') || '—'} · Matched bad (5/8/12): H${data.paymentQuality.matchedBad.join(',H') || '—'}</div>
+                     ${data.paymentQuality.worstSignatureNote ? `<div style="font-size:8.5px;color:#FF4477;margin-top:2px;">⚠ ${data.paymentQuality.worstSignatureNote}</div>` : ''}
+                   </div>
+
+                   <div style="margin-top:8px;font-size:9px;color:var(--muted);font-weight:bold;">WIN/LOSE PROMISE (from natal 6th CSL — use horary for a live question):</div>
+                   <div style="font-size:8.5px;color:var(--text);opacity:.9;margin-top:2px;">Win-matched (6/10/11): H${data.winLose.winMatched.join(',H') || '—'} · Lose-matched (5/4/12): H${data.winLose.loseMatched.join(',H') || '—'} → <b>${data.winLose.verdict}</b></div>
+
+                   <div style="margin-top:8px;font-size:9px;color:var(--muted);font-weight:bold;">HOUSE ACTIVATION:</div>
+                   <div style="font-size:8.5px;color:var(--text);opacity:.8;margin:2px 0 4px;">Connected planets (occupants + sign lord of H6): ${data.activation.connectedPlanets.join(', ') || 'none'} · Activator planets: ${data.activation.activatorPlanets.map(a => a.planet).join(', ') || 'none'}</div>
+                 </div>`;
+    },
+
+    renderWinLoseHoraryPanel: function (transitPlanetsMap) {
+        this._winLoseHoraryCache = transitPlanetsMap || {};
+        return `<details style="margin-top:6px;">
+                  <summary style="cursor:pointer;color:#FF4477;font-size:10.5px;font-weight:bold;">🏆 Win/Lose Horary (elections, court cases, matches, competitions)</summary>
+                  <div style="font-size:8.5px;color:var(--muted);margin:4px 0;">Uses ONLY the horary 6th CSL — never Mahadasha/Antardasha for the win/lose promise itself. ⚠ For genuine personal queries only — not for gambling/betting on outcomes for profit.</div>
+                  <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                    <input id="kpWinLoseNumberInput" type="number" min="1" max="243" placeholder="Number 1-243" style="width:110px;background:var(--bg3,#1a1a2e);border:1px solid var(--border);color:var(--text);font-size:10px;padding:4px;border-radius:3px;">
+                    <button onclick="window.KP_PREDICTION.runWinLoseHoraryFromUI()" style="background:#FF4477;color:#000;border:none;padding:4px 10px;border-radius:3px;font-size:10px;font-weight:bold;cursor:pointer;">Check</button>
+                  </div>
+                  <div id="kpWinLoseResult" style="margin-top:8px;"></div>
+                </details>`;
+    },
+
+    runWinLoseHoraryFromUI: function () {
+        const numEl = document.getElementById('kpWinLoseNumberInput');
+        const resultEl = document.getElementById('kpWinLoseResult');
+        if (!numEl || !resultEl) return;
+        const number = parseInt(numEl.value, 10);
+        if (!number || number < 1) { resultEl.innerHTML = '<div style="color:#FF4477;font-size:9px;">Enter a valid number 1-243.</div>'; return; }
+        const result = this.analyzeWinLoseHorary(number, this._winLoseHoraryCache || {});
+        resultEl.innerHTML = this.renderWinLoseHoraryResult(result);
+    },
+
+    renderWinLoseHoraryResult: function (result) {
+        if (!result) return '<div style="font-size:9px;color:var(--muted);">Invalid number.</div>';
+        const c = result.winLose.verdict === 'WIN' ? '#00DD77' : result.winLose.verdict === 'LOSE' ? '#FF4477' : '#FFD700';
+        return `<div style="padding:8px;border:1px solid ${c}44;border-radius:6px;background:${c}0A;">
+            <b style="color:${c};font-size:11px;">${result.winLose.verdict}</b>
+            <div style="font-size:9px;color:var(--text);margin-top:3px;">6th CSL: ${result.sixthCSL}${result.chain ? ` (L1=${result.chain.L1_planet}, L2=${result.chain.L2_planet})` : ''}</div>
+            <div style="font-size:8.5px;color:var(--text);opacity:.85;margin-top:2px;">Win-matched: H${result.winLose.winMatched.join(',H') || '—'} · Lose-matched: H${result.winLose.loseMatched.join(',H') || '—'}</div>
+            ${result.retrogradeWarning ? `<div style="margin-top:4px;font-size:8.5px;color:#FF4477;">⚠ ${result.retrogradeWarning}</div>` : ''}
+            <div style="margin-top:4px;font-size:8px;color:var(--muted);font-style:italic;">${result.ethicalNote}</div>
+          </div>`;
+    },
 // ===================== 8¾. CAREER ALIGNMENT =====================
     //
     // Applies the same Alignment principle (fix a house's problem THROUGH
@@ -2875,6 +3170,24 @@ window.KP_PREDICTION = {
             method: 'Moon in the 8th house. Reasoning chain: 8th aspects the 2nd house (wealth) by the universal 7th-house aspect; separately, the 8th house is "12th-from-9th" — the natural opposite of the 9th house\'s moral/legal/domestic-currency nature — linking the 8th to foreign or "not-legal-tender-at-home" money specifically.',
             conclusion: 'The client confirmed they were in fact holding British pounds at that moment — a specific, verifiable "cold reading"-style natal-placement prediction. Encoded as MOON_HOUSE_QUICK_READS[8] alongside quick reads for Moon in the 4th (big spender = wealthy), 7th (balanced in-out flow), and 12th (holds back joy, same-day emotional swing) houses.',
             houseKey: null
+            },
+        {
+            id: 'sixth_house_cant_ask_for_payment',
+            title: 'Astrologers Who Cannot Charge for Their Own Work',
+            source: '6th House Miracles',
+            setup: 'Observed pattern across many practicing astrologers/counsellors: they give consultations but struggle to actually ask for or collect a fee, sometimes giving away substantial work for free.',
+            method: 'Checked the 6th CSL and its Nakshatra Lord — specifically for house 5 (12th-from-6th, this module\'s own getLossHouse(6)) appearing in the chain.',
+            conclusion: 'House 5 present in the 6th CSL chain is the specific signature for struggling to even ASK for payment, not merely collecting it — a distinct and worse variant than simply "chain shows 5/8/12" (which causes collection struggles generally). Encoded as `worstSignature`/`worstSignatureNote` in getSixthHousePaymentQuality().',
+            houseKey: 6
+        },
+        {
+            id: 'win_lose_election_6th_csl',
+            title: 'Win/Lose Prediction Using Only the 6th CSL',
+            source: '6th House Miracles',
+            setup: 'A competitive question (election/court-case/match style) was asked via horary, where the natal or running dasha picture looked genuinely mixed/unclear.',
+            method: 'Per the lecture\'s explicit instruction: ignore Mahadasha, Antardasha, and Pratyantardasha ENTIRELY for a pure win/lose verdict — check ONLY the horary 6th Cuspal Sub Lord. Win = 6 (opponent\'s loss), 10 (own status), 11 (own desire fulfilled). Lose = 5, 4, 12 (the mirrored "opponent\'s win" houses).',
+            conclusion: 'The dasha layers govern WHEN, not WHETHER — for a binary win/lose promise specifically, the 6th CSL overrides everything else. Encoded as WIN_COMBINATION/LOSE_COMBINATION and analyzeWinLoseHorary(). The lecture pairs this with a firm ethical boundary: for genuine personal stakes only, never for betting/gambling on outcomes.',
+            houseKey: 6
         }
     ],
 
@@ -3859,6 +4172,8 @@ const houseThemes = (crossValidated.length ? crossValidated : overlap).map(h => 
         html += `</div>`;
         html += this.renderFirstHouseAnalysis(data.firstHouseAnalysis);
         html += this.renderThirdHouseAnalysis(data.thirdHouseAnalysis);
+        html += this.renderSixthHouseAnalysis(data.sixthHouseAnalysis);
+
         html += this.renderEighthHouseAnalysis(data.eighthHouseAnalysis);
         html += this.renderTwelfthHouseAnalysis(data.twelfthHouseAnalysis);
         html += this.renderCareerAlignment(data.careerAlignment);
@@ -3873,6 +4188,8 @@ const houseThemes = (crossValidated.length ? crossValidated : overlap).map(h => 
         html += this.renderFindEventPanel(mdNode, data.ascSid, data.ascSignNum, data._natalPlanetsMap, data._lords);
         html += this.renderHoraryPanel(transitPlanetsMap);
         html += this.renderHoraryComparisonPanel(transitPlanetsMap);
+        html += this.renderWinLoseHoraryPanel(transitPlanetsMap);
+
         html += this.renderCaseStudies();
         html += `</div>`;
         return html;
@@ -3916,6 +4233,7 @@ const houseThemes = (crossValidated.length ? crossValidated : overlap).map(h => 
             ? this.getMonthlyPanel(params.transitPlanets.Sun, params.dashaInfo, ascSid, ascSignNum, natalPlanets, L) : null;
         const dailyPanel = (params.transitPlanets && params.transitPlanets.Moon)
             ? this.getDailyPanel(params.transitPlanets.Moon, params.dashaInfo, ascSid, ascSignNum, natalPlanets, L) : null;
+        const sixthHouseAnalysis = this.getSixthHouseAnalysis(ascSid, ascSignNum, natalPlanets, L);
         const eighthHouseAnalysis = this.getEighthHouseAnalysis(ascSid, ascSignNum, natalPlanets, L, params.dashaInfo);
         const twelfthHouseAnalysis = this.getTwelfthHouseAnalysis(ascSid, ascSignNum, natalPlanets, L);
 
@@ -3930,6 +4248,7 @@ const houseThemes = (crossValidated.length ? crossValidated : overlap).map(h => 
             careerAlignment: careerAlignment, firstHouseAnalysis: firstHouseAnalysis,
             medicalIndicators: medicalIndicators, dashaBalanceTable: dashaBalanceTable,
             monthlyPanel: monthlyPanel, dailyPanel: dailyPanel,
+            sixthHouseAnalysis: sixthHouseAnalysis,
             eighthHouseAnalysis: eighthHouseAnalysis, twelfthHouseAnalysis: twelfthHouseAnalysis,
             _natalPlanetsMap: natalPlanets, _lords: L
         };

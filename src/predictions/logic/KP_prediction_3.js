@@ -464,7 +464,18 @@ window.KP_PREDICTION_3 = {
         { id: 197, category: 'General', q: 'Why do I learn advanced metaphysics best when studying in solitude?', csl: '9th CSL', positive: [6], negative: [], method: '9th CSL involving 6th confirms metaphysical wisdom is absorbed only through solitary study.' },
         { id: 198, category: 'KAT-Remedy', q: 'How do I overcome compulsive binge-eating habits during stress?', csl: '1st CSL', positive: [], negative: [8], method: 'KAT: Redirect compulsive 8th house energy into intense data analytics or coding tasks.' },
         { id: 199, category: 'Property', q: 'How do I purify heavy or disturbed vibrations in a newly bought home?', csl: '4th CSL', positive: [], negative: [8, 12], method: '4th CSL as Rahu in 8, 12 indicates heavy vibrations. KAT: Perform Vedic recitations.' },
-        { id: 200, category: 'General', q: 'How do I determine my Soul\'s ultimate life calling in this birth?', csl: 'Sun in Chalit', positive: [], negative: [], method: 'Locate physical house of Sun in Bhav Chalit. Aligning with this house brings fulfillment.' }
+        { id: 200, category: 'General', q: 'How do I determine my Soul\'s ultimate life calling in this birth?', csl: 'Sun in Chalit', positive: [], negative: [], method: 'Locate physical house of Sun in Bhav Chalit. Aligning with this house brings fulfillment.' },
+
+        // Unique entries from the first library (not present in the base)
+        { id: 201, category: 'Career', q: 'Should I do a job or business?', csl: '6th vs 7th CSL', positive: [2, 6, 11], negative: [8, 12], method: 'Compare 6th CSL (job) and 7th CSL (business); the one with fewer 8/12 and more 2-6-11 is the right path.' },
+        { id: 202, category: 'Career', q: 'Will I be a highly accurate predictor (Astrologer)?', csl: '10th Lord', positive: [], negative: [], method: 'If 10th Lord sits in the Nakshatra of the 8th Lord, astrology becomes a chosen full-time profession.' },
+        { id: 203, category: 'Health', q: 'Does a strong 1-6-10 career script indicate cardiovascular disease?', csl: '6th CSL', positive: [], negative: [], method: 'No — 1-6-10 is purely professional drive; cardiac pathology needs active Sun afflicted in 4th/8th.' },
+        { id: 204, category: 'Travel/Visa', q: 'Will the embassy clear my international student visa application?', csl: '3rd CSL', positive: [3, 9, 11], negative: [], method: 'Same as above, education-specific.' },
+        { id: 205, category: 'Twins', q: 'Will I have Twins?', csl: '5th CSL + Star Lord', positive: [], negative: [], method: 'Both 5th CSL and its Star Lord must be Mercury OR placed in Dual Signs (Gemini, Virgo, Sagittarius, Pisces).' },
+        { id: 206, category: 'KAT-Remedy', q: 'How do I neutralize sudden career shocks from an active 8th cusp?', csl: '10th CSL', positive: [], negative: [8], method: 'KAT: keep classical astrology texts on the office desk and read daily passages to consume 8th-house energy safely.' },
+        { id: 207, category: 'Astrology Career', q: 'Will I be chosen by destiny to practice astrology as a full-time career?', csl: '10th Lord', positive: [], negative: [], method: '10th Lord in the Nakshatra of the 8th Lord establishes astrology/occult as a primary life calling; if the Atmakaraka is there too, supreme fame in the field follows.' },
+        { id: 208, category: 'Timing', q: 'At what exact time will the neighbourhood power outage be restored (or any micro-event)?', csl: 'Transiting Lagna', positive: [2, 6, 11], negative: [], method: 'Cast a momentary chart; the event triggers when the transiting Lagna crosses the Sub-Lord signifying the relevant houses.' },
+        { id: 209, category: 'Donation', q: 'What item should I donate to pacify an unfavourable Jupiter?', csl: 'Jupiter', positive: [], negative: [], method: 'Donate yellow chana dal (split peas) to poor priests/temples during daylight hours.' }
     ],
 
     searchHorary: function (query) {
@@ -551,15 +562,173 @@ window.KP_PREDICTION_3 = {
     },
 
     renderHoraryResults: function (results) {
-        if (!results || !results.length) return '<div class="pred-item">No matching horary reference found in the library.</div>';
+        if (!results || !results.length) return '<div class="pred-item">No matching horary reference found in the curated library.</div>';
         const rows = results.map(e => `<div style="margin:4px 0;padding:6px 8px;border-left:3px solid #7FDBAA;background:rgba(127,219,170,.08);">
-            <b>[#${e.id} - ${e.category}]</b> ${e.q}<br/>
+            <b>[${e.category}]</b> ${e.q}<br/>
             <span style="font-size:8.5px;color:var(--muted);">${e.csl}${e.positive.length ? ' · Positive: H' + e.positive.join(',H') : ''}${e.negative.length ? ' · Negative: H' + e.negative.join(',H') : ''}</span>
             <div style="font-size:9px;margin-top:2px;">${e.method}</div>
           </div>`).join('');
-        return `<div class="pred-item" style="border-left:3px solid #7FDBAA;"><div class="pred-title" style="color:#7FDBAA;">📚 Master Horary Reference Library (${results.length} entries)</div>${rows}</div>`;
+        return `<div class="pred-item" style="border-left:3px solid #7FDBAA;"><div class="pred-title" style="color:#7FDBAA;">📚 Curated Horary Reference Library</div>${rows}</div>`;
     },
+    // ================================================================
+    // 5½. HORARY Q&A LIBRARY — FULL METHOD / EFFECT / RESULT / REMEDY
+    // ================================================================
+    //
+    // A second, narrative-style horary library — distinct from
+    // HORARY_LIBRARY above (which is simple house-tuple lookups). These
+    // entries are the source lecture's fully-worked ADVISORY questions,
+    // each carrying all four dimensions the source itself uses:
+    //   method  — how to read the chart for this question
+    //   effect  — what planetary/house indicator drives the outcome
+    //   result  — the actual predicted outcome/answer given to the client
+    //   remedy  — the behavioural/karma-alignment remedy that follows
+    // Curated from "5th House Untold Secrets" and the KP/KAT Master
+    // Secrets set (Timing, 8th-House Suffering, Career, Astrology-as-
+    // Profession, Medical Astrology, Trine Analysis, Myth-Busters, Master
+    // Workflow sections).
 
+    HORARY_QA_LIBRARY: [
+        {
+            id: 1, category: 'Timing', q: 'When will I get married?',
+            method: 'Check the running Dasha for the 2, 7, 11 combination.',
+            effect: 'Confirm with the Parashari Transit Secret: is the current Antardasha Lord sitting in the 7th house, or aspecting the 7th lord, in TODAY\'S transit sky?',
+            result: 'If the Dasha shows 2-7-11 AND the transit connection is confirmed, stamp the prediction: "Marriage will happen in this period." A strong natal marriage Yoga with no Dasha connection in the active lifespan simply stays undelivered — a Dasha only sets a "trend," the Antardasha "locks" it, and the Pratyantardasha "delivers" it.',
+            remedy: 'If the transit connection is not yet showing, re-check at the start of each new Antardasha/Pratyantardasha rather than assuming denial.'
+        },
+        {
+            id: 2, category: 'Timing', q: 'When will my spouse/family member return home (micro-timing)?',
+            method: 'Cast a momentary chart at the exact time of asking and note the current Ruling Planets (Lagna Lord, Lagna Nakshatra Lord, Moon Sign Lord, Moon Nakshatra Lord, Day Lord).',
+            effect: 'Track the currently rising Lagna as it changes minute to minute — the person arrives exactly when the Lagna Lord, Lagna Star Lord, and Lagna Sub-Lord all match the Ruling Planets noted above.',
+            result: 'Example: if the current Lagna is Gemini but Mercury (its lord) is missing from the Ruling Planets, predict "she will not return in the next 2 hours" — wait for a Lagna whose lord IS among the RPs.',
+            remedy: 'No remedy needed — this is a pure timing technique; simply keep re-checking the rising Lagna until it matches an RP planet.'
+        },
+        {
+            id: 3, category: 'Business/8th House', q: 'Why am I facing so much stress in my business or marriage?',
+            method: 'Check whether the running Dasha Lord sits IN the 7th house (partner/business-partner) with its own Nakshatra Lord sitting in the 8th house.',
+            effect: 'The 8th house (pain/hidden trouble) activating through a planet placed in the 7th channels the suffering specifically through the partnership.',
+            result: 'Predict: "Your marital partner or business partner is the root source of your current suffering" — not an external/unrelated cause.',
+            remedy: 'Address the partnership directly rather than looking elsewhere for the cause; separately, apply the general 8th-house KAT remedy (channel the energy into audit/research-type constructive work) so the 8th house has a productive outlet.'
+        },
+        {
+            id: 4, category: 'Business/8th House', q: 'Will I get funding for my startup?',
+            method: 'Check whether the Dasha/Antardasha planet\'s Nakshatra Lord connects to the 8th house.',
+            effect: 'The 8th house rules "other people\'s money" — angel investors, crowdfunding, VC capital — as distinct from the 2nd house (your own money).',
+            result: 'If the AD Nakshatra Lord connects to the 8th, predict: "Yes, you will easily get funding from external investors."',
+            remedy: 'Actively pursue angel investors/crowdfunding rather than self-funding when the 8th house is this active — trying to bootstrap with only your own (2nd house) money fights the chart instead of aligning with it.'
+        },
+        {
+            id: 5, category: 'Career', q: 'Should I do a job or start a business?',
+            method: 'Compare the 6th CSL (job) against the 7th CSL (business) for which one more strongly signifies the money houses 2, 6, 11.',
+            effect: 'The house whose CSL carries fewer negative numbers (8, 12) and more of 2-6-11 is the naturally supported path.',
+            result: 'If 6th CSL is stronger → a Job suits better. If 7th CSL is stronger → independent Business suits better.',
+            remedy: 'Align the career choice with the stronger CSL rather than following personal preference against the chart\'s natural support.'
+        },
+        {
+            id: 6, category: 'Wealth', q: 'Why do I feel broke despite earning well?',
+            method: 'Check the placement of the 2nd CSL (wealth/bank balance).',
+            effect: '2nd CSL placed in the 12th house indicates the native is subconsciously HOARDING cash out of fear ("it\'ll get spent") rather than genuinely lacking money.',
+            result: 'Predict: "You are hoarding money. Because you refuse to spend or donate, the universe will create a sudden loss (a hospital bill, an accident) to force the drain instead."',
+            remedy: 'Apply the 12th-house rule: "Daan, Bhog, ya Nash" (Donate, Enjoy, or it will be Destroyed) — voluntarily spend or donate so the 12th house\'s "spend requirement" is met constructively rather than destructively.'
+        },
+        {
+            id: 7, category: 'KAT/Family', q: 'Why do my relatives seem to hate me or turn jealous?',
+            method: 'Check for a Sun+Rahu natal conjunction.',
+            effect: 'Being too straightforward/transparent about personal happiness, success, or wealth with family, under this combination, directly breeds envy and conflict.',
+            result: 'Predict: "You are too straightforward with your happiness and wealth. Keep your success a secret from your family, and the jealousy/fights will stop."',
+            remedy: 'Be completely diplomatic with family — do not share financial success directly. To motivate a child, praise them in front of the mother rather than telling them directly (Rahu = indirect channel).'
+        },
+        {
+            id: 8, category: 'KAT/Destiny', q: 'Will I become famous?',
+            method: 'Check for Jupiter, Sun, and Rahu together across the trines (conjunction or mutual trine placement).',
+            effect: 'This combination is recorded as typically activating THROUGH a major family crisis rather than through ordinary steady effort.',
+            result: 'Predict: "When a massive crisis hits your family, a divine blessing will save you, and you will emerge highly famous from that very event."',
+            remedy: 'No corrective remedy — stay ethically grounded (Jupiter) through the crisis so the outcome resolves as a genuine "blessing" rather than a purely destructive event.'
+        },
+        {
+            id: 9, category: 'Astrology Career', q: 'Will I be a highly accurate astrologer/predictor?',
+            method: 'Check the 2nd CSL (speech/tongue) for involvement of the 5th and 9th houses.',
+            effect: 'The 5th house counted here is the 11th-from-the-7th (fulfilment of the CLIENT\'s desires); the 9th is wisdom. Speech (2nd) fulfilling those houses is a specific "blessed tongue" signature.',
+            result: 'Predict: "Your predictions will be stunningly accurate because your speech fulfils the desires of your clients."',
+            remedy: 'If the 2nd CSL lacks 5/9 involvement, lean on written/structured methodology rather than relying purely on spontaneous verbal readings.'
+        },
+        {
+            id: 10, category: 'Astrology Career', q: 'As an astrologer, should I give remedies or just counsel/guide?',
+            method: 'Compare which house is more strongly and repeatedly signified across the chart: the 5th or the 9th.',
+            effect: '5th-house strength makes one a natural "Solution Giver" (remedies genuinely work through them); 9th-house strength makes one a natural "Guide/Counsellor" (life advice lands powerfully, but ritual/tantric remedies may underperform).',
+            result: 'Match the practice style to the dominant house rather than forcing the other.',
+            remedy: '5th-dominant → build a remedies/solutions-focused practice. 9th-dominant → build a counselling/advisory-focused practice and be cautious about promising tantric-style remedies.'
+        },
+        {
+            id: 11, category: 'Medical', q: 'Why was I suddenly hospitalized?',
+            method: 'Identify the current Dasha Lord (the Source/माध्यम) and the house occupied by ITS Nakshatra Lord (the Activation).',
+            effect: 'The activated house tells you WHAT happened (e.g. 12th = hospitalization, 6th = disease); the Dasha Lord\'s own natural biological signification tells you WHY — e.g. Sun = calcium/bones/acidity, Venus = sugar/kidneys/hormones, Jupiter = liver/fat/cholesterol.',
+            result: 'Predict: "Your hospitalization was triggered by a malfunction in [Dasha Lord]\'s biological element" — naming the specific bodily system.',
+            remedy: 'Proactively address that specific biological/dietary factor (e.g. calcium intake and acidity management for the Sun) BEFORE the next similar Dasha/Antardasha arrives, as a physical remedy that bypasses the activation.'
+        },
+        {
+            id: 12, category: 'KAT/Trine', q: 'Why is my business suddenly failing?',
+            method: 'Check for a Mercury+Ketu natal conjunction and identify which of the four trines (Dharma 1-5-9 / Artha 2-6-10 / Kama 3-7-11 / Moksha 4-8-12) it occupies.',
+            effect: 'If Mercury+Ketu sits in the Kama trine (3, 7, 11 — desires/gains), the combination is meant to fulfil material desire specifically through intellectual/occult engagement, not through the current conventional business model alone.',
+            result: 'Predict: "Start learning Astrology or Occult sciences. Because it sits in your Desire/Gain trine, the moment you align your brain (Mercury) with the occult (Ketu), your stalled business profits will start flowing again."',
+            remedy: 'Incorporate astrology/occult study, or occult-adjacent consulting, into the existing business rather than avoiding it — the same combination in the Moksha trine (4-8-12) would instead call for pure non-commercial study, so always confirm the trine before prescribing this.'
+        },
+        {
+            id: 13, category: 'Astrology Career', q: 'What is my ultimate destiny in Astrology (Navamsa check)?',
+            method: 'Check the Navamsa (D9) chart specifically for Mercury\'s house placement.',
+            effect: 'Mercury placed in the 10th house of the D9 indicates a CAREER-LEVEL (not merely hobby-level) astrological calling.',
+            result: 'Predict: "You are biologically and karmically wired to be an extraordinarily brilliant astrologer — your analytical mind will dominate your career."',
+            remedy: 'Pursue formal astrology training/certification to fully activate this D9-level promise rather than leaving it as an untrained natural talent.'
+        },
+        {
+            id: 14, category: 'Myth-Buster', q: 'Do I have the power to potentize (सिद्ध) mantras?',
+            method: 'Check whether the 1st Lord is placed in the 8th house, or is conjunct the 8th Lord.',
+            effect: 'This specific placement is recorded as giving a rare, unusual capacity to charge/activate mantras with disproportionate power.',
+            result: 'Predict: "Any mantra you chant will activate with frightening power" — a genuine but intense gift.',
+            remedy: 'The same 8th-house intensity that empowers mantras can also disturb the native\'s own sleep/peace — the traditional grounding countermeasure recorded is chanting a specific calming mantra (e.g. "Ya Devi Sarvabhuteshu Nidra-rupena Samsthita") as an energetic anchor.'
+        },
+        {
+            id: 15, category: 'Myth-Buster', q: 'Is a Venus-Mars conjunction really as dangerous (lust/scandal) as classically feared?',
+            method: 'Check the Venus+Mars conjunction\'s aspects specifically — and for the "Urdhva Reta" exception, check whether Venus is in Mars\' sign aspected by Saturn, OR Venus is in Saturn\'s sign aspected by Mars (especially in the Navamsa).',
+            effect: 'Venus (master of scriptures) + Mars (sharp logic) more commonly produces a razor-sharp, highly discriminative ability to decode ancient texts and find hidden logic in a single sentence ("Sarva Shastra Pravaktaram") — NOT automatic scandal. If the Saturn-aspect exception applies, the combination transmutes entirely into spiritual pursuit instead (the "Urdhva Reta" celibate-monk pattern).',
+            result: 'Read this conjunction by its FULL context (aspects, trine placement) rather than by its popular reputation alone — the same raw combination can mean scriptural brilliance, romantic impulsiveness, or complete celibacy depending on what else touches it.',
+            remedy: 'No remedy needed for the base combination — this is a myth-correction, not a defect requiring correction. Only the specific Saturn/Mars cross-aspect pattern (Urdhva Reta) genuinely redirects the energy toward celibacy/spirituality.'
+        },
+        {
+            id: 16, category: 'Myth-Buster', q: 'How do I motivate a Leo Ascendant specifically?',
+            method: 'Behavioural technique, not a chart calculation — applies whenever the native (or client) is a Leo Ascendant.',
+            effect: 'Leo Ascendants respond powerfully to a direct ego-challenge rather than to encouragement.',
+            result: 'Telling them "You are incapable of doing this" reliably locks their internal drive, and they will move mountains specifically to disprove the statement.',
+            remedy: 'Use this ONLY as a deliberate motivational technique with someone whose success you actually want — never as genuine discouragement, since it is a documented behavioural lever specific to this Ascendant, not a neutral observation.'
+        },
+        {
+            id: 17, category: 'Master Workflow', q: 'What is the correct end-to-end sequence for reading ANY chart/question?',
+            method: '4-step sequence: (1) Verify the birth time — ask the client self-check questions tied to 1st/2nd CSL placements (e.g. "do you rush to the doctor over small issues?" for 1st CSL=12th). (2) Check the Promise — does the relevant CSL\'s Nakshatra Lord signify the required numbers for this specific question? (3) Time the Event — do the current Mahadasha/Antardasha/Pratyantardasha connect to the relevant house in TODAY\'S transit chart? (4) Align the Karma — read any relevant planetary conjunction across its trine and give the matching behavioural remedy.',
+            effect: 'Following all 4 steps in order turns a vague prediction ("you will get a job") into a precise, falsifiable one ("you will get a job in a hospital/MNC through a female friend, because your 6th CSL is Venus sitting in the Nakshatra of the 12th Lord").',
+            result: 'The astrologer functions as a precision Astrometric Counsellor (9th house) and Solution Provider (5th house) rather than a generic fortune-teller — the client leaves with exact timing, a specific behavioural remedy, and a clear karmic explanation.',
+            remedy: 'The Golden Rule of Prediction: "Planets do not lie; people do." If a client denies a prediction but the CSL mathematically confirms it, trust the CSL — the universe operates on these exact numeric and karmic alignments, not on the client\'s self-report.'
+        }
+    ],
+
+    /** Free-text/category search across the narrative Method/Effect/Result/Remedy horary Q&A library. */
+    searchHoraryQA: function (query) {
+        if (!query) return this.HORARY_QA_LIBRARY;
+        const q = String(query).toLowerCase();
+        return this.HORARY_QA_LIBRARY.filter(e =>
+            e.q.toLowerCase().includes(q) || e.category.toLowerCase().includes(q)
+            || e.method.toLowerCase().includes(q) || e.effect.toLowerCase().includes(q)
+            || e.result.toLowerCase().includes(q) || e.remedy.toLowerCase().includes(q));
+    },
+renderHoraryQAResults: function (results) {
+        if (!results || !results.length) return '<div class="pred-item">No matching entry found in the Horary Q&A (Method/Effect/Result/Remedy) library.</div>';
+        const rows = results.map(e => `<div style="margin:6px 0;padding:8px;border-left:3px solid #FFA07A;background:rgba(255,160,122,.06);">
+            <b style="color:#FFA07A;">[${e.category}]</b> <b>${e.q}</b>
+            <div style="font-size:8.5px;color:var(--muted);margin-top:4px;"><b>Method:</b> ${e.method}</div>
+            <div style="font-size:9px;color:#66CCFF;margin-top:3px;"><b>Effect:</b> ${e.effect}</div>
+            <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:3px;"><b>Result:</b> ${e.result}</div>
+            <div style="font-size:9px;color:#00DD77;margin-top:3px;"><b>Remedy:</b> ${e.remedy}</div>
+          </div>`).join('');
+        return `<div class="pred-item" style="border-left:3px solid #FFA07A;"><div class="pred-title" style="color:#FFA07A;">🗂️ Horary Q&A — Method / Effect / Result / Remedy</div>${rows}</div>`;
+    },
     renderHoraryEvaluatorUI: function () {
         const options = this.HORARY_LIBRARY.map(e => `<option value="${e.id}">[#${e.id} ${e.category}] ${e.q.substring(0, 60)}...</option>`).join('');
         return `<details open style="margin-top:6px;">
@@ -604,6 +773,10 @@ window.KP_PREDICTION_3 = {
     // 7. TOP-LEVEL ANALYZE3 + RENDER
     // ================================================================
 
+        /**
+     * params: { natalPlanets, natalAsc, retroCheckPlanet, transitTriggerPlanets, horaryQuery }
+     */
+
     analyze3: function (params) {
         params = params || {};
         const P1 = this._p1();
@@ -620,11 +793,12 @@ window.KP_PREDICTION_3 = {
         const shareMarketGrading = this.gradeShareMarketOutcome(ascSid, natalPlanets);
         const unhealthyChildRisk = this.checkUnhealthyChildRisk(ascSid, natalPlanets);
         const horaryResults = params.horaryQuery ? this.searchHorary(params.horaryQuery) : null;
-
+        const horaryQAResults = params.horaryQuery ? this.searchHoraryQA(params.horaryQuery) : null;
         return {
             extendedConjunctions: extendedConjunctions, trineReadings: trineReadings,
             retrogradeFilter: retrogradeFilter, shareMarketGrading: shareMarketGrading,
-            unhealthyChildRisk: unhealthyChildRisk, horaryResults: horaryResults
+            unhealthyChildRisk: unhealthyChildRisk, horaryResults: horaryResults,
+            horaryQAResults: horaryQAResults
         };
     },
 
@@ -637,6 +811,7 @@ window.KP_PREDICTION_3 = {
         html += this.renderShareMarketGrading(data.shareMarketGrading, data.unhealthyChildRisk);
         html += this.renderHoraryEvaluatorUI();
         if (data.horaryResults) html += this.renderHoraryResults(data.horaryResults);
+        if (data.horaryQAResults) html += this.renderHoraryQAResults(data.horaryQAResults);
         return html;
     }
 };
