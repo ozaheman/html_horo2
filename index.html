@@ -897,7 +897,20 @@
                 </div>
                 <div id="calcResult" style="margin-top:12px;padding:8px;background:rgba(58,240,255,.05);border:1px solid rgba(58,240,255,.15);border-radius:3px;font-family:'Courier New',monospace;font-size:10px;color:var(--cyan);display:none;"></div>
 
-                <div class="sec-title" style="margin-top:20px;">★ Saved Profiles</div>
+                <div class="sec-title" style="margin-top:20px;display:flex;align-items:center;justify-content:space-between;">
+                    <span>★ Saved Profiles</span>
+                    <span style="display:flex;gap:6px;">
+                        <button type="button" id="btnExportBirth" class="btn" title="Download the current birth details as a JSON file" style="padding:2px 8px;font-size:9px;border-color:var(--cyan);color:var(--cyan);background:transparent;">⭳ Export</button>
+                        <button type="button" id="btnImportBirth" class="btn" title="Load birth details from a JSON file" style="padding:2px 8px;font-size:9px;border-color:var(--gold);color:var(--gold);background:transparent;">⭱ Import</button>
+                        <input type="file" id="importBirthFile" accept=".json,application/json" style="display:none;">
+                    </span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-bottom:6px;">
+                    <span style="font-size:9px;color:var(--muted);margin-right:auto;">Bulk (all saved profiles):</span>
+                    <button type="button" id="btnExportAllXml" class="btn" title="Download ALL saved profiles as one XML file" style="padding:2px 8px;font-size:9px;border-color:var(--violet);color:var(--violet);background:transparent;">⭳ Export All (XML)</button>
+                    <button type="button" id="btnImportAllXml" class="btn" title="Add profiles from an XML file to your Saved Profiles" style="padding:2px 8px;font-size:9px;border-color:var(--amber);color:var(--amber);background:transparent;">⭱ Import All (XML)</button>
+                    <input type="file" id="importAllXmlFile" accept=".xml,text/xml,application/xml" style="display:none;">
+                </div>
                 <div id="savedProfilesList" style="max-height:150px;overflow-y:auto;border:1px solid var(--border);border-radius:3px;padding:4px;background:var(--bg3);">
                     <div style="padding:10px;text-align:center;color:var(--muted);font-size:10px;">No saved profiles yet.</div>
                 </div>

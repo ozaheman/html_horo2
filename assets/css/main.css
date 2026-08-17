@@ -46,7 +46,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS',Tahoma,Ge
 .app-title{font-family:Palatino,'Book Antiqua',serif;font-size:18px;font-weight:900;letter-spacing:2px;
   background:linear-gradient(120deg,var(--gold),var(--gold2),var(--amber));
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.app-sub{font-family:'Courier New',monospace;font-size:9px;color:var(--muted);letter-spacing:.8px;}
+.app-sub{font-family:'Courier New',monospace;font-size:10px;color:var(--cyan);letter-spacing:.8px;font-weight:700;text-shadow:0 0 6px rgba(58,240,255,.35);}
 
 .btn{padding:4px 10px;background:transparent;border:1px solid var(--dim);color:var(--muted);
   font-family:'Trebuchet MS',sans-serif;font-size:11px;font-weight:600;letter-spacing:.6px;

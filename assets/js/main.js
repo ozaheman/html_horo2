@@ -4959,6 +4959,180 @@ document.getElementById('saveBirthProfile').addEventListener('click',()=>{
 });
 
 // ═══════════════════════════════════════════════════════════
+//  EXPORT / IMPORT BIRTH DETAILS (as a standalone .json file)
+// ═══════════════════════════════════════════════════════════
+// Builds the exact same field shape saveBirthProfile()/loadProfile() use
+// above, just written to/read from a downloadable file instead of
+// localStorage — lets a birth profile be shared, backed up, or moved to
+// another device/browser.
+function buildBirthProfileData(){
+  const dateStr=document.getElementById('fDate').value;
+  if(!dateStr) return null;
+  return {
+    name: document.getElementById('fName').value || 'Native',
+    date: dateStr,
+    time: document.getElementById('fTime').value || '12:00',
+    gender: document.getElementById('fGender')?.value || 'male',
+    city: document.getElementById('fCity').value,
+    lat: parseFloat(document.getElementById('fLat').value) || 0,
+    lon: parseFloat(document.getElementById('fLon').value) || 0,
+    utcOff: parseFloat(document.getElementById('fUtc').value) || 0,
+    ayan: document.getElementById('fAyan').value,
+    ephem: document.getElementById('fEphem').value,
+    houseSystem: document.getElementById('fHouse').value,
+    chartStyle: document.getElementById('fStyle').value
+  };
+}
+function exportBirthProfile(){
+  const data = buildBirthProfileData();
+  if(!data){ alert('Enter date first'); return; }
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const safeName = (data.name || 'birth-details').replace(/[^a-z0-9_\-]+/gi, '_');
+  a.href = url;
+  a.download = `${safeName}_birth_details.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+function applyImportedBirthProfile(p){
+  if(!p || !p.date){ alert('That file does not look like a valid birth-details export.'); return; }
+  document.getElementById('fName').value = p.name || 'Native';
+  document.getElementById('fDate').value = String(p.date).split('T')[0];
+  document.getElementById('fTime').value = p.time || '12:00';
+  if(document.getElementById('fGender')) document.getElementById('fGender').value = p.gender || 'male';
+  document.getElementById('fCity').value = p.city || '';
+  document.getElementById('fLat').value = p.lat ?? 0;
+  document.getElementById('fLon').value = p.lon ?? 0;
+  document.getElementById('fUtc').value = p.utcOff ?? 0;
+  if(p.ayan) document.getElementById('fAyan').value = p.ayan;
+  if(p.ephem) document.getElementById('fEphem').value = p.ephem;
+  if(p.houseSystem) document.getElementById('fHouse').value = p.houseSystem;
+  if(p.chartStyle) document.getElementById('fStyle').value = p.chartStyle;
+  // Live-verify: render mini D1/D9 preview so you can check the data before applying it
+  if(typeof updateBirthPreview === 'function') updateBirthPreview();
+  const res = document.getElementById('calcResult');
+  if(res){
+    res.style.display = 'block';
+    res.innerHTML = `Imported birth data for ${p.name || 'Native'}. Click 'Calculate & Close' to update.`;
+    res.style.color = 'var(--gold)';
+  }
+}
+document.getElementById('btnExportBirth')?.addEventListener('click', exportBirthProfile);
+document.getElementById('btnImportBirth')?.addEventListener('click', () => {
+  document.getElementById('importBirthFile')?.click();
+});
+document.getElementById('importBirthFile')?.addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      applyImportedBirthProfile(data);
+    } catch(err) {
+      console.error('Failed to parse imported birth-details file:', err);
+      alert('Could not read that file — make sure it is a birth-details JSON export.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = ''; // allow re-importing the same file later
+});
+
+// ═══════════════════════════════════════════════════════════
+
+//  BULK EXPORT / IMPORT — ALL SAVED PROFILES, AS ONE XML FILE
+// ═══════════════════════════════════════════════════════════
+// Same field shape as buildBirthProfileData()/loadProfile() above, just
+// covering every profile in localStorage (getSavedProfiles()) instead of
+// the single profile currently in the form — for backing up or moving a
+// whole profile list between browsers/devices in one file.
+const BIRTH_PROFILE_FIELDS = ['name','date','time','gender','city','lat','lon','utcOff','ayan','ephem','houseSystem','chartStyle'];
+
+function exportAllProfilesXML(){
+  const profiles = getSavedProfiles();
+  if(!profiles.length){ alert('No saved profiles to export yet.'); return; }
+  const doc = document.implementation.createDocument('', '', null);
+  const root = doc.createElement('birthProfiles');
+  root.setAttribute('count', String(profiles.length));
+  root.setAttribute('exportedAt', new Date().toISOString());
+  profiles.forEach(p => {
+    const el = doc.createElement('profile');
+    BIRTH_PROFILE_FIELDS.forEach(field => {
+      const child = doc.createElement(field);
+      const val = p[field];
+      // createTextNode escapes XML special characters automatically — no manual escaping needed.
+      child.appendChild(doc.createTextNode(val === undefined || val === null ? '' : String(val)));
+      el.appendChild(child);
+    });
+    root.appendChild(el);
+  });
+  doc.appendChild(root);
+
+  const xmlStr = '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(doc);
+  const blob = new Blob([xmlStr], {type:'application/xml'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `jyotish_birth_profiles_${stamp}.xml`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function parseProfilesXML(xmlText){
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(xmlText, 'application/xml');
+  if(xml.querySelector('parsererror')) throw new Error('Malformed XML');
+  const profileEls = xml.querySelectorAll('birthProfiles > profile');
+  const profiles = [];
+  profileEls.forEach(el => {
+    const p = {};
+    BIRTH_PROFILE_FIELDS.forEach(field => {
+      const node = el.querySelector(field);
+      p[field] = node ? node.textContent : '';
+    });
+    p.lat = parseFloat(p.lat) || 0;
+    p.lon = parseFloat(p.lon) || 0;
+    p.utcOff = parseFloat(p.utcOff) || 0;
+    if(p.date) profiles.push(p); // a profile needs at least a date to be usable
+  });
+  return profiles;
+}
+
+function importAllProfilesXML(xmlText){
+  let profiles;
+  try {
+    profiles = parseProfilesXML(xmlText);
+  } catch(err) {
+    console.error('Failed to parse imported XML:', err);
+    alert('Could not read that file — make sure it is a valid Birth Profiles XML export.');
+    return;
+  }
+  if(!profiles.length){ alert('No usable <profile> entries found in that XML file.'); return; }
+  profiles.forEach(p => saveBirthProfile(p)); // saveBirthProfile() persists + refreshes the list for each
+  alert(`Imported ${profiles.length} profile${profiles.length===1?'':'s'} into Saved Profiles.`);
+}
+
+document.getElementById('btnExportAllXml')?.addEventListener('click', exportAllProfilesXML);
+document.getElementById('btnImportAllXml')?.addEventListener('click', () => {
+  document.getElementById('importAllXmlFile')?.click();
+});
+document.getElementById('importAllXmlFile')?.addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => importAllProfilesXML(ev.target.result);
+  reader.readAsText(file);
+  e.target.value = ''; // allow re-importing the same file later
+});
+
+// ═══════════════════════════════════════════════════════════
+
 //  RENDER ALL
 // ═══════════════════════════════════════════════════════════
 function updateRange(){
