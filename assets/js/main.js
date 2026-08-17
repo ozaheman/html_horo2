@@ -607,7 +607,7 @@ function s2h(signNum,ascSignNum){
 // ═══════════════════════════════════════════════════════════
 window.BIRTH={
   name:'Native · 17 Sep 1950',
-  date:new Date(1977,9,17,11,00,0),
+  date:new Date(1950,9,17,11,00,0),
   lat:23.78, lon:72.63, utcOff:5.5,   // 19N05 / 72E50
   city:'Vadnagar, Gujarat, India',
   gender:'male',
@@ -5255,7 +5255,7 @@ recalcBirth();
 rebuildDashas();
 YOGINI=buildYoginiDasha();
 updateDchartTitle();
-document.getElementById('appSub').textContent='Native \u00B7 Bombay Santa Cruz \u00B7 7 Oct 1977 23:45 IST \u00B7 Lahiri \u00B7 Gemini Lagna';
+document.getElementById('appSub').textContent='Native \u00B7 Vadnagar, Gujarat, India \u00B7 17 Sept 1950 11:00 Am IST \u00B7 Lahiri \u00B7 Gemini Lagna';
 document.getElementById('btnVimsh').classList.add('active');
 
 // ═══════════════════════════════════════════════════════════
