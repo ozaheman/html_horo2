@@ -906,6 +906,16 @@ function runMarriageAnalysis() {
       });
     }
   } catch (e) { console.error('MARRIAGE THEMED YOGA SECTION FAIL', e); }
+    // 2.7 7th House / 7th Lord / Venus — Spouse Nature & Married Life Quality
+  // (naisargik vs functional benefic/malefic reading, incl. Chandra Kundli cross-check)
+  try {
+    if (window.SAHDHARM_SAMBANDH_PREDICTOR && typeof window.SAHDHARM_SAMBANDH_PREDICTOR.analyzeSeventhHouse === 'function' && BIRTH_PLANETS && BIRTH_ASC) {
+      const seventhHouseAnalysis = window.SAHDHARM_SAMBANDH_PREDICTOR.analyzeSeventhHouse(BIRTH_ASC.sn, BIRTH_PLANETS, (typeof LORDS !== 'undefined') ? LORDS : null);
+      el.innerHTML += window.SAHDHARM_SAMBANDH_PREDICTOR.renderSeventhHouseAnalysis(seventhHouseAnalysis);
+      console.log('7TH HOUSE / SPOUSE NATURE ANALYSIS RENDERED');
+    }
+  } catch (e) { console.error('7TH HOUSE / SPOUSE NATURE ANALYSIS FAIL', e); }
+
   
   // 3. Precision Month-by-Month Scanner UI
   const sahamDeg = calculateVivahaSaham();
