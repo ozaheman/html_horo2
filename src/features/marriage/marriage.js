@@ -150,6 +150,86 @@ function checkJaiminiAspect(s1, s2) {
 }
 
 /**
+ * Bhavat Bhava ("house from a house") applied to the 7th house for
+ * marriage: the 7th house is treated as a fresh Lagna, and every other
+ * house is re-read relative to IT instead of the native's own
+ * Ascendant — giving the spouse's own life themes (their wealth, home,
+ * career, fortune...) as seen from their own vantage point rather than
+ * only "what the 7th house means to me."
+ *
+ * baseHouse defaults to 7 (marriage) but the function is general —
+ * rotatedHouse R here means "the R-th house counted from baseHouse."
+ */
+function getBhavatBhavaFromHouse(baseHouse, natalPlanetsMap, ascSignNum, lords) {
+  const L = lords || (typeof LORDS !== 'undefined' ? LORDS : null);
+  const HS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.HOUSE_SIGNIFICATIONS) || {};
+  const SIGNS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) || [];
+  if (!L || ascSignNum === undefined || ascSignNum === null) return [];
+
+  // Inverse map: given a natal house number, which "rotated house from baseHouse" is it?
+  const rotatedOf = (natalHouse) => (((natalHouse - baseHouse + 12) % 12) + 1);
+
+  const rows = [];
+  for (let r = 1; r <= 12; r++) {
+    const natalHouse = (((baseHouse - 1) + (r - 1)) % 12) + 1;
+    const signNum = (ascSignNum + (natalHouse - 1)) % 12;
+    const signLord = L[signNum];
+    const occupants = Object.keys(natalPlanetsMap || {}).filter(p => natalPlanetsMap[p] && natalPlanetsMap[p].house === natalHouse);
+    const lordPlacement = natalPlanetsMap && natalPlanetsMap[signLord] ? natalPlanetsMap[signLord] : null;
+
+    rows.push({
+      rotatedHouse: r,
+      natalHouse: natalHouse,
+      sign: SIGNS[signNum] || '',
+      signLord: signLord,
+      occupants: occupants,
+      lordNatalHouse: lordPlacement ? lordPlacement.house : null,
+      lordRotatedHouse: lordPlacement ? rotatedOf(lordPlacement.house) : null,
+      meaning: HS[r] ? HS[r].name + ' — ' + HS[r].keywords : ''
+    });
+  }
+  return rows;
+}
+
+/** Renders the Bhavat Bhava table + a short highlight list for the classically most-asked-about rotated houses. */
+function renderBhavatBhavaFromSeventh(rows) {
+  if (!rows || !rows.length) return '';
+  const highlightHouses = { 2: "Spouse's own wealth & family", 4: "Spouse's home & happiness", 5: "Spouse's children & intelligence", 7: "The spouse's own spouse — i.e. YOU, seen from their side", 9: "Spouse's fortune & father", 10: "Spouse's career & standing", 11: "Spouse's gains & ambitions" };
+
+  const tableRows = rows.map(r => `
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+      <td style="padding:4px 6px;font-weight:bold;color:var(--gold);">${r.rotatedHouse}${r.rotatedHouse === 1 ? 'st' : r.rotatedHouse === 2 ? 'nd' : r.rotatedHouse === 3 ? 'rd' : 'th'} from 7th <span style="font-size:8px;color:var(--muted);">(H${r.natalHouse})</span></td>
+      <td style="padding:4px 6px;font-size:9px;">${r.sign}</td>
+      <td style="padding:4px 6px;font-size:9px;">${r.occupants.length ? r.occupants.join(', ') : '—'}</td>
+      <td style="padding:4px 6px;font-size:9px;color:var(--cyan);">${r.signLord}${r.lordNatalHouse ? ` (H${r.lordNatalHouse}, ${r.lordRotatedHouse}${r.lordRotatedHouse===1?'st':r.lordRotatedHouse===2?'nd':r.lordRotatedHouse===3?'rd':'th'} from 7th)` : ''}</td>
+      <td style="padding:4px 6px;font-size:8.5px;color:var(--muted);">${r.meaning}</td>
+    </tr>`).join('');
+
+  const highlights = rows.filter(r => highlightHouses[r.rotatedHouse]).map(r => `
+    <div style="margin:4px 0;padding:6px 8px;border-left:3px solid var(--gold);background:rgba(255,215,0,.06);">
+      <b style="color:var(--gold);">${r.rotatedHouse}${r.rotatedHouse===1?'st':r.rotatedHouse===2?'nd':r.rotatedHouse===3?'rd':'th'} from 7th (natal H${r.natalHouse}):</b> ${highlightHouses[r.rotatedHouse]}
+      <div style="font-size:8.5px;color:var(--text);opacity:.85;margin-top:2px;">${r.sign}, ruled by ${r.signLord}${r.lordNatalHouse ? `, who sits in natal H${r.lordNatalHouse}` : ''}${r.occupants.length ? ` · occupied by ${r.occupants.join(', ')}` : ' · no natal occupant'}</div>
+    </div>`).join('');
+
+  return `<div class="biz-summary" style="border-color:var(--gold);background:rgba(255,215,0,0.03);margin-top:20px;border-radius:12px;">
+      <h3 style="color:var(--gold);font-size:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.05);">🔄 Bhavat Bhava — D1 Rotated from the 7th House</h3>
+      <div style="font-size:9px;color:var(--muted);margin:8px 0;">The 7th house is treated as a fresh Lagna, and every other house is re-read relative to IT — showing the spouse's own life themes (their wealth, home, career, fortune) from their own vantage point, not just what the 7th means to you.</div>
+      ${highlights}
+      <details style="margin-top:8px;"><summary style="cursor:pointer;color:var(--gold);font-size:9.5px;font-weight:bold;">Full 12-house rotated table</summary>
+        <div style="overflow-x:auto;margin-top:6px;">
+        <table style="width:100%;border-collapse:collapse;font-size:9px;color:var(--text);">
+          <thead><tr style="border-bottom:1px solid var(--border);color:var(--muted);text-align:left;">
+            <th style="padding:4px 6px;">Rotated House</th><th style="padding:4px 6px;">Sign</th><th style="padding:4px 6px;">Occupants</th><th style="padding:4px 6px;">Sign Lord</th><th style="padding:4px 6px;">Represents (spouse's...)</th>
+          </tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+        </div>
+      </details>
+    </div>`;
+}
+
+/**
+
  * Classical Sages Marriage Methodology Implementation
  */
 /**
@@ -915,6 +995,14 @@ function runMarriageAnalysis() {
       console.log('7TH HOUSE / SPOUSE NATURE ANALYSIS RENDERED');
     }
   } catch (e) { console.error('7TH HOUSE / SPOUSE NATURE ANALYSIS FAIL', e); }
+  // 2.8 Bhavat Bhava — D1 chart rotated from the 7th house (spouse's own life themes)
+  try {
+    if (BIRTH_PLANETS && BIRTH_ASC) {
+      const bhavatBhavaRows = getBhavatBhavaFromHouse(7, BIRTH_PLANETS, BIRTH_ASC.sn, (typeof LORDS !== 'undefined') ? LORDS : null);
+      el.innerHTML += renderBhavatBhavaFromSeventh(bhavatBhavaRows);
+      console.log('BHAVAT BHAVA (7TH HOUSE ROTATED) ANALYSIS RENDERED');
+    }
+  } catch (e) { console.error('BHAVAT BHAVA ANALYSIS FAIL', e); }
 
   
   // 3. Precision Month-by-Month Scanner UI
@@ -949,6 +1037,14 @@ function runMarriageAnalysis() {
         if (d9Data && d9Data.planets) {
             drawDChart('marriageD9ChartCanvas', d9Data);
         }
+                // Bhavat Bhava: same D1 planets, but redrawn with the 7th house's
+        // sign as the synthetic Lagna — drawDChart already treats any
+        // {sn: X} object as "house 1," so no separate rotated-chart
+        // renderer is needed.
+        if (BIRTH_ASC && BIRTH_PLANETS) {
+          drawDChart('marriageBhavatBhavaCanvas', { planets: BIRTH_PLANETS, asc: { sn: (BIRTH_ASC.sn + 6) % 12 } });
+        }
+
       }
     }, 500);
   }
@@ -1506,6 +1602,10 @@ function generateRefinedResearchReport(planets, asc) {
                     <div style="width:100%; max-width:350px; background:rgba(255,255,255,0.02); border-radius:10px; padding:10px; text-align:center;">
                         <h4 style="color:var(--cyan); margin:0 0 10px 0; font-size:12px;">Navamsa (D9) Chart</h4>
                         <canvas id="marriageD9ChartCanvas" width="280" height="280" style="width:100%; max-width:280px; height:auto;"></canvas>
+                    </div>
+                    <div style="width:100%; max-width:350px; background:rgba(255,255,255,0.02); border-radius:10px; padding:10px; text-align:center;">
+                        <h4 style="color:var(--gold); margin:0 0 10px 0; font-size:12px;">Bhavat Bhava — D1 Rotated from 7th House</h4>
+                        <canvas id="marriageBhavatBhavaCanvas" width="280" height="280" style="width:100%; max-width:280px; height:auto;"></canvas>
                     </div>
                 </div>
             </div>

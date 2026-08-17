@@ -606,10 +606,10 @@ function s2h(signNum,ascSignNum){
 //  Exact coordinates: 72E50 / 19N05  UTC-5:30 (IST = +5:30)
 // ═══════════════════════════════════════════════════════════
 window.BIRTH={
-  name:'Native · 7 Oct 1977',
-  date:new Date(1977,9,7,23,45,0),
-  lat:19.0833, lon:72.8333, utcOff:5.5,   // 19N05 / 72E50
-  city:'Bombay Santa Cruz, Maharashtra, India',
+  name:'Native · 17 Sep 1950',
+  date:new Date(1977,9,17,11,00,0),
+  lat:23.78, lon:72.63, utcOff:5.5,   // 19N05 / 72E50
+  city:'Vadnagar, Gujarat, India',
   gender:'male',
   ayan:'lahiri', ephem:'swiss', houseSystem:'whole', chartStyle:'north',
   useComputed: true
