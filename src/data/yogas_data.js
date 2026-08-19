@@ -3178,6 +3178,111 @@ const NEW_YOGAS = [];
             };
         }
     });
+    // ---------- 31. Tharai Yoga (Sudden Life-Event Yoga) ----------
+    NEW_YOGAS.push({
+        name: 'Tharai Yoga',
+        category: 'Special/Rare',
+        quality: 'Mixed',
+        planets: ['Moon', 'Venus'],
+        keywords: ['sudden event', 'lightning-like turn', 'destiny shift', 'unexpected fortune or misfortune'],
+        methodOfCalculation: 'Formed when the Moon and Venus are conjunct in the same house, or stand mutually in the 4th/10th-house relationship from one another (i.e. Venus falls in the 4th house counted from the Moon, or the Moon falls in the 4th house counted from Venus). The yoga is stronger and more impactful when this Moon-Venus combination itself occupies a Kendra house (1st, 4th, 7th, or 10th) from the Lagna, since both Moon and Venus are said to gain Digbala (directional strength) in the 4th house.',
+        cause: 'Moon (mind, public perception) and Venus (comfort, relationships, worldly attainment) meeting in a mutual angular relationship concentrates their combined significations into one sudden, life-altering turn rather than a gradual unfolding — hence compared to a bolt of lightning ("Tharai" = sudden thunder-like strike).',
+        description: 'A yoga adapted from a classical Tamil astrological text: the Moon and Venus conjunct, or placed 4th from each other, produce one (occasionally more than one) sudden and pivotal event in the native\'s life that permanently changes its direction. Whether that event is fortunate or unfortunate hinges on the strength of the Lagna and Lagna lord — not on the Moon-Venus combination itself.',
+        result: 'If the Lagna and Lagna lord are strong and unafflicted, the sudden event is auspicious — an unexpected windfall, a rise to fame or high office, a stroke of unlooked-for luck. If the Lagna or Lagna lord is weak or afflicted, the sudden event is instead a hardship or misfortune — a forced departure, a sudden loss, a difficult, unplanned turn of life. If the combination itself carries an additional 6th/8th/12th-house involvement, the resulting event tends to be somewhat less extreme in either direction, though it still arrives unexpectedly.',
+        nullification: 'No formal cancellation is described; rather than being nullified outright, the yoga\'s outcome polarity (favorable vs. unfavorable) is read entirely from the independent strength of the Lagna and Lagna lord, and its intensity is moderated when a 6th/8th/12th-house connection is also present.',
+        referenceShloka: '(No single standardized Sanskrit shloka is cited for this yoga in mainstream Jataka texts; per the source material this yoga is a translated rule from a classical Tamil astrological text, compiled into the teacher\'s own 108-rule "Saral Panchang/Saral Five" reference system rather than drawn from Brihat Parashara Hora Shastra or Phaladeepika.)',
+        strength: 'Moderate to Strong (scales with Lagna strength)',
+        remedies: ['Strengthen the Lagna lord through its specific planetary remedy (mantra, gemstone, donation) so that the inevitable sudden turn resolves favorably', 'Worship Chandra (Moon) on Mondays and Shukra (Venus) on Fridays to soften any harsh manifestation', 'Keep savings and contingency plans in place going into Dasha periods of the Moon, Venus, or the Lagna lord, since the event tends to land during those periods'],
+        mantras: ['Om Som Somaya Namah', 'Om Shukraya Namah'],
+        deities: ['Chandra', 'Shukra'],
+        evaluate: function (c) {
+            if (!c.planets || !c.planets.Moon || !c.planets.Venus || !c.asc) return { result: false };
+            const moon = c.planets.Moon, venus = c.planets.Venus;
+            const moonHouse = moon.house, venusHouse = venus.house;
+            if (!moonHouse || !venusHouse) return { result: false };
+
+            const conjunct = moonHouse === venusHouse;
+            const venusIs4thFromMoon = houseCount(moonHouse, venusHouse) === 4;
+            const moonIs4thFromVenus = houseCount(venusHouse, moonHouse) === 4;
+            const isDetected = conjunct || venusIs4thFromMoon || moonIs4thFromVenus;
+            if (!isDetected) {
+                return { result: false, rationale: 'Moon and Venus are neither conjunct nor mutually 4th/10th from each other.' };
+            }
+
+            const inKendra = isKendra(moonHouse) || isKendra(venusHouse);
+
+            const ascSn = c.asc.sn || 0;
+            const lagnaLordName = lordOfHouse(ascSn, 1);
+            const lagnaLordPos = c.planets[lagnaLordName];
+            const lagnaLordStrong = !!lagnaLordPos && (isStrong(lagnaLordPos) || isKendraTrikona(lagnaLordPos.house));
+            const maleficsInLagna = MALEFICS().filter(m => c.planets[m] && c.planets[m].house === 1);
+            const lagnaAfflicted = maleficsInLagna.length > 0;
+            const favorable = lagnaLordStrong && !lagnaAfflicted;
+
+            const relDesc = conjunct
+                ? `conjunct in H${moonHouse} (${moon.sign || ''})`
+                : (venusIs4thFromMoon
+                    ? `Venus (H${venusHouse}) is 4th from the Moon (H${moonHouse})`
+                    : `Moon (H${moonHouse}) is 4th from Venus (H${venusHouse})`);
+
+            return {
+                result: true,
+                rationale: `It forms because Moon and Venus are ${relDesc}${inKendra ? ', which strengthens it by also falling in a Kendra house from the Lagna' : ''}. The Lagna lord (${lagnaLordName}) is ${lagnaLordStrong ? 'reasonably strong' : 'not particularly strong'}${lagnaAfflicted ? ' and the Lagna itself carries a malefic influence' : ''}, so the single defining sudden event this yoga brings is more likely to be ${favorable ? 'auspicious and fortune-bringing' : 'testing or adverse'} in nature.`
+            };
+        }
+    });
+
+    // ---------- 32. Kangaal Yoga (Wealth-to-Poverty Yoga) ----------
+    NEW_YOGAS.push({
+        name: 'Kangaal Yoga',
+        category: 'Special/Rare',
+        quality: 'Mixed',
+        planets: ['Jupiter', 'Venus', 'Mercury', 'Moon'],
+        keywords: ['destitution', 'late-life poverty', 'wealth that does not last', 'no accumulation'],
+        methodOfCalculation: 'Formed when at least three of the four natural benefic planets (Jupiter, Venus, Mercury, Moon) are conjunct together in a single Kendra house (1st, 4th, 7th, or 10th) from the Lagna, while at the same time at least one natural malefic (Mars, Saturn, Rahu, or Ketu) occupies either the 2nd house (accumulated wealth/family resources) or the 11th house (gains/income) from the Lagna. The combination is considered "pure" and gives its fullest, most literal result when the Sun does not also join the benefic trio in that Kendra house; if the Sun joins them, the result is only partial.',
+        cause: 'Three benefics conjunct in a Kendra is, on its own, a strong wealth-producing (Dhana Yoga-adjacent) configuration that brings prosperity through most of life — but a natural malefic sitting in the 2nd or 11th house simultaneously afflicts the very houses that govern savings and steady income, so whatever is earned fails to be retained or passed on, surfacing as poverty specifically in the final phase of life rather than throughout it.',
+        description: 'A native-teacher-compiled yoga (part of the same 108-rule "Saral Five" reference system as Tharai Yoga): the native earns considerable wealth, status, or success for most of their life through a strong benefic conjunction in a Kendra house, but a malefic afflicting the 2nd or 11th house prevents that wealth from being conserved, so the native ends up in financial hardship — "Kangaal" (destitute) — in the last phase of life, having lost or given away everything previously earned.',
+        result: 'The native experiences real and often substantial prosperity for most of their working life — sometimes even a genuine Raja Yoga or Dhana Yoga alongside this combination — but by the final stage of life has little or nothing left in their own name; wealth may have been transferred to children or spouse, lost in failed ventures, or simply never accumulated despite high earnings. When the Sun also sits with the benefic trio, the loss tends to be partial (some accumulation/savings habit survives) rather than a complete wipeout.',
+        nullification: 'Weakened or made partial if the Sun joins the benefic conjunction (impurifying it), or if the malefic occupying the 2nd/11th house itself receives a strong benefic aspect; strengthened (i.e. more completely and literally destitute) when the configuration is otherwise clean of any such mitigating influence.',
+        referenceShloka: '(Not drawn from a single standardized Sanskrit shloka in classical Jataka texts; per the source material this is a teacher-compiled rule from the "Saral Panchang/Saral Five" system of 108 predictive combinations, illustrated through case-chart analysis rather than cited to a specific classical verse.)',
+        strength: 'Moderate to Strong (fuller effect when unmixed with the Sun)',
+        remedies: ['Proactively transfer or formally settle major assets onto a spouse or children during the prosperous years, before the late-life dasha periods associated with the 2nd/11th-house malefic arrive', 'Propitiate the malefic occupying the 2nd or 11th house through its specific planetary remedy to soften the loss of accumulated wealth', 'Maintain a disciplined, separate savings or trust structure that is not easily depleted, since natural spending/loss patterns intensify in later life under this yoga'],
+        mantras: ['Om Shreem Mahalakshmiyai Namaha', 'Om Gurave Namah'],
+        deities: ['Lakshmi', 'Brihaspati'],
+        evaluate: function (c) {
+            if (!c.planets || !c.asc) return { result: false };
+            const benefics = ['Jupiter', 'Venus', 'Mercury', 'Moon'];
+            const kendraHouses = [1, 4, 7, 10];
+            let formingHouse = null;
+            let beneficsInHouse = [];
+
+            for (let i = 0; i < kendraHouses.length; i++) {
+                const h = kendraHouses[i];
+                const present = benefics.filter(b => c.planets[b] && c.planets[b].house === h);
+                if (present.length >= 3) {
+                    formingHouse = h;
+                    beneficsInHouse = present;
+                    break;
+                }
+            }
+            if (!formingHouse) {
+                return { result: false, rationale: 'No Kendra house has at least three natural benefics conjunct together.' };
+            }
+
+            const maleficsIn2or11 = MALEFICS().filter(m => c.planets[m] && (c.planets[m].house === 2 || c.planets[m].house === 11));
+            if (maleficsIn2or11.length === 0) {
+                return { result: false, rationale: `Three benefics (${beneficsInHouse.join(', ')}) are conjunct in H${formingHouse}, but no natural malefic occupies the 2nd or 11th house, so this does not form Kangaal Yoga.` };
+            }
+
+            const sunJoins = !!(c.planets.Sun && c.planets.Sun.house === formingHouse);
+            const pure = !sunJoins;
+
+            return {
+                result: true,
+                rationale: `It forms because three natural benefics (${beneficsInHouse.join(', ')}) are conjunct in the Kendra house H${formingHouse}${sunJoins ? ' (joined there by the Sun, which impurifies the combination)' : ''}, while a natural malefic (${maleficsIn2or11.join(', ')}) occupies the wealth-accumulation house (2nd or 11th). This is the classic Kangaal Yoga signature: substantial wealth is earned through most of life, but ${pure ? 'in this pure form it tends to dissipate almost entirely by life\'s final phase' : 'the Sun\'s involvement means the loss is likely to be partial rather than total'}.`
+            };
+        }
+    });
 
     
 

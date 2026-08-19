@@ -229,6 +229,140 @@ function renderBhavatBhavaFromSeventh(rows) {
 }
 
 /**
+ * Marriage Timing (Early vs. Delayed) — Lagna / 2nd / 7th House Method
+ * Source: classical shloka-based rule (Rahul Kaushik lecture) — checks
+ * whether BENEFIC or MALEFIC planets occupy the Lagna (self), 2nd house
+ * (Kutumba/family), and 7th house (Kalatra/spouse); whether those
+ * planets land in a benefic- or malefic-owned sign in the Navamsha
+ * (D9); and whether the LORDS of these three houses are themselves
+ * benefic- or malefic-influenced.
+ *   Benefics in 1/2/7, landing in benefic D9 signs, with benefic-
+ *   influenced house lords → early marriage.
+ *   Malefics in 1/2/7, STAYING in malefic D9 signs, afflicted lords →
+ *   significant delay.
+ *   Malefics in 1/2/7 that land in a BENEFIC D9 sign → the delay is
+ *   reduced, not removed (the source teaching's key nuance, worked
+ *   through its own example chart).
+ * Venus, as the marriage karaka, is checked separately — its own
+ * affliction (conjunct/axis with Rahu-Ketu, combust, malefic conjunction)
+ * independently worsens the delay regardless of the 1/2/7 picture.
+ * This method gives a LEAN (early vs. delayed) only, not an exact date —
+ * cross-check against the dasha timeline and other yogas elsewhere in
+ * this panel for that.
+ */
+function getMarriageTimingAnalysis(natalPlanets, ascSignNum, d9Planets, lords) {
+  const L = lords || (typeof LORDS !== 'undefined' ? LORDS : null);
+  if (!natalPlanets || ascSignNum === undefined || ascSignNum === null || !L) return null;
+  const BENEFICS = ['Jupiter', 'Venus', 'Mercury', 'Moon'];
+  const MALEFICS = ['Sun', 'Mars', 'Saturn', 'Rahu', 'Ketu'];
+  const houseNames = { 1: 'Lagna (Self)', 2: 'Kutumba (Family)', 7: 'Kalatra (Spouse)' };
+
+  const houseData = [1, 2, 7].map(h => {
+    const occupants = Object.keys(natalPlanets).filter(p => natalPlanets[p] && natalPlanets[p].house === h);
+    const occupantDetails = occupants.map(p => {
+      const natural = BENEFICS.includes(p) ? 'benefic' : (MALEFICS.includes(p) ? 'malefic' : 'neutral');
+      let d9SignLord = null, d9Category = null;
+      if (d9Planets && d9Planets[p] && d9Planets[p].sn !== undefined) {
+        d9SignLord = L[d9Planets[p].sn];
+        d9Category = BENEFICS.includes(d9SignLord) ? 'benefic-sign' : (MALEFICS.includes(d9SignLord) ? 'malefic-sign' : 'neutral-sign');
+      }
+      return { planet: p, natural: natural, d9SignLord: d9SignLord, d9Category: d9Category };
+    });
+
+    const houseSignNum = (ascSignNum + h - 1) % 12;
+    const houseLord = L[houseSignNum];
+    let lordInfluence = 'neutral';
+    if (houseLord && natalPlanets[houseLord]) {
+      const lordHouse = natalPlanets[houseLord].house;
+      const conjuncts = Object.keys(natalPlanets).filter(p => p !== houseLord && natalPlanets[p] && natalPlanets[p].house === lordHouse);
+      const benCount = conjuncts.filter(p => BENEFICS.includes(p)).length;
+      const malCount = conjuncts.filter(p => MALEFICS.includes(p)).length;
+      if (benCount > malCount) lordInfluence = 'benefic';
+      else if (malCount > benCount) lordInfluence = 'malefic';
+    }
+    return { house: h, label: houseNames[h], occupants: occupantDetails, houseLord: houseLord, lordInfluence: lordInfluence };
+  });
+
+  let venusStatus = null;
+  if (natalPlanets.Venus) {
+    const vHouse = natalPlanets.Venus.house;
+    const conjuncts = Object.keys(natalPlanets).filter(p => p !== 'Venus' && natalPlanets[p] && natalPlanets[p].house === vHouse);
+    const onNodeAxis = conjuncts.includes('Rahu') || conjuncts.includes('Ketu');
+    const combust = !!natalPlanets.Venus.combust;
+    const maleficConjunct = conjuncts.some(p => MALEFICS.includes(p));
+    venusStatus = { conjuncts: conjuncts, onNodeAxis: onNodeAxis, combust: combust, afflicted: onNodeAxis || combust || maleficConjunct };
+  }
+
+  let beneficScore = 0, maleficScore = 0;
+  houseData.forEach(hd => {
+    hd.occupants.forEach(o => {
+      if (o.natural === 'benefic') beneficScore++;
+      if (o.natural === 'malefic') maleficScore++;
+      if (o.d9Category === 'benefic-sign') beneficScore += 0.5;
+      if (o.d9Category === 'malefic-sign') maleficScore += 0.5;
+    });
+    if (hd.lordInfluence === 'benefic') beneficScore++;
+    if (hd.lordInfluence === 'malefic') maleficScore++;
+  });
+  if (venusStatus && venusStatus.afflicted) maleficScore += 1.5;
+
+  let verdict, verdictReason;
+  if (beneficScore > maleficScore + 1) {
+    verdict = 'early';
+    verdictReason = 'Benefics dominate the Lagna/2nd/7th houses, mostly landing in benefic-owned signs in the Navamsha, with their house lords also benefic-influenced — classically indicating an early, smooth marriage.';
+  } else if (maleficScore > beneficScore + 2) {
+    verdict = 'severely-delayed';
+    verdictReason = 'Malefics dominate the Lagna/2nd/7th houses AND largely stay in malefic-owned signs in the Navamsha (no redemption there), with afflicted house lords — classically indicating significant delay.';
+  } else if (maleficScore > beneficScore) {
+    verdict = 'delayed-but-reduced';
+    verdictReason = 'Malefics occupy the Lagna/2nd/7th houses, but several land in BENEFIC-owned signs in the Navamsha — the source teaching records this as reducing how severe the delay is, rather than removing it.';
+  } else {
+    verdict = 'moderate';
+    verdictReason = 'A mixed picture — no strong lean either way from this method alone; weigh alongside dasha timing and other marriage yogas in this panel.';
+  }
+
+  return { houseData: houseData, venusStatus: venusStatus, beneficScore: beneficScore, maleficScore: maleficScore, verdict: verdict, verdictReason: verdictReason };
+}
+
+function renderMarriageTimingAnalysis(data) {
+  if (!data) return '';
+  const verdictColor = { early: '#00DD77', 'delayed-but-reduced': '#FFD700', 'severely-delayed': '#FF4477', moderate: '#8888AA' }[data.verdict] || '#8888AA';
+  const verdictLabel = { early: 'EARLY MARRIAGE INDICATED', 'delayed-but-reduced': 'DELAYED, BUT REDUCED SEVERITY', 'severely-delayed': 'SIGNIFICANT DELAY INDICATED', moderate: 'MIXED / MODERATE TIMING' }[data.verdict];
+  const ord = (n) => n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : n + 'th';
+
+  const houseRows = data.houseData.map(hd => {
+    const occRows = hd.occupants.length ? hd.occupants.map(o => {
+      const c = o.natural === 'benefic' ? '#00DD77' : o.natural === 'malefic' ? '#FF4477' : '#8888AA';
+      const d9c = o.d9Category === 'benefic-sign' ? '#00DD77' : o.d9Category === 'malefic-sign' ? '#FF4477' : '#8888AA';
+      return `<div style="font-size:8.5px;margin:2px 0;"><span style="color:${c};font-weight:bold;">${o.planet}</span> (${o.natural})${o.d9SignLord ? ` → D9 sign ruled by <span style="color:${d9c};">${o.d9SignLord}</span> (${(o.d9Category || '').replace('-', ' ')})` : ''}</div>`;
+    }).join('') : '<div style="font-size:8.5px;color:var(--muted);">No occupant — an empty house here is neutral for this method.</div>';
+    const lordColor = hd.lordInfluence === 'benefic' ? '#00DD77' : hd.lordInfluence === 'malefic' ? '#FF4477' : '#8888AA';
+    return `<div style="margin:6px 0;padding:6px 8px;border-left:3px solid var(--gold);background:rgba(255,215,0,.05);">
+        <b style="color:var(--gold);">House ${hd.house} — ${hd.label}</b>
+        ${occRows}
+        <div style="font-size:8.5px;margin-top:3px;">Lord: <b>${hd.houseLord || '—'}</b>, influence on lord: <span style="color:${lordColor};">${hd.lordInfluence}</span></div>
+      </div>`;
+  }).join('');
+
+  const venusHtml = data.venusStatus ? `<div style="margin:6px 0;padding:6px 8px;border-left:3px solid ${data.venusStatus.afflicted ? '#FF4477' : '#00DD77'};background:${data.venusStatus.afflicted ? 'rgba(255,68,119,.06)' : 'rgba(0,221,119,.06)'};">
+      <b style="color:${data.venusStatus.afflicted ? '#FF4477' : '#00DD77'};">Venus (marriage karaka): ${data.venusStatus.afflicted ? 'AFFLICTED' : 'Clean'}</b>
+      <div style="font-size:8.5px;color:var(--text);opacity:.85;margin-top:2px;">${data.venusStatus.conjuncts.length ? 'Conjunct: ' + data.venusStatus.conjuncts.join(', ') + '. ' : ''}${data.venusStatus.onNodeAxis ? 'On the Rahu-Ketu axis. ' : ''}${data.venusStatus.combust ? 'Combust. ' : ''}${data.venusStatus.afflicted ? "Per the source teaching, Venus's own affliction independently worsens marriage delay regardless of the house-occupant picture above." : 'An unafflicted Venus supports the more favourable reading above.'}</div>
+    </div>` : '';
+
+  return `<div class="biz-summary" style="border-color:${verdictColor};background:${verdictColor}0A;margin-top:20px;border-radius:12px;">
+      <h3 style="color:${verdictColor};font-size:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.05);">⏳ Marriage Timing — Lagna / 2nd / 7th House Method</h3>
+      <div style="font-size:9px;color:var(--muted);margin:8px 0;">Classical rule: benefics occupying the Lagna, 2nd (family), and 7th (spouse) houses — landing in benefic-owned signs in the Navamsha, with well-influenced house lords — points to an early marriage; the reverse points to delay. Malefics that land in a BENEFIC-owned D9 sign reduce the severity of the delay rather than removing it.</div>
+      ${houseRows}
+      ${venusHtml}
+      <div style="margin-top:8px;padding:8px;border:1px solid ${verdictColor}44;border-radius:6px;background:${verdictColor}0A;">
+        <b style="color:${verdictColor};">${verdictLabel}</b>
+        <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:4px;">${data.verdictReason}</div>
+        <div style="font-size:7.5px;color:var(--muted);margin-top:4px;font-style:italic;">This method gives a general LEAN (early vs. delayed) only — for the actual age/date, cross-check against the running dasha timeline and other marriage yogas elsewhere in this panel.</div>
+      </div>
+    </div>`;
+}
+
+/**
 
  * Classical Sages Marriage Methodology Implementation
  */
@@ -1003,8 +1137,84 @@ function runMarriageAnalysis() {
       console.log('BHAVAT BHAVA (7TH HOUSE ROTATED) ANALYSIS RENDERED');
     }
   } catch (e) { console.error('BHAVAT BHAVA ANALYSIS FAIL', e); }
-
+ // 2.9 Marriage Timing (Early vs. Delayed) — Lagna/2nd/7th House Method
+  try {
+    if (BIRTH_PLANETS && BIRTH_ASC && typeof getChartPlanetsForDiv === 'function') {
+      const d9ForTiming = getChartPlanetsForDiv(9);
+      const timingAnalysis = getMarriageTimingAnalysis(BIRTH_PLANETS, BIRTH_ASC.sn, d9ForTiming ? d9ForTiming.planets : null, (typeof LORDS !== 'undefined') ? LORDS : null);
+      el.innerHTML += renderMarriageTimingAnalysis(timingAnalysis);
+      console.log('MARRIAGE TIMING (1/2/7 METHOD) ANALYSIS RENDERED');
+    }
+  } catch (e) { console.error('MARRIAGE TIMING ANALYSIS FAIL', e); }
   
+   // 2.95 KP (Krishnamurti Paddhati) CSL-Based 7th House & Negate-House
+  // Analysis — a complementary, independently-computed system alongside
+  // the Parashari 7th-Lord/Venus/Darakaraka analysis above. Reads the
+  // 7th Cuspal Sub Lord's own house-chain rather than planetary
+  // strength, and explicitly cross-checks KP's negate-house rule (the
+  // house 12th-from-the-7th, i.e. the 6th) — a promise that is
+  // otherwise clean can still be delayed/contested if this house is
+  // also touched by the determining planet's numbers. Shares the same
+  // checkEventPromise() engine as the main KP prediction panel, so the
+  // two views never disagree with each other.
+  try {
+    if (window.KP_PREDICTION && typeof window.KP_PREDICTION.getSeventhHouseAnalysis === 'function' && BIRTH_PLANETS && BIRTH_ASC) {
+      const L = (typeof LORDS !== 'undefined') ? LORDS : null;
+      const ascSid = (BIRTH_ASC.sn * 30 + (parseFloat(BIRTH_ASC.deg) || 0));
+
+      const kpSeventh = window.KP_PREDICTION.getSeventhHouseAnalysis(ascSid, BIRTH_ASC.sn, BIRTH_PLANETS, L);
+      el.innerHTML += window.KP_PREDICTION.renderSeventhHouseAnalysis(kpSeventh);
+
+      // Every marriage-related event promise (1st/2nd/3rd/4th marriage,
+      // divorce/separation) side by side, each independently negate-
+      // house-checked.
+      const marriageEventTypes = ['marriage_h7', 'marriage_second_h7', 'marriage_third_h7', 'marriage_fourth_h7', 'marital_paertnership_divorce_h7'];
+      const eventRows = marriageEventTypes
+        .map(evt => { try { return { evt: evt, check: window.KP_PREDICTION.checkEventPromise(evt, ascSid, BIRTH_PLANETS, L) }; } catch (evtErr) { return null; } })
+        .filter(r => r && r.check)
+        .map(r => {
+          const c = window.KP_PREDICTION._color ? window.KP_PREDICTION._color(r.check.strength) : 'var(--muted)';
+          return `<div style="border-left:3px solid ${c};margin-top:8px;padding:8px;background:rgba(255,255,255,0.02);border-radius:4px;">
+                    <div style="color:${c};font-weight:bold;font-size:10.5px;">${r.evt.replace(/_/g, ' ')} — ${r.check.strength.toUpperCase()}</div>
+                    <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:2px;">${r.check.result}</div>
+                    ${r.check.remedy ? `<div style="font-size:9px;color:#9b6fff;margin-top:4px;"><b>Remedy:</b> ${r.check.remedy}</div>` : ''}
+                  </div>`;
+        }).join('');
+      if (eventRows) {
+        el.innerHTML += `<div style="margin-top:14px;">
+            <div style="color:var(--rose);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">KP Event-Promise Cross-Check (1st–4th Marriage &amp; Divorce)</div>
+            ${eventRows}
+          </div>`;
+      }
+
+      // Relevant worked case studies from the shared KP case-study library
+      // (marriage/negate-house/Rahu-Ketu), rather than duplicating content.
+      if (window.KP_PREDICTION.CASE_STUDIES) {
+        const relevant = window.KP_PREDICTION.CASE_STUDIES.filter(cs =>
+          /marriage|7th|seventh|rahu|ketu/i.test(cs.id + ' ' + cs.title));
+        if (relevant.length) {
+          const csRows = relevant.map(cs => `<div style="margin:6px 0;padding:8px;border-left:3px solid #9b6fff;background:rgba(155,111,255,.05);border-radius:4px;">
+                <div style="font-weight:bold;color:#9b6fff;font-size:10.5px;">${cs.title}</div>
+                <div style="font-size:8.5px;color:var(--muted);">${cs.source}</div>
+                <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:3px;"><b>Setup:</b> ${cs.setup}</div>
+                ${cs.process ? `<div style="font-size:9px;color:var(--text);opacity:.9;margin-top:2px;"><b>Process:</b> ${cs.process}</div>` : ''}
+                ${cs.prediction ? `<div style="font-size:9px;color:#FFD700;margin-top:2px;"><b>Prediction:</b> ${cs.prediction}</div>` : ''}
+                ${cs.result || cs.conclusion ? `<div style="font-size:9px;color:#00DD77;margin-top:2px;"><b>Result:</b> ${cs.result || cs.conclusion}</div>` : ''}
+                ${cs.remedy ? `<div style="font-size:9px;color:#9b6fff;margin-top:2px;"><b>Remedy:</b> ${cs.remedy}</div>` : ''}
+              </div>`).join('');
+          el.innerHTML += `<details style="margin-top:10px;">
+                     <summary style="cursor:pointer;color:#9b6fff;font-size:10.5px;font-weight:bold;">📚 Related KP Case Studies</summary>
+                     ${csRows}
+                   </details>`;
+        }
+      }
+      console.log('KP CSL-BASED 7TH HOUSE & NEGATE-HOUSE ANALYSIS RENDERED');
+    }
+  } catch (e) { console.error('KP CSL-BASED 7TH HOUSE ANALYSIS FAIL', e); }
+  
+   
+  
+    
   // 3. Precision Month-by-Month Scanner UI
   const sahamDeg = calculateVivahaSaham();
   if (sahamDeg !== null) {

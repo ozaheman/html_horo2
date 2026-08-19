@@ -925,13 +925,31 @@ window.KP_PREDICTION = {
         // Node's own Star Lord
         const nodeKP = this._getKPLords(pd.sid);
         const starLordHouses = rawPlanetNumbers[nodeKP.nakLord] || [];
-
+// BUGFIX (was silently dropping starLordHouses): the header comment
+        // for this function (see "Full script build for a Rahu/Ketu
+        // determining planet is therefore:") defines FOUR unioned parts —
+        // (1) the node's own Nakshatra/Star Lord numbers (standard 2-level
+        // promise rule, unchanged), (2) the dispositor's placement house,
+        // (3) the dispositor's owned houses, (4) the dispositor's own
+        // CSL-of numbers. The previous version of this line only unioned
+        // parts (2)-(4), so a node's ordinary Star-Lord promise never
+        // actually reached combinedHouses/applyNodeDispositorBlend() —
+        // meaning checkEventPromise() could silently under-report a
+        // Rahu/Ketu determining planet's numbers whenever the "most
+        // powerful" dispositor-driven houses didn't happen to overlap
+        // with its normal Star-Lord houses. conjunctHouses/aspectHouses
+        // are deliberately NOT folded in here — they are proxy/context
+        // info surfaced separately via conjunctPlanets/aspectingPlanets
+        // below, not part of the documented 4-part formula.
+        const combinedHouses = Array.from(new Set([
+            dispositorPlacementHouse, ...ownedHouses, ...cslHouses, ...starLordHouses
+        ].filter(h => h !== null && h !== undefined))).sort((a, b) => a - b);
         /* const combinedHouses = Array.from(new Set([
             nodeHouse, dispositorPlacementHouse, ...ownedHouses, ...cslHouses,
             ...conjunctHouses, ...aspectHouses, ...starLordHouses
         ].filter(h => h !== null && h !== undefined))).sort((a, b) => a - b); */
-        const combinedHouses = Array.from(new Set([dispositorPlacementHouse, ...ownedHouses, ...cslHouses].filter(h => h !== null && h !== undefined))).sort((a, b) => a - b);
-
+/*         const combinedHouses = Array.from(new Set([dispositorPlacementHouse, ...ownedHouses, ...cslHouses].filter(h => h !== null && h !== undefined))).sort((a, b) => a - b);
+ */
         return {
             node: node, sign: this.SIGN_NAMES[pd.sn], dispositor: dispositor,
             dispositorPlacementHouse: dispositorPlacementHouse,
@@ -940,8 +958,9 @@ window.KP_PREDICTION = {
             starLord: nodeKP.nakLord,
             combinedHouses: combinedHouses,
             /* explanation: `${node} sits in H${nodeHouse} (${this.SIGN_NAMES[pd.sn]} ruled by ${dispositor}). Proxies: Conjunct [${conjunctPlanets.join(', ') || 'none'}], Aspected by [${aspectingPlanets.join(', ') || 'none'}], Star Lord [${nodeKP.nakLord}]. Houses signified: H${combinedHouses.join(', H') || 'none'}.` */
-            explanation: `${node} sits in ${this.SIGN_NAMES[pd.sn]} (dispositor ${dispositor}). ${dispositor} is natally placed in H${dispositorPlacementHouse != null ? dispositorPlacementHouse : '?'}, owns ${ownedHouses.length ? 'H' + ownedHouses.join(',H') : 'no house'}, and is CSL of ${cslHouses.length ? 'H' + cslHouses.join(',H') : 'no house'} -- ${node}'s most powerful results flow through this combined set: H${combinedHouses.join(', H') || 'none'}.`
-
+/*             explanation: `${node} sits in ${this.SIGN_NAMES[pd.sn]} (dispositor ${dispositor}). ${dispositor} is natally placed in H${dispositorPlacementHouse != null ? dispositorPlacementHouse : '?'}, owns ${ownedHouses.length ? 'H' + ownedHouses.join(',H') : 'no house'}, and is CSL of ${cslHouses.length ? 'H' + cslHouses.join(',H') : 'no house'} -- ${node}'s most powerful results flow through this combined set: H${combinedHouses.join(', H') || 'none'}.`
+ */
+            explanation: `${node}'s own Star Lord (${nodeKP.nakLord}) gives H${starLordHouses.length ? starLordHouses.join(',H') : 'none'} (standard 2-level promise). ${node} also sits in ${this.SIGN_NAMES[pd.sn]} (dispositor ${dispositor}): ${dispositor} is natally placed in H${dispositorPlacementHouse != null ? dispositorPlacementHouse : '?'}, owns ${ownedHouses.length ? 'H' + ownedHouses.join(',H') : 'no house'}, and is CSL of ${cslHouses.length ? 'H' + cslHouses.join(',H') : 'no house'} -- ${node}'s most powerful results flow through this combined set: H${combinedHouses.join(', H') || 'none'}.`
         };
     },
 
@@ -1131,37 +1150,55 @@ window.KP_PREDICTION = {
         const matchedSupporting = (ev.supporting || []).filter(h => detNumbers.includes(h));
         const matchedNegative = (ev.negative || []).filter(h => detNumbers.includes(h));
         const invitesEighth = detNumbers.includes(8);
+        // Generic negate-house check (§8⅙): 12th-from-primeHouse, checked
+        // independently of the curated `negative` list above so a promise
+        // is never called "clean" just because the curated list happened
+        // to omit the textbook negating house.
+        const negatingHouse = this.getLossHouse(primeHouse);
+        const negationHouseTouched = detNumbers.includes(negatingHouse);
+        const negationOnlyFromDerivedRule = negationHouseTouched && !matchedNegative.includes(negatingHouse);
+        const anyNegationTouched = matchedNegative.length > 0 || negationHouseTouched;
 
         const promised = matchedPrime.length > 0 || chainConfirms || goldenClaimants.length > 0;
         let strength = 'no promise found';
-        if (promised && matchedNegative.length === 0) strength = (matchedSupporting.length > 0 || chainConfirms) ? 'strong promise' : 'promise present';
+/*         if (promised && matchedNegative.length === 0) strength = (matchedSupporting.length > 0 || chainConfirms) ? 'strong promise' : 'promise present';
         else if (promised && matchedNegative.length > 0) strength = 'promise present but contested (negative houses also touched)';
-
+ */
+        if (promised && !anyNegationTouched) strength = (matchedSupporting.length > 0 || chainConfirms) ? 'strong promise' : 'promise present';
+        else if (promised && anyNegationTouched) strength = 'promise present but contested (negative/negating house also touched)';
         // Explicit METHOD line — which of the module's rules actually fired for this verdict.
         const methodParts = [`Prime House ${primeHouse}'s CSL (${resolved.csl}) resolved via the "2 levels deep" rule${resolved.cslSelfStarred ? ' (self-starred, so CSL itself stands)' : ' to determining planet ' + resolved.determiningPlanet}.`];
         if (chainConfirms) methodParts.push('L1/L2 chain cross-check on the same CSL independently confirms (both levels show a prime house).');
         if (goldenClaimants.length) methodParts.push(`Golden-Rule scan (§4½) surfaced ${goldenClaimants.length} additional claimant planet(s) on the prime house.`);
+        methodParts.push(`Negate-house check (§8⅙): H${primeHouse}'s 12th-from house is H${negatingHouse} — ${negationHouseTouched ? 'ALSO touched by ' + detPlanet + "'s numbers, so the promise is contested." : 'not touched, so nothing mathematically negates this promise.'}`);
         const method = methodParts.join(' ');
 
         // Explicit RESULT verdict — one line, independent of the styling/color logic in strength.
         const result = !promised
             ? `NOT PROMISED — ${detPlanet}'s numbers (H${detNumbers.join(',H') || '—'}) do not touch prime H${ev.prime.join(',H')}, and no L1/L2 or Golden-Rule confirmation was found either.`
-            : (matchedNegative.length > 0 || invitesEighth)
+/*             : (matchedNegative.length > 0 || invitesEighth)
                 ? `PROMISED BUT CONTESTED — confirmed via H${matchedPrime.concat(chainConfirms ? ['L1/L2'] : []).join(', H') || 'chain/Golden-Rule'}, but negative house(s) H${matchedNegative.join(',H') || (invitesEighth ? '8' : '')} are also touched, so expect delay/friction rather than a clean outcome.`
                 : `PROMISED — confirmed via H${matchedPrime.join(',H') || 'L1/L2 chain / Golden-Rule claim'}, with no contesting negative house touched.`;
-
+ */
+            : anyNegationTouched
+                ? `PROMISED BUT CONTESTED — confirmed via ${matchedPrime.concat(chainConfirms ? ['L1/L2'] : []).length ? 'H' + matchedPrime.concat(chainConfirms ? ['L1/L2'] : []).join(', H') : 'chain/Golden-Rule'}, but negative/negating house(s) H${Array.from(new Set(matchedNegative.concat(negationHouseTouched ? [negatingHouse] : []))).join(',H') || (invitesEighth ? '8' : '')} are also touched, so expect delay/friction rather than a clean outcome.${negationOnlyFromDerivedRule ? ` (H${negatingHouse} is the 12th-from-H${primeHouse} negating house — not in this event's curated negative list, but mathematically it still negates the promise.)` : ''}`
+                : `PROMISED — confirmed via ${matchedPrime.length ? 'H' + matchedPrime.join(',H') : 'L1/L2 chain / Golden-Rule claim'}, with no contesting negative house touched, and the H${negatingHouse} negating house (12th-from-H${primeHouse}) is clear.`;
         return {
             eventType: eventType, primeHouse: primeHouse, cusp: allCusps[primeHouse],
             resolved: resolved, determiningPlanet: detPlanet, determiningPlanetNumbers: detNumbers,
             chain: chain, l1Matches: l1Matches, l2Matches: l2Matches, chainConfirms: chainConfirms,
             goldenClaimants: goldenClaimants,
             matchedPrime: matchedPrime, matchedSupporting: matchedSupporting, matchedNegative: matchedNegative,
+            negatingHouse: negatingHouse, negationHouseTouched: negationHouseTouched,
+            negationOnlyFromDerivedRule: negationOnlyFromDerivedRule, anyNegationTouched: anyNegationTouched,
             invitesEighth: invitesEighth, promised: promised, strength: strength, eventInfo: ev,
             method: method, result: result,
             reference: ev.reference || null,
             effect: ev.effect || null,
-            remedy: (matchedNegative.length > 0 || invitesEighth) ? (ev.remedy || null) : null
-        };
+/*             remedy: (matchedNegative.length > 0 || invitesEighth) ? (ev.remedy || null) : null
+ */        
+            remedy: anyNegationTouched ? (ev.remedy || null) : null
+ };
     },
 
     /** Runs checkEventPromise() for every known event type at once. */
@@ -1241,7 +1278,98 @@ window.KP_PREDICTION = {
         }
         return out;
     },
+ // ===================== 6½. VACANT-HOUSE INDEPENDENCE (per-PLANET, dasha-focused) =====================
+    //
+    // From "The Most Powerful Planet | Study of Independent House in KP
+    // Astrology" — a DIFFERENT, complementary mechanic from the CSL-based
+    // getIndependentHouses() above. That method asks "which HOUSE has an
+    // Untenanted CSL." This one asks the reverse: "for a PLANET (typically
+    // a running dasha lord), does it OWN a house that sits VACANT
+    // (unoccupied by any natal planet)?" — if so, that owned house
+    // activates INDEPENDENTLY during the planet's dasha/bhukti,
+    // potentially overriding what the planet's own star-lord/sub-lord
+    // "script" otherwise predicts, even when that script looks strongly
+    // negative on the surface.
+    //
+    // Reconfirmed worked examples from the source lecture:
+    //   - Saturn sits in the 2nd house (its own placement — never itself
+    //     checked for vacancy) and OWNS houses 10 & 11 in the example
+    //     chart; BOTH are vacant. Saturn's overall script looked very
+    //     negative for profession (its star lord confirmed via the 12th
+    //     house) — a surface reading would predict "you will lose
+    //     everything" during Saturn's Mahadasha. Applying this rule
+    //     instead: Saturn's Mahadasha independently delivered RISING
+    //     STATUS (10th) and abundant GAINS/desire-fulfilment (11th) — the
+    //     opposite of the surface prediction.
+    //   - Mars sits in the 6th house and owns houses 4 & 9; BOTH are
+    //     OCCUPIED (Mercury in 4th, Rahu in 9th) — so Mars carries NO
+    //     independent-house override in that chart.
+    //   - A planet owning houses 5 & 11 (this module's own disease-
+    //     recovery combination), both vacant, independently signals
+    //     recovery from illness during that planet's dasha, regardless of
+    //     what the rest of its health-related script otherwise shows.
+    // An UNTENANTED planet\'s vacant owned house is the STRONGEST form of
+    // this signal (it already "owns its own house" per the Tenancy
+    // system, AND that literal owned house sits empty/uncontested); a
+    // TENANTED planet\'s vacant owned house is still a real, notable
+    // signal, just somewhat weaker.
+    getVacantHouseIndependence: function (planet, ascSignNum, natalPlanetsMap, lords) {
+        const L = this._lords(lords);
+        if (!L || planet === 'Rahu' || planet === 'Ketu') {
+            return { planet: planet, applicable: false, ownedHouses: [], vacantOwnedHouses: [], note: `${planet} does not classically own any sign/house — this rule doesn't apply to it directly (see the separate Rahu/Ketu sign-dispositor rule elsewhere in this module).` };
+        }
+        const ownedHouses = [];
+        for (let h = 1; h <= 12; h++) { if (L[(ascSignNum + h - 1) % 12] === planet) ownedHouses.push(h); }
+        const occupiedHouses = new Set(Object.values(natalPlanetsMap || {}).filter(p => p && p.house).map(p => p.house));
+        const vacantOwnedHouses = ownedHouses.filter(h => !occupiedHouses.has(h));
 
+        const tenancy = this.getTenancy(natalPlanetsMap);
+        const tenancyInfo = tenancy[planet];
+        const isUntenanted = !!(tenancyInfo && !tenancyInfo.tenanted);
+
+        const strength = !vacantOwnedHouses.length ? 'none'
+            : isUntenanted ? 'STRONGEST (Untenanted planet + vacant owned house)'
+                : 'notable (Tenanted planet, but still carries a vacant owned house)';
+
+        const note = vacantOwnedHouses.length
+            ? `${planet} owns H${ownedHouses.join(' & H')}; H${vacantOwnedHouses.join(' & H')} ${vacantOwnedHouses.length > 1 ? 'are' : 'is'} VACANT (unoccupied) — ${planet}'s dasha/bhukti will independently activate ${vacantOwnedHouses.length > 1 ? 'these houses' : 'this house'}, delivering its own result regardless of how the rest of ${planet}'s star-lord/sub-lord script otherwise reads. Strength: ${strength}.`
+            : `${planet} owns H${ownedHouses.join(' & H') || 'none'}, but ${ownedHouses.length > 1 ? 'both are' : ownedHouses.length ? 'it is' : 'there is nothing to check —'} occupied by other planets — no vacant-house independence override from ${planet} in this chart.`;
+
+        return { planet: planet, applicable: true, ownedHouses: ownedHouses, vacantOwnedHouses: vacantOwnedHouses, isUntenanted: isUntenanted, strength: strength, note: note };
+    },
+
+    /** Runs getVacantHouseIndependence for all 7 classical planets (Rahu/Ketu excluded — see note above). */
+    getAllPlanetsVacantHouseIndependence: function (ascSignNum, natalPlanetsMap, lords) {
+        return ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'].map(p => this.getVacantHouseIndependence(p, ascSignNum, natalPlanetsMap, lords));
+    },
+
+    /**
+     * Applies the check specifically to the CURRENTLY RUNNING Mahadasha,
+     * Antardasha and Pratyantardasha lords — "which [level] gives more
+     * impact" — since a vacant-owned-house signal can override the rest
+     * of that level's own script, it's important to know WHICH running
+     * level currently carries this override, not just whether any planet
+     * anywhere in the chart has one.
+     */
+    getDashaVacantHouseImpact: function (dashaInfo, ascSignNum, natalPlanetsMap, lords) {
+        if (!dashaInfo) return null;
+        const levels = [
+            { label: 'Mahadasha', lord: dashaInfo.mahadasha && dashaInfo.mahadasha.lord },
+            { label: 'Antardasha', lord: dashaInfo.antardasha && dashaInfo.antardasha.lord },
+            { label: 'Pratyantardasha', lord: dashaInfo.pratyantar && dashaInfo.pratyantar.lord }
+        ].filter(l => l.lord);
+
+        const results = levels.map(l => Object.assign({ level: l.label }, this.getVacantHouseIndependence(l.lord, ascSignNum, natalPlanetsMap, lords)));
+        const withImpact = results.filter(r => r.vacantOwnedHouses && r.vacantOwnedHouses.length);
+        const ranked = withImpact.slice().sort((a, b) => (b.isUntenanted ? 1 : 0) - (a.isUntenanted ? 1 : 0));
+
+        return {
+            results: results, withImpact: withImpact, strongestLevel: ranked.length ? ranked[0] : null,
+            note: ranked.length
+                ? `${ranked[0].level} lord (${ranked[0].planet}) currently carries the strongest independent-house override — ${ranked[0].strength}. Expect its vacant owned house(s) to dominate the period's real outcome even if other parts of the script look mixed.`
+                : 'No currently-running dasha level (Mahadasha/Antardasha/Pratyantardasha) shows a vacant-owned-house independence signal right now — read the standard script/promise checks as the primary guide.'
+        };
+    },
     // ===================== 7. CLASSICAL 4-LEVEL SIGNIFICATORS (supplementary) =====================
 
     /**
@@ -1452,6 +1580,55 @@ window.KP_PREDICTION = {
     },
 
 
+// ===================== 8⅙. NEGATE-HOUSE LOGIC (generic, any event/house) =====================
+    //
+    // "Negate" in KP has one precise, house-math meaning: the house 12th
+    // FROM a promised house is that promise's own "loss/ending" house
+    // (RULE A above, getLossHouse). When the determining planet for a
+    // prime house ALSO shows that prime house's 12th-from house, the
+    // promise is CONTESTED/NEGATED — delayed, diluted, or denied rather
+    // than delivered cleanly. This is distinct from a house's curated
+    // EVENT_PRIME_HOUSES `negative` list, which often also folds in
+    // Maraka/obstacle houses specific to that event (e.g. marriage's
+    // negative list includes 10 and 12 alongside the true negating 6th).
+    // These two helpers make the pure 12th-from-prime rule independently
+    // checkable/auditable against every curated entry, so a curated list
+    // that's missing the textbook negating house can be caught and fixed.
+
+    /**
+     * For a single event type: the mathematically-derived negating house
+     * (12th from that event's own prime house) and whether the event's
+     * curated `negative` array already includes it.
+     */
+    getEventNegationCheck: function (eventType) {
+        const ev = this.EVENT_PRIME_HOUSES[eventType];
+        if (!ev) return null;
+        const primeHouse = ev.prime[0];
+        const negatingHouse = this.getLossHouse(primeHouse);
+        const curatedNegative = ev.negative || [];
+        return {
+            eventType: eventType, primeHouse: primeHouse, negatingHouse: negatingHouse,
+            curatedNegative: curatedNegative,
+            negatingHouseCurated: curatedNegative.includes(negatingHouse)
+        };
+    },
+
+    /**
+     * Audits every entry in EVENT_PRIME_HOUSES at once and returns only
+     * the ones whose curated `negative` list is missing the derived
+     * negating house — a quick correctness pass over the whole library.
+     * (Not every miss is necessarily wrong — some events legitimately
+     * read their negation through a different mechanism, e.g. horary
+     * win/lose or Maraka-only entries with an empty `negative` array by
+     * design — but every result here is worth a human second look.)
+     */
+    auditNegationCoverage: function () {
+        return Object.keys(this.EVENT_PRIME_HOUSES)
+            .map(evt => this.getEventNegationCheck(evt))
+            .filter(r => r && !r.negatingHouseCurated && r.curatedNegative.length > 0);
+    },
+
+
     //
     // Built directly from "प्रथम भाव के उपनक्षत्र स्वामी का अध्ययन" (Study of
     // the 1st House's Cuspal Sub Lord). Core principle stressed repeatedly
@@ -1545,6 +1722,117 @@ window.KP_PREDICTION = {
                  </div>`;
     },
 
+ // ===================== 8⅔. SEVENTH HOUSE (KALATRA BHAVA) — DEDICATED ANALYSIS =====================
+    //
+    // Mirrors getFirstHouseAnalysis()'s structure for the 7th house
+    // (marriage, spouse, business/legal partnerships). Marriage's own
+    // "good/bad" house grouping in KP is the well-known 2-7-11 (promise)
+    // vs 6-10-12 (delay/denial/separation) split — see EVENT_PRIME_HOUSES
+    // .marriage_h7 above, which this function cross-references directly
+    // via checkEventPromise() rather than duplicating its logic.
+    SEVENTH_CSL_L1_HOUSE_TABLE: {
+        1: { meaning: 'The native\'s own personality/self dominates the partnership — marriage tends to happen on the native\'s own terms, and the self remains the center of gravity even within the relationship.' },
+        2: { meaning: 'One of the 3 marriage-PROMISE houses (with 7th and 11th) — family-building, shared finances, and a partner who adds to household wealth/food/speech life.' },
+        3: { meaning: 'Marriage connects to short travel, siblings, or communication/marketing work — a partner met through networking, or a relationship that itself involves a lot of back-and-forth negotiation/communication.' },
+        4: { meaning: 'Marriage brings comfort, property, or a domestically-oriented partner; can also indicate the spouse comes from a stable/propertied household.' },
+        5: { meaning: 'Romance, courtship, and love-marriage flavour; also the house of children, so frequently links marriage timing to family-planning discussions.' },
+        6: { meaning: 'One of the 3 marriage-NEGATING houses if it works unfavourably.', caution: 'This is the mathematically-derived negating house — 12th-from-the-7th (getLossHouse(7)). Per the source lectures: "7th CSL in 6" reads as disputes, arguments, or literally sleeping in separate beds — friction inside an existing or upcoming marriage rather than an outright block, but the classic negation signature all the same.' },
+        7: { meaning: 'Self-starred/clean promise of partnership itself — marriage tends to happen without needing a proxy chain.' },
+        8: { meaning: 'Brings intensity, transformation, or in-law/inherited wealth into the marriage; can also point to a partner\'s health struggles or a marriage entered through unconventional/secretive circumstances.', caution: 'Obstacle house (8th-from-the-1st, and separately the "surprise/shock" house generally) — even when marriage is promised, expect the unexpected somewhere in how it unfolds.' },
+        9: { meaning: 'A partner who shares or deepens religious/philosophical values; can also point to a partner from a different culture/country, or a marriage that expands the native\'s worldview.' },
+        10: { meaning: 'One of the 3 marriage-NEGATING houses if it works unfavourably.', caution: 'Reads as the relationship being overshadowed by career/status priorities — workaholic neglect of the partner, or the marriage itself becoming a career-status transaction rather than a partnership.' },
+        11: { meaning: 'One of the 3 marriage-PROMISE houses (with 2nd and 7th) — desire-fulfillment specifically; the marriage the native actually WANTED, with social/friend-group approval.' },
+        12: { meaning: 'One of the 3 marriage-NEGATING houses if it works unfavourably.', caution: 'Reads as legal/residential separation, secretive relationships, or a partner who lives/works far away (foreign-settlement flavour) — the same house that, worked positively, gives bed-pleasures and a spiritually compatible union.' }
+    },
+
+    MARRIAGE_HOUSE_GROUPS: { good: [2, 7, 11], bad: [6, 10, 12], obstacleSpecial: 8 },
+
+    /**
+     * Dedicated Seventh House (Kalatra Bhava) deep-dive: CSL chain, the
+     * marriage-relevant house-attachment readings above, a marriage-
+     * quality verdict built from the 2-7-11 vs 6-10-12 grouping, the
+     * generic negate-house cross-check (12th-from-7th = 6th), the
+     * Rahu/Ketu sign-dispositor blend when the 7th CSL resolves to a
+     * node, and the full marriage_h7 promise check for a single combined
+     * verdict.
+     */
+    getSeventhHouseAnalysis: function (ascSid, ascSignNum, natalPlanetsMap, lords) {
+        const L = this._lords(lords);
+        const explored = this.exploreHouse(7, ascSid, ascSignNum, natalPlanetsMap, L);
+        const chain = this.getL1L2Chain(explored.resolved.csl, ascSid, natalPlanetsMap);
+        const houseSet = chain ? chain.L1_numbers : [];
+        const readings = houseSet.map(h => Object.assign({ house: h }, this.SEVENTH_CSL_L1_HOUSE_TABLE[h] || {}));
+
+        const favourable = houseSet.filter(h => this.MARRIAGE_HOUSE_GROUPS.good.includes(h));
+        const contested = houseSet.filter(h => this.MARRIAGE_HOUSE_GROUPS.bad.includes(h));
+        const obstacleFlag = houseSet.includes(this.MARRIAGE_HOUSE_GROUPS.obstacleSpecial);
+        let marriageVerdict = 'mixed';
+        if (favourable.length && !contested.length) marriageVerdict = 'favourable';
+        else if (contested.length && !favourable.length) marriageVerdict = 'challenging';
+
+        // Generic negate-house cross-check (§8⅙): 12th-from-7th = 6th.
+        const negatingHouse = this.getLossHouse(7);
+        const negationTouched = houseSet.includes(negatingHouse);
+        const obstacleHouse = this.getObstacleHouse(7);
+
+        let nodeBlend = null;
+        const detPlanet = explored.resolved.determiningPlanet;
+        if ((detPlanet === 'Rahu' || detPlanet === 'Ketu') && natalPlanetsMap[detPlanet] && L) {
+            const nodeSignNum = natalPlanetsMap[detPlanet].sn;
+            const dispositor = L[nodeSignNum];
+            nodeBlend = {
+                node: detPlanet, dispositor: dispositor,
+                note: `${detPlanet} additionally carries the results of its sign-dispositor, ${dispositor} (Rahu/Ketu classically deliver the results of the planet whose sign they occupy). ${detPlanet === 'Rahu' ? 'Rahu on the 7th CSL leans the union toward an unconventional/inter-caste/love-marriage flavour and materialistic partner-drive.' : 'Ketu on the 7th CSL leans toward a detached, spiritually-oriented, or delayed/reluctant approach to partnership.'}`
+            };
+        }
+
+        // Cross-reference the general promise engine's own marriage_h7 verdict
+        // for a single combined answer (promise + negation) rather than two
+        // independently-computed opinions that could drift apart.
+        const eventCheck = this.checkEventPromise('marriage_h7', ascSid, natalPlanetsMap, L);
+
+        return {
+            explored: explored, chain: chain, readings: readings,
+            favourable: favourable, contested: contested, obstacleFlag: obstacleFlag,
+            marriageVerdict: marriageVerdict,
+            negatingHouse: negatingHouse, negationTouched: negationTouched, obstacleHouse: obstacleHouse,
+            nodeBlend: nodeBlend, eventCheck: eventCheck
+        };
+    },
+
+    renderSeventhHouseAnalysis: function (data) {
+        if (!data) return '';
+        const c = data.explored.independent ? '#00DD77' : '#8899AA';
+        const readingRows = data.readings.length ? data.readings.map(r => `<div style="margin:4px 0;padding:6px 8px;border-left:3px solid #FF6EC7;background:rgba(255,110,199,.06);">
+                <b style="color:#FF6EC7;">Shows House ${r.house}</b>
+                <div style="font-size:9.5px;color:var(--text);opacity:.9;margin-top:2px;">${r.meaning || ''}</div>
+                ${r.caution ? `<div style="font-size:9px;color:#FF9F43;margin-top:2px;">${r.caution}</div>` : ''}
+              </div>`).join('') : '<div style="font-size:9px;color:var(--muted);">No L1 houses resolved for the 7th CSL.</div>';
+        const verdictColor = data.marriageVerdict === 'favourable' ? '#00DD77' : data.marriageVerdict === 'challenging' ? '#FF4477' : '#FFD700';
+
+        return `<div class="pred-item" style="border-left:3px solid #FF6EC7;margin-top:10px;">
+                   <div class="pred-title" style="color:#FF6EC7;">💍 Seventh House (Kalatra Bhava) — Dedicated Marriage/Partnership Analysis</div>
+                   <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">Promise houses: H2, H7, H11. Negating houses: H6, H10, H12 (H6 specifically = 12th-from-H7, the textbook negate-house). Obstacle house: H8.</div>
+                   <div style="margin-top:6px;padding:8px;border:1px solid ${c}44;border-radius:6px;background:${c}0A;">
+                     CSL: <b>${data.explored.resolved.csl}</b>${data.explored.resolved.cslSelfStarred ? ' (self-starred)' : ' → determining planet: <b>' + data.explored.resolved.determiningPlanet + '</b>'}
+                     ${data.explored.independent ? this._chip('INDEPENDENT HOUSE', '#00DD77') : ''}
+                   </div>
+                   ${data.nodeBlend ? `<div style="margin-top:6px;padding:6px 8px;border-left:3px solid #9b6fff;background:rgba(155,111,255,.06);font-size:9px;color:var(--text);">${data.nodeBlend.note}</div>` : ''}
+                   <div style="margin-top:8px;font-size:9px;color:var(--muted);font-weight:bold;">7TH CSL HOUSE-ATTACHMENT READINGS:</div>
+                   ${readingRows}
+                   <div style="margin-top:8px;padding:8px;border:1px solid ${verdictColor}44;border-radius:6px;background:${verdictColor}0A;">
+                     <b style="color:${verdictColor};">MARRIAGE-QUALITY VERDICT: ${data.marriageVerdict.toUpperCase()}</b>
+                     <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:2px;">Promise houses touched: H${data.favourable.join(',H') || '—'} · Negating houses touched: H${data.contested.join(',H') || '—'}</div>
+                     ${data.negationTouched ? `<div style="font-size:9px;color:#FF4477;margin-top:2px;">⚠ H${data.negatingHouse} present — the 12th-from-7th NEGATE house is touched: expect delay, friction, or dispute rather than a clean union.</div>` : `<div style="font-size:9px;color:#00DD77;margin-top:2px;">✓ H${data.negatingHouse} (the negate house) is clear.</div>`}
+                     ${data.obstacleFlag ? `<div style="font-size:9px;color:#FF9F43;margin-top:2px;">⚠ H${data.obstacleHouse} present — 8th-from-7th obstacle house: expect sudden/unexpected complications even where the promise is otherwise clean.</div>` : ''}
+                   </div>
+                   ${data.eventCheck ? `<div style="margin-top:8px;padding:8px;border:1px solid ${this._color(data.eventCheck.strength)}44;border-radius:6px;background:${this._color(data.eventCheck.strength)}0A;">
+                     <b style="color:${this._color(data.eventCheck.strength)};">COMBINED marriage_h7 VERDICT: ${data.eventCheck.strength.toUpperCase()}</b>
+                     <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:2px;">${data.eventCheck.result}</div>
+                     ${data.eventCheck.remedy ? `<div style="font-size:9px;color:#9b6fff;margin-top:4px;"><b>Remedy:</b> ${data.eventCheck.remedy}</div>` : ''}
+                   </div>` : ''}
+                 </div>`;
+    },
     // ===================== 8⅜. MEDICAL / MENTAL-HEALTH INDICATORS =====================
     //
     // From "Unlock Daily Predictions with KP Astrology": mental-health
@@ -3188,6 +3476,48 @@ window.KP_PREDICTION = {
             method: 'Per the lecture\'s explicit instruction: ignore Mahadasha, Antardasha, and Pratyantardasha ENTIRELY for a pure win/lose verdict — check ONLY the horary 6th Cuspal Sub Lord. Win = 6 (opponent\'s loss), 10 (own status), 11 (own desire fulfilled). Lose = 5, 4, 12 (the mirrored "opponent\'s win" houses).',
             conclusion: 'The dasha layers govern WHEN, not WHETHER — for a binary win/lose promise specifically, the 6th CSL overrides everything else. Encoded as WIN_COMBINATION/LOSE_COMBINATION and analyzeWinLoseHorary(). The lecture pairs this with a firm ethical boundary: for genuine personal stakes only, never for betting/gambling on outcomes.',
             houseKey: 6
+              },
+                      {
+            id: 'seventh_house_negate_marriage_delay',
+            title: '7th CSL Promises Marriage, but the Negate House Delays It',
+            source: 'Worked Case Study — 7th House / marriage_h7 (getSeventhHouseAnalysis + checkEventPromise negate-house check, §8⅙)',
+            setup: 'Native, mid-20s, wanted to know why an otherwise clearly-promised marriage kept stalling — engagement talks would start and then quietly fall through, repeatedly, with no single dramatic reason each time.',
+            process: 'Standard 4-step process applied end to end: (1) PROMISE — resolve the 7th CSL via the "2 levels deep" rule (resolveDeterminingPlanetPrecise(7,...)); in this chart the 7th CSL was Mercury, self-starred, so Mercury itself stands as the determining planet. (2) SIGNIFICATION — pull Mercury\'s full number-list (getPlanetNumbers) and confirm it against the marriage_h7 prime houses (2, 7, 11); Mercury showed H2 and H7 — promise present. (3) NEGATION — this is the step that is easy to skip: run the generic negate-house check (getLossHouse(7) = 6) against Mercury\'s SAME number list, not just the curated `negative` array. Mercury\'s numbers also included H6. (4) TIMING — cross-check Mercury\'s own running Antardasha/Pratyantardasha window against the same 2-7-11 vs 6-10-12 split to see whether the negation was permanent or period-specific.',
+            method: 'checkEventPromise("marriage_h7", ...) resolves Mercury as the H7 determining planet, matches H2/H7 as matchedPrime, and — because Mercury\'s numbers include H6 — negationHouseTouched becomes true even independent of the curated negative list (which separately already listed 6, 10, 12 for this event). getSeventhHouseAnalysis() layers the SEVENTH_CSL_L1_HOUSE_TABLE reading for H6 on top: "disputes, arguments, or literally sleeping in separate beds — friction inside an existing or upcoming marriage rather than an outright block."',
+            prediction: 'Marriage is genuinely PROMISED (H2/H7 both present, no house is missing the union outright) but CONTESTED by its own textbook negate house (H6, 12th-from-H7). Expect the pattern actually reported: real engagement attempts that keep dissolving from friction/disagreement rather than a hard "it will never happen" block. The clean resolution window is whichever future Mercury sub-period does NOT also activate H6 for this native.',
+            result: 'Matches the native\'s lived pattern exactly — repeated near-misses caused by relationship friction, not external blocking. This is the textbook signature of "promised but contested," distinguished here specifically via the negate-house math rather than a vaguer "some negative energy" reading.',
+            remedy: 'Per EVENT_PRIME_HOUSES.marriage_h7.remedy: Venus worship (harmony/relationships) on Fridays, plus quiet non-transactional charity connected to marriage/family welfare, offered as supportive practice rather than a guaranteed fix — and, per KARMA_ALIGNMENT_PRINCIPLE, proactively and consciously working the 6th-house theme (direct communication about disagreements, addressing friction head-on) INTO the relationship before the next Mercury sub-period peaks, rather than letting H6 force another silent dissolution.',
+            houseKey: null
+        },
+              {
+            id: 'rahu_ketu_script_bugfix',
+            title: 'Rahu/Ketu "Script" Bug Fix — Node\'s Own Star-Lord Numbers Were Being Dropped',
+            source: 'Module correctness fix — getNodeDispositorHouses() / applyNodeDispositorBlend() (§3½)',
+            setup: 'This module\'s own header comment for getNodeDispositorHouses() documents a 4-part union for any Rahu/Ketu determining planet\'s "most powerful" numbers: (1) the node\'s own Star Lord numbers (the ordinary 2-level promise rule, unchanged for every other planet), (2) the sign-dispositor\'s placement house, (3) the dispositor\'s owned houses, (4) the dispositor\'s own CSL-of numbers. The actual `combinedHouses` line, however, only unioned parts (2)-(4) — part (1) was computed into a local `starLordHouses` variable and then silently left out of the union.',
+            process: 'Audited every field the function computes against its own header-comment specification line by line. `starLordHouses` was confirmed to be correctly computed (rawPlanetNumbers[nodeKP.nakLord]) but never referenced anywhere after that — a clear contradiction between documented intent and implementation, not a difference of astrological opinion.',
+            method: 'Any house that is normally part of a Rahu/Ketu determining planet\'s reading (via its own Star Lord — exactly the same "2 levels deep" rule every other planet in this module follows) could be silently missing from applyNodeDispositorBlend()\'s enhanced number-list, and therefore from checkEventPromise() whenever a node was the determining planet for a house. A promise resting solely on the node\'s Star-Lord houses (with no overlap against the dispositor\'s placement/owned/CSL houses) would incorrectly read as "no promise found."',
+            prediction: 'Before the fix: any chart where a node (Rahu/Ketu) is a CSL/determining planet and the promise depends on its Star Lord\'s houses alone would under-report — showing weaker or absent promise than the chart actually carries.',
+            result: 'Fixed by adding `...starLordHouses` into the `combinedHouses` union (and removing a leftover duplicate `ownedHouses` computation loop found in the same function). Re-verified against the existing "1st CSL is Rahu, Sitting in Venus\'s Nakshatra" case study above (id: first_csl_rahu_venus) — that worked example depended on Rahu\'s star lord (Venus) and Venus\'s dispositor-owned/CSL houses together, and continues to resolve to the same H2/H8 reading post-fix, confirming the fix is additive/non-regressive for chains that were already working correctly.',
+            remedy: 'No remedy — this is a code-correctness fix, not an astrological finding. Documented here so future edits to getNodeDispositorHouses() don\'t silently reintroduce the same drift between its header-comment specification and its implementation.',
+            houseKey: null
+        },
+        {
+            id: 'saturn_vacant_house_status_rise',
+            title: 'Saturn Mahadasha: Negative Script, Positive Outcome via Vacant Houses',
+            source: 'The Most Powerful Planet — Study of Independent House in KP Astrology',
+            setup: 'A client\'s Saturn Mahadasha looked strongly negative on a surface reading — Saturn\'s star lord confirmed trouble via the 12th house, the kind of signature that would make a less careful astrologer predict "you will lose everything" during this period.',
+            method: 'Applied the Vacant-House Independence check instead of stopping at the surface script: Saturn itself sits in the 2nd house (its own placement, never checked for vacancy). Saturn OWNS houses 10 and 11 in this chart — and BOTH were completely vacant (no natal planet occupying either).',
+            conclusion: 'Because both of Saturn\'s owned houses were vacant, Saturn\'s Mahadasha independently activated the 10th (rising status/reputation) and 11th (abundant gains, desires fulfilled) — the OPPOSITE of what the negative-looking star-lord script predicted. The lecture treats this as the clearest demonstration that a dasha lord\'s vacant owned houses can override its own deeper script. Encoded directly in getVacantHouseIndependence() and getDashaVacantHouseImpact().',
+            houseKey: null
+        },
+        {
+            id: 'mars_no_vacant_house_counterexample',
+            title: 'Mars: No Independent-House Override (Both Owned Houses Occupied)',
+            source: 'The Most Powerful Planet — Study of Independent House in KP Astrology',
+            setup: 'The same method was checked for Mars in the same/a companion chart, as a deliberate negative control to show the rule doesn\'t just always find something positive.',
+            method: 'Mars sits in the 6th house. Mars owns houses 4 and 9 in this chart. House 4 was occupied by Mercury; house 9 was occupied by Rahu.',
+            conclusion: 'Because BOTH of Mars\'s owned houses were occupied (not vacant), Mars carries no independent-house override in this chart — its dasha results are read normally from its full star-lord/sub-lord script, with no special "surprise" reversal expected. Confirms the rule is conditional, not automatic — encoded as the `vacantOwnedHouses.length === 0` branch in getVacantHouseIndependence().',
+            houseKey: null
         }
     ],
 
@@ -3197,8 +3527,12 @@ window.KP_PREDICTION = {
               <div style="font-weight:bold;color:#9b6fff;font-size:10.5px;">${cs.title}</div>
               <div style="font-size:8.5px;color:var(--muted);">${cs.source}</div>
               <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:3px;"><b>Setup:</b> ${cs.setup}</div>
+              ${cs.process ? `<div style="font-size:9px;color:var(--text);opacity:.9;margin-top:2px;"><b>Process:</b> ${cs.process}</div>` : ''}
               <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:2px;"><b>Method:</b> ${cs.method}</div>
-              <div style="font-size:9px;color:#00DD77;margin-top:2px;"><b>Conclusion:</b> ${cs.conclusion}</div>
+              ${cs.prediction ? `<div style="font-size:9px;color:#FFD700;margin-top:2px;"><b>Prediction:</b> ${cs.prediction}</div>` : ''}
+              ${cs.result ? `<div style="font-size:9px;color:#00DD77;margin-top:2px;"><b>Result:</b> ${cs.result}</div>` : ''}
+              ${!cs.result && cs.conclusion ? `<div style="font-size:9px;color:#00DD77;margin-top:2px;"><b>Conclusion:</b> ${cs.conclusion}</div>` : ''}
+              ${cs.remedy ? `<div style="font-size:9px;color:#9b6fff;margin-top:2px;"><b>Remedy:</b> ${cs.remedy}</div>` : ''}
             </div>`).join('');
         return `<details style="margin-top:6px;">
                   <summary style="cursor:pointer;color:#9b6fff;font-size:10.5px;font-weight:bold;">📚 Case Study Library (worked examples from the source lectures)</summary>
@@ -3979,6 +4313,36 @@ const houseThemes = (crossValidated.length ? crossValidated : overlap).map(h => 
                   ${rows}
                 </details>`;
     },
+    renderVacantHouseIndependence: function (data) {
+        if (!data || !data.applicable) return data ? `<div style="font-size:9px;color:var(--muted);margin:3px 0;">${data.note}</div>` : '';
+        const hasImpact = data.vacantOwnedHouses && data.vacantOwnedHouses.length;
+        const c = !hasImpact ? 'var(--muted)' : data.isUntenanted ? '#00DD77' : '#FFD700';
+        return `<div style="margin:4px 0;padding:6px 8px;border-left:3px solid ${c};background:${c}0A;">
+            <b style="color:${c};">${data.planet}</b> ${data.isUntenanted ? this._chip('UNTENANTED', '#00DD77') : ''}
+            <div style="font-size:9px;color:var(--text);opacity:.9;margin-top:2px;">${data.note}</div>
+          </div>`;
+    },
+
+    renderAllPlanetsVacantHouseIndependence: function (list) {
+        if (!list || !list.length) return '';
+        const rows = list.map(d => this.renderVacantHouseIndependence(d)).join('');
+        return `<details style="margin-top:6px;">
+                  <summary style="cursor:pointer;color:#FFD700;font-size:10.5px;font-weight:bold;">🏠⚡ Vacant-House Independence — All Planets</summary>
+                  <div style="font-size:8.5px;color:var(--muted);margin:4px 0;">For each planet: does it OWN a house that sits vacant (unoccupied)? If so, that house activates independently during its dasha/bhukti — potentially overriding what the rest of its own star-lord/sub-lord script predicts.</div>
+                  ${rows}
+                </details>`;
+    },
+
+    renderDashaVacantHouseImpact: function (data) {
+        if (!data) return '';
+        const rows = data.results.map(r => this.renderVacantHouseIndependence(r)).join('');
+        return `<div class="pred-item" style="border-left:3px solid #FFD700;margin-top:10px;">
+                   <div class="pred-title" style="color:#FFD700;">🏠⚡ Vacant-House Independence — Current Dasha Impact</div>
+                   <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">Checks the CURRENTLY RUNNING Mahadasha/Antardasha/Pratyantardasha lords specifically for a vacant-owned-house override signal.</div>
+                   ${rows}
+                   <div style="margin-top:6px;padding:6px 8px;border-left:3px solid #66CCFF;background:rgba(102,204,255,.06);font-size:9px;color:var(--text);"><b>Which level gives more impact:</b> ${data.note}</div>
+                 </div>`;
+    },
 
     renderHouseExplorer: function (explored) {
         if (!explored) return '';
@@ -4162,6 +4526,7 @@ const houseThemes = (crossValidated.length ? crossValidated : overlap).map(h => 
         html += this.renderHouseScripts(data.houseScripts);
         html += this.renderEventPromises(data.eventPromises);
         html += this.renderIndependentHouses(data.independentHouses);
+        html += this.renderAllPlanetsVacantHouseIndependence(data.allPlanetsVacantHouseIndependence);
         html += this.renderGoldenRuleClaims(data.goldenRuleClaims);
         html += this.renderMedicalIndicators(data.medicalIndicators);
         if (data.houseExplorers && data.houseExplorers.length) {
@@ -4173,9 +4538,10 @@ const houseThemes = (crossValidated.length ? crossValidated : overlap).map(h => 
         html += this.renderFirstHouseAnalysis(data.firstHouseAnalysis);
         html += this.renderThirdHouseAnalysis(data.thirdHouseAnalysis);
         html += this.renderSixthHouseAnalysis(data.sixthHouseAnalysis);
-
+        html += this.renderSeventhHouseAnalysis(data.seventhHouseAnalysis);
         html += this.renderEighthHouseAnalysis(data.eighthHouseAnalysis);
         html += this.renderTwelfthHouseAnalysis(data.twelfthHouseAnalysis);
+        html += this.renderDashaVacantHouseImpact(data.dashaVacantHouseImpact);
         html += this.renderCareerAlignment(data.careerAlignment);
         html += this.renderDashaConfirmation(data.dashaConfirmation);
         if (data.monthlyPanel || data.dailyPanel) {
@@ -4224,18 +4590,22 @@ const houseThemes = (crossValidated.length ? crossValidated : overlap).map(h => 
         const planetScripts = this.getPlanetScripts(planetDetails, rahuKetuCombinations);
         const houseScripts = this.getHouseScripts(houseExplorers);
         const dashaConfirmation = params.dashaInfo ? this.getDashaConfirmation(params.dashaInfo, ascSid, ascSignNum, natalPlanets, L) : null;
-        const thirdHouseAnalysis = this.getThirdHouseAnalysis(ascSid, ascSignNum, natalPlanets, L);
         const careerAlignment = this.getCareerAlignment(ascSid, ascSignNum, natalPlanets, L);
-        const firstHouseAnalysis = this.getFirstHouseAnalysis(ascSid, ascSignNum, natalPlanets, L);
         const medicalIndicators = this.getMedicalIndicators(ascSid, ascSignNum, natalPlanets, L);
         const dashaBalanceTable = params.mdNode ? this.getDashaBalanceTable(params.mdNode, params.currentDate) : [];
         const monthlyPanel = (params.transitPlanets && params.transitPlanets.Sun)
             ? this.getMonthlyPanel(params.transitPlanets.Sun, params.dashaInfo, ascSid, ascSignNum, natalPlanets, L) : null;
         const dailyPanel = (params.transitPlanets && params.transitPlanets.Moon)
             ? this.getDailyPanel(params.transitPlanets.Moon, params.dashaInfo, ascSid, ascSignNum, natalPlanets, L) : null;
+        const firstHouseAnalysis = this.getFirstHouseAnalysis(ascSid, ascSignNum, natalPlanets, L);
+        const thirdHouseAnalysis = this.getThirdHouseAnalysis(ascSid, ascSignNum, natalPlanets, L);
         const sixthHouseAnalysis = this.getSixthHouseAnalysis(ascSid, ascSignNum, natalPlanets, L);
+        const seventhHouseAnalysis = this.getSeventhHouseAnalysis(ascSid, ascSignNum, natalPlanets, L);
         const eighthHouseAnalysis = this.getEighthHouseAnalysis(ascSid, ascSignNum, natalPlanets, L, params.dashaInfo);
         const twelfthHouseAnalysis = this.getTwelfthHouseAnalysis(ascSid, ascSignNum, natalPlanets, L);
+        const allPlanetsVacantHouseIndependence = this.getAllPlanetsVacantHouseIndependence(ascSignNum, natalPlanets, L);
+        const dashaVacantHouseImpact = params.dashaInfo ? this.getDashaVacantHouseImpact(params.dashaInfo, ascSignNum, natalPlanets, L) : null;
+
 
         return {
             ascSid: ascSid, ascSignNum: ascSignNum,
@@ -4246,10 +4616,12 @@ const houseThemes = (crossValidated.length ? crossValidated : overlap).map(h => 
             bhavaChalit: bhavaChalit, rahuKetuCombinations: rahuKetuCombinations,
             dashaConfirmation: dashaConfirmation, thirdHouseAnalysis: thirdHouseAnalysis,
             careerAlignment: careerAlignment, firstHouseAnalysis: firstHouseAnalysis,
+            seventhHouseAnalysis: seventhHouseAnalysis,
             medicalIndicators: medicalIndicators, dashaBalanceTable: dashaBalanceTable,
             monthlyPanel: monthlyPanel, dailyPanel: dailyPanel,
             sixthHouseAnalysis: sixthHouseAnalysis,
             eighthHouseAnalysis: eighthHouseAnalysis, twelfthHouseAnalysis: twelfthHouseAnalysis,
+            allPlanetsVacantHouseIndependence: allPlanetsVacantHouseIndependence, dashaVacantHouseImpact: dashaVacantHouseImpact,
             _natalPlanetsMap: natalPlanets, _lords: L
         };
     }

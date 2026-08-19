@@ -5,3 +5,7 @@
 (?:(\d+):)?(\d+):(\d{2})(\d+)\s+hour(?:,\s*(\d+)\s*minutes?)?(?:,\s*(\d+)\s*seconds?)?
 
 (\d+):(\d{2})(?:(?:(\d+) minutes?,\s*(\d+))|(\d+)) seconds?
+
+(\d+):(\d{2})(\d+)\s+(?:minutes?,\s*(\d+)\s+seconds?|seconds?|minutes?)
+
+(\d+):(\d{2})(?:(?:(\d+) minutes?,\s*(\d+))|(\d+)) seconds?

@@ -252,6 +252,104 @@ window.SUDARSHAN_CHAKRA = {
               <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;">${cells}</div>
             </div>`;
   },
+  /**
+   * ONE combined Sudarshan Chakra Chart — a single North-Indian diamond
+   * chart (planets placed physically, exactly like the natal D1 chart)
+   * where every one of the 12 house cells additionally shows three small
+   * color-coded numbers: the house-count for that cell's sign as read
+   * from the Ascendant (gold), from the Moon (cyan), and from the Sun
+   * (orange). This is the classical single "Sudarshan Chakra Chart"
+   * (three lagnas read off ONE wheel at once) rather than three separate
+   * side-by-side charts. Self-contained — does not depend on drawDChart
+   * or any other module's canvas helpers being loaded.
+   */
+  drawCombinedChart: function (cvId, natalPlanets, natalAsc) {
+    const cv = document.getElementById(cvId);
+    if (!cv || !natalPlanets || !natalAsc) return;
+    const attrW = parseFloat(cv.getAttribute('width')) || 320;
+    const S = attrW;
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = S * dpr; cv.height = S * dpr;
+    cv.style.width = S + 'px'; cv.style.height = S + 'px';
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const cssVar = (name, fallback) => {
+      try { const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return v || fallback; }
+      catch (e) { return fallback; }
+    };
+    ctx.fillStyle = cssVar('--bg', '#0a0a14'); ctx.fillRect(0, 0, S, S);
+
+    const M = 10, L = S - 2 * M, x0 = M, y0 = M, U = L / 4;
+    const P = (c, r) => ({ x: x0 + c * U, y: y0 + r * U });
+    const p00 = P(0, 0), p20 = P(2, 0), p40 = P(4, 0);
+    const p02 = P(0, 2), p11 = P(1, 1), p31 = P(3, 1), p22 = P(2, 2), p13 = P(1, 3), p33 = P(3, 3), p42 = P(4, 2);
+    const p04 = P(0, 4), p24 = P(2, 4), p44 = P(4, 4);
+    const ln = (a, b) => { ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); };
+    ctx.strokeStyle = cssVar('--border3', '#444488') + 'AA'; ctx.lineWidth = 1.2;
+    ctx.strokeRect(x0, y0, L, L);
+    ln(p20, p02); ln(p02, p24); ln(p24, p42); ln(p42, p20); // inner diamond
+    ln(p00, p44); ln(p40, p04); // main diagonals
+
+    const avg3 = (a, b, c) => ({ x: (a.x + b.x + c.x) / 3, y: (a.y + b.y + c.y) / 3 });
+    const avg4 = (a, b, c, d) => ({ x: (a.x + b.x + c.x + d.x) / 4, y: (a.y + b.y + c.y + d.y) / 4 });
+    const CE = {
+      1: avg4(p20, p11, p22, p31), 2: avg3(p00, p20, p11), 3: avg3(p00, p02, p11),
+      4: avg4(p02, p11, p22, p13), 5: avg3(p04, p02, p13), 6: avg3(p04, p24, p13),
+      7: avg4(p24, p13, p22, p33), 8: avg3(p44, p24, p33), 9: avg3(p44, p42, p33),
+      10: avg4(p42, p31, p22, p33), 11: avg3(p40, p42, p31), 12: avg3(p40, p20, p31)
+    };
+
+    const ascSn = natalAsc.sn ?? 0;
+    const moonSn = natalPlanets.Moon ? natalPlanets.Moon.sn : null;
+    const sunSn = natalPlanets.Sun ? natalPlanets.Sun.sn : null;
+
+    // Sign number in each house cell (physical D1 layout, Ascendant = House 1).
+    ctx.textAlign = 'center';
+    for (let h = 1; h <= 12; h++) {
+      const sn = ((ascSn + h - 1) % 12) + 1;
+      const c = CE[h];
+      ctx.fillStyle = cssVar('--gold', '#FFD700'); ctx.font = 'bold 10px Courier New';
+      ctx.fillText(sn, c.x, c.y - 26);
+    }
+
+    // Planets physically placed (from the Ascendant, exactly as in the D1 chart).
+    const hmap = {}; for (let i = 1; i <= 12; i++) hmap[i] = [];
+    Object.entries(natalPlanets).filter(([p]) => !['Uranus', 'Neptune', 'Pluto'].includes(p)).forEach(([p, pd]) => {
+      if (pd.sn === undefined) return;
+      const h = ((pd.sn - ascSn + 12) % 12) + 1;
+      hmap[h].push(p.substring(0, 2));
+    });
+    hmap[1].unshift('As');
+    ctx.font = 'bold 9px Courier New';
+    for (let h = 1; h <= 12; h++) {
+      const c = CE[h];
+      hmap[h].forEach((abbr, i) => {
+        ctx.fillStyle = cssVar('--cyan', '#66CCFF');
+        ctx.fillText(abbr, c.x, c.y - 12 + i * 10);
+      });
+    }
+
+    // The three stacked, color-coded "which house is this from each lagna"
+    // numbers — the actual Sudarshan Chakra reading, per house cell.
+    ctx.font = 'bold 8px Courier New';
+    for (let h = 1; h <= 12; h++) {
+      const sn0 = (ascSn + h - 1) % 12;
+      const c = CE[h];
+      const fromAsc = h; // by construction, house h IS h houses from the Ascendant
+      const fromMoon = (moonSn !== null) ? this.houseFrom(moonSn, sn0) : null;
+      const fromSun = (sunSn !== null) ? this.houseFrom(sunSn, sn0) : null;
+      const line = (label, val, color, dy) => {
+        if (val === null || val === undefined) return;
+        ctx.fillStyle = color;
+        ctx.fillText(`${label}:${val}`, c.x, c.y + dy);
+      };
+      line('L', fromAsc, '#FFD700', 12);
+      line('M', fromMoon, '#66CCFF', 22);
+      line('S', fromSun, '#FF9F43', 32);
+    }
+    ctx.textAlign = 'left';
+  },
 
   renderPlanetPositionsTable: function (chakraData) {
     if (!chakraData) return '';
@@ -361,9 +459,14 @@ window.SUDARSHAN_CHAKRA = {
         <div class="pred-title" style="color:var(--violet);">☸ Sudarshan Chakra Chart</div>
         <div class="pred-detail" style="font-size:10px; color:var(--muted); line-height:1.4;margin-bottom:6px;">
           The Sudarshan Chakra reads the SAME planets from three lagnas at once — the Ascendant, the Moon (Chandra Lagna), and the Sun (Surya Lagna). A house confirmed from all three angles together carries far more weight than any one chart alone.
+</div>
+        <div style="text-align:center;margin:8px 0;">
+          <canvas id="sudarshanCombinedCanvas" width="320" height="320" style="background:var(--panel2,#1a1a2e);border-radius:4px;max-width:100%;"></canvas>
+          <div style="font-size:8px;color:var(--muted);margin-top:4px;">Each house cell: sign number (gold, top) · planets there · L=from Lagna, M=from Moon, S=from Sun (house number for that cell)</div>
+
         </div>`;
 
-    html += this._renderChartPanels(natalCfgs, 'Natal — three lagnas');
+    html += this._renderChartPanels(natalCfgs, 'Per-Lagna Detail Charts (Natal)');
     html += `<details open style="margin-top:8px;"><summary style="cursor:pointer;color:var(--violet);font-size:10px;font-weight:bold;">Planet Positions (Natal)</summary>${this.renderPlanetPositionsTable(natalChakraData)}</details>`;
     html += `<details open style="margin-top:6px;"><summary style="cursor:pointer;color:var(--violet);font-size:10px;font-weight:bold;">House Positions — From Ascendant / Moon / Sun (Natal)</summary>${this.renderHousePositionsTable(natalChakraData)}</details>`;
 

@@ -343,6 +343,31 @@ async function updatePredictionsDisplay() {
               html += `<div class="pred-item"><div class="pred-title">⚠️ KP Part 3 analysis error</div><div class="pred-detail">${kp3Err.message}</div></div>`;
             }
           }
+          // KP Part 4 — Disease Source-Cause-Effect diagnosis, the
+          // Dasha Pravesh Guide-Planet method (with worked case
+          // studies), marriage-override check, and the 3rd-CSL
+          // authorship/publication rule.
+          if (window.KP_PREDICTION_4) {
+            try {
+              const kp4Analysis = window.KP_PREDICTION_4.analyze4({
+                natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC,
+                lords: (typeof LORDS !== 'undefined') ? LORDS : null,
+                // Illness-source diagnosis defaults to the running Mahadasha lord.
+                illnessDashaPlanet: (dashaInfo && dashaInfo.mahadasha) ? dashaInfo.mahadasha.lord : null,
+                // Dasha Pravesh needs the Antardasha lord's TRANSIT longitude
+                // at the exact moment the Antardasha began; as a practical
+                // approximation this reuses that planet's CURRENT transit
+                // position (exact historical antardasha-start ephemeris
+                // lookup would need the natal dasha-start-date calculator).
+                antardashaLordTransitSid: (dashaInfo && dashaInfo.antardasha && transitPlanets && transitPlanets[dashaInfo.antardasha.lord])
+                  ? transitPlanets[dashaInfo.antardasha.lord].sid : undefined
+              });
+              html += window.KP_PREDICTION_4.renderHTML4(kp4Analysis);
+            } catch (kp4Err) {
+              console.error('KP Part 4 analysis failed:', kp4Err);
+              html += `<div class="pred-item"><div class="pred-title">⚠️ KP Part 4 analysis error</div><div class="pred-detail">${kp4Err.message}</div></div>`;
+            }
+          }
         } catch (kpErr) {
           console.error('KP analysis failed:', kpErr);
           html += `<div class="pred-item"><div class="pred-title">⚠️ KP analysis error</div><div class="pred-detail">${kpErr.message}</div></div>`;
@@ -791,6 +816,7 @@ function analyzeRajyogasAndBhanga(planets, ascendant) {
         // of the gochar/kp-only chart draw loop, since this section renders for
         // every mode.
         window.__sudarshanChartConfigs = sudarshanChartConfigs;
+        window.__sudarshanCombinedDraw = { natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC };
         html += window.SUDARSHAN_CHAKRA.renderChakraSection(sudarshanNatalData, sudarshanTransitData, sudarshanChartConfigs);
       } else {
         html += renderSudarshanChakraInfoSection();
@@ -823,6 +849,32 @@ function analyzeRajyogasAndBhanga(planets, ascendant) {
         try { drawDChart(cfg.canvasId, { planets: cfg.planets, asc: cfg.asc }); } catch (dErr) { console.error('Sudarshan chart draw failed:', cfg.canvasId, dErr); }
       });
       window.__sudarshanChartConfigs = null;
+    }
+    // Combined single Sudarshan Chakra chart (three lagnas on one wheel).
+    if (window.__sudarshanCombinedDraw && window.SUDARSHAN_CHAKRA && typeof window.SUDARSHAN_CHAKRA.drawCombinedChart === 'function') {
+      try {
+        window.SUDARSHAN_CHAKRA.drawCombinedChart('sudarshanCombinedCanvas', window.__sudarshanCombinedDraw.natalPlanets, window.__sudarshanCombinedDraw.natalAsc);
+      } catch (dErr) { console.error('Combined Sudarshan chart draw failed:', dErr); }
+      window.__sudarshanCombinedDraw = null;
+    }
+    // Varshaphala (Solar Return) chart(s) — previously drawn via a fixed-delay
+    // setTimeout() inside renderVarshaphalaSection(), which could fire before
+    // content.innerHTML below had actually inserted the canvas into the DOM
+    // (there are several more awaited showProgress()/analysis steps between
+    // that section being built and this assignment), silently leaving the
+    // chart blank. Queued instead and drawn here, guaranteed after the DOM
+    // update, exactly like every other chart in this pass.
+    if (window.__varshaphalaChartQueue && window.__varshaphalaChartQueue.length && typeof drawChartInPredictionPanel === 'function') {
+      window.__varshaphalaChartQueue.forEach(q => {
+        try { drawChartInPredictionPanel(q.canvasId, q.planets, q.asc); } catch (dErr) { console.error('Varshaphala chart draw failed:', q.canvasId, dErr); }
+      });
+      window.__varshaphalaChartQueue = [];
+    }
+    // Marriage-timing (SCD) mini Sudarshan Chakra chart — same fixed-delay
+    // setTimeout race condition as Varshaphala above, fixed the same way.
+    if (window.__scChartDraw && typeof drawSudarshanChakraInPanel === 'function') {
+      try { drawSudarshanChakraInPanel(window.__scChartDraw.canvasId, window.__scChartDraw.planets, window.__scChartDraw.asc); } catch (dErr) { console.error('SCD mini chart draw failed:', dErr); }
+      window.__scChartDraw = null;
     }
     console.log('✅ Predictions display updated');
   } catch (err) {
@@ -1243,7 +1295,14 @@ function renderSahamsSection(sahams, isDayBirth) {
  */
 function renderVarshaphalaSection(v) {
   const chartId = `varshaChart_${v.year}_${Math.floor(Math.random()*1000)}`;
-  setTimeout(() => drawChartInPredictionPanel(chartId, v.planets, v.asc), 250);
+    // Queued and drawn AFTER content.innerHTML has actually inserted this
+  // canvas into the DOM (see the single draw pass in updatePredictionsDisplay)
+  // instead of a fixed-delay setTimeout, which could fire before the DOM
+  // update landed and silently leave the chart blank.
+  window.__varshaphalaChartQueue = window.__varshaphalaChartQueue || [];
+  window.__varshaphalaChartQueue.push({ canvasId: chartId, planets: v.planets, asc: v.asc });
+
+  //setTimeout(() => drawChartInPredictionPanel(chartId, v.planets, v.asc), 250);
   const dateStr = v.dateInfo ? `${v.dateInfo.day}/${v.dateInfo.month}/${v.dateInfo.year} ${Math.floor(v.dateInfo.hour)}:${Math.floor((v.dateInfo.hour*60)%60).toString().padStart(2,'0')}` : 'Calculating...';
   
   return `
@@ -1307,11 +1366,17 @@ function renderMarriageTimingSection(timing) {
   if (!timing || !timing.windows || !timing.windows.length) return '';
   
   // For Sudarshan Chakra Chart, we use the combined Lagna, Moon, Sun
-  setTimeout(() => {
+  /* setTimeout(() => {
     const p = window.BIRTH_PLANETS || {};
     const asc = window.BIRTH_ASC || {};
     drawSudarshanChakraInPanel('scChartCanvas', p, asc);
-  }, 100);
+  }, 100); */
+  // For Sudarshan Chakra Chart, we use the combined Lagna, Moon, Sun.
+  // Queued and drawn AFTER content.innerHTML has inserted the canvas into
+  // the DOM (see the single draw pass in updatePredictionsDisplay), instead
+  // of a fixed-delay setTimeout which could fire before the DOM update
+  // landed and silently leave the chart blank.
+  window.__scChartDraw = { canvasId: 'scChartCanvas', planets: window.BIRTH_PLANETS || {}, asc: window.BIRTH_ASC || {} };
 
   return `
     <div class="pred-item" style="border-left: 3px solid var(--rose); background: rgba(255, 68, 119, 0.05);">
@@ -1736,14 +1801,18 @@ window.shiftPredDate = function(delta, unit) {
 };
 
 /**
- * Specialized Marriage Panel Update
- */
-/**
- * Specialized Marriage Panel Update (Deprecated: Now handled by src/marriage.js)
+ 
+
+ * Specialized Marriage Panel Update — delegates to runMarriageAnalysis(),
+ * which is defined in marriage.js (loaded as a separate <script> — make
+ * sure marriage.js is included on the page alongside this file). Kept as
+ * a thin wrapper for any call sites that still invoke
+ * updateMarriagePanel() directly instead of runMarriageAnalysis().
  */
 async function updateMarriagePanel() {
   if (typeof runMarriageAnalysis === 'function') {
     runMarriageAnalysis();
+     
   } else {
     console.error("runMarriageAnalysis not found in marriage.js");
   }
