@@ -206,46 +206,52 @@ window.KP_PREDICTION = {
     // (per the Timing-of-Events lecture: "आपसे कहे कोई की प्रॉपर्टी परचेज के
     // लिए प्राइम हाउस कौन सा होगा तो आप कहेंगे प्राइम हाउस चौथा"). Supporting
     // houses reinforce the promise; negative houses (esp. 6-10-12, and 8th
-    // for almost anything) work against/delay/break it.
+    // for almost anything) work against/delay/break it.// Prime/supporting house numbers below are sourced directly from the
+    // Rahul Kaushik "Event of Life -> Primary House / Supporting Houses"
+    // reference table (house-signification handout, ~410 rows across all
+    // 12 houses). Where an event has no literal row in that table (e.g.
+    // IVF, venture funding — modern matters not in the classical list),
+    // the houses are instead sourced from general KP significator research
+    // (see note/reference on those entries) and flagged as such.
     EVENT_PRIME_HOUSES: {
         // --- HOUSE 1: SELF, VITALITY, HEALTH & LONGEVITY ---
         health_vitality_h1: {
             house: 1, category: 'Health', subCategory: 'General Vitality & Recovery',
-            prime: [1], supporting: [5, 9, 11], negative: [6, 8, 12, 4],
-            note: '1st CSL Star Lord involving 1, 5, 9, 11 guarantees strong vitality and rapid healing. 4 negates 5th healing engine; 6-8-12 indicates disease vulnerability.',
-            reference: 'K.S. Krishnamurti, KP Reader Vol. III; Rahul Kaushik, 1st House CSL Study.',
-            effect: 'Clean 1-5-9-11 delivers robust immunity; 6-8-12 indicates chronic vulnerability.',
+            prime: [1], supporting: [5, 11], negative: [6, 8, 12],
+            note: 'Per the reference table\'s "Good Health" and "Disease-Recovery" rows: Primary House 1, Supporting Houses 1, 5, 11. 1st CSL Star Lord involving 1, 5, 11 guarantees strong vitality and rapid healing; 6-8-12 indicates disease vulnerability.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Good Health" / "Disease-Recovery" (Primary House 1: 1,5,11).',
+            effect: 'Clean 1-5-11 delivers robust immunity; 6-8-12 indicates chronic vulnerability.',
             remedy: 'Exercise daily (Mars) and maintain strict routine (Saturn). Donate items for afflicted planets during daylight.'
         },
         longevity_lifespan_h1: {
             house: 1, category: 'Health', subCategory: 'Longevity (>66 Years)',
-            prime: [1], supporting: [3, 5, 8, 11], negative: [2, 7, 12],
-            note: 'Long life requires 1st CSL linking to 1, 3, 5, 8, 11 without Maraka (2, 7) or Badhaka prominence.',
-            reference: 'K.S. Krishnamurti, KP Reader Vol. III (Longevity Formulas).',
+            prime: [1], supporting: [3, 5, 8, 9, 10], negative: [2, 7, 12],
+            note: 'Per the reference table\'s "Long Life (Over 66 years)" / "Long Life Span" rows: Primary House 1, Supporting Houses 1,5,9,10 along with 3,8. Long life requires the 1st CSL linking to this group without Maraka (2, 7) or Badhaka prominence.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Long Life (Over 66 years)" / "Long Life Span" (Primary House 1: 1,5,9,10 + 3,8).',
             effect: 'Promised long lifespan and stamina through crisis.',
             remedy: 'Regular Mahamrityunjaya Mantra recitation when Maraka periods run.'
         },
         disease_chronic_h1: {
             house: 1, category: 'Health', subCategory: 'Chronic Sickness & Hospitalization',
-            prime: [6], supporting: [8, 12], negative: [5, 11],
-            note: '1st CSL connecting to 6 (sickness), 8 (pain/surgery), 12 (hospitalization) without 5, 11 recovery.',
-            reference: 'Rahul Kaushik, Astro-Medical Significations.',
+            prime: [1], supporting: [6, 8, 12], negative: [5, 11],
+            note: 'Per the reference table\'s "Proneness to Diseases" (6,8,12) and "Disease-Long Life" (1,6,8,12) rows. 1st CSL connecting to 6 (sickness), 8 (pain/surgery), 12 (hospitalization) without 5, 11 recovery.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Proneness to Diseases" / "Disease-Long Life" (Primary House 1: 6,8,12 / 1,6,8,12).',
             effect: 'Chronic physical ailments requiring medical hospitalization.',
             remedy: 'Voluntarily purchase and donate medicines to poor, sick patients (satisfies 6+12).'
         },
         accident_injury_h1: {
             house: 1, category: 'Health', subCategory: 'Accidents & Bodily Trauma',
-            prime: [8], supporting: [1, 4, 12], negative: [5, 11],
-            note: '1st CSL linking to 4 (vehicle/land), 8 (shocks), 12 (hospital) with Mars/Saturn.',
-            reference: 'KP Reader Vol. IV (Accidents & Danger).',
+            prime: [1], supporting: [4, 8, 12], negative: [5, 11],
+            note: 'Per the reference table\'s "Danger to Life or Unnatural or Accidental Death" row: Primary House 1, Supporting Houses 4,8,12 with Badhaka/Maraka Lords involved.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Danger to Life or Unnatural or Accidental Death" (Primary House 1: 4,8,12 with Badhaka/Maraka).',
             effect: 'Sudden vehicular accidents or physical injury.',
             remedy: 'Donate red masur dal on Tuesdays; avoid aggressive driving.'
         },
         mental_depression_h1: {
             house: 1, category: 'Health', subCategory: 'Mental Anxiety & Depression',
-            prime: [1], supporting: [4, 8, 12], negative: [5, 11],
-            note: '1st & 4th CSLs afflicted by Saturn/Rahu linking to 8, 12 without 5, 11 recovery.',
-            reference: 'Rahul Kaushik, Mental Health 4-Factor Confluence.',
+            prime: [1], supporting: [6, 12], negative: [5, 11],
+            note: 'Per the reference table\'s "Sickness of the mind" row: Primary House 1, Supporting Houses 1,6,12 with afflicted Moon. 1st CSL afflicted by Saturn/Rahu linking to 6, 12 without 5, 11 recovery.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Sickness of the mind" (Primary House 1: 1,6,12 with afflicted Moon).',
             effect: 'Subconscious panic, sleep disorders, and chronic depression.',
             remedy: 'Grounding routines; sleep on firm surface (Saturn); avoid isolation.'
         },
@@ -254,24 +260,24 @@ window.KP_PREDICTION = {
         wealth_accumulation_h2: {
             house: 2, category: 'Finance', subCategory: 'Extreme Wealth Accumulation',
             prime: [2], supporting: [6, 10, 11], negative: [5, 8, 12],
-            note: '2nd CSL Star Lord involving 2, 6, 10, 11 is the ultimate "maalamaal" financial formula.',
-            reference: 'KP Reader Vol. IV (Financial Prospects); Rahul Kaushik, Importance of 2nd CSL.',
+            note: 'Per the reference table\'s "Accumulating Huge Wealth" (2,6,11) and "Wealth Enormous"/"Gaining Wealth, Increase Bank Deposit" (2,6,10,11 with Jupiter) rows.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Accumulating Huge Wealth" / "Wealth Enormous" (Primary House 2: 2,6,10,11).',
             effect: 'Compounding cash reserves, high salary, and massive bank liquidity.',
             remedy: 'Spend constructively on business needs; do not hoard out of fear.'
         },
         financial_loss_h2: {
             house: 2, category: 'Finance', subCategory: 'Cash Leaks & Volatility',
-            prime: [12], supporting: [5, 8], negative: [2, 11],
-            note: '2nd CSL Star Lord involving 5 (loss of work), 8 (stuck capital), 12 (loss) drains liquidity.',
-            reference: 'Rahul Kaushik, Dhan Prapti K Upay.',
+            prime: [8], supporting: [1, 7, 12], negative: [2, 6, 11],
+            note: 'Per the reference table\'s "Loss of Money" row: Primary House 2, Supporting Houses 1,7,8,12 — the 1st/7th Maraka pair combined with 8 (stuck capital) and 12 (loss) drains liquidity.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Loss of Money" (Primary House 2: 1,7,8,12).',
             effect: 'Rapid cash outflow, stuck market funds, and unstable bank balance.',
             remedy: 'Lock surplus liquidity into non-liquid bank Fixed Deposits (FDs) to satisfy 12th.'
         },
         asset_recovery_h2: {
             house: 2, category: 'Finance', subCategory: 'Recovery of Stolen/Lost Gold & Assets',
             prime: [2], supporting: [6, 11], negative: [5, 8, 12],
-            note: '2nd CSL Star Lord signifying 2, 6, 11 recovers stolen valuables and lost jewelry.',
-            reference: 'KP Horary Reader (Recovery of Missing Property).',
+            note: 'Per the reference table\'s "Recovery of lost property" row: Primary House 2, Supporting Houses 2,6,11.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Recovery of lost property" (Primary House 2: 2,6,11).',
             effect: 'Stolen or misplaced family gold and assets are found and returned.',
             remedy: 'Scrupulous police verification and systematic audit.'
         },
@@ -279,25 +285,25 @@ window.KP_PREDICTION = {
         // --- HOUSE 3: CONTRACTS, MARKETING, VISAS & SIBLINGS ---
         contracts_tenders_h3: {
             house: 3, category: 'Career', subCategory: 'Winning Contracts & Government Tenders',
-            prime: [3], supporting: [6, 10, 11], negative: [5, 12],
-            note: '3rd CSL (formal bid) involving 6 (beating competitors), 10 (authority), 11 (winning contract).',
-            reference: 'KP Reader Vol. IV; Rahul Kaushik, Government Tender Sutras.',
+            prime: [3], supporting: [6, 9, 11], negative: [5, 12],
+            note: 'Per the reference table\'s "Making contract or agreement" (3,9,11,1) and "Signing a contract" (6,9,11) rows.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Making contract or agreement" / "Signing a contract" (Primary House 3: 3,9,11,1 / 6,9,11).',
             effect: 'Successfully awarded commercial or government infrastructure tenders.',
             remedy: 'Ensure scrupulous legal vetting of tender quotation paperwork.'
         },
         visa_approval_h3: {
             house: 3, category: 'Travel/Visa', subCategory: 'Visa & Passport Approval',
-            prime: [3], supporting: [9, 11, 12], negative: [8, 12],
-            note: '3rd CSL Star Lord involving 3 (documents), 9 (long travel), 11 (clearance) clears visa.',
-            reference: 'KP Timing-of-Events (Travel & Documentation).',
+            prime: [9], supporting: [11, 12], negative: [3, 8],
+            note: 'Per the reference table\'s "Passport, Green Card, Visa" row: Primary House 3, Supporting Houses 9,11,12 with Mercury, Venus and Jupiter.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Passport, Green Card, Visa" (Primary House 3: 9,11,12 with Mercury/Venus/Jupiter).',
             effect: 'Embassy clears international visa and travel passport files.',
             remedy: 'Verify documentary authenticity before filing.'
         },
         sibling_friction_h3: {
             house: 3, category: 'General', subCategory: 'Sibling Dispute & Litigation',
-            prime: [3], supporting: [6, 8], negative: [11],
-            note: '3rd CSL Star Lord signifying 6 (enmity) and 8 (disputes) triggers sibling conflict.',
-            reference: 'Rahul Kaushik, 3rd CSL Alignment.',
+            prime: [3], supporting: [6, 8], negative: [1, 11],
+            note: 'Per the reference table\'s "Younger siblings - Enmity" row: Primary House 3, Supporting Houses 6,8 (contrast "living in Harmony": 1,11).',
+            reference: 'Rahul Kaushik, House-Signification Table — "Younger siblings - Enmity" (Primary House 3: 6,8).',
             effect: 'Younger siblings initiate property partition or business litigation.',
             remedy: 'Maintain clear physical, financial, and emotional boundaries with siblings.'
         },
@@ -305,33 +311,33 @@ window.KP_PREDICTION = {
         // --- HOUSE 4: REAL ESTATE, VEHICLES, EDUCATION & RELOCATION ---
         property_purchase_h4: {
             house: 4, category: 'Property', subCategory: 'Purchasing Real Estate / Land',
-            prime: [4], supporting: [11, 12], negative: [3, 8, 12],
-            note: '4th CSL Star Lord involving 4 (property) and 11 (gain) with 12 (investment) registers land.',
-            reference: 'KP Reader Vol. IV; Rahul Kaushik, Property Investment Formulas.',
+            prime: [4], supporting: [11, 12], negative: [3, 8],
+            note: 'Per the reference table\'s "Construct a house" (4,11,12) and "Purchase of property by instalments/loan" (4,6,11,12 with Saturn) rows.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Construct a house" / "Purchase of property by instalments/loan" (Primary House 4: 4,11,12).',
             effect: 'Successful registration and acquisition of real estate property.',
             remedy: 'Conduct full title search and environmental due diligence before buying.'
         },
         property_sale_h4: {
             house: 4, category: 'Property', subCategory: 'Profitable Property Sale',
-            prime: [10], supporting: [3, 5, 10], negative: [4],
-            note: 'Property sale is buyer\'s 4th (10th CSL). 3 (loss of home), 5 (buyer\'s gain), 10 (buyer\'s home).',
-            reference: 'KP Timing-of-Events (Property Sale Formula).',
+            prime: [10], supporting: [3, 5], negative: [4, 8, 12],
+            note: 'Per the reference table\'s "Sale of immovable property" row: Primary House 10, Supporting Houses 10,5,3. Sale is read from the buyer\'s 4th = 10th CSL; 3 (loss of home), 5 (buyer\'s gain).',
+            reference: 'Rahul Kaushik, House-Signification Table — "Sale of immovable property" (Primary House 10: 10,5,3).',
             effect: 'Favorable contract signed with qualified real estate buyer.',
             remedy: 'List property through verified commercial brokers.'
         },
         vehicle_purchase_h4: {
             house: 4, category: 'Property', subCategory: 'Vehicle Purchase (Car/Bike)',
-            prime: [4], supporting: [11, 12], negative: [3, 8],
-            note: '4th CSL involving 4 and 11 with Venus/Moon confirms purchasing vehicles.',
-            reference: 'KP Reader Vol. IV (Conveyances).',
+            prime: [4], supporting: [9, 10, 11], negative: [3, 8],
+            note: 'Per the reference table\'s "Purchase of vehicles" (4,11,12) and "Purchase of car" (4,9,10,11 with Venus/Mars in a movable sign) rows.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Purchase of vehicles" / "Purchase of car" (Primary House 4: 4,11,12 / 4,9,10,11).',
             effect: 'New conveyance or automobile purchased during discount cycle.',
             remedy: 'Ensure complete mechanical inspection and vehicle insurance.'
         },
         residence_relocation_h4: {
             house: 4, category: 'Property', subCategory: 'Sudden Change of Residence',
-            prime: [4], supporting: [1, 3, 8, 12], negative: [4],
-            note: '4th CSL signifying 1, 3 (leaving base), 8 (sudden), 12 (distance) forces move.',
-            reference: 'Rahul Kaushik, Relocation Sutras.',
+            prime: [4], supporting: [3, 11, 12], negative: [8],
+            note: 'Per the reference table\'s "Change of residence" row: Primary House 4, Supporting Houses 3,12,11.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Change of residence" (Primary House 4: 3,12,11).',
             effect: 'Sudden relocation due to landlord notice, exams, or career postings.',
             remedy: 'Choose flexible rental arrangements.'
         },
@@ -340,48 +346,48 @@ window.KP_PREDICTION = {
         childbirth_first_h5: {
             house: 5, category: 'Children', subCategory: '1st Child Conception & Birth',
             prime: [5], supporting: [2, 11], negative: [1, 4, 10], repeatBase: 5,
-            note: '5th CSL Star Lord involving 2 (family), 5 (pregnancy), 11 (gain) confirms childbirth in mother\'s chart.',
-            reference: 'KP Reader Vol. IV & VI (Childbirth & Barren Signs).',
+            note: 'Per the reference table\'s "Child Birth" (2,11 with growth planets Jupiter/Moon/Venus) and "Normal delivery" (2,5,11) rows.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Child Birth" / "Normal delivery" (Primary House 5: 2,11 / 2,5,11).',
             effect: 'Smooth natural conception and delivery of first child.',
             remedy: 'If CSL is in Barren signs (1, 3, 5, 6), consult fertility doctors early.'
         },
         childbirth_second_h5: {
             house: 5, category: 'Children', subCategory: '2nd Child Conception (7th Cusp)',
             prime: [7], supporting: [2, 11], negative: [1, 6, 10], repeatBase: 5,
-            note: '2nd child is 3rd from 5th = 7th Cusp. 7th CSL Star Lord signifying 2, 7, 11 promises birth.',
-            reference: 'KP Timing-of-Events (Repeat Occurrences: 3 houses forward).',
+            note: 'Per the reference table\'s "Second child" row (Primary House 7: 2,11), combined with the general "repeat occurrence = 3 houses forward" rule (2nd child = 3rd-from-5th = 7th Cusp).',
+            reference: 'Rahul Kaushik, House-Signification Table — "Second child" (Primary House 7: 2,11).',
             effect: 'Successful birth of second child.',
             remedy: 'Jupiter worship on Thursdays.'
         },
         childbirth_third_h5: {
             house: 5, category: 'Children', subCategory: '3rd Child Conception (9th Cusp)',
             prime: [9], supporting: [2, 11], negative: [1, 8, 10], repeatBase: 5,
-            note: '3rd child is 3rd from 7th = 9th Cusp. 9th CSL Star Lord signifying 2, 9, 11 promises birth.',
-            reference: 'KP Timing-of-Events.',
+            note: 'Per the reference table\'s "Third child" row (Primary House 9: 2,11), combined with the "3 houses forward" repeat-occurrence rule (3rd child = 3rd-from-7th = 9th Cusp).',
+            reference: 'Rahul Kaushik, House-Signification Table — "Third child" (Primary House 9: 2,11).',
             effect: 'Successful birth of third child.',
             remedy: 'Jupiter worship and charitable acts for children.'
         },
         childbirth_ivf_h5: {
             house: 5, category: 'Children', subCategory: 'IVF & Clinical Conception',
-            prime: [5], supporting: [4, 8, 12, 2, 11], negative: [1, 10],
-            note: '5th CSL connecting to clinical houses (4, 8, 12) along with 2, 5, 11 confirms birth via IVF.',
-            reference: 'Rahul Kaushik, Medical Childbirth Formulas.',
+            prime: [5], supporting: [2, 6, 8, 11, 12], negative: [1, 4, 10],
+            note: 'Not a literal row in the reference table (a modern medical matter). Web-research cross-check of KP medical-astrology sources: natural conception is 2-5-11, but when the chart instead shows a dominant 1-4-10 combination overriding 2-5-11, medical assistance (IVF) becomes the path, with 6-8-12 (clinical/procedural houses) needing positive support for the assisted conception to succeed.',
+            reference: 'General KP significator research (e.g. jyotishacharyadevrajji.com "Which House Shows Child Birth", bharatiyajyotishmantrasaadhana IVF & Astrology) — not present verbatim in the Rahul Kaushik table.',
             effect: 'Child conception achieved successfully through clinical IVF/ICSI assistance.',
             remedy: 'Schedule embryo transfer on Moon transiting 2, 5, 11 significators.'
         },
         miscarriage_risk_h5: {
             house: 5, category: 'Children', subCategory: 'Miscarriage Risk',
-            prime: [5], supporting: [4, 8], negative: [2, 11],
-            note: '5th CSL Sub-Lord involving 4 (negation of 5th) and 8 (surgical trauma) indicates pregnancy loss.',
-            reference: 'KP Reader Vol. IV.',
+            prime: [5], supporting: [4, 8, 10, 12], negative: [2, 11],
+            note: 'Per the reference table\'s "Child birth denial and abortion" row: Primary House 5, Supporting Houses 4,10,1 along with 8 and 12, with the influence of Rahu, Mars and Ketu.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Child birth denial and abortion" (Primary House 5: 4,10,1,8,12 with Rahu/Mars/Ketu).',
             effect: 'High risk of pregnancy complications or termination.',
             remedy: 'Strict medical bed-rest and spiritual protection prayers.'
         },
         stock_market_speculation_h5: {
             house: 5, category: 'Finance', subCategory: 'Stock Market Speculation Profits',
-            prime: [5], supporting: [2, 6, 11], negative: [5, 8, 12, 4],
-            note: '5th CSL Star Lord signifying 2, 5, 6, 11 promises immense wealth through equity trading.',
-            reference: 'Rahul Kaushik, Share Market Nifty Money Sensex.',
+            prime: [5], supporting: [2, 10, 11], negative: [8, 12],
+            note: 'Per the reference table\'s "Speculative business" (2,11,8 with Rahu/Mercury) and "Gain in gambling" (5,10,11,2 with Rahu) rows.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Speculative business" / "Gain in gambling" (Primary House 5/6: 2,11,8 / 5,10,11,2 with Rahu).',
             effect: 'Substantial trading profits in equity and derivative markets.',
             remedy: 'Never trade on days Moon transits the 4th house (loses trading desire/crash).'
         },
@@ -390,81 +396,82 @@ window.KP_PREDICTION = {
         job_employment_h6: {
             house: 6, category: 'Career', subCategory: 'Corporate Job & Competitive Exams',
             prime: [6], supporting: [2, 10, 11], negative: [5, 9, 12],
-            note: '6th CSL Star Lord involving 2, 6, 10, 11 secures corporate employment and clears exams.',
-            reference: 'KP Reader Vol. IV; Rahul Kaushik, 6th CSL Secrets.',
+            note: 'Per the reference table\'s "Get a desired or good job" row: Primary House 6, Supporting Houses 2,6,11,10.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Get a desired or good job" (Primary House 6: 2,6,11,10).',
             effect: 'Job appointment letter issued and competitive examination cleared.',
             remedy: 'Place pictures of small, happy children on work desk if 5th house causes job instability.'
         },
         litigation_victory_h6: {
             house: 6, category: 'Legal', subCategory: 'Winning Court Case / Election',
-            prime: [6], supporting: [10, 11], negative: [4, 5, 12],
-            note: '6th CSL Star Lord signifying 6, 10, 11 guarantees defeat of legal rival or election opponent.',
-            reference: 'Rahul Kaushik, Competitive Prashna Formulas.',
+            prime: [6], supporting: [1, 10, 11], negative: [4, 5, 12],
+            note: 'Per the reference table\'s "Success in litigation" (1,11 with favourable Jupiter) and "Winning election/litigation/sport/competition" (1,6,11 with 3,10) rows.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Success in litigation" / "Winning election/litigation/sport/competition" (Primary House 6: 1,11 / 1,6,11 with 3,10).',
             effect: 'Decisive victory in commercial litigation, election, or arbitration.',
             remedy: 'Maintain rigorous legal documentation (3rd house).'
         },
         litigation_defeat_h6: {
             house: 6, category: 'Legal', subCategory: 'Defeat in Dispute (Opponent Wins)',
-            prime: [7], supporting: [4, 5, 12], negative: [6, 10, 11],
-            note: '6th CSL signifying 4, 5, 12 gives status (4=opp 10th) and victory (12=opp 6th) to opponent.',
-            reference: 'Rahul Kaushik, Defeat House Formula.',
+            prime: [6], supporting: [5, 10, 12], negative: [1, 11],
+            note: 'Per the reference table\'s "Loss in competition" row: Primary House 6, Supporting Houses 5,12 and 10 (see also "Loss in appeal": 5,12 with afflicted Jupiter, under House 3).',
+            reference: 'Rahul Kaushik, House-Signification Table — "Loss in competition" (Primary House 6: 5,12,10).',
             effect: 'Opponent wins the lawsuit or election; querent loses.',
             remedy: 'Seek out-of-court mutual settlement (5, 11).'
         },
         debt_recovery_h6: {
             house: 6, category: 'Finance', subCategory: 'Debt & Stuck Payment Recovery',
             prime: [6], supporting: [2, 11], negative: [5, 8, 12],
-            note: '6th CSL Star Lord involving 2, 6, 11 clears overdue debtor invoices and recovers loans.',
-            reference: 'KP Reader Vol. IV (Recovery of Debts).',
+            note: 'Per the reference table\'s "Loans from bank" (2,11) and "Realization of amount due" (2,11) rows.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Loans from bank" / "Realization of amount due" (Primary House 6/11: 2,11).',
             effect: 'Overdue commercial payments and stuck market capital fully recovered.',
             remedy: 'Issue firm, scheduled reminders without confrontation.'
         },
 
         // --- HOUSE 7: MARRIAGE, SPOUSE, DIVORCE & PARTNERSHIPS ---
         marriage_h7: {
-            prime: [7], supporting: [2, 11], negative: [6, 10, 12], repeatBase: 7,
-            note: 'Marriage promise = 2/7/11 combination; 6-10-12 delays/breaks it; 8th anywhere nearby brings complication (e.g. secret relationships, special marriage act).',
-            reference: 'K.S. Krishnamurti, KP Reader Vols. I–VI (CSL axiom); KP Timing-of-Events lecture tradition (2-7-11 / 6-10-12 method).',
-            effect: 'When promised cleanly (prime H7 matched, no negative house contested), marriage tends to happen smoothly during the determining planet\'s dasha/sub-period; a contested promise (6-10-12 or 8th also touched) still tends to happen, but with delay, friction, or complication attached.',
-            remedy: 'Where 6-10-12 or the 8th complicate the 7th CSL, traditional practice offers Venus worship (harmony, relationships) on Fridays and quiet, non-transactional charity connected to marriage/family welfare — offered as a supportive practice, not a guaranteed fix.'
+            house: 7, category: 'Marriage', subCategory: '1st Marriage',
+            prime: [7], supporting: [2, 11], negative: [1, 6, 10], repeatBase: 7,
+            note: 'Per the reference table\'s "Marriage celebration" (2,11) and "Having marriage as one desired" (2,3,7,11) rows. Marriage promise = 2/7/11 combination; 1-6-10 delays/breaks it; 8th anywhere nearby brings complication (e.g. secret relationships, special marriage act).',
+            reference: 'Rahul Kaushik, House-Signification Table — "Marriage celebration" / "Having marriage as one desired" (Primary House 7/11: 2,11 / 2,3,7,11).',
+            effect: 'When promised cleanly (prime H7 matched, no negative house contested), marriage tends to happen smoothly during the determining planet\'s dasha/sub-period; a contested promise (1-6-10 or 8th also touched) still tends to happen, but with delay, friction, or complication attached.',
+            remedy: 'Where 1-6-10 or the 8th complicate the 7th CSL, traditional practice offers Venus worship (harmony, relationships) on Fridays and quiet, non-transactional charity connected to marriage/family welfare — offered as a supportive practice, not a guaranteed fix.'
         },
         marriage_second_h7: {
             house: 7, category: 'Marriage', subCategory: '2nd Marriage / Re-marriage (9th Cusp)',
-            prime: [7], supporting: [2,9, 11], negative: [1, 8, 10, 12], repeatBase: 7,
-            note: 'If 2-7-11 did not fructify for a first marriage, a second marriage is checked via 2-9-11 — also derivable via the general "3 houses forward per repeat occurrence" rule: 2nd spouse = 3rd-from-7th = 9th, 3rd spouse = 3rd-from-9th = 11th. 6-8-10-12 signals separation/divorce.2nd marriage is 3rd from 7th = 9th Cusp. 9th CSL Star Lord involving 2, 9, 11 promises re-marriage.',
-            reference: 'K.S. Krishnamurti, KP Reader Vols. I–VI; "repeat occurrence = 3 houses forward" rule from the same Timing-of-Events tradition. KP Timing-of-Events (Repeat Occurrences).',
-            effect: 'A second marriage promised via 2-9-11 tends to follow the same delay/complication pattern as the first if 6-8-10-12 remain involved in the chain. Second marriage solemnized with enduring stability.',
-            remedy: 'Same supportive practice as first marriage (Venus worship, non-transactional charity), with particular attention to whichever of 6-8-10-12 is repeating from the earlier failed promise, since that is the pattern actually asking to be addressed. Address the repeating negative house from the first union.'
+            prime: [9], supporting: [2, 11], negative: [1, 8, 10, 12], repeatBase: 7,
+            note: 'Per the reference table\'s "Marriage- second after divorce" and "Second marriage after demise of first spouse" rows: Primary House 9, Supporting Houses 2,9,11 (with Jupiter/Mercury and dual signs, or with Ketu/Mars for demise cases). Also derivable via "3 houses forward per repeat occurrence": 2nd spouse = 3rd-from-7th = 9th.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Marriage- second after divorce" / "Second marriage after demise of first spouse" (Primary House 9: 2,9,11).',
+            effect: 'A second marriage promised via 2-9-11 tends to follow the same delay/complication pattern as the first if 1-8-10-12 remain involved in the chain.',
+            remedy: 'Same supportive practice as first marriage (Venus worship, non-transactional charity), with particular attention to whichever of 1-8-10-12 is repeating from the earlier failed promise, since that is the pattern actually asking to be addressed.'
         },
         marriage_third_h7: {
             house: 7, category: 'Marriage', subCategory: '3rd Marriage (11th Cusp)',
             prime: [11], supporting: [2, 11], negative: [1, 10, 12], repeatBase: 7,
-            note: '3rd marriage is 3rd from 9th = 11th Cusp. 11th CSL Star Lord involving 2, 11 confirms union.',
-            reference: 'KP Timing-of-Events.',
+            note: 'Not a literal row in the reference table (only 1st/2nd marriage and demise-remarriage are listed). Kept via the "3 houses forward per repeat occurrence" rule: 3rd marriage = 3rd-from-9th = 11th Cusp, read with the same 2/11 core used for the 2nd marriage row.',
+            reference: 'Derived per KP Timing-of-Events "repeat occurrence" convention; no direct row in the Rahul Kaushik table.',
             effect: 'Third marital partnership established.',
             remedy: 'Venus worship and relationship counseling.'
         },
         marriage_fourth_h7: {
             house: 7, category: 'Marriage', subCategory: '4th Marriage (1st Cusp)',
             prime: [1], supporting: [2, 11], negative: [6, 12], repeatBase: 7,
-            note: '4th marriage is 3rd from 11th = 1st Cusp. 1st CSL Star Lord involving 1, 2, 11 confirms union.',
-            reference: 'KP Timing-of-Events.',
+            note: 'Not a literal row in the reference table. Kept via the "3 houses forward per repeat occurrence" rule: 4th marriage = 3rd-from-11th = 1st Cusp, read with the same 2/11 core.',
+            reference: 'Derived per KP Timing-of-Events "repeat occurrence" convention; no direct row in the Rahul Kaushik table.',
             effect: 'Fourth marital partnership established.',
             remedy: 'Venus worship and spiritual alignment.'
         },
         marital_paertnership_divorce_h7: {
             house: 7, category: 'Marriage', subCategory: 'Marital Divorce & Separation',
-            prime: [6,10,12], supporting: [8], negative: [2, 7, 11],
-            note: '7th CSL in 6 (separate beds/dispute) and 12 (legal/residential exit) causes divorce.',
-            reference: 'Rahul Kaushik, Divorce & Separation Indicators.',
+            prime: [7], supporting: [6, 10, 12], negative: [2, 7, 11],
+            note: 'Per the reference table\'s "Divorce finalized" (1,6,10,12 with Jupiter) and "Conflicts in marriage" (6,8,12 with Mars) rows: Primary House 7, confirming combination 6-10-12.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Divorce finalized" / "Conflicts in marriage" (Primary House 7: 1,6,10,12 / 6,8,12).',
             effect: 'Legal decree of divorce and permanent physical separation.',
             remedy: 'Execute out-of-court mutual consent settlement (5, 9, 11, 12).'
         },
         business_partnership_h7: {
             house: 7, category: 'Career', subCategory: 'Commercial Business Partnerships',
-            prime: [7], supporting: [2, 10, 11], negative: [6, 12],
-            note: '7th CSL Star Lord involving 2, 7, 10, 11 establishes highly lucrative enterprise partnerships.',
-            reference: 'KP Reader Vol. IV (Commercial Partnerships).',
+            prime: [7], supporting: [2, 3, 11], negative: [6, 12],
+            note: 'Per the reference table\'s "Partnership of any kind" (5,11) and "Independent business" (3,7,2,11) rows.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Partnership of any kind" / "Independent business" (Primary House 7: 5,11 / 3,7,2,11).',
             effect: 'Smooth commercial partnerships yielding continuous dividend profits.',
             remedy: 'Draft explicit operating agreements defining exit terms.'
         },
@@ -472,25 +479,25 @@ window.KP_PREDICTION = {
         // --- HOUSE 8: INHERITANCE, SURGERY, FUNDING & OCCULT ---
         inheritance_legacy_h8: {
             house: 8, category: 'Finance', subCategory: 'Inheritance & Unearned Assets',
-            prime: [8], supporting: [2, 11], negative: [1, 4, 10],
-            note: '8th CSL Star Lord signifying 2, 8, 11 brings ancestral wealth, legacy, PF, and insurance payouts.',
-            reference: 'KP Reader Vol. IV; Rahul Kaushik, 8th House Secrets.',
-            effect: 'A clean 6-10-12 (or 8th-reinforced) combination tends toward actual separation/divorce fructifying during the determining planet\'s period, rather than staying at the level of mere friction.Receipt of substantial ancestral property, gratuity, and insurance settlements.',
-            remedy: 'Astrology names the timing pattern; it does not replace honest communication or professional relationship counseling. Where offered, traditional practice is 7th-lord and Venus worship on Fridays alongside active mediation, not ritual alone.Maintain truthfulness in estate probate documentation.'
+            prime: [8], supporting: [2, 5, 11], negative: [1, 4, 10],
+            note: 'Per the reference table\'s "Getting gratuity, insurance etc, property of the deceased person" row: Primary House 8, Supporting Houses 8,2,11,5 with Jupiter (see also House 2\'s "Insurance legacy gratuity": 8,2,11 with Jupiter).',
+            reference: 'Rahul Kaushik, House-Signification Table — "Getting gratuity, insurance etc, property of the deceased person" (Primary House 8: 8,2,11,5 with Jupiter).',
+            effect: 'Receipt of substantial ancestral property, gratuity, and insurance settlements.',
+            remedy: 'Maintain truthfulness in estate probate documentation.'
         },
         surgery_procedure_h8: {
             house: 8, category: 'Health', subCategory: 'Surgical Incision & Operations',
             prime: [8], supporting: [6, 12], negative: [7, 11],
-            note: '6th/8th CSL involving 8th house (cutting/trauma) confirms surgery. 7 (12th from 8th) avoids it.',
-            reference: 'Rahul Kaushik, Surgical Timing Sutras.',
+            note: 'Per the reference table\'s "Surgery/operation" row: Primary House 8, Supporting Houses 8,6,12 with the influence of Mars.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Surgery/operation" (Primary House 8: 8,6,12 with Mars).',
             effect: 'Surgeons perform surgical operation to resolve physical condition.',
             remedy: 'Select surgery Muhurat on 1, 5, 9 significator days for rapid bodily recovery.'
         },
         venture_funding_h8: {
             house: 8, category: 'Finance', subCategory: 'Venture Capital & Angel Funding',
             prime: [8], supporting: [2, 11], negative: [5, 12],
-            note: '8th house is other people\'s money. 8th CSL signifying 2, 8, 11 secures venture capital.',
-            reference: 'Rahul Kaushik, Business Funding Window.',
+            note: 'Not a literal row in the reference table (a modern matter). Web-research cross-check confirms the standard KP convention that the 8th house is "other people\'s money" (funding/mortgages/investors), so 8th CSL signifying 2 (funds) and 11 (gains/profit) secures venture capital.',
+            reference: 'General KP significator research (e.g. kpastroapp.com "Career and money in KP astrology": "8th for mortgages/other capital") — not present verbatim in the Rahul Kaushik table.',
             effect: 'Angel investors and venture debt funds disburse startup capital.',
             remedy: 'Pitch investors during Mahadasha/Antardasha whose star lord sits in 8th house.'
         },
@@ -498,25 +505,25 @@ window.KP_PREDICTION = {
         // --- HOUSE 9: CONSULTANCY, PUBLISHING, HIGHER STUDIES & PILGRIMAGES ---
         consultancy_advisory_h9: {
             house: 9, category: 'Career', subCategory: 'Professional Consultancy & Astrology',
-            prime: [9], supporting: [1, 5, 10, 11], negative: [8, 6],
-            note: '9th CSL connecting to 1 (self), 9 (wisdom), 10 (status) with 5 (solutions) confirms top advisor.',
-            reference: 'Rahul Kaushik, Universal House of Consultancy.',
+            prime: [9], supporting: [2, 10, 11], negative: [6, 8],
+            note: 'Per the reference table\'s "Astrologer" (4,9,12 with Mercury/Jupiter/Saturn), "Popular astrologer" (11,2,5,9), and "Successful astrologer" (2,9,11,10) rows.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Astrologer" / "Popular astrologer" / "Successful astrologer" (Primary House 9/10: 4,9,12 / 11,2,5,9 / 2,9,11,10).',
             effect: 'Distinguished career as high-fee management consultant, astrologer, or lawyer.',
             remedy: 'Study and conduct research in solitude; keep healthy boundary from clients.'
         },
         publishing_book_h9: {
             house: 9, category: 'Career', subCategory: 'Book & Academic Paper Publishing',
-            prime: [9], supporting: [3, 11], negative: [8, 12],
-            note: '9th CSL linking to 3 (writing/manuscript) and 11 confirms international book publication.',
-            reference: 'KP Reader Vol. IV (Publishing & Authorship).',
+            prime: [9], supporting: [3, 10, 11], negative: [8, 12],
+            note: 'Per the reference table\'s "Publishing a Book" (3,11,10 with Mars/Mercury/Jupiter) and "Successful writer, publisher" (3,9 connected to Jupiter/Mercury) rows.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Publishing a Book" / "Successful writer, publisher" (Primary House 3/11: 3,11,10 / 3,9).',
             effect: 'Publishing house signs contract; manuscript achieves wide distribution.',
             remedy: 'Scrutinize publishing royalty contract terms.'
         },
         pilgrimage_spiritual_h9: {
             house: 9, category: 'Travel/Visa', subCategory: 'Spiritual Pilgrimage & Shrines',
-            prime: [9], supporting: [3, 5, 11], negative: [2, 6],
-            note: '9th CSL Star Lord involving 3 (travel), 5 (devotion), 9 (shrines) confirms pilgrimage.',
-            reference: 'KP Timing-of-Events (Pilgrimages).',
+            prime: [9], supporting: [3, 10], negative: [2, 6],
+            note: 'Per the reference table\'s "Pilgrimage" row: Primary House 9, Supporting Houses 3,9,10.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Pilgrimage" (Primary House 9: 3,9,10).',
             effect: 'Completion of sacred Himalayan or overseas spiritual pilgrimage.',
             remedy: 'Donate food and yellow chana dal at holy shrines.'
         },
@@ -525,24 +532,24 @@ window.KP_PREDICTION = {
         career_promotion_h10: {
             house: 10, category: 'Career', subCategory: 'Executive Promotion & Status Elevation',
             prime: [10], supporting: [2, 6, 11], negative: [5, 9, 12],
-            note: '10th CSL Star Lord involving 2, 6, 10, 11 delivers corporate promotions and executive ranks.',
-            reference: 'KP Reader Vol. IV; Rahul Kaushik, 10th CSL Career Blueprint.',
+            note: 'Per the reference table\'s "Promotion in work" (2,6,10,11) and "News of Promotion in service with transfer order" (3,6,10,11) rows.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Promotion in work" / "News of Promotion in service with transfer order" (Primary House 6/3: 2,6,10,11 / 3,6,10,11).',
             effect: 'Elevation to board-level leadership, government post, or executive promotion.',
             remedy: 'Align work with Karakatva of 10th CSL planet (Venus=media, Jupiter=consulting, Saturn=industry).'
         },
         job_resignation_h10: {
             house: 10, category: 'Career', subCategory: 'Job Switch & Resignation',
-            prime: [10], supporting: [5, 9, 11], negative: [6, 10],
-            note: '10th CSL Star Lord involving 5 (12th from 6th) and 9 (12th from 10th) confirms job resignation.',
-            reference: 'KP Reader Vol. IV (Change of Profession).',
+            prime: [10], supporting: [2, 8, 9], negative: [6, 11],
+            note: 'Per the reference table\'s "Tender resignation of service in haste" (2,8,9,10) and "Will tender resignation of service in haste" (1,3,8,9,10 with Mars) rows.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Tender resignation of service in haste" (Primary House 6/10: 2,8,9,10 / 1,3,8,9,10).',
             effect: 'Voluntary resignation from current employer and transition to new firm.',
             remedy: 'Secure written offer before submitting formal resignation.'
         },
         public_defamation_h10: {
             house: 10, category: 'Career', subCategory: 'Public Defamation & Loss of Post',
-            prime: [10], supporting: [8, 12], negative: [5, 11],
-            note: '10th CSL Star Lord involving 8 (humiliation) and 12 (loss of office) causes disgrace.',
-            reference: 'Rahul Kaushik, Defamation & 10th CSL Affliction.',
+            prime: [10], supporting: [7, 8, 12], negative: [1, 11],
+            note: 'Per the reference table\'s "Loss of reputation and money or income tax trouble" (7,8,12) and "Disgrace, ill reputation and scandals" (1,5,8) rows.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Loss of reputation and money or income tax trouble" / "Disgrace, ill reputation and scandals" (Primary House 10/8: 7,8,12 / 1,5,8).',
             effect: 'Public defamation, vigilance raid, or sudden termination from authority chair.',
             remedy: 'Keep astrology texts on desk (8th) and perform anonymous Gupt Daan (12th).'
         },
@@ -550,17 +557,17 @@ window.KP_PREDICTION = {
         // --- HOUSE 11: DESIRE FULFILLMENT, PROFITS & NETWORKS ---
         desire_fulfillment_h11: {
             house: 11, category: 'General', subCategory: 'Universal Fulfillment of Ambitions',
-            prime: [11], supporting: [1, 2, 10], negative: [12, 5, 8],
-            note: '11th CSL Star Lord signifying 1, 2, 11 guarantees primary life goals will be fully realized.',
-            reference: 'KP Reader Vol. III & IV; Rahul Kaushik, Labha Bhava Mastery.',
+            prime: [11], supporting: [1], negative: [5, 8, 12],
+            note: 'Per the reference table\'s "Satisfaction of desire" row: Primary House 11, Supporting Houses 1,11 with fruitful signs.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Satisfaction of desire" (Primary House 11: 1,11 with fruitful signs).',
             effect: 'Effortless realization of business revenue, honors, and life ambitions.',
             remedy: 'Maintain ethical integrity; curating social network defined by 11th house.'
         },
         disease_recovery_h11: {
             house: 11, category: 'Health', subCategory: 'Rapid Disease Recovery',
-            prime: [11], supporting: [1, 5], negative: [6, 8, 12],
-            note: '11th CSL signifying 1, 5, 11 is the fastest recovery signature from medical crises.',
-            reference: 'KP Medical Astrology Sutras.',
+            prime: [11], supporting: [6], negative: [4, 8, 12],
+            note: 'Per the reference table\'s "Free of disease" row: Primary House 11, Supporting Houses 6,11 (contrast "No cure of disease": 4,6,12).',
+            reference: 'Rahul Kaushik, House-Signification Table — "Free of disease" (Primary House 11: 6,11).',
             effect: 'Swift, complete medical recovery and restoration of vitality.',
             remedy: 'Follow structured nutritional regimen (5th house).'
         },
@@ -569,24 +576,24 @@ window.KP_PREDICTION = {
         foreign_settlement_h12: {
             house: 12, category: 'Travel/Visa', subCategory: 'Permanent Foreign Residency & PR',
             prime: [12], supporting: [3, 9], negative: [4, 8, 11],
-            note: '12th CSL Star Lord signifying 3 (departure), 9 (long travel), 12 (foreign land) grants PR.',
-            reference: 'KP Reader Vol. IV; Rahul Kaushik, 12th House Secrets.',
+            note: 'Per the reference table\'s "Foreign settlement" row: Primary House 12, Supporting Houses 3,9,12 with Moon and Mars.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Foreign settlement" (Primary House 12: 3,9,12 with Moon/Mars).',
             effect: 'Permanent foreign immigration, green card clearance, and overseas settlement.',
             remedy: 'Display maps or pictures of foreign destinations in workspace.'
         },
         investment_appreciation_h12: {
             house: 12, category: 'Finance', subCategory: 'Long-Term Capital Investment Growth',
-            prime: [12], supporting: [4, 11], negative: [5, 8],
-            note: '12th CSL (investment) and its Star Lord in 4 (property) and 11 (gain) multiplies capital.',
-            reference: 'Rahul Kaushik, 12th CSL Investment Formula.',
+            prime: [12], supporting: [2, 6, 11], negative: [1, 5, 8],
+            note: 'Per the reference table\'s "Gain in investment" row: Primary House 12, Supporting Houses 2,6,11 (contrast "Loss in investment": 1,5,8).',
+            reference: 'Rahul Kaushik, House-Signification Table — "Gain in investment" (Primary House 12: 2,6,11).',
             effect: 'Long-term land or equity investments purchased in lakhs appreciate into crores.',
             remedy: 'Deploy capital into tangible real estate or unlisted infrastructure bonds.'
         },
         spiritual_moksha_h12: {
             house: 12, category: 'General', subCategory: 'Spiritual Liberation (Moksha)',
-            prime: [12], supporting: [12], negative: [2, 11],
-            note: '12th CSL connecting to 12th across Planet, Star, and Sub confirms total spiritual let-go.',
-            reference: 'KP Reader Vol. IV (Moksha & Spiritual Solitude).',
+            prime: [12], supporting: [1, 4], negative: [2, 11],
+            note: 'Per the reference table\'s "Renunciation" row: Primary House 12, Supporting Houses 1,4,12 with Saturn and Ketu.',
+            reference: 'Rahul Kaushik, House-Signification Table — "Renunciation" (Primary House 12: 1,4,12 with Saturn/Ketu).',
             effect: 'Spiritual awakening, profound meditation insights, and detachment from materialism.',
             remedy: 'Daily silent meditation and anonymous philanthropic giving.'
         }
@@ -4543,6 +4550,9 @@ const houseThemes = (crossValidated.length ? crossValidated : overlap).map(h => 
         html += this.renderTwelfthHouseAnalysis(data.twelfthHouseAnalysis);
         html += this.renderDashaVacantHouseImpact(data.dashaVacantHouseImpact);
         html += this.renderCareerAlignment(data.careerAlignment);
+  if (data.sawhneyProfession && window.SAWHNEY_TIMING) {
+            html += window.SAWHNEY_TIMING.renderEventCard(data.sawhneyProfession);
+        }
         html += this.renderDashaConfirmation(data.dashaConfirmation);
         if (data.monthlyPanel || data.dailyPanel) {
             html += this.renderMonthlyPanel(data.monthlyPanel);
@@ -4591,6 +4601,17 @@ const houseThemes = (crossValidated.length ? crossValidated : overlap).map(h => 
         const houseScripts = this.getHouseScripts(houseExplorers);
         const dashaConfirmation = params.dashaInfo ? this.getDashaConfirmation(params.dashaInfo, ascSid, ascSignNum, natalPlanets, L) : null;
         const careerAlignment = this.getCareerAlignment(ascSid, ascSignNum, natalPlanets, L);
+        // Complementary classical (non-KP) cross-check: S.K. Sawhney's
+        // Dasha+Transit Profession Timing method (Ch.7). Soft dependency
+        // on window.SAWHNEY_TIMING — degrades to null if that module
+        // isn't loaded on this page, so it never breaks the rest of
+        // analyze() when absent.
+        const sawhneyProfession = window.SAWHNEY_TIMING
+            ? window.SAWHNEY_TIMING.analyzeEvent({
+                eventType: 'profession', dashaInfo: params.dashaInfo, transitPlanetsMap: params.transitPlanets,
+                ascSignNum: ascSignNum, natalPlanetsMap: natalPlanets, lords: L,
+                vargaAscSignNum: (params.d10Asc && params.d10Asc.sn !== undefined) ? params.d10Asc.sn : undefined
+            }) : null;
         const medicalIndicators = this.getMedicalIndicators(ascSid, ascSignNum, natalPlanets, L);
         const dashaBalanceTable = params.mdNode ? this.getDashaBalanceTable(params.mdNode, params.currentDate) : [];
         const monthlyPanel = (params.transitPlanets && params.transitPlanets.Sun)
@@ -4616,6 +4637,7 @@ const houseThemes = (crossValidated.length ? crossValidated : overlap).map(h => 
             bhavaChalit: bhavaChalit, rahuKetuCombinations: rahuKetuCombinations,
             dashaConfirmation: dashaConfirmation, thirdHouseAnalysis: thirdHouseAnalysis,
             careerAlignment: careerAlignment, firstHouseAnalysis: firstHouseAnalysis,
+            sawhneyProfession: sawhneyProfession,
             seventhHouseAnalysis: seventhHouseAnalysis,
             medicalIndicators: medicalIndicators, dashaBalanceTable: dashaBalanceTable,
             monthlyPanel: monthlyPanel, dailyPanel: dailyPanel,

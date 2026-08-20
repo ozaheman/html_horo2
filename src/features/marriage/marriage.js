@@ -1210,7 +1210,34 @@ function runMarriageAnalysis() {
       }
       console.log('KP CSL-BASED 7TH HOUSE & NEGATE-HOUSE ANALYSIS RENDERED');
     }
-  } catch (e) { console.error('KP CSL-BASED 7TH HOUSE ANALYSIS FAIL', e); }
+  } 
+  catch (e) { console.error('KP CSL-BASED 7TH HOUSE ANALYSIS FAIL', e); }
+  // 2.96 S.K. Sawhney Classical Dasha & Transit Marriage Timing (Ch.8,
+  // "How to Identify Timing of Marriage") — a third, independently-
+  // computed cross-check alongside the Parashari 7th-Lord/Venus/
+  // Darakaraka analysis and the KP negate-house analysis above. Checks
+  // the currently-running Mahadasha/Antardasha/Pratyantardasha against
+  // the book's specific "qualifying planet" list for the 7th house, and
+  // (when live transit data is available) whether Saturn and Jupiter are
+  // together touching at least 2 of the 4 classical trigger points.
+  try {
+    if (window.SAWHNEY_TIMING && BIRTH_PLANETS && BIRTH_ASC) {
+      const L = (typeof LORDS !== 'undefined') ? LORDS : null;
+      const dashaInfo = window.PREDICTION_FORECASTING ? window.PREDICTION_FORECASTING.getCurrentDashaInfo(window.centerDate || new Date()) : null;
+      const transitPlanetsMap = (typeof getPos === 'function') ? getPos(window.centerDate || new Date()) : null;
+      const d9ForVarga = (typeof getChartPlanetsForDiv === 'function') ? getChartPlanetsForDiv(9) : null;
+      const vargaAscSignNum = (d9ForVarga && d9ForVarga.asc) ? d9ForVarga.asc.sn : undefined;
+
+      const sawhneyMarriage = window.SAWHNEY_TIMING.analyzeEvent({
+        eventType: 'marriage', dashaInfo: dashaInfo, transitPlanetsMap: transitPlanetsMap,
+        ascSignNum: BIRTH_ASC.sn, natalPlanetsMap: BIRTH_PLANETS, lords: L, vargaAscSignNum: vargaAscSignNum
+      });
+      if (sawhneyMarriage) {
+        el.innerHTML += window.SAWHNEY_TIMING.renderEventCard(sawhneyMarriage);
+        console.log('SAWHNEY CLASSICAL MARRIAGE TIMING RENDERED');
+      }
+    }
+  } catch (e) { console.error('SAWHNEY MARRIAGE TIMING FAIL', e); }
   
    
   

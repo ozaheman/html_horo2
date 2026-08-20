@@ -75,11 +75,28 @@ window.VARSHAPHALA = {
     // 2. Cast Chart
     const varshaAsc = window.computeAsc(midJD, window.BIRTH.lat, window.BIRTH.lon, window.BIRTH.utcOff, ayan, 1);
     const rawPos = window.computeAll(midJD, ayan, 1);
+    // BUGFIX: houses here MUST always be counted from the Varsha (annual)
+    // Ascendant, per Tajika/Varshaphala rules — never from the natal D1
+    // chart's own house-focus setting. The previous code called the
+    // shared global window.s2h(signNum, ascSignNum) helper (defined in
+    // main.js for the natal D1/D9 chart display), which silently reads
+    // the mutable global `chartFocus` ('lagna' vs 'moon') and, whenever
+    // the user had their NATAL chart switched to Moon-focus view,
+    // discarded the varshaAsc.sn argument entirely and computed houses
+    // from the natal Moon's sign instead — silently corrupting every
+    // house number in the whole Varshaphala report (chart wheel, Muntha,
+    // House-by-House predictions, Sahams) whenever that unrelated toggle
+    // happened to be set to 'moon'. Using a direct, self-contained
+    // formula here (same one already used correctly for Maasaphala
+    // months further down) removes that dependency entirely.
+    const varshaS2H = (signNum, ascSignNum) => ((signNum - ascSignNum + 12) % 12) + 1;
     const varshaPlanets = {};
     for (const [p, d] of Object.entries(rawPos)) {
       varshaPlanets[p] = {
         ...d,
-        house: window.s2h(d.sn, varshaAsc.sn),
+        // house: window.s2h(d.sn, varshaAsc.sn),
+        house: varshaS2H(d.sn, varshaAsc.sn),
+        
         sign: (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) ? window.ASTRO_CONSTANTS.SIGNS[d.sn] : "Sign" + d.sn
       };
     }
@@ -89,8 +106,8 @@ window.VARSHAPHALA = {
     // 3. Muntha
     const munthaSn = (natalAscSn + age) % 12;
     const munthaSign = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) ? window.ASTRO_CONSTANTS.SIGNS[munthaSn] : "Sign"+munthaSn;
-    const munthaHouse = window.s2h(munthaSn, varshaAsc.sn);
-    const lords = {0:"Mars",1:"Venus",2:"Mercury",3:"Moon",4:"Sun",5:"Mercury",6:"Venus",7:"Mars",8:"Jupiter",9:"Saturn",10:"Saturn",11:"Jupiter"};
+    // const munthaHouse = window.s2h(munthaSn, varshaAsc.sn);
+const munthaHouse = varshaS2H(munthaSn, varshaAsc.sn);    const lords = {0:"Mars",1:"Venus",2:"Mercury",3:"Moon",4:"Sun",5:"Mercury",6:"Venus",7:"Mars",8:"Jupiter",9:"Saturn",10:"Saturn",11:"Jupiter"};
     const munthesh = lords[munthaSn];
 
     // 4. Varsheshvara (Year Lord)

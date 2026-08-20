@@ -4836,6 +4836,14 @@ function Writesvg(chartData, note, showAshtakavarga = false) {
     const midX = W/2, midY = H/2;
     let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="background-color:transparent; font-family: Arial, sans-serif;">`;
     svg += `<style> .planet-text-symbol { font-size: 8px; text-anchor: middle; fill: var(--text, #2c3e50); } .planet-retro { font-size: 6px; fill: var(--rose, red); font-weight: bold; } .planet-degree { font-size: 6px; fill: var(--muted, #555); text-anchor: middle; } .rashi-num { font-size: 10.5px; fill: var(--gold, #A67C00); text-anchor: middle; font-weight: bold; opacity:0.6; } .house-polygon { stroke: var(--border3, #333); stroke-width: 1; fill: none; } </style>`;
+    // BUGFIX: `note` (e.g. "Varshaphala 2026") was accepted as a parameter
+    // but never actually drawn anywhere in this function — the wheel
+    // itself carried no visible label. Matters whenever more than one
+    // chart/year is on screen or the SVG is saved/shared on its own.
+    if (note) {
+        const escapedNote = String(note).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        svg += `<text x="${midX}" y="${H - 6}" class="chart-note">${escapedNote}</text>`;
+    }
     
     // Simple Diamond drawing
     svg += `<rect x="0" y="0" width="${W}" height="${H}" class="house-polygon" />`;

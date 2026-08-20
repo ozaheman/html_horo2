@@ -421,7 +421,7 @@ window.GOCHAR = {
         const sudarshanChakra = this.getSudarshanChakra(transitPlanets, ascSignNum, moonSignNum, sunSignNum);
 
         const scd = this.getSCDNow(params.currentDate, params.birthDate, params.birthLagnaLon, activeHousesLagna);
-
+        const sawhneyMoonTransit = (moonSignNum !== undefined) ? this.getAllSawhneyMoonTransitVerdicts(transitPlanets, moonSignNum) : [];
         const lagnesh = L ? L[ascSignNum] : null;
         const mdLord = params.dashaInfo && params.dashaInfo.mahadasha ? params.dashaInfo.mahadasha.lord : null;
         const adLord = params.dashaInfo && params.dashaInfo.antardasha ? params.dashaInfo.antardasha.lord : null;
@@ -436,6 +436,7 @@ window.GOCHAR = {
             activeHousesLagna: activeHousesLagna, activeHousesMoon: activeHousesMoon, activeHousesToday: activeHousesToday,
             dwigraha: dwigraha, beneficMaleficNow: beneficMaleficNow,
             dashaTransitEffect: dashaTransitEffect, sudarshanChakra: sudarshanChakra, scd: scd,
+            sawhneyMoonTransit: sawhneyMoonTransit,
             panchaFactor: panchaFactor, lagnesh: lagnesh, mdLord: mdLord, adLord: adLord
         };
     },
@@ -626,6 +627,132 @@ window.GOCHAR = {
      * still call window.drawDChart(...) for each config AFTER this HTML
      * is inserted into the DOM.
      */
+    // ===================== 9. SAWHNEY MOON-TRANSIT RESULT TABLES + VEDHA (Ch.4) =====================
+    //
+    // From S.K. Sawhney, "Timing of Events Through Dasha & Transit" (Ch.4,
+    // "Importance of Transit of Planets"): classical house-from-Moon
+    // result bands for each planet's gochar, independent of the
+    // Dwigraha/Pancha-Factor techniques above — the OLDEST and most
+    // widely-taught transit rule ("गोचर सदा चन्द्रात्" — gochar is always
+    // read from the natal Moon). Each planet has a `bad` house set and a
+    // `good` house set as literally given in the source; six of the nine
+    // planets additionally have a `maxBad` house — a worse sub-case
+    // explicitly called out in the source text (Sun and Saturn's entries
+    // do not name a separate worst house, so none is invented here).
+    SAWHNEY_MOON_TRANSIT: {
+        Sun: { bad: [1, 2, 5, 8, 9, 12], good: [3, 6, 10, 11],
+            badText: 'No efforts of the native succeed; possible eye trouble, excess expenditure, many diseases, defeat in lawsuits.',
+            goodText: 'Very auspicious — good health, income, gain, promotion, new job.' },
+        Moon: { bad: [2, 4, 5, 9, 12], maxBad: [8], good: [1, 3, 6, 7, 10, 11],
+            badText: 'Sorrows, miseries, loss of reputation, unwanted expenditure, obstruction in efforts.',
+            maxBadText: 'Maximum malefic — mental agony, trouble to mother.',
+            goodText: 'Increase in facilities, income, comforts.' },
+        Mars: { bad: [1, 2, 4, 5, 8, 9, 10, 12], maxBad: [7], good: [3, 6, 11],
+            badText: 'Sorrows, miseries, diseases.',
+            maxBadText: 'Maximum malefic — quarrel, litigation, loss, diseases.',
+            goodText: 'Happiness, comforts, gain.' },
+        Mercury: { bad: [1, 3, 4, 5, 7, 9, 12], maxBad: [2], good: [6, 8, 10, 11],
+            badText: 'Difficulties, heavy expenditure, diseases of skin/nerves.',
+            maxBadText: 'Maximum bad — obstruction in all spheres, loss of wealth.',
+            goodText: 'Good health, overall happiness, education, income.' },
+        Jupiter: { bad: [1, 4, 10], maxBad: [3, 6], good: [2, 5, 7, 9, 11],
+            badText: 'Fear, worries, loss of status, bad health, heavy expenditure.',
+            maxBadText: 'Maximum bad — loss of respect, humiliation, enmity.',
+            goodText: 'Good health, comforts, progress in business, travels, gain of jewelry.' },
+        Venus: { bad: [7, 10], maxBad: [6], good: [1, 2, 3, 4, 5, 9, 11, 12],
+            badText: 'Sorrows, heavy expenditure, loss of comforts, lack of intimacy, bad health of spouse.',
+            maxBadText: 'Maximum malefic — health issues in relationship, loans, humiliation from women.',
+            goodText: 'Easy life, good health, intimacy, increase in income, benefits from females, gain in business.' },
+        Saturn: { bad: [1, 2, 4, 5, 7, 8, 10, 12], good: [3, 6, 9, 11],
+            badText: 'Malefic results in different ways, excess expenditure, loans.',
+            goodText: 'Gains, comforts, gain of money, promotion, success in efforts.' },
+        Rahu: { bad: [1, 2, 4, 5, 7, 8, 10, 12], maxBad: [9], good: [3, 6, 11],
+            badText: 'Miseries, sorrow, agony, downfall, over-expenditure.',
+            maxBadText: 'Maximum malefic — misfortunes, diseases.',
+            goodText: 'Good health, success in efforts, gains, comforts, progress in profession, all-round prosperity.' },
+        Ketu: { bad: [1, 2, 4, 5, 7, 8, 10, 12], maxBad: [9], good: [3, 6, 11],
+            badText: 'Miseries, sorrow, agony, downfall, over-expenditure.',
+            maxBadText: 'Maximum malefic — misfortunes, diseases.',
+            goodText: 'Good health, success in efforts, gains, comforts, progress in profession, all-round prosperity.' }
+    },
+
+    // Vedha (cancellation): if a specific OTHER planet is ALSO transiting
+    // its own paired house at the same time, the main table's result
+    // above is cancelled/nullified. NOTE: the source table (pp.11-12) is
+    // reconstructed here from a scanned/OCR'd source and several digit
+    // groupings were ambiguous in the original; treat this as a
+    // best-effort/advisory cross-check rather than a fully verified
+    // classical table, and confirm against a physical copy before relying
+    // on it for exact predictions. Structure: for planet P transiting
+    // house H, Vedha is cancelled if `vedhaBy` planet is transiting one
+    // of `houses` (counted from the same reference, Lagna or Moon).
+    SAWHNEY_VEDHA: {
+        Sun: { vedhaBy: 'Moon', houses: [9, 1, 2, 4, 5] },
+        Moon: { vedhaBy: 'Mercury', houses: [2, 5, 12, 8, 4, 9] },
+        Mars: { vedhaBy: null, houses: [1, 2, 5, 9] },
+        Mercury: { vedhaBy: 'Moon', houses: [1, 2, 8, 10, 4, 3, 12] },
+        Jupiter: { vedhaBy: null, houses: [5, 3, 9, 1, 8] },
+        Venus: { vedhaBy: 'Sun', houses: [8, 7, 1, 10, 9, 5, 11, 6, 3] },
+        Saturn: { vedhaBy: 'Sun', houses: [1, 2, 9, 5] },
+        Rahu: { vedhaBy: null, houses: [1, 2, 9, 5] },
+        Ketu: { vedhaBy: null, houses: [1, 2, 9, 5] }
+    },
+
+    /**
+     * One planet's classical Moon-transit verdict: which band (good /
+     * bad / maxBad) its current transit house-from-Moon falls into, plus
+     * a best-effort Vedha (cancellation) check against SAWHNEY_VEDHA.
+     */
+    getSawhneyMoonTransitVerdict: function (planet, transitPlanetsMap, natalMoonSignNum) {
+        const table = this.SAWHNEY_MOON_TRANSIT[planet];
+        const tp = transitPlanetsMap && transitPlanetsMap[planet];
+        if (!table || !tp || tp.sn === undefined || natalMoonSignNum === undefined || natalMoonSignNum === null) return null;
+        const house = this._transitHouseFrom(natalMoonSignNum, tp.sn);
+
+        let band = 'unstated', text = '';
+        if ((table.maxBad || []).includes(house)) { band = 'maxBad'; text = table.maxBadText; }
+        else if (table.bad.includes(house)) { band = 'bad'; text = table.badText; }
+        else if (table.good.includes(house)) { band = 'good'; text = table.goodText; }
+
+        // Vedha cross-check: is the paired cancelling planet ALSO transiting
+        // one of its Vedha houses (from Moon) right now?
+        let vedhaCancelled = false, vedhaBy = null, vedhaHouse = null;
+        const vd = this.SAWHNEY_VEDHA[planet];
+        if (vd && vd.vedhaBy && transitPlanetsMap[vd.vedhaBy] && transitPlanetsMap[vd.vedhaBy].sn !== undefined) {
+            const vTp = transitPlanetsMap[vd.vedhaBy];
+            const vHouse = this._transitHouseFrom(natalMoonSignNum, vTp.sn);
+            if (vd.houses.includes(vHouse)) { vedhaCancelled = true; vedhaBy = vd.vedhaBy; vedhaHouse = vHouse; }
+        }
+
+        return { planet: planet, houseFromMoon: house, band: band, text: text, vedhaCancelled: vedhaCancelled, vedhaBy: vedhaBy, vedhaHouse: vedhaHouse };
+    },
+
+    /** All nine planets' Sawhney Moon-transit verdicts in one call. */
+    getAllSawhneyMoonTransitVerdicts: function (transitPlanetsMap, natalMoonSignNum) {
+        return this.PLANETS9
+            .map(p => this.getSawhneyMoonTransitVerdict(p, transitPlanetsMap, natalMoonSignNum))
+            .filter(Boolean);
+    },
+
+    _renderSawhneyMoonTransit: function (verdicts) {
+        if (!verdicts || !verdicts.length) return '';
+        const bandColor = { good: '#00DD77', bad: '#FF9F43', maxBad: '#FF4477', unstated: '#8899AA' };
+        const rows = verdicts.map(v => {
+            const c = bandColor[v.band] || '#8899AA';
+            return `<div style="margin:4px 0;padding:6px 8px;border-left:3px solid ${c};background:${c}0A;">
+                <b style="color:${c};">${v.planet}</b> — H${v.houseFromMoon} from Moon
+                <span style="font-size:8.5px;color:${c};text-transform:uppercase;margin-left:6px;">${v.band === 'maxBad' ? 'maximum malefic' : v.band === 'unstated' ? 'not covered by source table' : v.band}</span>
+                ${v.text ? `<div style="font-size:9px;color:var(--text);opacity:.9;margin-top:2px;">${v.text}</div>` : ''}
+                ${v.vedhaCancelled ? `<div style="font-size:8.5px;color:#FFD700;margin-top:2px;">⚡ Vedha: ${v.vedhaBy} is transiting H${v.vedhaHouse} from Moon — this result is classically CANCELLED. <i>(Vedha table best-effort reconstruction — verify.)</i></div>` : ''}
+              </div>`;
+        }).join('');
+        return `<details style="margin-top:8px;">
+                  <summary style="cursor:pointer;color:#00DD77;font-size:10.5px;font-weight:bold;">🌙 Classical Moon-Transit Results (S.K. Sawhney, Ch.4)</summary>
+                  <div style="font-size:8.5px;color:var(--muted);margin:4px 0;">"गोचर सदा चन्द्रात्" — every planet's transit is read from the natal Moon. Vedha (cancellation) is shown where the paired cancelling planet is also transiting its own trigger house.</div>
+                  ${rows}
+                </details>`;
+    },
+     
     renderHTML: function (analysis, chartConfigs) {
         if (!analysis) return '<div class="pred-item">No transit data available.</div>';
         const HSIG = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.HOUSE_SIGNIFICATIONS) || {};
@@ -641,6 +768,7 @@ window.GOCHAR = {
         html += this._renderBeneficMaleficNow(analysis.beneficMaleficNow);
         html += this._renderDashaTransitEffect(analysis.dashaTransitEffect);
         html += this._renderSudarshanChakra(analysis.sudarshanChakra, analysis.scd, HSIG);
+        html += this._renderSawhneyMoonTransit(analysis.sawhneyMoonTransit);
         html += `</div>`;
         html += this._renderPanchaFactor(analysis.panchaFactor);
 
