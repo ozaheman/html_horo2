@@ -139,7 +139,7 @@ window.CELEBRITY_DATABASE = {
     { name: "Sukhdev Thapar", date: "1907-05-15", time: "12:00", city: "Ludhiana, PB", lat: 30.90, lon: 75.85, utcOff: 5.5, ayan: "lahiri" },
     { name: "Ram Prasad Bismil", date: "1897-06-11", time: "12:00", city: "Shahjahanpur, UP", lat: 27.88, lon: 79.91, utcOff: 5.5, ayan: "lahiri" },
     { name: "Annie Besant", date: "1847-10-01", time: "22:00", city: "London, UK", lat: 51.51, lon: -0.13, utcOff: 0, ayan: "lahiri" },
-    { name: "Rani Lakshmibai", date: "1828-11-19", time: "12:00", city: "Varanasi, UP", lat: 25.31, lon: 82.97, utcOff: 5.5, ayan: "lahiri" }
+    { name: "Rani Lakshmibai", date: "1828-11-19", time: "12:00", city: "Varanasi, UP", lat: 25.31, lon: 82.97, utcOff: 5.5, ayan: "lahiri" },
     { name: "Bipin Chandra Pal", date: "1858-11-07", time: "12:00", city: "Poil, Bangladesh", lat: 24.10, lon: 91.50, utcOff: 5.5, ayan: "lahiri" },
     { name: "Maulana Abul Kalam Azad", date: "1888-11-11", time: "06:30", city: "Mecca, Saudi Arabia", lat: 21.42, lon: 39.82, utcOff: 3, ayan: "lahiri" }
   ],

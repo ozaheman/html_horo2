@@ -9,14 +9,14 @@ window.PREDICTIONS_UI = window.PREDICTIONS_UI || {
   initialized: false
 };
 
-window.savePredictionOverride = function(key, newText) {
+window.savePredictionOverride = function (key, newText) {
   if (key && newText !== undefined) {
     localStorage.setItem('pred_override_' + key, newText.trim());
     console.log('Saved override for:', key);
   }
 };
 
-window.makeEditable = function(key, defaultContent) {
+window.makeEditable = function (key, defaultContent) {
   const customKey = 'pred_override_' + key;
   const savedContent = localStorage.getItem(customKey);
   const contentToRender = savedContent ? savedContent : defaultContent;
@@ -28,58 +28,58 @@ window.makeEditable = function(key, defaultContent) {
  */
 function initPredictionsUI() {
   if (PREDICTIONS_UI.initialized) return;
-  
+
   const btnPredictions = document.getElementById('btnPredictions');
   const closePredictions = document.getElementById('closePredictions');
   const btnUpdatePredictions = document.getElementById('btnUpdatePredictions');
   const predictionsPanel = document.getElementById('predictionsPanel');
-  
+
   if (!btnPredictions || !closePredictions || !btnUpdatePredictions || !predictionsPanel) {
     console.warn('⚠️ Prediction UI elements not found');
     return;
   }
-  
+
   // Set default date range (today to 90 days from now)
   const today = new Date();
   const endDate = new Date(today);
   endDate.setDate(endDate.getDate() + 90);
-  
+
   const todayIso = formatDateISO(today);
   const endDateIso = formatDateISO(endDate);
-  
+
   document.getElementById('pred-start').value = todayIso;
   document.getElementById('pred-end').value = endDateIso;
-  
+
   PREDICTIONS_UI.currentStartDate = today;
   PREDICTIONS_UI.currentEndDate = endDate;
-  
+
   // Event listeners
   btnPredictions.addEventListener('click', () => {
     predictionsPanel.classList.add('open');
     updatePredictionsDisplay();
   });
-  
+
   closePredictions.addEventListener('click', () => {
     predictionsPanel.classList.remove('open');
   });
-  
+
   btnUpdatePredictions.addEventListener('click', () => {
     const startStr = document.getElementById('pred-start').value;
     const endStr = document.getElementById('pred-end').value;
-    
+
     if (!startStr || !endStr) {
       alert('Please select both start and end dates');
       return;
     }
-    
+
     PREDICTIONS_UI.currentStartDate = new Date(startStr + 'T00:00:00');
     PREDICTIONS_UI.currentEndDate = new Date(endStr + 'T23:59:59');
-    
+
     updatePredictionsDisplay();
   });
-  
+
   PREDICTIONS_UI.initialized = true;
-  
+
   // Sahams Transit Toggle
   const chkShowSahamsTransit = document.getElementById('chkShowSahamsTransit');
   if (chkShowSahamsTransit) {
@@ -102,10 +102,10 @@ function initPredictionsUI() {
     btn.title = 'Toggle Language (English/Hindi)';
     btn.style.cssText = 'background:rgba(255,255,255,0.05); border:1px solid var(--border3); color:var(--text); padding:3px 8px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:15px; margin-left: auto;';
     btn.onclick = () => {
-        if (window.I18N) {
-            window.I18N.current = window.I18N.current === 'en' ? 'hi' : 'en';
-            updatePredictionsDisplay();
-        }
+      if (window.I18N) {
+        window.I18N.current = window.I18N.current === 'en' ? 'hi' : 'en';
+        updatePredictionsDisplay();
+      }
     };
     btnBox.appendChild(btn);
 
@@ -116,7 +116,7 @@ function initPredictionsUI() {
       hdr.appendChild(btnBox);
     }
   }
-  
+
   const btnMarriageAnalysis = document.getElementById('btnMarriageAnalysis');
   const closeMarriage = document.getElementById('closeMarriage');
   const marriagePanel = document.getElementById('marriagePanel');
@@ -172,19 +172,19 @@ async function updatePredictionsDisplay() {
     console.warn('⚠️ Prediction modules not loaded yet');
     return;
   }
-  
+
   const content = document.getElementById('predictionsContent');
   let html = '';
-  
+
   try {
     const mode = document.getElementById('predictionModeSel')?.value || 'default';
-    
+
     // Ensure Natal Data is calculated with high precision
     if (!window.BIRTH_PLANETS || BIRTH.useComputed) {
       await showProgress('Recalculating Natal Chart (Swiss Ephemeris)...');
       if (window.recalcBirth) window.recalcBirth();
     }
-    
+
     const targetDate = PREDICTIONS_UI.currentStartDate || new Date();
     const birthDate = window.BIRTH?.date || new Date();
     const targetYear = targetDate.getFullYear();
@@ -240,7 +240,7 @@ async function updatePredictionsDisplay() {
           html += `<div class="pred-item"><div class="pred-title">⚠️ Gochar analysis error</div><div class="pred-detail">${gErr.message}</div></div>`;
         }
       }
-       } else if (mode === 'kp') {
+    } else if (mode === 'kp') {
       await showProgress('Computing KP (Krishnamurti Paddhati) Analysis...');
       if (!window.KP_PREDICTION) {
         html += `<div class="pred-item"><div class="pred-title">⚠️ KP_prediction.js module not found</div></div>`;
@@ -267,7 +267,7 @@ async function updatePredictionsDisplay() {
           if (typeof getVimsh === 'function') {
             try { mdNode = getVimsh(targetDate); } catch (vErr) { console.error('getVimsh failed:', vErr); }
           }
- // Current Mahadasha/Antardasha/Pratyantardasha/Sookshma/Prana lords
+          // Current Mahadasha/Antardasha/Pratyantardasha/Sookshma/Prana lords
           // for the "verify current effect / sure-shot" dasha confirmation panel.
           const dashaInfo = window.PREDICTION_FORECASTING ? window.PREDICTION_FORECASTING.getCurrentDashaInfo(targetDate) : null;
 
@@ -384,8 +384,8 @@ async function updatePredictionsDisplay() {
               html += `<div class="pred-item"><div class="pred-title">⚠️ KP Part 5 analysis error</div><div class="pred-detail">${kp5Err.message}</div></div>`;
             }
           }
-          
-        // KP Part 6 — 406-entry Event Signification Database, Ruling
+
+          // KP Part 6 — 406-entry Event Signification Database, Ruling
           // Planets engine, two new horary rules (Moon-guarantee,
           // reciprocal fulfilment), Snapshot Prediction (birth-chart-only,
           // no T.O.B. needed), Parashari Moon-transit+Vedha (supplementary,
@@ -393,7 +393,7 @@ async function updatePredictionsDisplay() {
           if (window.KP_PREDICTION_6) {
             try {
               const now = new Date();
-              const kp5Analysis = window.KP_PREDICTION_6.analyze5({
+              const kp6Analysis = window.KP_PREDICTION_6.analyze5({
                 natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC,
                 lords: (typeof LORDS !== 'undefined') ? LORDS : null,
                 // Ruling Planets / horary-rule inputs default to "now" using
@@ -403,52 +403,52 @@ async function updatePredictionsDisplay() {
                 dayOfWeek: now.getDay(),
                 transitPlanetsMap: transitPlanets
               });
-              html += window.KP_PREDICTION_6.renderHTML5(kp5Analysis);
-          }
-          
-            
-            catch (kpErr) {
-              console.error('KP Part 6 analysis failed:', kp5Err);
-              html += `<div class="pred-item"><div class="pred-title">⚠️ KP Part 5 analysis error</div><div class="pred-detail">${kp5Err.message}</div></div>`;
+              html += window.KP_PREDICTION_6.renderHTML5(kp6Analysis);
+            } catch (kpErr) {
+              console.error('KP Part 6 analysis failed:', kpErr);
+              html += `<div class="pred-item"><div class="pred-title">⚠️ KP Part 6 analysis error</div><div class="pred-detail">${kpErr.message}</div></div>`;
             }
-        
-          
-        } 
-      
+          }
+        } catch (kpMainErr) {
+          console.error('KP main analysis error:', kpMainErr);
+          html += `<div class="pred-item"><div class="pred-title">⚠️ KP analysis error</div><div class="pred-detail">${kpMainErr.message}</div></div>`;
+        }
+      }
+
     } else if (mode === 'tushar' && window.TUSHAR_ROY) {
       await showProgress('Analyzing Natal Horoscope (Tushar Roy)...');
       const d1 = window.CURRENT_PLANETARY_POSITIONS || {};
       const d9 = window.CURRENT_NAVAMSHA_POSITIONS || null;
       const asc = window.CURRENT_ASCENDANT || 0;
       const houses = window.CURRENT_HOUSES || {};
-      
+
       html += '<h3 style="color:var(--text);border-bottom:1px solid var(--border);padding-bottom:5px;">1. Tushar Roy Predictions (Natal Chart)</h3>';
       html += window.TUSHAR_ROY.analyze(d1, houses, asc, d9);
-      
+
       if (window.VARSHAPHALA) {
-          await showProgress(`Calculating Solar Return for Year ${solarYear}...`);
-          const vChart = window.VARSHAPHALA.castAnnualChart(solarYear);
-          if (vChart) {
-              await showProgress('Analyzing Varshaphala Predictions...');
-              html += `<h3 style="color:var(--gold);margin-top:20px;border-bottom:1px solid var(--gold);padding-bottom:5px;">2. Tushar Roy Predictions (Varshaphala ${solarYear})</h3>`;
-              
-              // Add Varshaphala chart and details
-              html += renderVarshaphalaSection(vChart);
-              
-              html += window.TUSHAR_ROY.analyze(vChart.planets, null, vChart.asc, vChart.d9Planets || null);
-              
-              if (window.CALCULATE_SAHAMS) {
-                  const vPlanets = {};
-                  Object.entries(vChart.planets).forEach(([k, v]) => { if (v && v.sid !== undefined) vPlanets[k] = v.sid; });
-                  const vAsc = vChart.asc.sid;
-                  const vHouses = vChart.houses;
-                  const isDay = (vChart.planets.Sun.house >= 7);
-                  const vSahams = window.CALCULATE_SAHAMS(vPlanets, vAsc, isDay, vHouses);
-                  html += `<h3 style="color:#007BFF;margin-top:20px;border-bottom:1px solid #007BFF;padding-bottom:5px;">3. Tajaka Sahams (Annual ${solarYear})</h3>`;
-                  html += renderSahamsSection(vSahams, isDay);
-                  window.BIRTH_SAHAMS = vSahams;
-              }
+        await showProgress(`Calculating Solar Return for Year ${solarYear}...`);
+        const vChart = window.VARSHAPHALA.castAnnualChart(solarYear);
+        if (vChart) {
+          await showProgress('Analyzing Varshaphala Predictions...');
+          html += `<h3 style="color:var(--gold);margin-top:20px;border-bottom:1px solid var(--gold);padding-bottom:5px;">2. Tushar Roy Predictions (Varshaphala ${solarYear})</h3>`;
+
+          // Add Varshaphala chart and details
+          html += renderVarshaphalaSection(vChart);
+
+          html += window.TUSHAR_ROY.analyze(vChart.planets, null, vChart.asc, vChart.d9Planets || null);
+
+          if (window.CALCULATE_SAHAMS) {
+            const vPlanets = {};
+            Object.entries(vChart.planets).forEach(([k, v]) => { if (v && v.sid !== undefined) vPlanets[k] = v.sid; });
+            const vAsc = vChart.asc.sid;
+            const vHouses = vChart.houses;
+            const isDay = (vChart.planets.Sun.house >= 7);
+            const vSahams = window.CALCULATE_SAHAMS(vPlanets, vAsc, isDay, vHouses);
+            html += `<h3 style="color:#007BFF;margin-top:20px;border-bottom:1px solid #007BFF;padding-bottom:5px;">3. Tajaka Sahams (Annual ${solarYear})</h3>`;
+            html += renderSahamsSection(vSahams, isDay);
+            window.BIRTH_SAHAMS = vSahams;
           }
+        }
       }
     } else if (mode === 'ai') {
       await showProgress('Synthesizing 19-Factor AI Prediction...');
@@ -457,33 +457,33 @@ async function updatePredictionsDisplay() {
       const bDate = window.BIRTH?.date || new Date();
       const targetDate = PREDICTIONS_UI.currentStartDate || new Date();
       const age = targetDate.getFullYear() - bDate.getFullYear();
-      
+
       const dashaInfo = window.PREDICTION_FORECASTING ? window.PREDICTION_FORECASTING.getCurrentDashaInfo(targetDate) : null;
       const transitJupiter = d1.Jupiter || {};
 
       const planetsArr = Object.entries(d1).map(([name, data]) => {
-          const deg = data.sid !== undefined ? data.sid : (data.longitude || 0);
-          return {
-            name,
-            degree: deg,
-            longitude: deg,
-            signIndex: Math.floor(deg / 30),
-            house: data.house || 1,
-            sign: data.sign || "",
-            isRetrograde: !!data.isRetrograde
-          };
+        const deg = data.sid !== undefined ? data.sid : (data.longitude || 0);
+        return {
+          name,
+          degree: deg,
+          longitude: deg,
+          signIndex: Math.floor(deg / 30),
+          house: data.house || 1,
+          sign: data.sign || "",
+          isRetrograde: !!data.isRetrograde
+        };
       });
-      
-      const inputData = { 
-          planets: planetsArr, 
-          planetMap: d1,
-          asc: asc, 
-          age, 
-          dashaInfo, 
-          transitPlanets: d1, // Actually we should pass current transit if different
-          birthDate: bDate,
-          natalJupiterSign: window.BIRTH_PLANETS?.Jupiter?.signIndex || 0,
-          natalRahuSign: window.BIRTH_PLANETS?.Rahu?.signIndex || 0
+
+      const inputData = {
+        planets: planetsArr,
+        planetMap: d1,
+        asc: asc,
+        age,
+        dashaInfo,
+        transitPlanets: d1, // Actually we should pass current transit if different
+        birthDate: bDate,
+        natalJupiterSign: window.BIRTH_PLANETS?.Jupiter?.signIndex || 0,
+        natalRahuSign: window.BIRTH_PLANETS?.Rahu?.signIndex || 0
       };
 
       html += window.AI_PREDICTION.generateHTMLReport(inputData);
@@ -493,42 +493,42 @@ async function updatePredictionsDisplay() {
       const houses = window.CURRENT_HOUSES || {};
       const birthDate = window.BIRTH?.date || new Date();
       if (window.STEP2STEP_PANCHANG) {
-         html += window.STEP2STEP_PANCHANG.analyze(d1, asc, houses, birthDate, window.BIRTH);
+        html += window.STEP2STEP_PANCHANG.analyze(d1, asc, houses, birthDate, window.BIRTH);
       } else {
-         html += `<div class="pred-item">Error: step2step_panchang.js module not found</div>`;
+        html += `<div class="pred-item">Error: step2step_panchang.js module not found</div>`;
       }
     } else if (mode === 'comprehensive') {
       const classicalFlatDB = [];
       if (window.ASTRO_KNOWLEDGE) {
-          try {
-            ['planet_in_house', 'planet_in_sign', 'nakshatra', 'yogas'].forEach(cat => {
-                if(window.ASTRO_KNOWLEDGE[cat]) {
-                    Object.keys(window.ASTRO_KNOWLEDGE[cat]).forEach(k => {
-                        classicalFlatDB.push({ topic: cat + '_' + k, text: window.ASTRO_KNOWLEDGE[cat][k] });
-                    });
-                }
-            });
-          } catch(e) {}
+        try {
+          ['planet_in_house', 'planet_in_sign', 'nakshatra', 'yogas'].forEach(cat => {
+            if (window.ASTRO_KNOWLEDGE[cat]) {
+              Object.keys(window.ASTRO_KNOWLEDGE[cat]).forEach(k => {
+                classicalFlatDB.push({ topic: cat + '_' + k, text: window.ASTRO_KNOWLEDGE[cat][k] });
+              });
+            }
+          });
+        } catch (e) { }
       }
 
       const dbMap = {
-          "Tushar Roy": { data: window.TUSHAR_DB || [], color: '#FFAAEE' },
-          "Saral Jyotish": { data: window.SARAL_DB || [], color: 'var(--amber)' },
-          "Astro Pathshala": { data: window.ASTRO_DB || [], color: 'var(--cyan)' },
-          "Arun Pandit": { data: window.ARUN_PANDIT_DB || [], color: '#FF9933' },
-          "Astrology Made Easy": { data: window.ASTROLOGY_MADE_EASY_DB || [], color: '#44FF88' },
-          "BNN": { data: window.BNN_DB || [], color: 'var(--rose)' },
-          "Kaalpurush Astrology": { data: window.KAALPURUSH_ASTROLOGY_DB || [], color: '#00FF88' },
-          "Tathastu Anubhav": { data: window.TATHASTU_ANUBHAV_DB || [], color: '#44AAFF' },
-          "The Professor": { data: window.THE_PROFESSOR_DB || [], color: '#FF3344' },
-          "Vedang Jyotish": { data: window.VEDANG_JYOTIS_BY_SHIV_SHARMA_DB || [], color: '#FFD700' },
-          "Classical texts (ASTRO KNOWLEDGE)": { data: classicalFlatDB, color: '#f3f3f3' }
+        "Tushar Roy": { data: window.TUSHAR_DB || [], color: '#FFAAEE' },
+        "Saral Jyotish": { data: window.SARAL_DB || [], color: 'var(--amber)' },
+        "Astro Pathshala": { data: window.ASTRO_DB || [], color: 'var(--cyan)' },
+        "Arun Pandit": { data: window.ARUN_PANDIT_DB || [], color: '#FF9933' },
+        "Astrology Made Easy": { data: window.ASTROLOGY_MADE_EASY_DB || [], color: '#44FF88' },
+        "BNN": { data: window.BNN_DB || [], color: 'var(--rose)' },
+        "Kaalpurush Astrology": { data: window.KAALPURUSH_ASTROLOGY_DB || [], color: '#00FF88' },
+        "Tathastu Anubhav": { data: window.TATHASTU_ANUBHAV_DB || [], color: '#44AAFF' },
+        "The Professor": { data: window.THE_PROFESSOR_DB || [], color: '#FF3344' },
+        "Vedang Jyotish": { data: window.VEDANG_JYOTIS_BY_SHIV_SHARMA_DB || [], color: '#FFD700' },
+        "Classical texts (ASTRO KNOWLEDGE)": { data: classicalFlatDB, color: '#f3f3f3' }
       };
 
       const d1 = window.CURRENT_PLANETARY_POSITIONS || {};
       const asc = window.CURRENT_ASCENDANT || 0;
       const houses = window.CURRENT_HOUSES || {};
-      
+
       const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, d1, houses, asc, null);
       html += window.makeEditable('comprehensive_master', generatedHTML);
     } else if (mode === 'saral') {
@@ -548,7 +548,7 @@ async function updatePredictionsDisplay() {
       const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
       html += window.makeEditable('astro_made_easy_db', generatedHTML);
     } else if (mode === 'bnn') {
-     // Primary: full structured natal-chart BNN analysis — the engine
+      // Primary: full structured natal-chart BNN analysis — the engine
       // (bnn_logic.js) driving career/money/marriage/health via the
       // structured combination data (bnn_prediction.js), enriched with
       // matching raw excerpts pulled from BNN_DB (bnn_db.js).
@@ -592,7 +592,7 @@ async function updatePredictionsDisplay() {
       // 1. CURRENT DASHA INFO
       const dashaInfo = PREDICTION_FORECASTING.getCurrentDashaInfo(targetDate);
       html += renderCurrentDashaSection(dashaInfo);
-      
+
       await showProgress('Projecting Dasha Timeline...');
       // 2. UPCOMING DASHA CHANGES
       const dashaTimeline = PREDICTION_FORECASTING.projectDashaTimeline(
@@ -600,12 +600,12 @@ async function updatePredictionsDisplay() {
         PREDICTIONS_UI.currentEndDate
       );
       html += renderDashaTimelineSection(dashaTimeline);
-      
+
       await showProgress('Calculating Optimal Dates...');
       // 3. SUGGESTED OPTIMAL DATES
       const optimalDates = PREDICTION_FORECASTING.suggestOptimalDates('remedy', 90);
       html += renderOptimalDatesSection(optimalDates);
-      
+
       await showProgress('Analyzing House Placements...');
       // 4. MULTI-CHART ANALYSIS
       const analysis = PREDICTION_ANALYSIS.getPlanetsInHouses();
@@ -625,7 +625,7 @@ async function updatePredictionsDisplay() {
         const vChart = window.VARSHAPHALA.castAnnualChart(solarYear);
         if (vChart) {
           html += renderVarshaphalaSection(vChart);
-          
+
           const chkSahams = document.getElementById('chkCalculateSahams');
           if (chkSahams && chkSahams.checked && window.CALCULATE_SAHAMS) {
             await showProgress('Calculating Tajaka Sahams (Annual)...');
@@ -640,195 +640,195 @@ async function updatePredictionsDisplay() {
           }
         }
       }
-/**
- * Analyze Rajyogas and Rajyoga Bhanga (Breakage)
- * Based on Parashari principles (Kendra-Trikona lords, Neecha Bhanga, Kemadruma, etc.)
- */
-function analyzeRajyogasAndBhanga(planets, ascendant) {
-  if (!planets || !ascendant) return '<div class="pred-item">Insufficient chart data for Yoga analysis.</div>';
-  
-  const ascSn = ascendant.sn !== undefined ? ascendant.sn : Math.floor(ascendant.longitude / 30);
-  const LORDS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGN_LORDS) 
-    ? window.ASTRO_CONSTANTS.SIGN_LORDS 
-    : ['Mars','Venus','Mercury','Moon','Sun','Mercury','Venus','Mars','Jupiter','Saturn','Saturn','Jupiter'];
-  const SIGNS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS)
-    ? window.ASTRO_CONSTANTS.SIGNS
-    : ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      /**
+       * Analyze Rajyogas and Rajyoga Bhanga (Breakage)
+       * Based on Parashari principles (Kendra-Trikona lords, Neecha Bhanga, Kemadruma, etc.)
+       */
+      function analyzeRajyogasAndBhanga(planets, ascendant) {
+        if (!planets || !ascendant) return '<div class="pred-item">Insufficient chart data for Yoga analysis.</div>';
 
-  // Helper: Get planet's sign index
-  const getSign = (p) => {
-    if (!planets[p]) return -1;
-    return planets[p].sn !== undefined ? planets[p].sn : Math.floor((planets[p].longitude || planets[p].sid) / 30);
-  };
+        const ascSn = ascendant.sn !== undefined ? ascendant.sn : Math.floor(ascendant.longitude / 30);
+        const LORDS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGN_LORDS)
+          ? window.ASTRO_CONSTANTS.SIGN_LORDS
+          : ['Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter'];
+        const SIGNS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS)
+          ? window.ASTRO_CONSTANTS.SIGNS
+          : ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
 
-  // Helper: Get house of a planet
-  const getHouse = (p) => {
-    if (!planets[p]) return -1;
-    const pSn = getSign(p);
-    return ((pSn - ascSn + 12) % 12) + 1;
-  };
+        // Helper: Get planet's sign index
+        const getSign = (p) => {
+          if (!planets[p]) return -1;
+          return planets[p].sn !== undefined ? planets[p].sn : Math.floor((planets[p].longitude || planets[p].sid) / 30);
+        };
 
-  // 1. Identify Kendra (1,4,7,10) and Trikona (1,5,9) Lords
-  const kendraLords = [LORDS[ascSn], LORDS[(ascSn+3)%12], LORDS[(ascSn+6)%12], LORDS[(ascSn+9)%12]];
-  const trikonaLords = [LORDS[ascSn], LORDS[(ascSn+4)%12], LORDS[(ascSn+8)%12]];
-  
-  // Union of Kendra & Trikona lords (Rajyoga Lords)
-  const rajyogaLordSet = new Set([...kendraLords, ...trikonaLords]);
-  
-  // Check if Rajyoga Lords are in Kendra/Trikona or mutually aspecting each other
-  let rajyogas = [];
-  let rajyogaDetails = [];
-  
-  rajyogaLordSet.forEach(lord => {
-    const lordSign = getSign(lord);
-    const lordHouse = ((lordSign - ascSn + 12) % 12) + 1;
-    if (lordHouse === 1 || lordHouse === 4 || lordHouse === 5 || lordHouse === 7 || lordHouse === 9 || lordHouse === 10) {
-      rajyogas.push(`${lord} in H${lordHouse} (${SIGNS[lordSign]})`);
-      rajyogaDetails.push(`${lord} (${SIGNS[lordSign]}) in H${lordHouse} — forms a potent ${lordHouse === 1 ? 'Vimala' : lordHouse === 4 ? 'Shash' : lordHouse === 5 ? 'Bhadra' : 'Rajyoga'}`);
-    }
-  });
+        // Helper: Get house of a planet
+        const getHouse = (p) => {
+          if (!planets[p]) return -1;
+          const pSn = getSign(p);
+          return ((pSn - ascSn + 12) % 12) + 1;
+        };
 
-  // Mutual aspect between Rajyoga Lords
-  const rajPairs = [];
-  const rajyogaLordArray = Array.from(rajyogaLordSet);
-  for (let i = 0; i < rajyogaLordArray.length; i++) {
-    for (let j = i+1; j < rajyogaLordArray.length; j++) {
-      const l1 = rajyogaLordArray[i], l2 = rajyogaLordArray[j];
-      const h1 = getHouse(l1), h2 = getHouse(l2);
-      if (h1 === 7 - h2 || Math.abs(h1 - h2) === 4 || Math.abs(h1 - h2) === 8) {
-        rajPairs.push(`${l1} (H${h1}) aspects ${l2} (H${h2})`);
-        rajyogaDetails.push(`Mutual aspect between Rajyoga Lords ${l1} and ${l2}: Creates a powerful Rajyoga.`);
-      }
-    }
-  }
+        // 1. Identify Kendra (1,4,7,10) and Trikona (1,5,9) Lords
+        const kendraLords = [LORDS[ascSn], LORDS[(ascSn + 3) % 12], LORDS[(ascSn + 6) % 12], LORDS[(ascSn + 9) % 12]];
+        const trikonaLords = [LORDS[ascSn], LORDS[(ascSn + 4) % 12], LORDS[(ascSn + 8) % 12]];
 
-  // 2. Neecha Bhanga Rajayoga (Cancellation of Debilitation)
-  const exaltations = { Sun: 10, Moon: 33, Mars: 298, Mercury: 165, Jupiter: 95, Venus: 357, Saturn: 200 };
-  const debilitations = { Sun: 190, Moon: 213, Mars: 118, Mercury: 345, Jupiter: 275, Venus: 177, Saturn: 20 };
-  const signDegBounds = (deg) => {
-    const sign = Math.floor(deg / 30);
-    const d = deg % 30;
-    return { sign, d };
-  };
+        // Union of Kendra & Trikona lords (Rajyoga Lords)
+        const rajyogaLordSet = new Set([...kendraLords, ...trikonaLords]);
 
-  let neechaBhanga = [];
-  for (const [p, ex] of Object.entries(exaltations)) {
-    const pData = planets[p];
-    if (!pData) continue;
-    const pLon = pData.sid !== undefined ? pData.sid : pData.longitude;
-    const deb = debilitations[p];
-    const isDebilitated = Math.abs((pLon - deb + 360) % 360) < 1.5;
-    
-    if (isDebilitated) {
-      // Check if lord of sign where planet is debilitated is in Kendra/Trikona
-      const debSignIdx = Math.floor(pLon / 30);
-      const debSignLord = LORDS[debSignIdx];
-      const debLordPos = getSign(debSignLord);
-      const debLordHouse = ((deblordPos - ascSn + 12) % 12) + 1;
-      
-      if ([1,4,5,7,9,10].includes(deblordHouse)) {
-        neechaBhanga.push(`${p} debilitated but lord ${debSignLord} in H${deblordHouse} — Neecha Bhanga Rajyoga formed.`);
-      } else {
-        // Also check if planet conjuncts its exaltation lord
-        const exaltLord = LORDS[Math.floor(ex / 30)];
-        const exaltLordSign = getSign(exaltLord);
-        if (exaltLordSign === debSignIdx) {
-          neechaBhanga.push(`${p} debilitated but conjunct its exaltation lord ${exaltLord} — Neecha Bhanga Rajyoga formed.`);
-        } else {
-          neechaBhanga.push(`${p} debilitated: No Neecha Bhanga — permanent weakness.`);
+        // Check if Rajyoga Lords are in Kendra/Trikona or mutually aspecting each other
+        let rajyogas = [];
+        let rajyogaDetails = [];
+
+        rajyogaLordSet.forEach(lord => {
+          const lordSign = getSign(lord);
+          const lordHouse = ((lordSign - ascSn + 12) % 12) + 1;
+          if (lordHouse === 1 || lordHouse === 4 || lordHouse === 5 || lordHouse === 7 || lordHouse === 9 || lordHouse === 10) {
+            rajyogas.push(`${lord} in H${lordHouse} (${SIGNS[lordSign]})`);
+            rajyogaDetails.push(`${lord} (${SIGNS[lordSign]}) in H${lordHouse} — forms a potent ${lordHouse === 1 ? 'Vimala' : lordHouse === 4 ? 'Shash' : lordHouse === 5 ? 'Bhadra' : 'Rajyoga'}`);
+          }
+        });
+
+        // Mutual aspect between Rajyoga Lords
+        const rajPairs = [];
+        const rajyogaLordArray = Array.from(rajyogaLordSet);
+        for (let i = 0; i < rajyogaLordArray.length; i++) {
+          for (let j = i + 1; j < rajyogaLordArray.length; j++) {
+            const l1 = rajyogaLordArray[i], l2 = rajyogaLordArray[j];
+            const h1 = getHouse(l1), h2 = getHouse(l2);
+            if (h1 === 7 - h2 || Math.abs(h1 - h2) === 4 || Math.abs(h1 - h2) === 8) {
+              rajPairs.push(`${l1} (H${h1}) aspects ${l2} (H${h2})`);
+              rajyogaDetails.push(`Mutual aspect between Rajyoga Lords ${l1} and ${l2}: Creates a powerful Rajyoga.`);
+            }
+          }
         }
-      }
-    }
-  }
 
-  // 3. Kemadruma Yoga & Bhanga
-  const moonSign = getSign('Moon');
-  const moonHouse = ((moonSign - ascSn + 12) % 12) + 1;
-  let planetsAdjacent = false;
-  const adjHouses = [((moonHouse - 2 + 12) % 12) + 1, ((moonHouse + 0) % 12) + 1, ((moonHouse + 2) % 12) + 1];
-  for (const p of ['Sun','Mars','Mercury','Jupiter','Venus','Saturn']) {
-    if (getHouse(p) !== -1 && adjHouses.includes(getHouse(p))) planetsAdjacent = true;
-  }
-  const kemadruma = !planetsAdjacent;
-  
-  let kemadrumaBhanga = false;
-  // Kemadruma Bhanga if Moon is with another planet or aspected by Jupiter/Venus
-  const moonConjunct = Object.keys(planets).some(p => p !== 'Moon' && getSign(p) === moonSign && getHouse(p) === moonHouse);
-  const jupiterAspect = Math.abs(getSign('Jupiter') - moonSign) % 12 === 4 || Math.abs(getSign('Jupiter') - moonSign) % 12 === 8;
-  const venusAspect = Math.abs(getSign('Venus') - moonSign) % 12 === 4 || Math.abs(getSign('Venus') - moonSign) % 12 === 8;
-  
-  if (kemadruma && (moonConjunct || jupiterAspect || venusAspect)) {
-    kemadrumaBhanga = true;
-  }
+        // 2. Neecha Bhanga Rajayoga (Cancellation of Debilitation)
+        const exaltations = { Sun: 10, Moon: 33, Mars: 298, Mercury: 165, Jupiter: 95, Venus: 357, Saturn: 200 };
+        const debilitations = { Sun: 190, Moon: 213, Mars: 118, Mercury: 345, Jupiter: 275, Venus: 177, Saturn: 20 };
+        const signDegBounds = (deg) => {
+          const sign = Math.floor(deg / 30);
+          const d = deg % 30;
+          return { sign, d };
+        };
 
-  // 4. Raja Yoga Bhanga (Breakage) — Mainly due to malefic influence on Kendra/Trikona lords or their houses
-  let rajyogaBhanga = [];
-  rajyogaLordArray.forEach(lord => {
-    const lordHouse = getHouse(lord);
-    // If lord is in Dusthana (6,8,12)
-    if ([6,8,12].includes(lordHouse)) {
-      rajyogaBhanga.push(`${lord} in H${lordHouse} (Dusthana) — weakens/breaks the Rajyoga potential.`);
-    }
-    // If lord is combust (within 10° of Sun)
-    const lordLon = planets[lord] ? (planets[lord].sid || planets[lord].longitude) : 0;
-    const sunLon = planets.Sun ? (planets.Sun.sid || planets.Sun.longitude) : 0;
-    if (Math.abs((lordLon - sunLon + 360) % 360) < 10) {
-      rajyogaBhanga.push(`${lord} is combust — its power is diminished, breaking the Rajyoga.`);
-    }
-    // If lord is debilitated
-    const lordDeg = lordLon % 30;
-    const debDeg = debilitations[lord] % 30;
-    if (Math.abs(lordDeg - debDeg) < 1.5) {
-      rajyogaBhanga.push(`${lord} is debilitated — breaks the yoga.`);
-    }
-  });
+        let neechaBhanga = [];
+        for (const [p, ex] of Object.entries(exaltations)) {
+          const pData = planets[p];
+          if (!pData) continue;
+          const pLon = pData.sid !== undefined ? pData.sid : pData.longitude;
+          const deb = debilitations[p];
+          const isDebilitated = Math.abs((pLon - deb + 360) % 360) < 1.5;
 
-  // Also check if any house representing Kendra/Trikona is afflicted by malefics in Dusthana
-  const kendraHouses = [1,4,7,10];
-  const trikonaHouses = [1,5,9];
-  const dusthanaHouses = [6,8,12];
-  const malefics = ['Mars','Saturn','Rahu','Ketu','Sun'];
-  for (let h of [...kendraHouses, ...trikonaHouses]) {
-    const signIdx = (ascSn + h - 1) % 12;
-    const planetsInHouse = Object.keys(planets).filter(p => getSign(p) === signIdx);
-    const maleficsInHouse = planetsInHouse.filter(p => malefics.includes(p));
-    if (maleficsInHouse.length > 0) {
-      rajyogaBhanga.push(`Malefics (${maleficsInHouse.join(',')}) in H${h} (${SIGNS[signIdx]}) — weakens the Rajyoga of that house.`);
-    }
-  }
+          if (isDebilitated) {
+            // Check if lord of sign where planet is debilitated is in Kendra/Trikona
+            const debSignIdx = Math.floor(pLon / 30);
+            const debSignLord = LORDS[debSignIdx];
+            const debLordPos = getSign(debSignLord);
+            const debLordHouse = ((deblordPos - ascSn + 12) % 12) + 1;
 
-  // 5. Build HTML Output
-  let html = `<div class="pred-item" style="border-left: 3px solid var(--gold); margin-top:20px;">
+            if ([1, 4, 5, 7, 9, 10].includes(deblordHouse)) {
+              neechaBhanga.push(`${p} debilitated but lord ${debSignLord} in H${deblordHouse} — Neecha Bhanga Rajyoga formed.`);
+            } else {
+              // Also check if planet conjuncts its exaltation lord
+              const exaltLord = LORDS[Math.floor(ex / 30)];
+              const exaltLordSign = getSign(exaltLord);
+              if (exaltLordSign === debSignIdx) {
+                neechaBhanga.push(`${p} debilitated but conjunct its exaltation lord ${exaltLord} — Neecha Bhanga Rajyoga formed.`);
+              } else {
+                neechaBhanga.push(`${p} debilitated: No Neecha Bhanga — permanent weakness.`);
+              }
+            }
+          }
+        }
+
+        // 3. Kemadruma Yoga & Bhanga
+        const moonSign = getSign('Moon');
+        const moonHouse = ((moonSign - ascSn + 12) % 12) + 1;
+        let planetsAdjacent = false;
+        const adjHouses = [((moonHouse - 2 + 12) % 12) + 1, ((moonHouse + 0) % 12) + 1, ((moonHouse + 2) % 12) + 1];
+        for (const p of ['Sun', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']) {
+          if (getHouse(p) !== -1 && adjHouses.includes(getHouse(p))) planetsAdjacent = true;
+        }
+        const kemadruma = !planetsAdjacent;
+
+        let kemadrumaBhanga = false;
+        // Kemadruma Bhanga if Moon is with another planet or aspected by Jupiter/Venus
+        const moonConjunct = Object.keys(planets).some(p => p !== 'Moon' && getSign(p) === moonSign && getHouse(p) === moonHouse);
+        const jupiterAspect = Math.abs(getSign('Jupiter') - moonSign) % 12 === 4 || Math.abs(getSign('Jupiter') - moonSign) % 12 === 8;
+        const venusAspect = Math.abs(getSign('Venus') - moonSign) % 12 === 4 || Math.abs(getSign('Venus') - moonSign) % 12 === 8;
+
+        if (kemadruma && (moonConjunct || jupiterAspect || venusAspect)) {
+          kemadrumaBhanga = true;
+        }
+
+        // 4. Raja Yoga Bhanga (Breakage) — Mainly due to malefic influence on Kendra/Trikona lords or their houses
+        let rajyogaBhanga = [];
+        rajyogaLordArray.forEach(lord => {
+          const lordHouse = getHouse(lord);
+          // If lord is in Dusthana (6,8,12)
+          if ([6, 8, 12].includes(lordHouse)) {
+            rajyogaBhanga.push(`${lord} in H${lordHouse} (Dusthana) — weakens/breaks the Rajyoga potential.`);
+          }
+          // If lord is combust (within 10° of Sun)
+          const lordLon = planets[lord] ? (planets[lord].sid || planets[lord].longitude) : 0;
+          const sunLon = planets.Sun ? (planets.Sun.sid || planets.Sun.longitude) : 0;
+          if (Math.abs((lordLon - sunLon + 360) % 360) < 10) {
+            rajyogaBhanga.push(`${lord} is combust — its power is diminished, breaking the Rajyoga.`);
+          }
+          // If lord is debilitated
+          const lordDeg = lordLon % 30;
+          const debDeg = debilitations[lord] % 30;
+          if (Math.abs(lordDeg - debDeg) < 1.5) {
+            rajyogaBhanga.push(`${lord} is debilitated — breaks the yoga.`);
+          }
+        });
+
+        // Also check if any house representing Kendra/Trikona is afflicted by malefics in Dusthana
+        const kendraHouses = [1, 4, 7, 10];
+        const trikonaHouses = [1, 5, 9];
+        const dusthanaHouses = [6, 8, 12];
+        const malefics = ['Mars', 'Saturn', 'Rahu', 'Ketu', 'Sun'];
+        for (let h of [...kendraHouses, ...trikonaHouses]) {
+          const signIdx = (ascSn + h - 1) % 12;
+          const planetsInHouse = Object.keys(planets).filter(p => getSign(p) === signIdx);
+          const maleficsInHouse = planetsInHouse.filter(p => malefics.includes(p));
+          if (maleficsInHouse.length > 0) {
+            rajyogaBhanga.push(`Malefics (${maleficsInHouse.join(',')}) in H${h} (${SIGNS[signIdx]}) — weakens the Rajyoga of that house.`);
+          }
+        }
+
+        // 5. Build HTML Output
+        let html = `<div class="pred-item" style="border-left: 3px solid var(--gold); margin-top:20px;">
     <div class="pred-title" style="color:var(--gold); font-size:14px; text-align:center;">👑 Rajyoga & Rajyoga Bhanga Analysis</div>
     <div style="font-size:10px; color:var(--muted); text-align:center; margin-bottom:10px;">Classical Parashari Principles: Kendra-Trikona Lords, Neecha Bhanga, Kemadruma</div>
   `;
 
-  // Rajyogas Found
-  html += `<div style="background:rgba(255,215,0,0.05); border:1px solid rgba(255,215,0,0.2); border-radius:8px; padding:10px; margin-bottom:15px;">
+        // Rajyogas Found
+        html += `<div style="background:rgba(255,215,0,0.05); border:1px solid rgba(255,215,0,0.2); border-radius:8px; padding:10px; margin-bottom:15px;">
     <div style="color:var(--gold); font-size:11px; font-weight:bold; margin-bottom:8px;">✨ Detected Rajyogas</div>`;
-  if (rajyogas.length === 0 && rajPairs.length === 0 && neechaBhanga.length === 0 && !kemadrumaBhanga) {
-    html += `<div style="font-size:10px; color:var(--muted);">No strong Rajyogas detected from Kendra-Trikona lords.</div>`;
-  } else {
-    if (rajyogas.length > 0) html += `<div style="margin-bottom:6px;"><strong>Kendra/Trikona Lords:</strong> ${rajyogas.join(', ')}</div>`;
-    if (rajPairs.length > 0) html += `<div style="margin-bottom:6px;"><strong>Mutual Aspects:</strong> ${rajPairs.join(', ')}</div>`;
-    if (neechaBhanga.length > 0) html += `<div style="margin-bottom:6px;"><strong>Neecha Bhanga Rajyoga:</strong><br/>${neechaBhanga.join('<br/>')}</div>`;
-    if (kemadrumaBhanga) html += `<div><strong>Kemadruma Bhanga:</strong> Kemadruma averted by conjunction/benefic aspect — Rajyoga potential activated.</div>`;
-  }
-  html += `</div>`;
+        if (rajyogas.length === 0 && rajPairs.length === 0 && neechaBhanga.length === 0 && !kemadrumaBhanga) {
+          html += `<div style="font-size:10px; color:var(--muted);">No strong Rajyogas detected from Kendra-Trikona lords.</div>`;
+        } else {
+          if (rajyogas.length > 0) html += `<div style="margin-bottom:6px;"><strong>Kendra/Trikona Lords:</strong> ${rajyogas.join(', ')}</div>`;
+          if (rajPairs.length > 0) html += `<div style="margin-bottom:6px;"><strong>Mutual Aspects:</strong> ${rajPairs.join(', ')}</div>`;
+          if (neechaBhanga.length > 0) html += `<div style="margin-bottom:6px;"><strong>Neecha Bhanga Rajyoga:</strong><br/>${neechaBhanga.join('<br/>')}</div>`;
+          if (kemadrumaBhanga) html += `<div><strong>Kemadruma Bhanga:</strong> Kemadruma averted by conjunction/benefic aspect — Rajyoga potential activated.</div>`;
+        }
+        html += `</div>`;
 
-  // Rajyoga Bhanga (Breakage)
-  html += `<div style="background:rgba(255,68,68,0.05); border:1px solid rgba(255,68,68,0.2); border-radius:8px; padding:10px; margin-bottom:15px;">
+        // Rajyoga Bhanga (Breakage)
+        html += `<div style="background:rgba(255,68,68,0.05); border:1px solid rgba(255,68,68,0.2); border-radius:8px; padding:10px; margin-bottom:15px;">
     <div style="color:var(--rose); font-size:11px; font-weight:bold; margin-bottom:8px;">⚠️ Rajyoga Bhanga (Breakage Factors)</div>`;
-  if (rajyogaBhanga.length === 0 && !kemadruma) {
-    html += `<div style="font-size:10px; color:var(--muted);">No significant breakage factors observed. Rajyogas are likely to manifest fully.</div>`;
-  } else {
-    if (rajyogaBhanga.length > 0) html += `<div>${rajyogaBhanga.join('<br/>')}</div>`;
-    if (kemadruma && !kemadrumaBhanga) html += `<div><strong>Kemadruma Yoga:</strong> Moon is isolated with no planets 2 houses away. This nullifies many Rajyogas.</div>`;
-  }
-  html += `</div></div>`;
+        if (rajyogaBhanga.length === 0 && !kemadruma) {
+          html += `<div style="font-size:10px; color:var(--muted);">No significant breakage factors observed. Rajyogas are likely to manifest fully.</div>`;
+        } else {
+          if (rajyogaBhanga.length > 0) html += `<div>${rajyogaBhanga.join('<br/>')}</div>`;
+          if (kemadruma && !kemadrumaBhanga) html += `<div><strong>Kemadruma Yoga:</strong> Moon is isolated with no planets 2 houses away. This nullifies many Rajyogas.</div>`;
+        }
+        html += `</div></div>`;
 
-  return html;
-}
+        return html;
+      }
       // 6. SPECIALIZED KARRA ANALYSIS (Career & Marriage)
       if (window.KARRA_ANALYSIS) {
         await showProgress('Performing Specialized Predictions...');
@@ -864,7 +864,7 @@ function analyzeRajyogasAndBhanga(planets, ascendant) {
         html += renderSudarshanChakraInfoSection();
       }
     }
-    
+
     // Check Natal Sahams (Only if explicitly checked and NOT already rendered in Varshaphala above)
     const chkSahams = document.getElementById('chkCalculateSahams');
     const isTushar = (mode === 'tushar');
@@ -872,7 +872,7 @@ function analyzeRajyogasAndBhanga(planets, ascendant) {
       // In Tushar mode, we already handled Varshaphala Sahams potentially? 
       // No, let's keep Tushar mode simple or integrated.
     }
-    
+
     await showProgress('Rendering Prediction Dashboard...');
     content.innerHTML = window.I18N ? window.I18N.t(html) : html;
     clearProgress();
@@ -931,25 +931,25 @@ function analyzeRajyogasAndBhanga(planets, ascendant) {
  */
 function renderCurrentDashaSection(dashaInfo) {
   if (!dashaInfo) return '';
-  
+
   const chkKhar = document.getElementById('chkMarkKharDasha');
   const showKhar = chkKhar && chkKhar.checked;
   let kharPlanets = [];
   if (showKhar && window.NAVAMSHA_ANALYSIS && window.BIRTH_PLANETS && window.BIRTH_ASC) {
-      const nd = window.NAVAMSHA_ANALYSIS.calculate(window.BIRTH_PLANETS, window.BIRTH_ASC);
-      kharPlanets = [nd.Khar64Lord, nd.Khar64Lord_Asc, nd.Khar22Lord].filter(x => x);
-      const signLords = ['Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter'];
-      let ashtamSignIndex = (window.BIRTH_ASC.signIndex + 7) % 12;
-      let randhreshvara = signLords[ashtamSignIndex] || null;
-      if (randhreshvara) kharPlanets.push(randhreshvara);
+    const nd = window.NAVAMSHA_ANALYSIS.calculate(window.BIRTH_PLANETS, window.BIRTH_ASC);
+    kharPlanets = [nd.Khar64Lord, nd.Khar64Lord_Asc, nd.Khar22Lord].filter(x => x);
+    const signLords = ['Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter'];
+    let ashtamSignIndex = (window.BIRTH_ASC.signIndex + 7) % 12;
+    let randhreshvara = signLords[ashtamSignIndex] || null;
+    if (randhreshvara) kharPlanets.push(randhreshvara);
   }
 
   const getKharBadge = (lord) => {
-      if (!lord || !showKhar) return '';
-      if (kharPlanets.includes(lord)) {
-          return ` <span style="background:#ff4757; color:white; font-size:7px; padding:1px 3px; border-radius:2px; vertical-align:middle; margin-left:3px;" title="Khar/Ashtam Planet Effect">⚠️ KHAR</span>`;
-      }
-      return '';
+    if (!lord || !showKhar) return '';
+    if (kharPlanets.includes(lord)) {
+      return ` <span style="background:#ff4757; color:white; font-size:7px; padding:1px 3px; border-radius:2px; vertical-align:middle; margin-left:3px;" title="Khar/Ashtam Planet Effect">⚠️ KHAR</span>`;
+    }
+    return '';
   };
 
   const formatDays = (days) => {
@@ -968,10 +968,10 @@ function renderCurrentDashaSection(dashaInfo) {
 
   const formatDate = (date) => {
     if (typeof date === 'string') return date;
-    if (date instanceof Date) return date.toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'});
+    if (date instanceof Date) return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     return 'N/A';
   };
-  
+
   return `
     <div class="pred-item">
       <div class="pred-title">📊 Current Dasha Status (Today)</div>
@@ -1014,36 +1014,36 @@ function renderDashaTimelineSection(timeline) {
   if (!timeline || timeline.length === 0) {
     return `<div class="pred-item"><div class="pred-detail" style="color:var(--muted);">No dasha changes in selected period</div></div>`;
   }
-  
+
   const chkKhar = document.getElementById('chkMarkKharDasha');
   const showKhar = chkKhar && chkKhar.checked;
   let kharPlanets = [];
   if (showKhar && window.NAVAMSHA_ANALYSIS && window.BIRTH_PLANETS && window.BIRTH_ASC) {
-      const nd = window.NAVAMSHA_ANALYSIS.calculate(window.BIRTH_PLANETS, window.BIRTH_ASC);
-      kharPlanets = [nd.Khar64Lord, nd.Khar64Lord_Asc, nd.Khar22Lord].filter(x => x);
-      const signLords = ['Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter'];
-      let ashtamSignIndex = (window.BIRTH_ASC.signIndex + 7) % 12;
-      let randhreshvara = signLords[ashtamSignIndex] || null;
-      if (randhreshvara) kharPlanets.push(randhreshvara);
+    const nd = window.NAVAMSHA_ANALYSIS.calculate(window.BIRTH_PLANETS, window.BIRTH_ASC);
+    kharPlanets = [nd.Khar64Lord, nd.Khar64Lord_Asc, nd.Khar22Lord].filter(x => x);
+    const signLords = ['Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter'];
+    let ashtamSignIndex = (window.BIRTH_ASC.signIndex + 7) % 12;
+    let randhreshvara = signLords[ashtamSignIndex] || null;
+    if (randhreshvara) kharPlanets.push(randhreshvara);
   }
 
   const getKharBadge = (lord) => {
-      if (!lord || !showKhar) return '';
-      if (kharPlanets.includes(lord)) {
-          return ` <span style="background:#ff4757; color:white; font-size:7px; padding:1px 3px; border-radius:2px; vertical-align:top; margin-left:3px;" title="Khar/Ashtam Planet Effect">⚠️ KHAR</span>`;
-      }
-      return '';
+    if (!lord || !showKhar) return '';
+    if (kharPlanets.includes(lord)) {
+      return ` <span style="background:#ff4757; color:white; font-size:7px; padding:1px 3px; border-radius:2px; vertical-align:top; margin-left:3px;" title="Khar/Ashtam Planet Effect">⚠️ KHAR</span>`;
+    }
+    return '';
   };
 
   let html = '<div class="pred-item"><div class="pred-title">📅 Upcoming Dasha Changes</div>';
-  
+
   timeline.slice(0, 8).forEach(event => {
-    const dateStr = typeof event.startDate === 'string' 
-      ? event.startDate 
-      : event.startDate?.toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: '2-digit'}) || 'N/A';
-    
+    const dateStr = typeof event.startDate === 'string'
+      ? event.startDate
+      : event.startDate?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) || 'N/A';
+
     const title = event.type === 'Mahadasha' ? '✦' : event.type === 'Antardasha' ? '◆' : '▪';
-    
+
     html += `
       <div style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(155,111,255,.15);">
         <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -1054,7 +1054,7 @@ function renderDashaTimelineSection(timeline) {
       </div>
     `;
   });
-  
+
   html += '</div>';
   return html;
 }
@@ -1066,17 +1066,17 @@ function renderOptimalDatesSection(optimalDates) {
   if (!optimalDates || optimalDates.length === 0) {
     return `<div class="pred-item"><div class="pred-detail" style="color:var(--muted);">No optimal dates found</div></div>`;
   }
-  
+
   let html = '<div class="pred-item"><div class="pred-title">✨ Suggested Optimal Dates</div>';
-  
+
   optimalDates.slice(0, 5).forEach(dateObj => {
-    const dateStr = dateObj.date instanceof Date 
-      ? dateObj.date.toLocaleDateString('en-US', {weekday: 'short', month: 'short', day: 'numeric'})
+    const dateStr = dateObj.date instanceof Date
+      ? dateObj.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
       : dateObj.date;
-    
+
     const score = Math.round(dateObj.favorabilityScore || 0);
     const scoreColor = score >= 80 ? 'var(--green)' : score >= 60 ? 'var(--gold)' : 'var(--amber)';
-    
+
     html += `
       <div style="margin-top:8px;padding:8px;background:rgba(155,111,255,.05);border-radius:2px;border-left:3px solid var(--cyan);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
@@ -1087,7 +1087,7 @@ function renderOptimalDatesSection(optimalDates) {
       </div>
     `;
   });
-  
+
   html += '</div>';
   return html;
 }
@@ -1099,38 +1099,38 @@ function renderMultiChartAnalysisSection(analysis) {
   if (!analysis || analysis.length === 0) {
     return '';
   }
-  
+
   let html = '<div class="pred-item"><div class="pred-title">🔍 Multi-Chart Analysis (D1)</div>';
-  
+
   // Show current planets summary
   const strong = analysis.filter(p => {
     const status = p.status || '';
     return status.includes('Own') || status.includes('Exalt');
   });
-  
+
   const weak = analysis.filter(p => {
     const status = p.status || '';
     return status.includes('Debilitated') || status.includes('Enemy');
   });
-  
+
   if (strong.length > 0) {
     html += `<div style="margin-top:6px;">
       <span style="font-size:9px;color:var(--green);font-weight:700;">✓ Strong:</span> 
       <span style="font-size:10px;color:var(--text);">${strong.map(p => p.name).join(', ')}</span>
     </div>`;
   }
-  
+
   if (weak.length > 0) {
     html += `<div style="margin-top:4px;">
       <span style="font-size:9px;color:var(--rose);font-weight:700;">✗ Weak:</span> 
       <span style="font-size:10px;color:var(--text);">${weak.map(p => p.name).join(', ')}</span>
     </div>`;
   }
-  
+
   html += `<div style="margin-top:6px;font-size:9px;color:var(--muted);padding-top:6px;border-top:1px solid rgba(155,111,255,.15);">
     Total planets: ${analysis.length} | Chart: D1 Rasi
   </div></div>`;
-  
+
   return html;
 }
 
@@ -1145,11 +1145,11 @@ function renderAstrologyKnowledgeSection() {
 
   let html = '<div class="pred-item" style="border-left: 3px solid var(--amber); background: rgba(255, 155, 58, 0.05);">';
   html += '<div class="pred-title" style="color:var(--amber);">📚 Deep Astrological Insights</div>';
-  
+
   // Basic rendering of planets in houses
   const planets = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.PLANETS) || [];
   let foundInsights = false;
-  
+
   planets.forEach(p => {
     const loc = Object.values(houses).find(h => h.planets && h.planets.includes(p));
     if (loc && loc.house) {
@@ -1184,7 +1184,7 @@ function renderAstrologyKnowledgeSection() {
       }
     } else if (h.planets.length === 3) {
       const insight = window.getAstrologyInsight('conjunction', `Three_Planets`);
-      if(insight) {
+      if (insight) {
         html += `
           <div style="margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:3px; border-left:2px solid var(--violet);">
             <div style="font-weight:700; font-size:10px; color:var(--violet); margin-bottom:2px;">${h.planets.join(', ')} (3 Planet Conjunction in H${h.house})</div>
@@ -1194,7 +1194,7 @@ function renderAstrologyKnowledgeSection() {
       }
     } else if (h.planets.length >= 4) {
       const insight = window.getAstrologyInsight('conjunction', `Four_Planets`);
-      if(insight) {
+      if (insight) {
         html += `
           <div style="margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:3px; border-left:2px solid var(--violet);">
             <div style="font-weight:700; font-size:10px; color:var(--violet); margin-bottom:2px;">${h.planets.join(', ')} (${h.planets.length} Planet Conjunction)</div>
@@ -1216,7 +1216,7 @@ function renderAstrologyKnowledgeSection() {
       </div>
     `;
   }
-  
+
   if (!foundInsights) return '';
   html += '</div>';
   return html;
@@ -1264,47 +1264,47 @@ if (document.readyState === 'interactive' || document.readyState === 'complete')
  */
 function renderSahamsSection(sahams, isDayBirth) {
   if (!sahams || sahams.length === 0) return '';
-  
+
   const targetDate = PREDICTIONS_UI.currentStartDate || new Date();
-  
+
   let html = `<div class="pred-item"><div class="pred-title">❇ Tajaka Sahams (Life Events)</div>
     <div style="font-size:9px;color:var(--muted);margin-bottom:8px;">Math model: ${isDayBirth ? 'Day Birth' : 'Night Birth'} Rules | Target: ${formatDateDisplay(targetDate)}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
     <style>@keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }</style>`;
-    
+
   sahams.forEach(s => {
     const activations = window.GET_SAHAM_ACTIVATIONS ? window.GET_SAHAM_ACTIVATIONS(s.degree, targetDate) : [];
-    const checkActive = window.IS_SAHAM_ACTIVE ? window.IS_SAHAM_ACTIVE(s.degree, targetDate) : {active:false};
-    
+    const checkActive = window.IS_SAHAM_ACTIVE ? window.IS_SAHAM_ACTIVE(s.degree, targetDate) : { active: false };
+
     let moonAct = 'N/A';
     let sunAct = 'N/A';
     const isActivated = checkActive.active;
 
     activations.forEach(a => {
-        if (!a.date) return;
-        const d = a.date;
-        if (a.body === 'Moon') {
-            moonAct = d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
-        }
-        if (a.body === 'Sun') {
-            sunAct = d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'2-digit'});
-        }
+      if (!a.date) return;
+      const d = a.date;
+      if (a.body === 'Moon') {
+        moonAct = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+      if (a.body === 'Sun') {
+        sunAct = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+      }
     });
 
     const baseColor = s.color || '#007BFF';
-    
+
     // Create an rgba version of the hex color for backgrounds
     let bgOpacity = 0.05, borderOpacity = 0.3;
-    let r = 0, g = 123, b = 255; 
+    let r = 0, g = 123, b = 255;
     if (baseColor.startsWith('#')) {
-        const hex = baseColor.replace('#', '');
-        if (hex.length === 6) {
-            r = parseInt(hex.substring(0, 2), 16);
-            g = parseInt(hex.substring(2, 4), 16);
-            b = parseInt(hex.substring(4, 6), 16);
-        }
+      const hex = baseColor.replace('#', '');
+      if (hex.length === 6) {
+        r = parseInt(hex.substring(0, 2), 16);
+        g = parseInt(hex.substring(2, 4), 16);
+        b = parseInt(hex.substring(4, 6), 16);
+      }
     }
-    
+
     let bg = isActivated ? 'rgba(255, 193, 7, 0.2)' : `rgba(${r}, ${g}, ${b}, ${bgOpacity})`;
     let border = isActivated ? '#FFC107' : `rgba(${r}, ${g}, ${b}, ${borderOpacity})`;
     let titleColor = isActivated ? '#FFC107' : baseColor;
@@ -1328,7 +1328,7 @@ function renderSahamsSection(sahams, isDayBirth) {
       </div>
     `;
   });
-  
+
   html += '</div></div>';
   return html;
 }
@@ -1336,8 +1336,8 @@ function renderSahamsSection(sahams, isDayBirth) {
  * Render Varshaphala (Solar Return) Section
  */
 function renderVarshaphalaSection(v) {
-  const chartId = `varshaChart_${v.year}_${Math.floor(Math.random()*1000)}`;
-    // Queued and drawn AFTER content.innerHTML has actually inserted this
+  const chartId = `varshaChart_${v.year}_${Math.floor(Math.random() * 1000)}`;
+  // Queued and drawn AFTER content.innerHTML has actually inserted this
   // canvas into the DOM (see the single draw pass in updatePredictionsDisplay)
   // instead of a fixed-delay setTimeout, which could fire before the DOM
   // update landed and silently leave the chart blank.
@@ -1345,8 +1345,8 @@ function renderVarshaphalaSection(v) {
   window.__varshaphalaChartQueue.push({ canvasId: chartId, planets: v.planets, asc: v.asc });
 
   //setTimeout(() => drawChartInPredictionPanel(chartId, v.planets, v.asc), 250);
-  const dateStr = v.dateInfo ? `${v.dateInfo.day}/${v.dateInfo.month}/${v.dateInfo.year} ${Math.floor(v.dateInfo.hour)}:${Math.floor((v.dateInfo.hour*60)%60).toString().padStart(2,'0')}` : 'Calculating...';
-  
+  const dateStr = v.dateInfo ? `${v.dateInfo.day}/${v.dateInfo.month}/${v.dateInfo.year} ${Math.floor(v.dateInfo.hour)}:${Math.floor((v.dateInfo.hour * 60) % 60).toString().padStart(2, '0')}` : 'Calculating...';
+
   return `
     <div class="pred-item" style="border-left: 3px solid var(--gold); background: rgba(255, 215, 0, 0.05);">
       <div class="pred-title" style="color:var(--gold);">📅 Varshaphala (Solar Return: ${v.year})</div>
@@ -1378,10 +1378,10 @@ function renderVarshaphalaSection(v) {
  * Format JD to localized date string
  */
 function formatJD(jdValue) {
-    if (!jdValue) return 'N/A';
-    // JD to Unix Epoch: (JD - 2440587.5) * 86400000
-    const unix = (jdValue - 2440587.5) * 86400000;
-    return new Date(unix).toLocaleString();
+  if (!jdValue) return 'N/A';
+  // JD to Unix Epoch: (JD - 2440587.5) * 86400000
+  const unix = (jdValue - 2440587.5) * 86400000;
+  return new Date(unix).toLocaleString();
 }
 
 /**
@@ -1406,7 +1406,7 @@ function renderKarraCareerSection(career) {
  */
 function renderMarriageTimingSection(timing) {
   if (!timing || !timing.windows || !timing.windows.length) return '';
-  
+
   // For Sudarshan Chakra Chart, we use the combined Lagna, Moon, Sun
   /* setTimeout(() => {
     const p = window.BIRTH_PLANETS || {};
@@ -1484,12 +1484,12 @@ function renderNatalDegreesSection() {
   const asc = window.BIRTH_ASC || {};
 
   // Add Ascendant
-  const ascSign = asc.sign || (asc.sid !== undefined ? SIGNS[Math.floor(asc.sid/30)] : 'N/A');
+  const ascSign = asc.sign || (asc.sid !== undefined ? SIGNS[Math.floor(asc.sid / 30)] : 'N/A');
   html += `
     <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
        <td style="padding:4px; color:var(--gold);">Ascendant</td>
        <td style="text-align:center; padding:4px;">${asc.sid !== undefined ? fmtDeg(asc.sid) : 'N/A'}</td>
-       <td style="text-align:center; padding:4px;">${ascSign.substring(0,3)}</td>
+       <td style="text-align:center; padding:4px;">${ascSign.substring(0, 3)}</td>
        <td style="text-align:center; padding:4px;">-</td>
     </tr>
   `;
@@ -1497,28 +1497,28 @@ function renderNatalDegreesSection() {
   planets.forEach(p => {
     const v = data[p];
     if (!v) {
-       // Try current planetary positions if birth planets not set
-       const backup = window.CURRENT_PLANETARY_POSITIONS?.[p];
-       if (!backup) return;
-       const d1lon = backup.longitude || 0;
-       const d9 = divLon(d1lon, 9);
-       const d10 = divLon(d1lon, 10);
-       html += `
+      // Try current planetary positions if birth planets not set
+      const backup = window.CURRENT_PLANETARY_POSITIONS?.[p];
+      if (!backup) return;
+      const d1lon = backup.longitude || 0;
+      const d9 = divLon(d1lon, 9);
+      const d10 = divLon(d1lon, 10);
+      html += `
          <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
            <td style="padding:4px;">${p}</td>
            <td style="text-align:center; padding:4px;">${fmtDeg(d1lon)}</td>
-           <td style="text-align:center; padding:4px;">${SIGNS[Math.floor(d9/30)].substring(0,3)} ${(d9%30).toFixed(0)}°</td>
-           <td style="text-align:center; padding:4px;">${SIGNS[Math.floor(d10/30)].substring(0,3)} ${(d10%30).toFixed(0)}°</td>
+           <td style="text-align:center; padding:4px;">${SIGNS[Math.floor(d9 / 30)].substring(0, 3)} ${(d9 % 30).toFixed(0)}°</td>
+           <td style="text-align:center; padding:4px;">${SIGNS[Math.floor(d10 / 30)].substring(0, 3)} ${(d10 % 30).toFixed(0)}°</td>
          </tr>
        `;
-       return;
+      return;
     }
     const dlon = v.sid || v.dlon || 0;
     const d9 = divLon(dlon, 9);
     const d10 = divLon(dlon, 10);
-    const sign9 = window.SIGNS ? window.SIGNS[Math.floor(d9/30)] : '???';
-    const sign10 = window.SIGNS ? window.SIGNS[Math.floor(d10/30)] : '???';
-    
+    const sign9 = window.SIGNS ? window.SIGNS[Math.floor(d9 / 30)] : '???';
+    const sign10 = window.SIGNS ? window.SIGNS[Math.floor(d10 / 30)] : '???';
+
     // Calculate Shadbala if available
     const shad = window.SHADBALA ? window.SHADBALA.calculate(p, window.BIRTH_PLANETS || window.CURRENT_PLANETARY_POSITIONS, window.BIRTH_ASC) : null;
     const shadLabel = shad ? `<br/><span style="color:var(--gold);font-size:7px;">${shad.level} (${shad.total.toFixed(0)})</span>` : '';
@@ -1527,8 +1527,8 @@ function renderNatalDegreesSection() {
       <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
         <td style="padding:4px;">${p}${shadLabel}</td>
         <td style="text-align:center; padding:4px;">${dlon.toFixed(2)}° (${fmtDeg(dlon)})</td>
-        <td style="text-align:center; padding:4px;">${sign9.substring(0,3)} ${(d9%30).toFixed(0)}°</td>
-        <td style="text-align:center; padding:4px;">${sign10.substring(0,3)} ${(d10%30).toFixed(0)}°</td>
+        <td style="text-align:center; padding:4px;">${sign9.substring(0, 3)} ${(d9 % 30).toFixed(0)}°</td>
+        <td style="text-align:center; padding:4px;">${sign10.substring(0, 3)} ${(d10 % 30).toFixed(0)}°</td>
       </tr>
     `;
   });
@@ -1544,7 +1544,7 @@ function fmtDeg(deg) {
   const d = Math.floor(deg % 30);
   const m = Math.floor(((deg % 30) - d) * 60);
   const sign = SIGNS[Math.floor(deg / 30)] || '??';
-  return `${sign.substring(0,3)} ${d}°${m}'`;
+  return `${sign.substring(0, 3)} ${d}°${m}'`;
 }
 
 /**
@@ -1565,52 +1565,52 @@ function drawChartInPredictionPanel(cvId, planets, asc) {
   cv.style.width = S + 'px'; cv.style.height = S + 'px';
   const ctx = cv.getContext('2d');
   ctx.scale(2, 2);
-  
-  ctx.fillStyle = '#050510'; ctx.fillRect(0,0,S,S);
+
+  ctx.fillStyle = '#050510'; ctx.fillRect(0, 0, S, S);
   ctx.strokeStyle = '#282860'; ctx.lineWidth = 1;
-  ctx.strokeRect(5,5,S-10,S-10);
-  
+  ctx.strokeRect(5, 5, S - 10, S - 10);
+
   // Draw diagonals
   ctx.beginPath();
-  ctx.moveTo(5,5); ctx.lineTo(S-5,S-5);
-  ctx.moveTo(S-5,5); ctx.lineTo(5,S-5);
-  ctx.moveTo(S/2,5); ctx.lineTo(5,S/2);
-  ctx.moveTo(5,S/2); ctx.lineTo(S/2,S-5);
-  ctx.moveTo(S/2,S-5); ctx.lineTo(S-5,S/2);
-  ctx.moveTo(S-5,S/2); ctx.lineTo(S/2,5);
+  ctx.moveTo(5, 5); ctx.lineTo(S - 5, S - 5);
+  ctx.moveTo(S - 5, 5); ctx.lineTo(5, S - 5);
+  ctx.moveTo(S / 2, 5); ctx.lineTo(5, S / 2);
+  ctx.moveTo(5, S / 2); ctx.lineTo(S / 2, S - 5);
+  ctx.moveTo(S / 2, S - 5); ctx.lineTo(S - 5, S / 2);
+  ctx.moveTo(S - 5, S / 2); ctx.lineTo(S / 2, 5);
   ctx.stroke();
 
-  if(!planets || !asc) return;
+  if (!planets || !asc) return;
   const lagnaLon = asc.sid !== undefined ? asc.sid : (asc.longitude || 0);
-  const lSign = Math.floor(lagnaLon/30) + 1;
-  
+  const lSign = Math.floor(lagnaLon / 30) + 1;
+
   const houseCoords = [
-    {x:S/2, y:S/4}, {x:S/4, y:S/8}, {x:S/8, y:S/4}, {x:S/4, y:S/2},
-    {x:S/8, y:3*S/4}, {x:S/4, y:7*S/8}, {x:S/2, y:3*S/4}, {x:3*S/4, y:7*S/8},
-    {x:7*S/8, y:3*S/4}, {x:3*S/4, y:S/2}, {x:7*S/8, y:S/4}, {x:3*S/4, y:S/8}
+    { x: S / 2, y: S / 4 }, { x: S / 4, y: S / 8 }, { x: S / 8, y: S / 4 }, { x: S / 4, y: S / 2 },
+    { x: S / 8, y: 3 * S / 4 }, { x: S / 4, y: 7 * S / 8 }, { x: S / 2, y: 3 * S / 4 }, { x: 3 * S / 4, y: 7 * S / 8 },
+    { x: 7 * S / 8, y: 3 * S / 4 }, { x: 3 * S / 4, y: S / 2 }, { x: 7 * S / 8, y: S / 4 }, { x: 3 * S / 4, y: S / 8 }
   ];
 
   // Draw house numbers
   ctx.font = '8px Arial'; ctx.fillStyle = '#50508A';
   houseCoords.forEach((c, i) => {
     const s = ((lSign + i - 1) % 12) + 1;
-    ctx.fillText(s, c.x-3, c.y-10);
+    ctx.fillText(s, c.x - 3, c.y - 10);
   });
-  
+
   // Draw planets
   ctx.fillStyle = '#D0D0EE'; ctx.font = '7px Arial';
   const occupants = Array(12).fill().map(() => []);
   occupants[0].push('As');
 
   Object.entries(planets).forEach(([name, data]) => {
-     const lon = data.sid !== undefined ? data.sid : (data.longitude || 0);
-     const h = (Math.floor(lon/30) - (lSign - 1) + 12) % 12;
-     occupants[h].push(name.substring(0,2));
+    const lon = data.sid !== undefined ? data.sid : (data.longitude || 0);
+    const h = (Math.floor(lon / 30) - (lSign - 1) + 12) % 12;
+    occupants[h].push(name.substring(0, 2));
   });
 
   houseCoords.forEach((c, i) => {
     occupants[i].forEach((p, pi) => {
-      ctx.fillText(p, c.x - 8, c.y + pi*8);
+      ctx.fillText(p, c.x - 8, c.y + pi * 8);
     });
   });
 }
@@ -1626,30 +1626,30 @@ function drawSudarshanChakraInPanel(cvId, planets, asc) {
   cv.style.width = S + 'px'; cv.style.height = S + 'px';
   const ctx = cv.getContext('2d');
   ctx.scale(2, 2);
-  
-  ctx.fillStyle = '#050510'; ctx.fillRect(0,0,S,S);
+
+  ctx.fillStyle = '#050510'; ctx.fillRect(0, 0, S, S);
   ctx.strokeStyle = '#282860'; ctx.lineWidth = 1;
-  const CX = S/2, CY = S/2;
+  const CX = S / 2, CY = S / 2;
 
   // 3 Circles
   [30, 50, 70].forEach(r => {
-    ctx.beginPath(); ctx.arc(CX, CY, r, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(CX, CY, r, 0, Math.PI * 2); ctx.stroke();
   });
 
   // 12 spokes
-  for(let i=0; i<12; i++) {
-    const ang = i * 30 * Math.PI/180;
+  for (let i = 0; i < 12; i++) {
+    const ang = i * 30 * Math.PI / 180;
     ctx.beginPath();
-    ctx.moveTo(CX + Math.cos(ang)*30, CY + Math.sin(ang)*30);
-    ctx.lineTo(CX + Math.cos(ang)*90, CY + Math.sin(ang)*90);
+    ctx.moveTo(CX + Math.cos(ang) * 30, CY + Math.sin(ang) * 30);
+    ctx.lineTo(CX + Math.cos(ang) * 90, CY + Math.sin(ang) * 90);
     ctx.stroke();
   }
 
   // Label Houses
   ctx.font = '8px Arial'; ctx.fillStyle = '#50508A';
-  for(let i=0; i<12; i++) {
-    const ang = (i*30 + 15) * Math.PI/180;
-    ctx.fillText(i+1, CX + Math.cos(ang)*82 - 3, CY + Math.sin(ang)*82 + 3);
+  for (let i = 0; i < 12; i++) {
+    const ang = (i * 30 + 15) * Math.PI / 180;
+    ctx.fillText(i + 1, CX + Math.cos(ang) * 82 - 3, CY + Math.sin(ang) * 82 + 3);
   }
 
   // Draw Planets (simplified: just marks)
@@ -1658,9 +1658,9 @@ function drawSudarshanChakraInPanel(cvId, planets, asc) {
   const lagnaLon = asc.sid || 0;
 
   const drawP = (lon, r, color) => {
-    const ang = (lon - 90) * Math.PI/180;
+    const ang = (lon - 90) * Math.PI / 180;
     ctx.fillStyle = color;
-    ctx.beginPath(); ctx.arc(CX + Math.cos(ang)*r, CY + Math.sin(ang)*r, 2, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(CX + Math.cos(ang) * r, CY + Math.sin(ang) * r, 2, 0, Math.PI * 2); ctx.fill();
   };
 
   drawP(lagnaLon, 40, '#3AF0FF');
@@ -1729,7 +1729,7 @@ function renderDailyCombinationsSection(date) {
   let pos;
   try {
     pos = getPos(date);
-  } catch(e) {
+  } catch (e) {
     return '';
   }
   if (!pos) return '';
@@ -1750,11 +1750,11 @@ function renderDailyCombinationsSection(date) {
   // Active Sahams today
   if (window.BIRTH_SAHAMS && Array.isArray(window.BIRTH_SAHAMS)) {
     const todayTarget = new Date(date);
-    todayTarget.setHours(0,0,0,0);
+    todayTarget.setHours(0, 0, 0, 0);
     const todayNum = todayTarget.getTime();
-    
+
     const activeSahams = window.BIRTH_SAHAMS.map(s => {
-      const activeInfo = window.IS_SAHAM_ACTIVE ? window.IS_SAHAM_ACTIVE(s.degree, todayTarget) : {active:false};
+      const activeInfo = window.IS_SAHAM_ACTIVE ? window.IS_SAHAM_ACTIVE(s.degree, todayTarget) : { active: false };
       return activeInfo.active ? { ...s, activeInfo } : null;
     }).filter(x => x !== null);
 
@@ -1764,7 +1764,7 @@ function renderDailyCombinationsSection(date) {
         const body = s.activeInfo.body;
         const pColor = body === 'Moon' ? 'var(--cyan)' : 'var(--gold)';
         html += `<div style="margin-left:5px; font-size:9.5px; color:var(--text); margin-bottom:5px; padding:3px 6px; background:rgba(255,193,7,0.1); border-left:2px solid var(--amber); border-radius:2px;">
-          • <strong style="color:${s.color||'var(--text)'}">${s.name}</strong> 
+          • <strong style="color:${s.color || 'var(--text)'}">${s.name}</strong> 
           <span style="font-size:8px; opacity:0.8;">(${s.topic})</span>
           <br/>
           <span style="color:var(--muted);font-size:8px;">Activated by transit <strong style="color:${pColor}">${body}</strong> (Orb: ${s.activeInfo.orb.toFixed(2)}°)</span>
@@ -1782,18 +1782,18 @@ function renderDailyCombinationsSection(date) {
 /**
  * Shift Prediction Date by a specified delta and unit
  */
-window.shiftPredDate = function(delta, unit) {
+window.shiftPredDate = function (delta, unit) {
   const startInp = document.getElementById('pred-start');
   const endInp = document.getElementById('pred-end');
-  
+
   if (!startInp || !endInp || !startInp.value || !endInp.value) {
     alert("Please select a valid date range first!");
     return;
   }
-  
+
   const parseLocalDate = (str) => {
     const [y, m, d] = str.split('-').map(Number);
-    return new Date(y, m - 1, d, 12, 0, 0); 
+    return new Date(y, m - 1, d, 12, 0, 0);
   };
 
   const formatLocalDate = (date) => {
@@ -1805,9 +1805,9 @@ window.shiftPredDate = function(delta, unit) {
 
   let sDate = parseLocalDate(startInp.value);
   let eDate = parseLocalDate(endInp.value);
-  
+
   if (isNaN(sDate.getTime()) || isNaN(eDate.getTime())) return;
-  
+
   let shiftDays = 0;
   if (unit === 'day') shiftDays = 1;
   if (unit === 'week') shiftDays = 7;
@@ -1820,31 +1820,31 @@ window.shiftPredDate = function(delta, unit) {
   } else {
     sDate.setDate(sDate.getDate() + (delta * (shiftDays || 30)));
   }
-  
+
   startInp.value = formatLocalDate(sDate);
   endInp.value = formatLocalDate(eDate);
-  
+
   if (typeof window.centerDate !== 'undefined') {
-      window.centerDate = new Date(sDate.getTime());
-      window.centerDate.setHours(12,0,0,0);
-      
-      const tdateInp = document.getElementById('tDate');
-      if (tdateInp) tdateInp.value = formatLocalDate(sDate);
-      
-      if (typeof window.renderAll === 'function') {
-          window.renderAll();
-      }
+    window.centerDate = new Date(sDate.getTime());
+    window.centerDate.setHours(12, 0, 0, 0);
+
+    const tdateInp = document.getElementById('tDate');
+    if (tdateInp) tdateInp.value = formatLocalDate(sDate);
+
+    if (typeof window.renderAll === 'function') {
+      window.renderAll();
+    }
   }
 
   const btnUpdatePredictions = document.getElementById('btnUpdatePredictions');
   if (btnUpdatePredictions) {
-      btnUpdatePredictions.click();
+    btnUpdatePredictions.click();
   }
 };
 
 /**
  
-
+ 
  * Specialized Marriage Panel Update — delegates to runMarriageAnalysis(),
  * which is defined in marriage.js (loaded as a separate <script> — make
  * sure marriage.js is included on the page alongside this file). Kept as
@@ -1854,7 +1854,7 @@ window.shiftPredDate = function(delta, unit) {
 async function updateMarriagePanel() {
   if (typeof runMarriageAnalysis === 'function') {
     runMarriageAnalysis();
-     
+
   } else {
     console.error("runMarriageAnalysis not found in marriage.js");
   }
