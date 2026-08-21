@@ -1716,7 +1716,28 @@ function drawDChart(cvId, customData){
       }
     });
   }
-
+  // Live dignity (exaltation/debilitation) + combustion, computed on the
+  // fly from this chart's own planet data — NOT from any pre-attached
+  // .status/.combust field, since getPos() (which feeds every transit
+  // chart canvas) never populates those. Works identically for the natal
+  // chart and every transit chart, since both are drawn through this
+  // same function. Sign-based (whole-sign exalt/debilitation), matching
+  // the convention already used elsewhere in this file (getKarakaStrength).
+  const DBC_EXALT = { Sun: 0, Moon: 1, Mars: 9, Mercury: 5, Jupiter: 3, Venus: 11, Saturn: 6 };
+  const DBC_DEBIL = { Sun: 6, Moon: 7, Mars: 3, Mercury: 11, Jupiter: 9, Venus: 5, Saturn: 0 };
+  const DBC_COMBUST_ORB = { Moon: 12, Mars: 17, Mercury: 14, Jupiter: 11, Venus: 10, Saturn: 15 };
+  const sunSid = planetsData?.Sun?.sid;
+  const getDignityCombust = (p, pd) => {
+    if (p === 'As' || p === 'Sun') return { exalted: false, debilitated: false, combust: false }; // Sun itself is never "combust"
+    const exalted = DBC_EXALT[p] === pd.sn;
+    const debilitated = DBC_DEBIL[p] === pd.sn;
+    let combust = false;
+    if (sunSid !== undefined && pd.sid !== undefined && DBC_COMBUST_ORB[p]) {
+      const diff = Math.min(Math.abs(pd.sid - sunSid), 360 - Math.abs(pd.sid - sunSid));
+      combust = diff < DBC_COMBUST_ORB[p];
+    }
+    return { exalted, debilitated, combust };
+  };
   const ROW_H=12;
   for(let h=1;h<=12;h++){
     const c=CE[h]; if(!c||!hmap[h].length)continue;
@@ -1727,7 +1748,15 @@ function drawDChart(cvId, customData){
       const useShorts = document.getElementById('chkShortNames')?.checked;
       const sym = p==='As' ? 'As' : (useShorts ? p.substring(0,2) : (cfg?.sym||p.substring(0,2)));
       ctx.font='bold 8px Courier New';ctx.fillStyle=col;ctx.fillText(sym,c.x-8,py+3);
-      if(p!=='As'){ctx.font='6px Courier New';ctx.fillStyle=col+'99';ctx.fillText(Math.floor(pd.deg)+'°',c.x+5,py+3);}
+  if(p!=='As'){
+        ctx.font='6px Courier New';ctx.fillStyle=col+'99';ctx.fillText(Math.floor(pd.deg)+'°',c.x+5,py+3);
+        const dbc = getDignityCombust(p, pd);
+        let markX = c.x + 20;
+        if (dbc.exalted) { ctx.font='bold 8px Courier New'; ctx.fillStyle='#00DD77'; ctx.fillText('↑', markX, py+3); markX += 8; }
+        if (dbc.debilitated) { ctx.font='bold 8px Courier New'; ctx.fillStyle='#FF4477'; ctx.fillText('↓', markX, py+3); markX += 8; }
+        if (dbc.combust) { ctx.font='bold 6px Courier New'; ctx.fillStyle='#FF9F43'; ctx.fillText('(c)', markX, py+3); }
+     }      
+     //if(p!=='As'){ctx.font='6px Courier New';ctx.fillStyle=col+'99';ctx.fillText(Math.floor(pd.deg)+'°',c.x+5,py+3);}
     });
     
     // Render House Aspects

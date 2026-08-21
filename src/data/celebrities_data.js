@@ -17,7 +17,8 @@ window.CELEBRITY_DATABASE = {
     { name: "Yogi Adityanath", date: "1972-06-05", time: "10:54", city: "Pauri Garhwal, UK", lat: 30.15, lon: 78.78, utcOff: 5.5, ayan: "lahiri" },
     { name: "Joe Biden", date: "1942-11-20", time: "08:30", city: "Scranton, PA", lat: 41.40, lon: -75.66, utcOff: -5, ayan: "lahiri" },
     { name: "Vladimir Putin", date: "1952-10-07", time: "09:30", city: "St Petersburg, Russia", lat: 59.93, lon: 30.31, utcOff: 3, ayan: "lahiri" },
-    { name: "Emmanuel Macron", date: "1977-12-21", time: "10:40", city: "Amiens, France", lat: 49.89, lon: 2.29, utcOff: 1, ayan: "lahiri" }
+    { name: "Emmanuel Macron", date: "1977-12-21", time: "10:40", city: "Amiens, France", lat: 49.89, lon: 2.29, utcOff: 1, ayan: "lahiri" },
+    { name: "Rajiv Gandhi", date: "1944-08-20", time: "06:34", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" }
   ],
   "actor": [
     { name: "Amitabh Bachchan", date: "1942-10-11", time: "16:00", city: "Allahabad, UP", lat: 25.43, lon: 81.84, utcOff: 5.5, ayan: "lahiri" },
@@ -42,7 +43,18 @@ window.CELEBRITY_DATABASE = {
     { name: "C. Joseph Vijay (Thalapathy Vijay)", date: "1974-06-22", time: "12:00", city: "Madras, TN", lat: 13.08, lon: 80.27, utcOff: 5.5, ayan: "lahiri" },
     { name: "Ranbir Kapoor", date: "1982-09-28", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
     { name: "Alia Bhatt", date: "1993-03-15", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
-    { name: "Ranveer Singh", date: "1985-07-06", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" }
+    { name: "Ranveer Singh", date: "1985-07-06", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Sanjay Dutt", date: "1959-07-29", time: "14:45", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Govinda", date: "1963-12-21", time: "21:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Aishwarya Rai", date: "1973-11-01", time: "07:20", city: "Mangalore, KA", lat: 12.91, lon: 74.86, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Kajol", date: "1974-08-05", time: "20:21", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Twinkle Khanna", date: "1974-12-29", time: "12:00", city: "Pune, MH", lat: 18.52, lon: 73.86, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Abhay Deol", date: "1976-03-15", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Shahid Kapoor", date: "1981-02-25", time: "16:30", city: "New Delhi", lat: 28.61, lon: 77.20, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Parveen Babi", date: "1954-04-04", time: "12:00", city: "Junagadh, GJ", lat: 21.52, lon: 70.46, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Divya Bharti", date: "1974-02-25", time: "23:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Sushant Singh Rajput", date: "1986-01-21", time: "02:15", city: "Patna, BR", lat: 25.59, lon: 85.14, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Saif Ali Khan", date: "1970-08-16", time: "19:35", city: "New Delhi", lat: 28.61, lon: 77.20, utcOff: 5.5, ayan: "lahiri" }
   ],
   "sports man": [
     { name: "Sachin Tendulkar", date: "1973-04-24", time: "13:00", city: "Mumbai", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
@@ -117,12 +129,19 @@ window.CELEBRITY_DATABASE = {
     { name: "Sathya Sai Baba", date: "1926-11-23", time: "05:06", city: "Puttaparthi, AP", lat: 14.16, lon: 77.81, utcOff: 5.5, ayan: "lahiri" }
   ],
   "freedom fighter": [
-    { name: "Mahatma Gandhi", date: "1869-10-02", time: "07:12", city: "Porbandar, India", lat: 21.64, lon: 69.60, utcOff: 5.5, ayan: "lahiri" },
-    { name: "Subhash Chandra Bose", date: "1897-01-23", time: "12:15", city: "Cuttack, India", lat: 20.46, lon: 85.87, utcOff: 5.5, ayan: "lahiri" },
-    { name: "Bhagat Singh", date: "1907-09-28", time: "09:00", city: "Banga, Pakistan", lat: 31.25, lon: 73.16, utcOff: 5.5, ayan: "lahiri" },
-    { name: "Sardar Vallabhbhai Patel", date: "1875-10-31", time: "21:00", city: "Nadiad, GJ", lat: 22.69, lon: 72.86, utcOff: 5.5, ayan: "lahiri" },
-    { name: "Chandrashekhar Azad", date: "1906-07-23", time: "14:15", city: "Bhavra, MP", lat: 22.52, lon: 74.32, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Mahatma Gandhi", date: "1869-10-02", time: "07:45", city: "Porbandar, GJ", lat: 21.64, lon: 69.61, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Subhas Chandra Bose", date: "1897-01-23", time: "12:15", city: "Cuttack, OD", lat: 20.46, lon: 85.88, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Bhagat Singh", date: "1907-09-28", time: "09:00", city: "Banga, PB", lat: 31.18, lon: 76.01, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Bal Gangadhar Tilak", date: "1856-07-23", time: "06:00", city: "Ratnagiri, MH", lat: 16.99, lon: 73.31, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Sardar Vallabhbhai Patel", date: "1875-10-31", time: "09:00", city: "Nadiad, GJ", lat: 22.69, lon: 72.86, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Lala Lajpat Rai", date: "1865-01-28", time: "12:00", city: "Dhudike, PB", lat: 30.72, lon: 75.40, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Chandra Shekhar Azad", date: "1906-07-23", time: "12:00", city: "Bhabra, MP", lat: 22.42, lon: 74.33, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Sukhdev Thapar", date: "1907-05-15", time: "12:00", city: "Ludhiana, PB", lat: 30.90, lon: 75.85, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Ram Prasad Bismil", date: "1897-06-11", time: "12:00", city: "Shahjahanpur, UP", lat: 27.88, lon: 79.91, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Annie Besant", date: "1847-10-01", time: "22:00", city: "London, UK", lat: 51.51, lon: -0.13, utcOff: 0, ayan: "lahiri" },
     { name: "Rani Lakshmibai", date: "1828-11-19", time: "12:00", city: "Varanasi, UP", lat: 25.31, lon: 82.97, utcOff: 5.5, ayan: "lahiri" }
+    { name: "Bipin Chandra Pal", date: "1858-11-07", time: "12:00", city: "Poil, Bangladesh", lat: 24.10, lon: 91.50, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Maulana Abul Kalam Azad", date: "1888-11-11", time: "06:30", city: "Mecca, Saudi Arabia", lat: 21.42, lon: 39.82, utcOff: 3, ayan: "lahiri" }
   ],
   "industrialist": [
     { name: "Henry Ford", date: "1863-07-30", time: "07:00", city: "Dearborn, MI", lat: 42.32, lon: -83.17, utcOff: -5.4, ayan: "lahiri" },
@@ -151,6 +170,12 @@ window.CELEBRITY_DATABASE = {
     { name: "Al Capone", date: "1899-01-17", time: "12:00", city: "Brooklyn, NY", lat: 40.67, lon: -73.94, utcOff: -5, ayan: "lahiri" },
     { name: "Charles Manson", date: "1934-11-12", time: "12:00", city: "Cincinnati, OH", lat: 39.10, lon: -84.51, utcOff: -5, ayan: "lahiri" },
     { name: "Dawood Ibrahim", date: "1955-12-26", time: "12:00", city: "Ratnagiri, MH", lat: 16.99, lon: 73.31, utcOff: 5.5, ayan: "lahiri" }
+  ],
+  "fraud": [
+    { name: "Vijay Mallya", date: "1955-12-18", time: "10:45", city: "Bantwal, KA", lat: 12.90, lon: 74.98, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Nirav Modi", date: "1971-02-27", time: "12:00", city: "Palanpur, GJ", lat: 24.17, lon: 72.43, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Mehul Choksi", date: "1959-05-05", time: "12:00", city: "Mumbai, MH", lat: 19.07, lon: 72.87, utcOff: 5.5, ayan: "lahiri" },
+    { name: "Nithyananda Swami", date: "1978-01-01", time: "12:00", city: "Tiruvannamalai, TN", lat: 12.23, lon: 79.07, utcOff: 5.5, ayan: "lahiri" }
   ],
   "judge": [
     { name: "Ruth Bader Ginsburg", date: "1933-03-15", time: "12:00", city: "Brooklyn, NY", lat: 40.67, lon: -73.94, utcOff: -5, ayan: "lahiri" },
@@ -286,20 +311,6 @@ window.CELEBRITY_DATABASE = {
     { name: "Masood Azhar", date: "1968-07-10", time: "12:00", city: "Bahawalpur, Pakistan", lat: 29.39, lon: 71.68, utcOff: 5, ayan: "lahiri" }
   ],
 
-  "freedom fighter": [
-    { name: "Mahatma Gandhi", date: "1869-10-02", time: "07:45", city: "Porbandar, GJ", lat: 21.64, lon: 69.61, utcOff: 5.5, ayan: "lahiri" },
-    { name: "Subhas Chandra Bose", date: "1897-01-23", time: "12:15", city: "Cuttack, OD", lat: 20.46, lon: 85.88, utcOff: 5.5, ayan: "lahiri" },
-    { name: "Bhagat Singh", date: "1907-09-28", time: "09:00", city: "Banga, PB", lat: 31.18, lon: 76.01, utcOff: 5.5, ayan: "lahiri" },
-    { name: "Bal Gangadhar Tilak", date: "1856-07-23", time: "06:00", city: "Ratnagiri, MH", lat: 16.99, lon: 73.31, utcOff: 5.5, ayan: "lahiri" },
-    { name: "Sardar Vallabhbhai Patel", date: "1875-10-31", time: "09:00", city: "Nadiad, GJ", lat: 22.69, lon: 72.86, utcOff: 5.5, ayan: "lahiri" },
-    { name: "Lala Lajpat Rai", date: "1865-01-28", time: "12:00", city: "Dhudike, PB", lat: 30.72, lon: 75.40, utcOff: 5.5, ayan: "lahiri" },
-    { name: "Chandra Shekhar Azad", date: "1906-07-23", time: "12:00", city: "Bhabra, MP", lat: 22.42, lon: 74.33, utcOff: 5.5, ayan: "lahiri" },
-    { name: "Sukhdev Thapar", date: "1907-05-15", time: "12:00", city: "Ludhiana, PB", lat: 30.90, lon: 75.85, utcOff: 5.5, ayan: "lahiri" },
-    { name: "Ram Prasad Bismil", date: "1897-06-11", time: "12:00", city: "Shahjahanpur, UP", lat: 27.88, lon: 79.91, utcOff: 5.5, ayan: "lahiri" },
-    { name: "Annie Besant", date: "1847-10-01", time: "22:00", city: "London, UK", lat: 51.51, lon: -0.13, utcOff: 0, ayan: "lahiri" },
-    { name: "Bipin Chandra Pal", date: "1858-11-07", time: "12:00", city: "Poil, Bangladesh", lat: 24.10, lon: 91.50, utcOff: 5.5, ayan: "lahiri" },
-    { name: "Maulana Abul Kalam Azad", date: "1888-11-11", time: "06:30", city: "Mecca, Saudi Arabia", lat: 21.42, lon: 39.82, utcOff: 3, ayan: "lahiri" }
-  ],
 
   "luckiest": [
     { name: "Warren Buffett", date: "1930-08-30", time: "15:00", city: "Omaha, NE", lat: 41.25, lon: -95.93, utcOff: -6, ayan: "lahiri" },
