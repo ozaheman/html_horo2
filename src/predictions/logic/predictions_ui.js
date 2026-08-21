@@ -405,7 +405,7 @@ async function updatePredictionsDisplay() {
               });
               html += window.KP_PREDICTION_6.renderHTML5(kp5Analysis);
           }
-          }
+          
             
             catch (kpErr) {
               console.error('KP Part 6 analysis failed:', kp5Err);
