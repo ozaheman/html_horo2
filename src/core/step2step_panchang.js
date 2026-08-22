@@ -51,7 +51,7 @@ function _s2sGetNakDetails(lonDeg) {
     }
   }
 
-  return { index: idx, name: name, pada: pada, charan: pada, lord: nakLord, subLord: subLord };
+  return { index: idx, name: name, pada: pada, charan: pada, lord: nakLord, subLord: subLord,entry: nakEntry  };
 }
 window.STEP2STEP_PANCHANG = {
   analyze: function(planets, ascendant, houses, birthDate, birthConfig) {
@@ -191,7 +191,8 @@ const getPlanetSafe = (name) => {
 
     // Nakshatra Info
     const nakInfo = window.getNakshatra ? window.getNakshatra(moonLon) : { name: 'Unknown', pada: 1, lord: 'Unknown' };
-    
+    const moonNakDetails = _s2sGetNakDetails(moonLon);
+    const nakEntry = moonNakDetails.entry || {};
     // Get SIGNS from global constants or use fallback
     const SIGNS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGNS) 
       ? window.ASTRO_CONSTANTS.SIGNS 
@@ -259,14 +260,48 @@ const getPlanetSafe = (name) => {
           <div><strong style="color:var(--muted)">🌙 Moon Sign (Rasi):</strong> ${moonSign}</div>
           <div><strong style="color:var(--muted)">☀️ Sun Sign (Western):</strong> ${sunSign}</div>
           <div><strong style="color:var(--muted)">🌗 Tithi:</strong> ${tithiStr} (${tithiName})</div>
-          <div><strong style="color:var(--muted)">✨ Nakshatra:</strong> ${nakInfo.name} (Pada ${nakInfo.pada}) | Lord: ${nakInfo.lord || 'Unknown'}</div>
+          <div><strong style="color:var(--muted)">✨ Janma Nakshatra:</strong> ${moonNakDetails.name} (Pada ${moonNakDetails.pada}/Charan ${moonNakDetails.charan}) | Lord: ${moonNakDetails.lord}</div>
           <div><strong style="color:var(--muted)">🧘 Yoga:</strong> ${yogaStr}</div>
           <div><strong style="color:var(--muted)">📜 Karan:</strong> ${karanStr}</div>
         </div>
         ${sbHtml}
       </div>
     `;
+    // ============================================================
+    // 5B. DETAILED JANMA NAKSHATRA PROFILE & PREDICTION CARD
+    // ============================================================
+    if (nakEntry && nakEntry.name) {
+      html += `
+        <div class="pred-item" style="border-left: 3px solid var(--cyan); margin-top:15px; background:rgba(0,206,201,0.03);">
+          <div class="pred-title" style="color:var(--cyan); font-size:14px; text-align:center;">🌟 Birth Nakshatra Deep Profile — ${nakEntry.num ? nakEntry.num + '. ' : ''}${nakEntry.name}</div>
+          <div style="font-size:10px; color:var(--muted); text-align:center; margin-bottom:12px;">${nakEntry.spanText || ''} | Lord: <strong style="color:var(--gold2);">${nakEntry.lord}</strong> | Deity: <strong style="color:var(--cyan);">${nakEntry.deity}</strong></div>
+          
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:10.5px; margin-bottom:12px;">
+            <div style="background:rgba(0,0,0,0.25); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
+              <strong style="color:var(--gold);">Symbol:</strong> ${nakEntry.symbol || '—'}<br>
+              <strong style="color:var(--gold);">Gana / Nature:</strong> ${nakEntry.gana || '—'} / ${nakEntry.nature || '—'}<br>
+              <strong style="color:var(--gold);">Key Traits:</strong> ${nakEntry.keyTraits || '—'}
+            </div>
+            <div style="background:rgba(0,0,0,0.25); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
+              <strong style="color:#00ff88;">Strengths:</strong> ${nakEntry.strengths || '—'}<br>
+              <strong style="color:#ff6b6b;">Weaknesses:</strong> ${nakEntry.weaknesses || '—'}<br>
+              <strong style="color:var(--violet);">Best Compatibility:</strong> ${nakEntry.compatibility || '—'}
+            </div>
+          </div>
 
+          <div style="background:rgba(0,0,0,0.25); padding:10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px; font-size:10.5px; line-height:1.5;">
+            <div style="color:var(--gold2); font-weight:bold; margin-bottom:4px;">🎯 Ideal Career & Favorable Spheres:</div>
+            <div style="color:var(--text); margin-bottom:4px;"><strong>Professions:</strong> ${nakEntry.professions || '—'}</div>
+            <div style="color:var(--cyan);"><strong>Favorable Aspects:</strong> ${nakEntry.favorableAspects || '—'}</div>
+            ${nakEntry.unfavorableAspects ? `<div style="color:var(--rose); margin-top:2px;"><strong>Cautions:</strong> ${nakEntry.unfavorableAspects}</div>` : ''}
+          </div>
+
+          <div style="font-size:11px; color:var(--text); line-height:1.6; padding:10px; background:rgba(255,255,255,0.02); border-left:3px solid var(--gold); border-radius:4px;">
+            <strong style="color:var(--gold);">Detailed Analysis:</strong> ${nakEntry.profile || nakEntry.interpretation || ''}
+          </div>
+        </div>
+      `;
+    }
     // ============================================================
     // 6. PANCHANG PREDICTIONS SECTION (if available)
     // ============================================================

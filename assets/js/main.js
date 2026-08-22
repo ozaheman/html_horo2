@@ -4640,13 +4640,82 @@ if (btnToggleChakraEl) btnToggleChakraEl.addEventListener('click',()=>{
 
 // ── Chakra chart controls: reference chart, transit/nakshatra/varga toggles ──
 if(qs('chakraRefSel')) qs('chakraRefSel').addEventListener('change',(e)=>{ chakraRefMode = e.target.value; renderAll(); });
-if(qs('chkChakraTransit')) qs('chkChakraTransit').addEventListener('change',(e)=>{ chakraShowTransit = e.target.checked; renderAll(); });
+// if(qs('chkChakraTransit')) qs('chkChakraTransit').addEventListener('change',(e)=>{ chakraShowTransit = e.target.checked; renderAll(); });
+// if(qs('chkChakraNak')) qs('chkChakraNak').addEventListener('change',(e)=>{ chakraShowNak = e.target.checked; renderAll(); });
+if(qs('chkChakraTransit')) qs('chkChakraTransit').addEventListener('change',(e)=>{ 
+  chakraShowTransit = e.target.checked; 
+  if(qs('chakraTransitControls')) qs('chakraTransitControls').style.display = chakraShowTransit ? 'flex' : 'none';
+  renderAll(); 
+});
+
+window.shiftCenterDate = function(delta, unit) {
+  if (unit === 'today') {
+    centerDate = new Date(TODAY);
+  } else {
+    const base = new Date(centerDate);
+    if (unit === 'day') base.setDate(base.getDate() + delta);
+    else if (unit === 'week') base.setDate(base.getDate() + delta * 7);
+    else if (unit === 'month') base.setMonth(base.getMonth() + delta);
+    else if (unit === 'year') base.setFullYear(base.getFullYear() + delta);
+    centerDate = base;
+  }
+  renderAll();
+};
+
 if(qs('chkChakraNak')) qs('chkChakraNak').addEventListener('change',(e)=>{ chakraShowNak = e.target.checked; renderAll(); });
 if(qs('chkChakraVarga')) qs('chkChakraVarga').addEventListener('change',(e)=>{ chakraShowVarga = e.target.checked; renderAll(); });
 if(qs('chkChakraAspects')) qs('chkChakraAspects').addEventListener('change',(e)=>{ chakraShowAspects = e.target.checked; renderAll(); });
 // ── Floating / Full-Screen Chakra Window ──
 let chakraFloatOpen = false;
 function openChakraFloat(){
+  const wrap = qs('chakraFsWrap'), 
+        transitCtrl = qs('chakraTransitControls'),
+        details = qs('chakraDetailsPanel'), 
+        body = qs('chakraFloatBody'),
+        win = qs('chakraFloatWin'), 
+        anchor = qs('chakraFloatAnchor');
+  if(!wrap || !body || !win || !anchor) return;
+  if(chakraFloatOpen) return;
+  anchor.appendChild(wrap);           // keep a place to dock back to
+  if(transitCtrl) anchor.appendChild(transitCtrl);
+  if(details) anchor.appendChild(details);
+  body.appendChild(wrap);
+  if(transitCtrl) {
+    body.appendChild(transitCtrl);
+    if(chakraShowTransit) transitCtrl.style.display = 'flex';
+  }
+  if(details) body.appendChild(details);
+  wrap.style.width='100%'; wrap.style.height='auto'; wrap.style.maxWidth='';
+  win.style.display='flex';
+  if(details) details.style.display='grid';
+  chakraFloatOpen = true;
+  renderAll();
+}
+
+function closeChakraFloat(silent){
+  const wrap = qs('chakraFsWrap'), 
+        transitCtrl = qs('chakraTransitControls'),
+        details = qs('chakraDetailsPanel'), 
+        win = qs('chakraFloatWin');
+  if(!chakraFloatOpen){ if(win) win.style.display='none'; return; }
+  if(document.fullscreenElement) { try{ document.exitFullscreen(); }catch(e){} }
+  win.classList.remove('chakra-maximized');
+  win.style.display='none';
+  
+  // Dock the wheel, transit controls + details panel back to their original slot
+  const optsBar = qs('chakraOptsBar');
+  if (optsBar && optsBar.parentElement && wrap) {
+    optsBar.parentElement.insertBefore(wrap, optsBar.nextSibling);
+    if (transitCtrl) optsBar.parentElement.insertBefore(transitCtrl, wrap.nextSibling);
+    if (details) optsBar.parentElement.insertBefore(details, (transitCtrl || wrap).nextSibling);
+  }
+  chakraFloatOpen = false;
+  if(!silent) renderAll();
+}
+
+/* // ── Floating / Full-Screen Chakra Window ──
+let chakraFloatOpen = false;
+function openChakraFloatx(){
   const wrap = qs('chakraFsWrap'), details = qs('chakraDetailsPanel'), body = qs('chakraFloatBody'),
         win = qs('chakraFloatWin'), anchor = qs('chakraFloatAnchor');
   if(!wrap || !body || !win || !anchor) return;
@@ -4661,7 +4730,7 @@ function openChakraFloat(){
   chakraFloatOpen = true;
   renderAll();
 }
-function closeChakraFloat(silent){
+function closeChakraFloatx(silent){
   const wrap = qs('chakraFsWrap'), details = qs('chakraDetailsPanel'), win = qs('chakraFloatWin'),
         dwheel = document.querySelector('.dwheel-wrap')?.parentElement;
   if(!chakraFloatOpen){ if(win) win.style.display='none'; return; }
@@ -4676,7 +4745,7 @@ function closeChakraFloat(silent){
   }
   chakraFloatOpen = false;
   if(!silent) renderAll();
-}
+} */
 if(qs('btnChakraFullscreen')) qs('btnChakraFullscreen').addEventListener('click', openChakraFloat);
 if(qs('btnChakraFloatClose')) qs('btnChakraFloatClose').addEventListener('click', ()=>closeChakraFloat(false));
 if(qs('btnChakraFloatDock')) qs('btnChakraFloatDock').addEventListener('click', ()=>closeChakraFloat(false));
@@ -4954,7 +5023,8 @@ function buildChakraData(refMode){
   let transit=[];
   if (window.BIRTH_PLANETS && window.BIRTH_ASC){
     try{
-      const tp=getPos(new Date());
+      const refDate = (typeof centerDate !== 'undefined' && centerDate) ? centerDate : new Date();
+      const tp=getPos(refDate);
       for (const [p,d] of Object.entries(tp)){
         transit.push({ p, tx:PLANET_ABBR2[p]||p.substring(0,2), sid:d.sid, sn:d.sn, house:d.house,
                        retro:d.retro, nak:d.nak, pada:d.pada, nl:d.nl, sl:d.sl });
@@ -5775,6 +5845,12 @@ function updateRange(){
 function renderAll(){
   if(CURRENT_DIV===1) calculateCharkarakas();
   updateRange();
+  
+  const chakraDateDisp = document.getElementById('chakraTransitDateDisp');
+  if (chakraDateDisp && centerDate) {
+    chakraDateDisp.textContent = centerDate.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  }
+  
   if(showChakra) {
   const built = buildChakraData(chakraRefMode);
     const cc = document.getElementById('chakraContainer');

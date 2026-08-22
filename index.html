@@ -213,6 +213,21 @@
     <option value="vargottama">Vargottama Only</option>
   </select>
   <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraAspects"> <span style="color:#8a5cff;">☍ Show Aspects</span></label>
+    <div id="chakraTransitControls" style="display:none; align-items:center; gap:2px; background:rgba(0,0,0,0.3); padding:2px 4px; border-radius:4px; border:1px solid var(--border);">
+      <span style="font-size:9px; color:var(--muted); font-weight:bold; margin-right:2px;">TRANSIT:</span>
+    <button class="btn sky" onclick="shiftCenterDate(-1, 'year')" title="-1 Year" style="padding:1px 4px;font-size:9px;min-width:0;">-Y</button>
+    <button class="btn sky" onclick="shiftCenterDate(-1, 'month')" title="-1 Month" style="padding:1px 4px;font-size:9px;min-width:0;">-M</button>
+    <button class="btn sky" onclick="shiftCenterDate(-1, 'week')" title="-1 Week" style="padding:1px 4px;font-size:9px;min-width:0;">-W</button>
+    <button class="btn sky" onclick="shiftCenterDate(-1, 'day')" title="-1 Day" style="padding:1px 4px;font-size:9px;min-width:0;">-D</button>
+    <button class="btn cyan" onclick="shiftCenterDate(0, 'today')" title="Today" style="padding:1px 5px;font-size:9px;min-width:0;font-weight:bold;">T</button>
+    <button class="btn sky" onclick="shiftCenterDate(1, 'day')" title="+1 Day" style="padding:1px 4px;font-size:9px;min-width:0;">+D</button>
+    <button class="btn sky" onclick="shiftCenterDate(1, 'week')" title="+1 Week" style="padding:1px 4px;font-size:9px;min-width:0;">+W</button>
+    <button class="btn sky" onclick="shiftCenterDate(1, 'month')" title="+1 Month" style="padding:1px 4px;font-size:9px;min-width:0;">+M</button>
+    <button class="btn sky" onclick="shiftCenterDate(1, 'year')" title="+1 Year" style="padding:1px 4px;font-size:9px;min-width:0;">+Y</button>
+    <span id="chakraTransitDateDisp" style="margin-left:4px;font-family:monospace;font-size:9px;color:var(--cyan);font-weight:bold;min-width:55px;text-align:center;"></span>
+  </div>
+    <!-- <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraTransit"> <span style="color:var(--cyan,#22ccff);font-weight:bold;">◎ Show Transit</span></label> -->
+  <!-- <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraNak" checked> <span style="color:var(--gold);">✦ Nakshatra Rings</span></label> -->
   <button class="btn" id="btnChakraFullscreen" style="margin-left:auto;" title="Open chart in a floating window (then maximize / full screen from there)">🗔 Float / Full Screen</button>
 </div>
     <div class="dwheel-wrap" id="chakraFsWrap">
@@ -220,6 +235,7 @@
       <div id="svgChartContainer" style="display:none; width:300px; height:300px; overflow:hidden; border-radius:4px; background:white;"></div>
       <div id="chakraContainer" style="display:none; width:300px; height:300px; overflow:hidden; border-radius:4px; background:white;"></div>
     </div>
+
     <div id="chakraDetailsPanel" style="display:none;"></div>
     <div id="chakraFloatAnchor" style="display:none;"></div>
     <div id="chakraFloatWin" style="display:none;position:fixed;top:70px;left:70px;width:560px;height:680px;max-width:96vw;max-height:92vh;background:var(--panel,#141414);border:1px solid var(--gold,#a67c00);border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.6);z-index:9999;flex-direction:column;overflow:hidden;">
