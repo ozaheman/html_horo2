@@ -263,7 +263,137 @@ window.SUDARSHAN_CHAKRA = {
    * side-by-side charts. Self-contained — does not depend on drawDChart
    * or any other module's canvas helpers being loaded.
    */
-  drawCombinedChart: function (cvId, natalPlanets, natalAsc) {
+   drawCombinedChart: function (cvId, natalPlanets, natalAsc) {
+    const cv = document.getElementById(cvId);
+    if (!cv || !natalPlanets || !natalAsc) return;
+    const S = 400; // Base resolution
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = S * dpr; cv.height = S * dpr;
+    cv.style.width = '100%'; cv.style.height = 'auto';
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const cssVar = (name, fallback) => {
+      try { const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return v || fallback; }
+      catch (e) { return fallback; }
+    };
+    ctx.fillStyle = cssVar('--bg', '#0a0a14'); ctx.fillRect(0, 0, S, S);
+
+    const CX = S / 2, CY = S / 2;
+    const L3 = S - 28;                // Outer Square (Surya / Sun Chart)
+    const L2 = Math.round(L3 * 0.68); // Middle Square (Chandra / Moon Chart)
+    const L1 = Math.round(L3 * 0.36); // Inner Square (Ascendant / Lagna Chart)
+
+    const drawFrame = (L, strokeCol) => {
+      const half = L / 2;
+      const x0 = CX - half, y0 = CY - half;
+      ctx.strokeStyle = strokeCol;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x0, y0, L, L);
+      // Inner diamond of square L
+      ctx.beginPath();
+      ctx.moveTo(CX, y0);
+      ctx.lineTo(x0, CY);
+      ctx.lineTo(CX, y0 + L);
+      ctx.lineTo(x0 + L, CY);
+      ctx.closePath();
+      ctx.stroke();
+    };
+
+    // Main diagonals across outer box
+    ctx.strokeStyle = cssVar('--border3', '#444488') + '88';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(CX - L3 / 2, CY - L3 / 2); ctx.lineTo(CX + L3 / 2, CY + L3 / 2);
+    ctx.moveTo(CX + L3 / 2, CY - L3 / 2); ctx.lineTo(CX - L3 / 2, CY + L3 / 2);
+    ctx.stroke();
+
+    // Draw 3 concentric frames
+    drawFrame(L3, '#E0700A88'); // Outer (Sun) - Orange
+    drawFrame(L2, '#3060E088'); // Middle (Moon) - Blue
+    drawFrame(L1, '#C98B0088'); // Inner (Lagna) - Gold
+
+    const ascSn = natalAsc.sn ?? 0;
+    const moonSn = natalPlanets.Moon ? natalPlanets.Moon.sn : ascSn;
+    const sunSn = natalPlanets.Sun ? natalPlanets.Sun.sn : ascSn;
+
+    // Helper: collect planet abbreviations in sign snIdx (0..11)
+    const getPlanetsInSign = (snIdx) => {
+      const list = [];
+      if (snIdx === ascSn) list.push('Asc');
+      const order = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
+      const abbrs = { Sun: 'Su', Moon: 'Mo', Mars: 'Ma', Mercury: 'Me', Jupiter: 'Ju', Venus: 'Ve', Saturn: 'Sa', Rahu: 'Ra', Ketu: 'Ke' };
+      order.forEach(p => {
+        if (natalPlanets[p] && natalPlanets[p].sn === snIdx) {
+          list.push(abbrs[p]);
+        }
+      });
+      return list.join(' ');
+    };
+
+    // Normalized centroid offsets for 12 house positions (North Indian Diamond geometry)
+    const offsets = [
+      null,
+      { x: 0, y: -0.22 },       // House 1: Top Diamond
+      { x: -0.22, y: -0.38 },   // House 2: Top-Left Triangle
+      { x: -0.38, y: -0.22 },   // House 3: Left Diamond
+      { x: -0.22, y: 0 },       // House 4: Bottom-Left Triangle
+      { x: -0.38, y: 0.22 },    // House 5: Bottom-Left Diamond
+      { x: -0.22, y: 0.38 },    // House 6: Bottom-Center-Left Triangle
+      { x: 0, y: 0.22 },        // House 7: Bottom Diamond
+      { x: 0.22, y: 0.38 },     // House 8: Bottom-Right Triangle
+      { x: 0.38, y: 0.22 },     // House 9: Bottom-Right Diamond
+      { x: 0.22, y: 0 },        // House 10: Right Diamond
+      { x: 0.38, y: -0.22 },    // House 11: Top-Right Triangle
+      { x: 0.22, y: -0.38 }     // House 12: Top-Right Diamond
+    ];
+
+    const Leff1 = L1 * 0.72;
+    const Leff2 = (L1 + L2) / 2;
+    const Leff3 = (L2 + L3) / 2;
+
+    const rings = [
+      { k: 1, Leff: Leff1, baseSn: ascSn, color: '#FFD700', label: 'Lagna' },
+      { k: 2, Leff: Leff2, baseSn: moonSn, color: '#3AF0FF', label: 'Chandra' },
+      { k: 3, Leff: Leff3, baseSn: sunSn, color: '#FF9F43', label: 'Surya' }
+    ];
+
+    rings.forEach(ring => {
+      for (let h = 1; h <= 12; h++) {
+        const off = offsets[h];
+        if (!off) continue;
+        const tx = CX + ring.Leff * off.x;
+        const ty = CY + ring.Leff * off.y;
+
+        const signNum = ((ring.baseSn + h - 1) % 12) + 1; // 1-12
+        const pStr = getPlanetsInSign(signNum - 1);
+
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Draw sign number & planet list
+        ctx.font = 'bold 9px Courier New';
+        ctx.fillStyle = ring.color;
+        
+        if (pStr) {
+          ctx.fillText(`${signNum}`, tx - 14, ty);
+          ctx.font = 'bold 9px Arial';
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillText(pStr, tx + 8, ty);
+        } else {
+          ctx.fillText(`${signNum}`, tx, ty);
+        }
+      }
+    });
+
+    // Legend at bottom
+    ctx.textAlign = 'center';
+    ctx.font = '8px Courier New';
+    ctx.fillStyle = '#FFD700'; ctx.fillText('Inner: Lagna Chart (1=Asc)', CX - 100, S - 6);
+    ctx.fillStyle = '#3AF0FF'; ctx.fillText('Middle: Chandra Chart (1=Moon)', CX, S - 6);
+    ctx.fillStyle = '#FF9F43'; ctx.fillText('Outer: Surya Chart (1=Sun)', CX + 100, S - 6);
+  },
+  drawCombinedChart1: function (cvId, natalPlanets, natalAsc) {
     const cv = document.getElementById(cvId);
     if (!cv || !natalPlanets || !natalAsc) return;
     const attrW = parseFloat(cv.getAttribute('width')) || 320;

@@ -137,6 +137,8 @@
       <label><input type="checkbox" id="chk64Navamsha"> <span style="color:var(--rose);font-weight:bold;">64th Navamsha transits</span></label>
       <label><input type="checkbox" id="chkKaalPurush" checked> <span style="color:var(--gold);font-weight:bold;">⚖ Kaal Purush Karaka Panel</span></label>
       <label><input type="checkbox" id="chkShortNames"> <span style="color:#FFAAEE;">Short Planet Names</span></label>
+      <label><input type="checkbox" id="chkShowDignity" checked> <span style="color:var(--gold);font-weight:bold;font-size:10px;">↑↓ Exalt/Debil/Combust</span></label>
+      
       <label><input type="checkbox" id="chkShowAspectPlanets" checked> <span style="color:var(--gold);">Show Aspect Planets</span></label>
     </div>
     <div class="sep"></div>
@@ -165,6 +167,7 @@
     </div>
     <div class="chk-group" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 0;">
       <label style="display:flex;align-items:center;gap:3px;"><input type="checkbox" id="chkShowBindus"> <span style="color:var(--gold);font-weight:bold;font-size:10px;">✦ Ashtakavarga Bindus</span></label>
+      
       <select id="selBinduSystem" style="font-size:9px;background:var(--bg2,#111);color:var(--fg,#eee);border:1px solid var(--border3,#444);border-radius:3px;padding:1px 3px;">
         <option value="Sarva">Sarvashtakavarga (all-house total)</option>
         <option value="Sun">Sun BAV</option>
@@ -176,19 +179,42 @@
         <option value="Saturn">Saturn BAV</option>
       </select>
     </div>
-   <div id="chakraOptsBar" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:4px 0;font-size:10px;">
-      <span class="lbl">CHAKRA REF:</span>
-      <select id="chakraRefSel" style="font-size:9px;background:var(--bg2,#111);color:var(--fg,#eee);border:1px solid var(--border3,#444);border-radius:3px;padding:2px 4px;">
-        <option value="lagna">Lagna Chart (Ascendant)</option>
-        <option value="moon">Chandra Lagna (Moon Chart)</option>
-        <option value="sun">Surya Lagna (Sun Chart)</option>
-      </select>
-      <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraTransit"> <span style="color:var(--cyan,#22ccff);font-weight:bold;">◎ Show Transit</span></label>
-      <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraNak" checked> <span style="color:var(--gold);">✦ Nakshatra Rings</span></label>
-      <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraVarga" checked> <span style="color:var(--rose,#ff6688);">◆ Vargottama Navamsa</span></label>
-       <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraAspects"> <span style="color:#8a5cff;">☍ Show Aspects</span></label>
-      <button class="btn" id="btnChakraFullscreen" style="margin-left:auto;" title="Open chart in a floating window (then maximize / full screen from there)">🗔 Float / Full Screen</button>
-    </div>
+   <!-- <div id="chakraOptsBar" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:4px 0;font-size:10px;"> -->
+      <!-- <span class="lbl">CHAKRA REF:</span> -->
+      <!-- <select id="chakraRefSel" style="font-size:9px;background:var(--bg2,#111);color:var(--fg,#eee);border:1px solid var(--border3,#444);border-radius:3px;padding:2px 4px;"> -->
+        <!-- <option value="lagna">Lagna Chart (Ascendant)</option> -->
+        <!-- <option value="moon">Chandra Lagna (Moon Chart)</option> -->
+        <!-- <option value="sun">Surya Lagna (Sun Chart)</option> -->
+      <!-- </select> -->
+      <!-- <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraTransit"> <span style="color:var(--cyan,#22ccff);font-weight:bold;">◎ Show Transit</span></label> -->
+      <!-- <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraNak" checked> <span style="color:var(--gold);">✦ Nakshatra Rings</span></label> -->
+      <!-- <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraVarga" checked> <span style="color:var(--rose,#ff6688);">◆ Vargottama Navamsa</span></label> -->
+       <!-- <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraAspects"> <span style="color:#8a5cff;">☍ Show Aspects</span></label> -->
+      <!-- <button class="btn" id="btnChakraFullscreen" style="margin-left:auto;" title="Open chart in a floating window (then maximize / full screen from there)">🗔 Float / Full Screen</button> -->
+    <!-- </div> -->
+    <div id="chakraOptsBar" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:4px 0;font-size:10px;">
+  <span class="lbl">CHAKRA REF:</span>
+  <select id="chakraRefSel" style="font-size:9px;background:var(--bg2,#111);color:var(--fg,#eee);border:1px solid var(--border3,#444);border-radius:3px;padding:2px 4px;">
+    <option value="lagna">Lagna Chart (Ascendant)</option>
+    <option value="moon">Chandra Lagna (Moon Chart)</option>
+    <option value="sun">Surya Lagna (Sun Chart)</option>
+  </select>
+  <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraTransit"> <span style="color:var(--cyan,#22ccff);font-weight:bold;">◎ Show Transit</span></label>
+  <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraNak" checked> <span style="color:var(--gold);">✦ Nakshatra Rings</span></label>
+  <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraVarga" checked> <span style="color:var(--rose,#ff6688);">◆ Special Navamshas</span></label>
+  <span class="lbl">TYPE:</span>
+  <select id="chakraSpecialNavSel" style="font-size:9px;background:var(--bg2,#111);color:var(--fg,#eee);border:1px solid var(--border3,#444);border-radius:3px;padding:2px 4px;">
+    <option value="all">All Special Navamshas (91st, 64th, 88th, Pushkara, Vargottama)</option>
+    <option value="91st">91st Navamsha (Income Source)</option>
+    <option value="64th_asc">64th Navamsha (Ascendant)</option>
+    <option value="64th_moon">64th Navamsha (Moon)</option>
+    <option value="88th">88th Navamsha (Career Caution)</option>
+    <option value="pushkara">Pushkara Navamsha</option>
+    <option value="vargottama">Vargottama Only</option>
+  </select>
+  <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" id="chkChakraAspects"> <span style="color:#8a5cff;">☍ Show Aspects</span></label>
+  <button class="btn" id="btnChakraFullscreen" style="margin-left:auto;" title="Open chart in a floating window (then maximize / full screen from there)">🗔 Float / Full Screen</button>
+</div>
     <div class="dwheel-wrap" id="chakraFsWrap">
       <canvas id="dchartCanvas" class="dwheel-canvas" width="300" height="300"></canvas>
       <div id="svgChartContainer" style="display:none; width:300px; height:300px; overflow:hidden; border-radius:4px; background:white;"></div>
