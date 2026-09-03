@@ -383,30 +383,73 @@ async function updatePredictionsDisplay() {
               console.error('KP Part 5 analysis failed:', kp5Err);
               html += `<div class="pred-item"><div class="pred-title">⚠️ KP Part 5 analysis error</div><div class="pred-detail">${kp5Err.message}</div></div>`;
             }
+           
           }
 
-          // KP Part 6 — 406-entry Event Signification Database, Ruling
-          // Planets engine, two new horary rules (Moon-guarantee,
-          // reciprocal fulfilment), Snapshot Prediction (birth-chart-only,
-          // no T.O.B. needed), Parashari Moon-transit+Vedha (supplementary,
-          // non-KP), and the Varga quick-reference table.
+           // KP Part 6 — full 12-house 2nd CSL wealth table (Golden Rule
+          // self-strengthening, 5th-house counsellor finding, 12th-house
+          // FD/investment utilization) and full 10th CSL profession table
+          // with the 2-8 family-business Alignment Technique, the 8th-house
+          // modern commission/dropshipping + funding-timing theory, and
+          // the Vikas Kumar worked case study.
           if (window.KP_PREDICTION_6) {
             try {
-              const now = new Date();
-              const kp6Analysis = window.KP_PREDICTION_6.analyze5({
-                natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC,
-                lords: (typeof LORDS !== 'undefined') ? LORDS : null,
-                // Ruling Planets / horary-rule inputs default to "now" using
-                // the current transit chart already computed above.
-                horaryAscSid: (transitPlanets && transitPlanets.Ascendant) ? transitPlanets.Ascendant.sid : undefined,
-                transitMoonSid: (transitPlanets && transitPlanets.Moon) ? transitPlanets.Moon.sid : undefined,
-                dayOfWeek: now.getDay(),
-                transitPlanetsMap: transitPlanets
+              const kp6Analysis = window.KP_PREDICTION_6.analyze6({
+                natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC
               });
-              html += window.KP_PREDICTION_6.renderHTML5(kp6Analysis);
-            } catch (kpErr) {
-              console.error('KP Part 6 analysis failed:', kpErr);
-              html += `<div class="pred-item"><div class="pred-title">⚠️ KP Part 6 analysis error</div><div class="pred-detail">${kpErr.message}</div></div>`;
+              html += window.KP_PREDICTION_6.renderHTML6(kp6Analysis);
+            } catch (kp6Err) {
+              console.error('KP Part 6 analysis failed:', kp6Err);
+              html += `<div class="pred-item"><div class="pred-title">⚠️ KP Part 6 analysis error</div><div class="pred-detail">${kp6Err.message}</div></div>`;
+            }
+          }
+          // KP Part 7 — live event reading for the currently-running
+          // Mahadasha→Antardasha→Pratyantar→Sukshma→Prana chain (via
+          // the dashaInfo already computed above) plus dynamic 10th-CSL
+          // rule cards (Job vs Business, Transfer & Promotion). Same
+          // renderer also powers the Dasha Explorer panel; sectionClass
+          // is passed so its headers match this panel's own style.
+          if (window.KP_PREDICTION_7) {
+            try {
+              html += window.KP_PREDICTION_7.renderForPanel({
+                mahaLord: dashaInfo?.mahadasha?.lord, adLord: dashaInfo?.antardasha?.lord,
+                pdLord: dashaInfo?.pratyantar?.lord, sdLord: dashaInfo?.sukshma?.lord,
+                praLord: dashaInfo?.prana?.lord,
+                natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC,
+                sectionClass: 'pred-section-title'
+              });
+            } catch (kp7Err) {
+              console.error('KP Part 7 analysis failed:', kp7Err);
+              html += `<div class="pred-item"><div class="pred-title">⚠️ KP Part 7 analysis error</div><div class="pred-detail">${kp7Err.message}</div></div>`;
+            }
+          }
+                    // KP Part 8 — Promise (NL) vs Result (CSL) event-library
+          // verdicts. instanceId keeps this copy's search/detail state
+          // separate from the one rendered inside the Dasha Explorer.
+          if (window.KP_PREDICTION_8) {
+            try {
+              html += window.KP_PREDICTION_8.renderForPanel({
+                natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC,
+                sectionClass: 'pred-section-title', instanceId: 'predictionsDashboard'
+              });
+            } catch (kp8Err) {
+              console.error('KP Part 8 analysis failed:', kp8Err);
+              html += `<div class="pred-item"><div class="pred-title">⚠️ KP Part 8 analysis error</div><div class="pred-detail">${kp8Err.message}</div></div>`;
+            }
+          }
+          // KP Part 9 — Event Timing Finder across the real 5-level
+          // VIMSH tree (Mahadasha→Antardasha→Pratyantardasha→Sukshma→
+          // Pran). Same instanceId as Part 8 above so its "Find timing"
+          // cross-link button reaches the matching finder instance.
+          if (window.KP_PREDICTION_9) {
+            try {
+              html += window.KP_PREDICTION_9.renderForPanel({
+                natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC,
+                sectionClass: 'pred-section-title', instanceId: 'predictionsDashboard'
+              });
+            } catch (kp9Err) {
+              console.error('KP Part 9 analysis failed:', kp9Err);
+              html += `<div class="pred-item"><div class="pred-title">⚠️ KP Part 9 analysis error</div><div class="pred-detail">${kp9Err.message}</div></div>`;
             }
           }
         } catch (kpMainErr) {

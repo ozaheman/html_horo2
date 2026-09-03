@@ -92,7 +92,15 @@ window.PANCHANG_ENGINE = {
     CHOGADIYA_DAY_START: { 0: 'Udveg', 1: 'Amrit', 2: 'Rog', 3: 'Labh', 4: 'Shubh', 5: 'Char', 6: 'Kaal' },
     // Night-sequence starting Chogadiya per weekday.
     CHOGADIYA_NIGHT_START: { 0: 'Shubh', 1: 'Char', 2: 'Kaal', 3: 'Udveg', 4: 'Amrit', 5: 'Rog', 6: 'Labh' },
-
+    // Hora (planetary hours): the classical Chaldean order, descending by
+    // apparent orbital speed — Saturn (slowest) down to the Moon
+    // (fastest), then repeating. Hora #1 of the day always belongs to
+    // that weekday's own ruling planet (VARA[dow].ruler); the sequence
+    // then just keeps cycling every hour, day straight into night,
+    // without resetting at sunset (unlike Chogadiya, which has separate
+    // day/night start tables).
+    HORA_CHALDEAN_ORDER: ['Saturn', 'Jupiter', 'Mars', 'Sun', 'Venus', 'Mercury', 'Moon'],
+    HORA_DEVANAGARI_NAME: { Sun: 'Surya', Moon: 'Chandra', Mars: 'Mangal', Mercury: 'Budh', Jupiter: 'Guru', Venus: 'Shukra', Saturn: 'Shani' },
     // Rahu Kaal / Yamaganda / Gulika Kaal: which of the 8 daytime segments
     // (Sunrise->Sunset divided into 8) is used, per weekday (0=Sun..6=Sat).
     RAHU_KAAL_SEGMENT:   { 0: 8, 1: 2, 2: 7, 3: 5, 4: 6, 5: 4, 6: 3 },
@@ -277,7 +285,44 @@ window.PANCHANG_ENGINE = {
         }
         return segments;
     },
+    /**
+     * Hora (planetary hours) — 12 Day Hora segments (sunrise→sunset ÷ 12)
+     * followed by 12 Night Hora segments (sunset→next sunrise ÷ 12, using
+     * the same today's-daylight-length approximation for night span that
+     * getChogadiya() uses above). The Chaldean 7-planet cycle runs
+     * continuously across all 24 — Hora #13 (first of the night) simply
+     * continues the sequence from Hora #12, it does not restart.
+     */
+    getHora: function (date, sunrise, sunset) {
+        if (!sunrise || !sunset) return null;
+        const dow = date.getDay();
+        const startPlanet = this.VARA[dow].ruler; // Hora #1 = the weekday's own lord
+        const startIdx = this.HORA_CHALDEAN_ORDER.indexOf(startPlanet);
+        const daySpan = (sunset - sunrise) / 12;
+        const nightSpan = (24 * 3600000 - (sunset - sunrise)) / 12;
+        const segments = [];
+        for (let i = 0; i < 12; i++) {
+            const lord = this.HORA_CHALDEAN_ORDER[(startIdx + i) % 7];
+            segments.push({
+                period: 'day', hora: i + 1, lord: lord, lordDevanagari: this.HORA_DEVANAGARI_NAME[lord],
+                start: new Date(sunrise.getTime() + i * daySpan), end: new Date(sunrise.getTime() + (i + 1) * daySpan)
+            });
+        }
+        for (let i = 0; i < 12; i++) {
+            const lord = this.HORA_CHALDEAN_ORDER[(startIdx + 12 + i) % 7];
+            segments.push({
+                period: 'night', hora: i + 13, lord: lord, lordDevanagari: this.HORA_DEVANAGARI_NAME[lord],
+                start: new Date(sunset.getTime() + i * nightSpan), end: new Date(sunset.getTime() + (i + 1) * nightSpan)
+            });
+        }
+        return segments;
+    },
 
+    /** The single Hora segment covering `date` itself (defaults to the moment compute() was called for), or null if outside the computed set. */
+    getCurrentHora: function (date, horaSegments) {
+        if (!horaSegments) return null;
+        return horaSegments.find(h => date >= h.start && date < h.end) || null;
+    },
     /** Rahu Kaal / Yamaganda / Gulika Kaal windows (each = 1/8th of the daylight span). */
     getInauspiciousWindows: function (date, sunrise, sunset) {
         if (!sunrise || !sunset) return null;
@@ -329,6 +374,8 @@ window.PANCHANG_ENGINE = {
         const ritu = this.getRitu(sunSid, ayan);
         const maas = this.getMaas(sunSid);
         const chogadiya = this.getChogadiya(date, sunrise, sunset);
+        const hora = this.getHora(date, sunrise, sunset);
+        const currentHora = this.getCurrentHora(date, hora);
         const inauspicious = this.getInauspiciousWindows(date, sunrise, sunset);
         const abhijit = this.getAbhijitMuhurat(sunrise, sunset);
         const brahma = this.getBrahmaMuhurat(sunrise);
@@ -342,7 +389,7 @@ window.PANCHANG_ENGINE = {
         return {
             date, lat, lon, sunSid, moonSid, ayan, sunrise, sunset, utcOffsetHours: resolvedOffset,
             ritu, maas, nakshatra, tithi, vara, karana, yoga,
-            chogadiya, inauspicious, abhijit, brahma,
+            chogadiya, hora, currentHora, inauspicious, abhijit, brahma,
             specialYogas: { guruPushyaYoga, raviPushyaYoga, sarvarthaSiddhi, isPushyaDay }
         };
     },
@@ -357,6 +404,7 @@ window.PANCHANG_ENGINE = {
         lines.push(`${p.vara.name} (${p.vara.ruler}): ${p.vara.good}${p.vara.bad !== '—' ? ' Avoid: ' + p.vara.bad : ''}`);
         lines.push(`Karana ${p.karana.name}: ${p.karana.info}`);
         lines.push(`Yoga ${p.yoga.name}: ${p.yoga.nature === 'severe-bad' ? 'STRICTLY AVOID for constructive work (classically "consuming fire").' : p.yoga.nature === 'bad' ? 'Inauspicious — avoid new beneficial beginnings.' : 'Auspicious — supports firmness and good resolution.'}`);
+        if (p.currentHora) lines.push(`Current Hora: ${p.currentHora.lord} (${p.currentHora.lordDevanagari}), ${this.fmtTime(p.currentHora.start, p.utcOffsetHours)}–${this.fmtTime(p.currentHora.end, p.utcOffsetHours)}.`);
         if (p.specialYogas.guruPushyaYoga) lines.push('⭐ Guru Pushya Yoga today — one of the most favoured windows for commerce/wealth all day.');
         if (p.specialYogas.raviPushyaYoga) lines.push('⭐ Ravi Pushya Yoga today — Sarvartha Siddhi-like, generally excellent all day.');
         if (p.abhijit) lines.push(`Abhijit Muhurat: ${this.fmtTime(p.abhijit.start, p.utcOffsetHours)}–${this.fmtTime(p.abhijit.end, p.utcOffsetHours)} — universally auspicious window, overrides most ordinary contradictions.`);
@@ -378,6 +426,32 @@ window.PANCHANG_ENGINE = {
         const shifted = new Date(d.getTime() + off * 3600000);
         const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
         return `${String(shifted.getUTCDate()).padStart(2,'0')} ${months[shifted.getUTCMonth()]} ${shifted.getUTCFullYear()}`;
+    },
+
+    /**
+     * "Day Hora / Night Hora" table HTML — mirrors the reference layout:
+     * a bordered pill with the planet's Devanagari-transliterated name,
+     * then its time range, one row per Hora, current Hora highlighted.
+     * Pass utcOffsetHours through from the same compute() result the
+     * `horaSegments` array came from.
+     */
+    renderHoraHTML: function (horaSegments, utcOffsetHours, currentHora) {
+        if (!horaSegments || !horaSegments.length) return '<div style="padding:10px;color:var(--muted);">Hora unavailable — sunrise/sunset could not be computed for this date/location.</div>';
+        const rowHTML = (h) => {
+            const isNow = currentHora && h.hora === currentHora.hora;
+            return `<div style="display:flex;align-items:center;gap:10px;padding:8px 4px;${isNow ? 'background:rgba(255,215,0,0.12);border-radius:6px;' : ''}">
+                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,0.06);border-radius:16px;padding:4px 12px;font-size:12px;color:var(--gold,#FFD700);min-width:90px;justify-content:center;">${h.lordDevanagari}</span>
+                <span style="color:var(--text,#eee);font-size:13px;">${this.fmtTime(h.start, utcOffsetHours)} - ${this.fmtTime(h.end, utcOffsetHours)}</span>
+              </div>`;
+        };
+        const dayRows = horaSegments.filter(h => h.period === 'day').map(rowHTML).join('');
+        const nightRows = horaSegments.filter(h => h.period === 'night').map(rowHTML).join('');
+        return `<div style="padding:6px 10px;">
+            <h3 style="color:var(--gold,#FFD700);text-align:center;font-weight:normal;margin:6px 0;">Day Hora</h3>
+            ${dayRows}
+            <h3 style="color:var(--gold,#FFD700);text-align:center;font-weight:normal;margin:16px 0 6px;">Night Hora</h3>
+            ${nightRows}
+          </div>`;
     }
 };
 

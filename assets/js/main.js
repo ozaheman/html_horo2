@@ -283,7 +283,185 @@ function getDetailedMuhurtList(jday, lat, lon, utcOff, moonNak) {
   ];
 }
 
-/** Renders 24-Hour Circular Dial SVG matching reference screenshots #11, #13, #14 */
+/**
+ * Generic forward-search transition finder: given valueFn(date) returning
+ * a discrete comparable value (a Tithi number, Nakshatra index, etc.),
+ * finds the next moment after `fromDate` where that value changes —
+ * coarse 20-minute stepping to bracket the change, then bisection down
+ * to sub-minute precision. Used to build the Panchang timeline strip's
+ * transition markers (see renderPanchangTimelineSVG below).
+ */
+function findNextPanchangTransition(fromDate, valueFn, maxDays) {
+  maxDays = maxDays || 3;
+  const startVal = valueFn(fromDate);
+  let lo = fromDate.getTime(), hi = lo;
+  const stepMs = 20 * 60000;
+  const limit = lo + maxDays * 86400000;
+  let found = false;
+  while (hi < limit) {
+    hi += stepMs;
+    if (valueFn(new Date(hi)) !== startVal) { found = true; break; }
+    lo = hi;
+  }
+  if (!found) return null;
+  for (let i = 0; i < 22; i++) {
+    const mid = (lo + hi) / 2;
+    if (valueFn(new Date(mid)) === startVal) lo = mid; else hi = mid;
+  }
+  return new Date(hi);
+}
+
+// Panchang value functions for findNextPanchangTransition — all derive
+// straight from getPos(date)'s sidereal longitudes, matching exactly what
+// showPanchang() itself already uses, so transition times stay consistent
+// with the numbers shown elsewhere in the panel.
+// NOTE: Karana here uses the correct classical half-Tithi formula
+// (floor of the Moon-Sun angle / 6°) rather than the existing top-level
+// getKarana(tithiNum), which is a coarser whole-Tithi simplification and
+// can't actually locate the real intra-day Karana changeover.
+function panchangValueFns() {
+  return {
+    tithi: (d) => { const pos = getPos(d); return Math.floor(norm360(pos.Moon.sid - pos.Sun.sid) / 12) + 1; },
+    nakshatra: (d) => { const pos = getPos(d); return Math.floor(norm360(pos.Moon.sid) / (360 / 27)); },
+    yoga: (d) => { const pos = getPos(d); return Math.floor(norm360(pos.Sun.sid + pos.Moon.sid) / (360 / 27)); },
+    karana: (d) => { const pos = getPos(d); return Math.floor(norm360(pos.Moon.sid - pos.Sun.sid) / 6); }
+  };
+}
+const KARANA_NAMES_CYCLE = ['Kimstughna', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti', 'Shakuni', 'Chatushpada', 'Naga'];
+const YOGA_NAMES_27 = ['Vishkambha','Priti','Ayushman','Saubhagya','Shobhana','Atiganda','Sukarma','Dhriti','Shula','Ganda','Vriddhi','Dhruva','Vyaghata','Harshana','Vajra','Siddhi','Vyatipata','Variyana','Parigha','Shiva','Siddha','Sadhya','Shubha','Shukla','Brahma','Indra','Vaidhriti'];
+
+/**
+ * Gathers everything renderPanchangTimelineSVG needs: the Tithi/
+ * Nakshatra/Yoga/Karana active at the window start, each one's next
+ * transition (name + time) if it falls inside the window, sunrise/
+ * sunset/next-sunrise, Choghadiya segments, and the weekday — all for
+ * the window running from today's sunrise to tomorrow's sunrise, matching
+ * the reference timeline's own span.
+ */
+function getPanchangTimelineData(dateForDay, lat, lon, utcOff) {
+  const jday = jd(dateForDay.getFullYear(), dateForDay.getMonth() + 1, dateForDay.getDate(), 12);
+  const res = calcSunriseSunset(jday, lat, lon, utcOff);
+  const nextRes = calcSunriseSunset(jday + 1, lat, lon, utcOff);
+  const dayMidnight = new Date(dateForDay.getFullYear(), dateForDay.getMonth(), dateForDay.getDate(), 0, 0, 0);
+  const fracToDate = (frac) => new Date(dayMidnight.getTime() + frac * 86400000);
+
+  const winStart = fracToDate(res.sunrise);
+  const winEnd = fracToDate(nextRes.sunrise + 1); // next calendar day's sunrise
+  const sunset = fracToDate(res.sunset);
+
+  const fns = panchangValueFns();
+  const toWinFrac = (d) => (d.getTime() - winStart.getTime()) / (winEnd.getTime() - winStart.getTime());
+
+  function rowData(key, namesLookup) {
+    const val = fns[key](winStart);
+    const nextDate = findNextPanchangTransition(winStart, fns[key], 2);
+    const inWindow = nextDate && nextDate < winEnd;
+    return {
+      label: namesLookup(val),
+      nextLabel: inWindow ? namesLookup(fns[key](nextDate)) : null,
+      transitionFrac: inWindow ? toWinFrac(nextDate) : null,
+      transitionTime: inWindow ? fmtFracTime((nextDate - dayMidnight) / 86400000) : null
+    };
+  }
+
+  const tithiNames = ['Pratipada','Dwitiya','Tritiya','Chaturthi','Panchami','Shashthi','Saptami','Ashtami','Navami','Dashami','Ekadashi','Dwadashi','Trayodashi','Chaturdashi','Purnima/Amavasya'];
+  const tithiLabel = (num) => { const n = ((num - 1) % 15); const phase = num <= 15 ? 'Shukla' : 'Krishna'; return `${tithiNames[n]}, ${phase}`; };
+
+  return {
+    winStart, winEnd, sunrise: winStart, sunset, nextSunrise: winEnd,
+    dow: getVara(jday),
+    tithi: rowData('tithi', tithiLabel),
+    nakshatra: rowData('nakshatra', (idx) => NAK_NAMES[idx]),
+    yoga: rowData('yoga', (idx) => YOGA_NAMES_27[idx % 27]),
+    karana: rowData('karana', (idx) => KARANA_NAMES_CYCLE[idx % KARANA_NAMES_CYCLE.length]),
+    chogadiya: getChogadiya(jday, lat, lon, utcOff) || [],
+    toWinFrac: toWinFrac
+  };
+}
+
+/**
+ * Horizontal multi-row Panchang timeline strip — Tithi / Nakshatra / Yoga
+ * / Karana / Choghadiya running from today's sunrise to tomorrow's
+ * sunrise, with transition markers, matching the reference layout: hour
+ * axis, day/night shading, sun icons at sunrise/sunset, and a dashed
+ * arrow + time label wherever a factor changes inside the window.
+ */
+function renderPanchangTimelineSVG(data) {
+  const W = 1040, ROW_H = 46, PAD_L = 90, PAD_R = 20, AXIS_Y = 70, TOP = 40;
+  const rows = ['tithi', 'nakshatra', 'yoga', 'karana', 'chogadiya'];
+  const rowLabels = { tithi: 'Tithi', nakshatra: 'Nakshatra', yoga: 'Yoga', karana: 'Karana', chogadiya: 'Choghadiya' };
+  const H = TOP + AXIS_Y + rows.length * ROW_H + 40;
+  const plotW = W - PAD_L - PAD_R;
+  const x = (frac) => PAD_L + frac * plotW;
+
+  const sunriseFrac = data.toWinFrac(data.sunrise);
+  const sunsetFrac = data.toWinFrac(data.sunset);
+  const totalHours = (data.winEnd - data.winStart) / 3600000;
+
+  let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="background:transparent;font-family:Arial,sans-serif;">`;
+
+  // Day/night background shading
+  const gridTop = TOP + AXIS_Y - 20, gridBottom = H - 20;
+  svg += `<rect x="${PAD_L}" y="${gridTop}" width="${x(sunsetFrac) - PAD_L}" height="${gridBottom - gridTop}" fill="var(--gold)" opacity="0.06"/>`;
+  svg += `<rect x="${x(sunsetFrac)}" y="${gridTop}" width="${x(1) - x(sunsetFrac)}" height="${gridBottom - gridTop}" fill="#000" opacity="0.15"/>`;
+
+  // Hour axis
+  svg += `<line x1="${PAD_L}" y1="${AXIS_Y + TOP}" x2="${W - PAD_R}" y2="${AXIS_Y + TOP}" stroke="var(--border2)" stroke-width="1"/>`;
+  for (let h = 0; h <= Math.ceil(totalHours); h++) {
+    const frac = h / totalHours;
+    if (frac > 1) break;
+    const tx = x(frac);
+    svg += `<line x1="${tx}" y1="${AXIS_Y + TOP - 5}" x2="${tx}" y2="${AXIS_Y + TOP}" stroke="var(--muted)" stroke-width="0.7"/>`;
+    const clockHour = (data.winStart.getHours() + h) % 24;
+    svg += `<text x="${tx}" y="${AXIS_Y + TOP - 9}" font-size="9" fill="var(--muted)" text-anchor="middle">${clockHour === 0 ? 12 : (clockHour % 12 || 12)}</text>`;
+  }
+
+  // Sunrise / sunset markers
+  const sunriseDayFrac = (data.sunrise - new Date(data.sunrise.getFullYear(), data.sunrise.getMonth(), data.sunrise.getDate()).getTime()) / 86400000;
+  svg += `<text x="${x(sunriseFrac)}" y="${TOP}" font-size="14" text-anchor="middle">☀️</text>`;
+  svg += `<text x="${x(sunriseFrac)}" y="${TOP + 16}" font-size="9" fill="var(--gold)" text-anchor="middle" font-weight="bold">${fmtFracTime(sunriseDayFrac, true)}</text>`;
+  svg += `<text x="${x(sunsetFrac)}" y="${TOP}" font-size="14" text-anchor="middle">🌇</text>`;
+
+  // Rows
+  rows.forEach((key, i) => {
+    const rowY = TOP + AXIS_Y + i * ROW_H;
+    const midY = rowY + ROW_H / 2;
+    svg += `<text x="4" y="${midY + 4}" font-size="10" fill="var(--gold2)" font-weight="bold">${rowLabels[key]}</text>`;
+    svg += `<line x1="${PAD_L}" y1="${rowY + ROW_H}" x2="${W - PAD_R}" y2="${rowY + ROW_H}" stroke="var(--border2)" stroke-width="0.5" opacity="0.5"/>`;
+
+    if (key === 'chogadiya') {
+      // getChogadiya() gives each segment's start as a day-fraction relative to
+      // this calendar day's midnight (can exceed 1.0 past midnight); each
+      // segment implicitly ends where the next one starts.
+      const dayMidnightMs = new Date(data.winStart.getFullYear(), data.winStart.getMonth(), data.winStart.getDate(), 0, 0, 0).getTime();
+      data.chogadiya.forEach((c, ci) => {
+        const segStartDate = new Date(dayMidnightMs + c.start * 86400000);
+        const segEndDate = (ci < data.chogadiya.length - 1)
+          ? new Date(dayMidnightMs + data.chogadiya[ci + 1].start * 86400000)
+          : data.winEnd;
+        const sf = data.toWinFrac(segStartDate), ef = data.toWinFrac(segEndDate);
+        if (ef < 0 || sf > 1) return;
+        const cx1 = x(Math.max(0, sf)), cx2 = x(Math.min(1, ef));
+        const col = c.type === 'Good' ? 'var(--green)' : c.type === 'Bad' ? 'var(--rose)' : 'var(--gold)';
+        svg += `<line x1="${cx1}" y1="${rowY+6}" x2="${cx1}" y2="${rowY+ROW_H-6}" stroke="${col}" stroke-width="1.2"/>`;
+        svg += `<text x="${(cx1+cx2)/2}" y="${midY+3}" font-size="8.5" fill="${col}" text-anchor="middle" font-weight="bold">${c.name}</text>`;
+      });
+    } else {
+      const r = data[key];
+      const endX = r.transitionFrac !== null ? x(r.transitionFrac) : (W - PAD_R);
+      svg += `<text x="${(PAD_L + endX) / 2}" y="${midY + 4}" font-size="10.5" fill="var(--text)" text-anchor="middle">${r.label}</text>`;
+      if (r.transitionFrac !== null) {
+        svg += `<line x1="${endX}" y1="${rowY+4}" x2="${endX}" y2="${rowY+ROW_H-4}" stroke="var(--rose)" stroke-width="1" stroke-dasharray="2,2"/>`;
+        svg += `<text x="${endX}" y="${rowY+ROW_H-2}" font-size="8" fill="var(--rose)" text-anchor="middle">◀▶ ${r.transitionTime}</text>`;
+        svg += `<text x="${(endX + (W-PAD_R)) / 2}" y="${midY+4}" font-size="10.5" fill="var(--text)" text-anchor="middle" opacity="0.85">${r.nextLabel}</text>`;
+      }
+    }
+  });
+
+  svg += `<text x="${W/2}" y="${H-4}" font-size="10" fill="var(--muted)" text-anchor="middle">${['Raviwara','Somwara','Mangalwara','Budhwara','Guruwara','Shukrawara','Shaniwara'][data.dow]}</text>`;
+  svg += `</svg>`;
+  return svg;
+}
 function render24hDialSVG(items, currentFrac = 0.5, title = "24-Hour Wheel") {
   const W = 320, H = 320, CX = 160, CY = 160, R_OUT = 140, R_IN = 70;
   let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="background:transparent; font-family:Arial, sans-serif;">`;
@@ -348,46 +526,126 @@ function render24hDialSVG(items, currentFrac = 0.5, title = "24-Hour Wheel") {
 // HORA & PANCHANG PANEL DISPLAY ENGINE
 // ============================================================================
 
+window.PANCHANG_UI_TAB = 'panchang'; // 'panchang' | 'muhurt' | 'choghadiya' | 'hora' | 'lagna'
 window.PANCHANG_UI_TAB = 'hora'; // 'hora' | 'choghadiya' | 'muhurt' | 'lagna' | 'dial'
 
-/** Switch sub-tabs within the Hora / Panchang Panel */
-window.switchHoraTab = function(tabName) {
-  window.PANCHANG_UI_TAB = tabName;
-  showPanchang(window.PANCHANG_UI_DATE || TODAY);
-};
 
 function showPanchang(dateOverride) {
-  if (!BIRTH_PLANETS) { 
-    alert('Calculate birth details first'); 
-    return; 
-  }
+  if (!BIRTH_PLANETS) { alert('Calculate birth details first'); return; }
   if (dateOverride) window.PANCHANG_UI_DATE = new Date(dateOverride);
-  
+
   const d = window.PANCHANG_UI_DATE || TODAY;
+  if (!(d instanceof Date) || isNaN(d.getTime())) {
+    document.getElementById('conjList').innerHTML = '<div class="pred-item" style="color:var(--rose);padding:12px;">That date isn\'t valid — pick a different one.</div>';
+    return;
+  }
   const jday = jd(d.getFullYear(), d.getMonth() + 1, d.getDate(), 12);
   const pos = getPos(d);
+  const p = getPos(d);
+  // Dates far outside the ephemeris's supported range (or any other position-fetch
+  // failure) come back with missing/NaN planet data — bail out here with a clear
+  // message instead of crashing deeper in the function on `undefined.t`.
+  if (!p || !p.Sun || !p.Moon || isNaN(p.Sun.sid) || isNaN(p.Moon.sid)) {
+    document.getElementById('conjList').innerHTML = '<div class="pred-item" style="color:var(--rose);padding:12px;">Could not compute planetary positions for ' + fmtDay(d) + ' — it may be outside the supported ephemeris range. Try a date closer to today.</div>';
+    return;
+  }
+
+  // ---- Core Panchang calculations ----
   const tithi = getTithi(jday);
   const vara = getVara(jday);
-  const yogaIdx = Math.max(0, Math.min(getYoga(p.Sun.sid, p.Moon.sid) - 1, 26));
+  const yogaIdxRaw = getYoga(p.Sun.sid, p.Moon.sid) - 1;
+  const yogaIdx = isNaN(yogaIdxRaw) ? 0 : Math.max(0, Math.min(yogaIdxRaw, 26));
   const karanaVal = getKarana(tithi.num);
 
   const varaNames = ['Sunday (Ravi)', 'Monday (Som)', 'Tuesday (Mangal)', 'Wednesday (Budh)', 'Thursday (Guru)', 'Friday (Shukra)', 'Saturday (Shani)'];
-  let kIdx = (tithi.num === 1 && tithi.phase === 'Shukla') ? 10 : Math.max(0, karanaVal - 1) % 11;
+  let kIdx = 0;
+  if (tithi.num === 1 && tithi.phase === 'Shukla') kIdx = 10;
+  else { const kIdxRaw = Math.max(0, karanaVal - 1) % 11; kIdx = isNaN(kIdxRaw) ? 0 : kIdxRaw; }
 
-  const yData = P_YOGAS[yogaIdx];
-  const kData = P_KARANAS[kIdx];
-
+  const yData = P_YOGAS[yogaIdx] || P_YOGAS[0];
+  const kData = P_KARANAS[kIdx] || P_KARANAS[0];
   const yCol = yData.t === 'Auspicious' ? 'var(--green)' : yData.t === 'Mixed' ? 'var(--gold)' : 'var(--rose)';
   const kCol = kData.t === 'Auspicious' ? 'var(--green)' : kData.t === 'Mixed' ? 'var(--gold)' : 'var(--rose)';
 
-  // Calculate Hora, Choghadiya, Muhurt, Lagna, and Dial Data
-  const horaList = getDetailedHoraList(jday, BIRTH.lat, BIRTH.lon, BIRTH.utcOff, BIRTH_ASC?.sign, pos.Moon?.nak);
+  // ---- Sunrise/Sunset + Day/Night length + Ishtkaal ----
+  let res, dH = 0, dM = 0, dS = 0, nH = 0, nM = 0, nS = 0, ishtG = 0, ishtP = 0;
+  try {
+    res = calcSunriseSunset(jday, BIRTH.lat, BIRTH.lon, BIRTH.utcOff);
+    const dayLen = (res.sunset - res.sunrise) * 24;
+    dH = Math.floor(dayLen); dM = Math.floor((dayLen - dH) * 60); dS = Math.round((dayLen - dH - dM / 60) * 3600);
+    const nextRise = calcSunriseSunset(jday + 1, BIRTH.lat, BIRTH.lon, BIRTH.utcOff).sunrise + 1;
+    const nightLen = (nextRise - res.sunset) * 24;
+    nH = Math.floor(nightLen); nM = Math.floor((nightLen - nH) * 60); nS = Math.round((nightLen - nH - nM / 60) * 3600);
+    const nowFracIsht = (d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600) / 24;
+    let elapsed = nowFracIsht - res.sunrise; if (elapsed < 0) elapsed += 1;
+    const ishtkaalGhati = elapsed * 24 * 2.5; // 60 ghati = 24h -> 1h = 2.5 ghati
+    ishtG = Math.floor(ishtkaalGhati); ishtP = Math.floor((ishtkaalGhati - ishtG) * 60);
+  } catch (e) { res = { sunrise: 0.25, sunset: 0.75 }; }
+
+  // ---- Samvatsara / Era years (approximate — Gregorian-year-based) ----
+  const gy = d.getFullYear();
+  const vikram = gy + 57;
+  const saka = gy - 78;
+  const kali = gy + 3101;
+
+  // ---- Ritu (season) & Ayana, from the sidereal Sun's tropical-equivalent longitude ----
+  const tropSun = norm360(p.Sun.sid + getAyanamsa(jday, BIRTH.ayan));
+  const ayana = (tropSun >= 270 || tropSun < 90) ? 'Uttarayana' : 'Dakshinayana';
+  const rituMap = ['Vasanta', 'Grishma', 'Varsha', 'Sharad', 'Hemanta', 'Shishir'];
+  const ritu = rituMap[Math.floor(norm360(tropSun) / 60)] || 'Unknown';
+
+  // ---- Amanta / Purnimanta month names ----
+  const maasNames = ["Chaitra", "Vaisakha", "Jyeshtha", "Ashadha", "Shravan", "Bhadrapada", "Ashwin", "Kartik", "Margashirsha", "Pausha", "Magha", "Phalguna"];
+  const amavasyant = maasNames[Math.floor(norm360(p.Sun.sid) / 30)] || 'Unknown';
+  const purnimant = tithi.phase === 'Krishna' ? maasNames[(Math.floor(norm360(p.Sun.sid) / 30) + 1) % 12] : amavasyant;
+
+  // ---- Anand Adi 29 Yogas (day-of-week + Moon Nakshatra combination) ----
+  const anandYogas = ["Anand", "Kaaldhand", "Dhoomr", "Dhatha", "Saumya", "Dhwanksh", "Dwaj", "Srivatsa", "Vajra", "Mudgar", "Chatrak", "Mitra", "Maanas", "Padma", "Lumbaka", "Utpaat", "Mrityu", "Kaan", "Siddhi", "Shubh", "Amrut", "Musal", "Gadh", "Kunjara", "Raakshas", "Char", "Sthir", "Vardhamaan", "Vajra Musal"];
+  const anandMap = {
+    "Sun": ["Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Abhijit", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati", "Ashwini"],
+    "Mon": ["Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Abhijit", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati", "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira"],
+    "Tue": ["Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Abhijit", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati", "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha"],
+    "Wed": ["Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Abhijit", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati", "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta"],
+    "Thu": ["Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Abhijit", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati", "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha"],
+    "Fri": ["Uttara Ashadha", "Abhijit", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati", "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha"],
+    "Sat": ["Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati", "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Abhijit", "Shravana", "Dhanishta", "Shatabhisha"]
+  };
+  let curAnand = "None";
+  const dayAbbr = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][vara];
+  const dnaks = anandMap[dayAbbr];
+  if (dnaks) { const naIdx = dnaks.indexOf(p.Moon.nak); if (naIdx !== -1) curAnand = anandYogas[naIdx]; }
+
+  // ---- Vrat/Festival detection for this date ----
+  let vratFestivalHTML = '';
+  try {
+    if (window.VRAT_FESTIVAL_ENGINE) {
+      const vfResult = window.VRAT_FESTIVAL_ENGINE.detect({ tithiNum: tithi.num, weekday: vara, nakshatra: p.Moon.nak, maasName: amavasyant });
+      vratFestivalHTML = window.VRAT_FESTIVAL_ENGINE.renderHTML(vfResult);
+    }
+  } catch (e) { console.error('Vrat/Festival detection failed:', e); }
+
+  // ---- Day-spanning Hora / Choghadiya / Muhurt / Lagna lists ----
+  const horaList = getDetailedHoraList(jday, BIRTH.lat, BIRTH.lon, BIRTH.utcOff, BIRTH_ASC?.sign, p.Moon?.nak);
   const chogList = getChogadiya(jday, BIRTH.lat, BIRTH.lon, BIRTH.utcOff) || [];
   const muhurtList = getDetailedMuhurtList(jday, BIRTH.lat, BIRTH.lon, BIRTH.utcOff, pos.Moon?.nak);
   const lagnaList = getDailyLagnas(jday, BIRTH.lat, BIRTH.lon, BIRTH.utcOff);
 
+  // Dur Muhurt: divides sunrise-to-sunset into 15 equal parts; specific
+  // segments (by weekday) are inauspicious "Dur Muhurt" windows.
+  const durSegments = { 0: [14], 1: [9, 12], 2: [4, 11], 3: [8], 4: [10, 14], 5: [4, 8], 6: [2] };
+  const dMuhurts = durSegments[vara] || [];
+ 
+  if (res && res.sunrise !== undefined && res.sunset !== undefined) {
+    const dayMuhurtSpan = (res.sunset - res.sunrise) / 15;
+    dMuhurts.forEach(seg => {
+      const sTime = res.sunrise + (seg - 1) * dayMuhurtSpan;
+      const eTime = res.sunrise + seg * dayMuhurtSpan;
+      muhurtList.push({ name: 'Dur Muhurt', quality: 'Inauspicious', color: 'var(--rose)', startTime: fmtFracTime(sTime), endTime: fmtFracTime(eTime) });
+    });
+  }
+
   const nowFrac = (d.getHours() + d.getMinutes() / 60) / 24;
-  const activeTab = window.PANCHANG_UI_TAB || 'hora';
+  const activeTab = window.PANCHANG_UI_TAB || 'panchang';
 
   const el = document.getElementById('conjList');
   const pDateIso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -398,13 +656,14 @@ function showPanchang(dateOverride) {
   const panchangDateBar = `
     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;margin:0 10px 6px 10px;background:rgba(58,240,255,0.05);border:1px solid rgba(58,240,255,0.2);border-radius:6px;">
       <input type="date" id="panchangDateInput" value="${pDateIso}" onchange="window.setPanchangDateFromInput(this)" style="background:var(--panel2,#1a1a2e);color:var(--text);border:1px solid var(--border);border-radius:3px;padding:3px 6px;font-size:10px;">
-      <div style="display:flex;gap:3px;"><button onclick="window.shiftPanchangDate(-1,'day')" style="${pBtnStyle}">◀ Day</button><button onclick="window.shiftPanchangDate(1,'day')" style="${pBtnStyle}">Day ▶</button></div>
-      <div style="display:flex;gap:3px;"><button onclick="window.shiftPanchangDate(-1,'week')" style="${pBtnStyle}">◀ Week</button><button onclick="window.shiftPanchangDate(1,'week')" style="${pBtnStyle}">Week ▶</button></div>
-      <div style="display:flex;gap:3px;"><button onclick="window.shiftPanchangDate(-1,'month')" style="${pBtnStyle}">◀ Month</button><button onclick="window.shiftPanchangDate(1,'month')" style="${pBtnStyle}">Month ▶</button></div>
-      <button onclick="window.resetPanchangToToday()" style="${pBtnStyle}margin-left:auto;border-color:var(--gold);color:var(--gold);">⦿ Today</button>
+      <div style="display:flex;gap:3px;"><button onclick="window.shiftPanchangDate(-1,'day')" title="Previous day" style="${pBtnStyle}">◀ Day</button><button onclick="window.shiftPanchangDate(1,'day')" title="Next day" style="${pBtnStyle}">Day ▶</button></div>
+      <div style="display:flex;gap:3px;"><button onclick="window.shiftPanchangDate(-1,'week')" title="Previous week" style="${pBtnStyle}">◀ Week</button><button onclick="window.shiftPanchangDate(1,'week')" title="Next week" style="${pBtnStyle}">Week ▶</button></div>
+      <div style="display:flex;gap:3px;"><button onclick="window.shiftPanchangDate(-1,'month')" title="Previous month" style="${pBtnStyle}">◀ Month</button><button onclick="window.shiftPanchangDate(1,'month')" title="Next month" style="${pBtnStyle}">Month ▶</button></div>
+      <div style="display:flex;gap:3px;"><button onclick="window.shiftPanchangDate(-1,'year')" title="Previous year" style="${pBtnStyle}">◀ Year</button><button onclick="window.shiftPanchangDate(1,'year')" title="Next year" style="${pBtnStyle}">Year ▶</button></div>
+      <button onclick="window.resetPanchangToToday()" title="Jump back to today" style="${pBtnStyle}margin-left:auto;border-color:var(--gold);color:var(--gold);">⦿ Today</button>
     </div>`;
 
-  // 2. Sub-Tab Bar for Hora, Choghadiya, Muhurt, Lagna, and 24h Dial
+  // 2. Sub-Tab Bar
   const tabBtn = (id, label, icon) => `
     <button onclick="window.switchHoraTab('${id}')" style="padding:5px 10px;font-size:10px;font-weight:bold;border-radius:4px;cursor:pointer;border:1px solid ${activeTab === id ? 'var(--gold)' : 'var(--border2)'};background:${activeTab === id ? 'rgba(200,168,75,0.2)' : 'rgba(0,0,0,0.3)'};color:${activeTab === id ? 'var(--gold2)' : 'var(--muted)'};">
       ${icon} ${label}
@@ -412,21 +671,59 @@ function showPanchang(dateOverride) {
 
   const tabContainer = `
     <div style="display:flex;gap:6px;overflow-x:auto;padding:0 10px 10px 10px;">
+      ${tabBtn('panchang', 'Panchang', '🕉')}
       ${tabBtn('hora', 'Hora', '⏳')}
       ${tabBtn('choghadiya', 'Choghadiya', '🌤')}
       ${tabBtn('muhurt', 'Muhurt', '🎯')}
+      
+      
       ${tabBtn('lagna', 'Lagna', '☸')}
       ${tabBtn('dial', '24h Dial', '⭕')}
+      ${tabBtn('timeline', 'Timeline', '📊')}
     </div>`;
 
   // 3. Render Active Tab Content
   let tabContentHTML = '';
 
-  if (activeTab === 'hora') {
-    // Hora List Table (Day & Night)
+  if (activeTab === 'panchang') {
+    tabContentHTML = `
+      <div class="conj-item" style="border-left-color:var(--cyan);">
+        <h3 style="color:var(--cyan);margin:0 0 8px 0;">🌟 Panchang Overview${isToday ? ' (Today)' : ' — ' + fmtDay(d)}</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px;font-size:10.5px;line-height:1.7;">
+          <div>
+            <strong style="color:var(--text);">Date:</strong> <span style="color:var(--muted)">${fmtFull(d)}</span><br>
+            <strong style="color:var(--text);">Vaara:</strong> <span style="color:var(--gold2)">${varaNames[vara]}</span><br>
+            <strong style="color:var(--text);">Tithi:</strong> <span style="color:var(--cyan)">${tithi.num} - ${tithi.name}</span><br>
+            <strong style="color:var(--text);">Paksha:</strong> <span style="color:var(--cyan)">${tithi.phase}</span><br>
+            <strong style="color:var(--text);">Nakshatra:</strong> <span style="color:var(--gold)">${p.Moon.nak}</span> <span style="color:var(--muted);font-size:9px;">(Pada ${p.Moon.pada} · Navamsha Rashi ${navamshaRashiNum(p.Moon.sid != null ? p.Moon.sid : (p.Moon.sn || 0) * 30 + parseFloat(p.Moon.deg || 0))})</span><br>
+            <strong style="color:var(--text);">Yoga:</strong> <span style="color:${yCol}">${yogaIdx + 1}. ${yData.n}</span> <span style="font-size:9px;background:${yCol}22;color:${yCol};padding:1px 4px;border-radius:2px;">${yData.t}</span><br>
+            <strong style="color:var(--text);">Karana:</strong> <span style="color:${kCol}">${kData.n}</span> <span style="font-size:9px;background:${kCol}22;color:${kCol};padding:1px 4px;border-radius:2px;">${kData.t}</span><br>
+            <strong style="color:var(--text);">Anand Adi Yoga:</strong> <span style="color:var(--gold)">${curAnand}</span>
+          </div>
+          <div>
+            <strong style="color:var(--text);">Month (Amanta):</strong> <span style="color:var(--text)">${amavasyant}</span><br>
+            <strong style="color:var(--text);">Month (Purnimanta):</strong> <span style="color:var(--text)">${purnimant}</span><br>
+            <strong style="color:var(--text);">Sun Zodiac:</strong> <span style="color:var(--gold2)">${p.Sun.sign}</span><br>
+            <strong style="color:var(--text);">Moon Zodiac:</strong> <span style="color:var(--gold2)">${p.Moon.sign}</span><br>
+            <strong style="color:var(--text);">Ritu:</strong> <span style="color:var(--text)">${ritu}</span><br>
+            <strong style="color:var(--text);">Ayana:</strong> <span style="color:var(--text)">${ayana}</span><br>
+            <strong style="color:var(--text);">Ishtkaal:</strong> <span style="color:var(--muted)">${ishtG} Ghati ${ishtP} Pal (since sunrise)</span>
+          </div>
+        </div>
+        <hr style="border:0;border-top:1px solid var(--border);margin:10px 0;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center;font-size:10px;">
+          <div><div style="color:var(--muted);">Vikram Samvat</div><div style="color:var(--text);font-weight:bold;">${vikram}</div></div>
+          <div><div style="color:var(--muted);">Saka Samvat</div><div style="color:var(--text);font-weight:bold;">${saka}</div></div>
+          <div><div style="color:var(--muted);">Kali Samvat</div><div style="color:var(--text);font-weight:bold;">${kali}</div></div>
+        </div>
+        <hr style="border:0;border-top:1px solid var(--border);margin:10px 0;">
+        <strong style="color:var(--text);font-size:11px;">Current Hora:</strong> <span id="curHoraDisplay" style="font-size:10px;">Loading...</span>
+        ${vratFestivalHTML}
+      </div>`;
+
+  } else if (activeTab === 'hora') {
     const dayHoras = horaList.filter(h => h.isDay);
     const nightHoras = horaList.filter(h => !h.isDay);
-
     const renderHoraRows = (list, title) => `
       <div style="margin-bottom:12px;">
         <div style="font-size:11px;font-weight:bold;color:var(--gold);margin-bottom:6px;">${title}</div>
@@ -447,15 +744,14 @@ function showPanchang(dateOverride) {
           `).join('')}
         </table>
       </div>`;
-
     tabContentHTML = `
       <div class="conj-item" style="border-left-color:var(--gold);">
         ${renderHoraRows(dayHoras, '☀️ Day Hora Schedule')}
         ${renderHoraRows(nightHoras, '🌙 Night Hora Schedule')}
       </div>`;
 
-  } else if (activeTab === 'choghadiya') {
-    // Choghadiya Table
+  }else if (activeTab === 'choghadiya') {
+       // Choghadiya Table
     tabContentHTML = `
       <div class="conj-item" style="border-left-color:var(--cyan);">
         <div style="font-size:11px;font-weight:bold;color:var(--cyan);margin-bottom:8px;">🌤 Day & Night Choghadiya Schedule</div>
@@ -480,10 +776,28 @@ function showPanchang(dateOverride) {
         </table>
       </div>`;
 
-  } else if (activeTab === 'muhurt') {
+  }else if (activeTab === 'muhurt') {
     // Muhurt & Sensitive Windows Table
+    const chakraItems = muhurtList.filter(m => m.startFrac !== undefined).map(m => ({
+      startFrac: m.startFrac, endFrac: m.endFrac, label: m.name.split(' ')[0], quality: m.quality, color: m.color
+    }));
+    const muhurtaChakraSVG = render24hDialSVG(chakraItems, nowFrac, "Muhurta Chakra");
     tabContentHTML = `
       <div class="conj-item" style="border-left-color:var(--rose);">
+        <div style="display:flex;justify-content:space-around;font-size:10.5px;margin-bottom:10px;">
+          <div style="text-align:center;">
+            <div style="color:var(--gold);">☀️ Sunrise</div>
+            <div style="font-family:monospace;color:var(--green);">${res ? fmtFracTime(res.sunrise, true) : 'N/A'}</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="color:var(--violet);">🌇 Sunset</div>
+            <div style="font-family:monospace;color:var(--rose);">${res ? fmtFracTime(res.sunset, true) : 'N/A'}</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-around;font-size:9.5px;color:var(--muted);margin-bottom:10px;">
+          <div>Day Length: ${dH}h ${dM}m ${dS}s</div>
+          <div>Night Length: ${nH}h ${nM}m ${nS}s</div>
+        </div>
         <div style="font-size:11px;font-weight:bold;color:var(--rose);margin-bottom:8px;">🎯 Sensitive Muhurt & Inauspicious Windows</div>
         <table style="width:100%;border-collapse:collapse;font-size:10px;text-align:left;">
           <tr style="color:var(--muted);border-bottom:1px solid var(--border2);">
@@ -499,9 +813,14 @@ function showPanchang(dateOverride) {
             </tr>
           `).join('')}
         </table>
+        <div style="text-align:center;margin-top:14px;">
+          <div style="font-size:11px;font-weight:bold;color:var(--rose);margin-bottom:6px;">☸ Muhurta Chakra</div>
+          <div style="display:flex;justify-content:center;">${muhurtaChakraSVG}</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:4px;">Outer numbers: 24h clock · Sectors: today's Muhurat windows · Pointer: current time</div>
+        </div>
       </div>`;
 
-  } else if (activeTab === 'lagna') {
+  }   else if (activeTab === 'lagna') {
     // 24-Hour Lagna Schedule Table
     tabContentHTML = `
       <div class="conj-item" style="border-left-color:var(--violet);">
@@ -519,8 +838,7 @@ function showPanchang(dateOverride) {
           `).join('')}
         </table>
       </div>`;
-
-  } else if (activeTab === 'dial') {
+  }else if (activeTab === 'dial') {
     // 24-Hour Circular Dial SVG Wheel
     const horaDialItems = horaList.map(h => ({
       startFrac: h.start,
@@ -540,14 +858,100 @@ function showPanchang(dateOverride) {
         </div>
         <div style="font-size:9px;color:var(--muted);">Outer numbers: 24h clock · Sectors: Hora Lords · Pointer: Current time</div>
       </div>`;
+  } else if (activeTab === 'timeline') {
+    // Horizontal multi-row Panchang strip (Tithi/Nakshatra/Yoga/Karana/Choghadiya)
+    const timelineData = getPanchangTimelineData(d, BIRTH.lat, BIRTH.lon, BIRTH.utcOff);
+    const timelineSVG = renderPanchangTimelineSVG(timelineData);
+    tabContentHTML = `
+      <div class="conj-item" style="border-left-color:var(--cyan);text-align:center;">
+        <div style="font-size:11px;font-weight:bold;color:var(--cyan);margin-bottom:8px;">📊 Panchang Timeline — Sunrise to Sunrise</div>
+        <div style="overflow-x:auto;">${timelineSVG}</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:4px;">Each row runs sunrise-to-sunrise; a dashed marker shows exactly when that factor changes, if it changes within the window.</div>
+      </div>`;
   }
 
-  // 4. Combine Full Panel HTML
-  el.innerHTML = panchangDateBar + tabContainer + tabContentHTML;
+  // 4. Transit Charts (persistent footer, collapsible)
+  const chartsHTML = `
+    <div style="padding:0 10px;">
+      <h3 style="color:var(--cyan);padding:10px 0;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);margin-top:10px;">
+        <span>🌟 Transit Charts</span>
+        <span id="togglePanchangCharts" style="cursor:pointer;font-weight:bold;font-size:14px;color:var(--cyan);">[+]</span>
+      </h3>
+      <div id="panchangChartsContainer" style="display: none; flex-direction: column; gap: 15px; align-items: center; margin-bottom: 20px;">
+        <div style="text-align:center; width:100%;">
+          <div style="font-size:12px;color:var(--cyan);margin-bottom:4px;">Transit</div>
+          <canvas id="pTransitCanvas" width="200" height="200" style="background:var(--panel2);border-radius:3px;"></canvas>
+        </div>
+        <div style="text-align:center; width:100%;">
+          <div style="font-size:12px;color:var(--gold);margin-bottom:4px;">Lagna Tulya</div>
+          <canvas id="pLagnaTransitCanvas" width="200" height="200" style="background:var(--panel2);border-radius:3px;"></canvas>
+        </div>
+        <div style="text-align:center; width:100%;">
+          <div style="font-size:12px;color:var(--violet);margin-bottom:4px;">Moon Tulya</div>
+          <canvas id="pMoonTransitCanvas" width="200" height="200" style="background:var(--panel2);border-radius:3px;"></canvas>
+        </div>
+      </div>
+    </div>`;
 
-  // 5. Open the Slide-out Panel
+  // 5. Combine Full Panel HTML
+  el.innerHTML = panchangDateBar + tabContainer + tabContentHTML + chartsHTML;
+
+  document.getElementById('togglePanchangCharts')?.addEventListener('click', function () {
+    const container = document.getElementById('panchangChartsContainer');
+    if (container.style.display === 'none') {
+      container.style.display = 'flex';
+      this.textContent = '[-]';
+    } else {
+      container.style.display = 'none';
+      this.textContent = '[+]';
+    }
+  });
+
+  // 6. Current Hora personal-sync insight (Panchang tab only — element only exists there)
+  const curHoraEl = document.getElementById('curHoraDisplay');
+  if (curHoraEl) {
+    try {
+      const horas = getHora(jday, BIRTH.lat, BIRTH.lon, BIRTH.utcOff);
+      const nowH = d.getHours() + d.getMinutes() / 60;
+      const cur = horas.find(h => nowH >= h.start * 24 - 0.01 && nowH < h.end * 24 + 0.01) || horas[0];
+      const insight = getPersonalHoraInsight(cur.lord, BIRTH_ASC.sign, BIRTH_PLANETS.Moon.nak);
+      const hIcon = insight.navStr.includes("Ati") ? '🌟 ' : '';
+      curHoraEl.innerHTML = `
+        <div style="margin-top:4px;">
+          <span style="color:${insight.color};font-weight:bold;font-size:12px;">${hIcon}${cur.lord}</span>
+          <span style="color:var(--muted);font-size:9px;">(${cur.isDay ? 'Day' : 'Night'} Hora) — ${insight.status}</span>
+        </div>
+        <div style="font-size:9.5px;color:var(--gold);margin-top:4px;"><strong>Personal Sync:</strong> ${insight.navStr}</div>
+        <div style="font-size:9px;color:var(--text);margin-top:6px;line-height:1.4;">
+          <strong style="color:var(--cyan)">Purpose:</strong> ${insight.purpose}<br>
+          <strong style="color:var(--cyan)">Best Activities:</strong> ${insight.activities}
+        </div>
+        ${insight.lifeChanging}
+      `;
+    } catch (e) {
+      console.error(e);
+      curHoraEl.textContent = "N/A";
+    }
+  }
+
+  // 7. Draw transit charts
+  try {
+    const tPos = getPos(d);
+    const tAsc = computeAsc(jday, BIRTH.lat, BIRTH.lon, BIRTH.utcOff, BIRTH.ayan, 1);
+    drawDChart('pTransitCanvas', { planets: tPos, asc: tAsc });
+    drawDChart('pLagnaTransitCanvas', { planets: tPos, asc: BIRTH_ASC });
+    drawDChart('pMoonTransitCanvas', { planets: tPos, asc: { sn: BIRTH_PLANETS?.Moon?.sn ?? 0 } });
+  } catch (e) {}
+
+  // 8. Open the Slide-out Panel
   document.getElementById('conjPanel').classList.add('open');
 }
+/** Switch sub-tabs within the Hora / Panchang Panel */
+window.switchHoraTab = function(tabName) {
+  window.PANCHANG_UI_TAB = tabName;
+  showPanchang(window.PANCHANG_UI_DATE || TODAY);
+};
+
 function getNakshatra(sidLon){
   const nakSize=360/27;
   const idx=Math.floor(sidLon/nakSize)%27;
@@ -3768,7 +4172,38 @@ function renderDashaPanel() {
       }
     }
   } catch(e) { console.error('Dasha favorable-transit / house-activation section failed:', e); }
-
+  // ── KP PART 7 — live event reading for the currently-open chain
+  // (refV/refAD/refPD/refSD/refPra, already computed above) + dynamic
+  // 10th-CSL rule cards. Purely additive; degrades to '' if the module
+  // or the natal chart isn't available. ──
+  if (window.KP_PREDICTION_7 && typeof window.KP_PREDICTION_7.renderForPanel === 'function') {
+    try {
+      html += window.KP_PREDICTION_7.renderForPanel({
+        mahaLord: refV?.lord, adLord: refAD?.lord, pdLord: refPD?.lord,
+        sdLord: refSD?.lord, praLord: refPra?.lord,
+        natalPlanets: BIRTH_PLANETS, natalAsc: BIRTH_ASC
+      });
+    } catch (e) { console.error('KP Part 7 render failed:', e); }
+  }
+    // ── KP PART 8 — Promise (NL) vs Result (CSL) event-library verdicts.
+  // instanceId keeps its search box/detail state distinct from the copy
+  // rendered inside the Predictions Dashboard. ──
+  if (window.KP_PREDICTION_8 && typeof window.KP_PREDICTION_8.renderForPanel === 'function') {
+    try {
+      html += window.KP_PREDICTION_8.renderForPanel({
+        natalPlanets: BIRTH_PLANETS, natalAsc: BIRTH_ASC, instanceId: 'dashaExplorer'
+      });
+    } catch (e) { console.error('KP Part 8 render failed:', e); }
+  }
+  // ── KP PART 9 — Event Timing Finder across the real 5-level VIMSH
+  // tree (Mahadasha→Antardasha→Pratyantardasha→Sukshma→Pran). ──
+  if (window.KP_PREDICTION_9 && typeof window.KP_PREDICTION_9.renderForPanel === 'function') {
+    try {
+      html += window.KP_PREDICTION_9.renderForPanel({
+        natalPlanets: BIRTH_PLANETS, natalAsc: BIRTH_ASC, instanceId: 'dashaExplorer'
+      });
+    } catch (e) { console.error('KP Part 9 render failed:', e); }
+  }
   c.innerHTML = html;
 }
 
@@ -4640,27 +5075,28 @@ if (btnToggleChakraEl) btnToggleChakraEl.addEventListener('click',()=>{
 
 // ── Chakra chart controls: reference chart, transit/nakshatra/varga toggles ──
 if(qs('chakraRefSel')) qs('chakraRefSel').addEventListener('change',(e)=>{ chakraRefMode = e.target.value; renderAll(); });
+if(qs('chkChakraTransit')) qs('chkChakraTransit').addEventListener('change',(e)=>{ chakraShowTransit = e.target.checked; renderAll(); });
 // if(qs('chkChakraTransit')) qs('chkChakraTransit').addEventListener('change',(e)=>{ chakraShowTransit = e.target.checked; renderAll(); });
 // if(qs('chkChakraNak')) qs('chkChakraNak').addEventListener('change',(e)=>{ chakraShowNak = e.target.checked; renderAll(); });
-if(qs('chkChakraTransit')) qs('chkChakraTransit').addEventListener('change',(e)=>{ 
-  chakraShowTransit = e.target.checked; 
-  if(qs('chakraTransitControls')) qs('chakraTransitControls').style.display = chakraShowTransit ? 'flex' : 'none';
-  renderAll(); 
-});
+// if(qs('chkChakraTransit')) qs('chkChakraTransit').addEventListener('change',(e)=>{ 
+  // chakraShowTransit = e.target.checked; 
+  // if(qs('chakraTransitControls')) qs('chakraTransitControls').style.display = chakraShowTransit ? 'flex' : 'none';
+  // renderAll(); 
+// });
 
-window.shiftCenterDate = function(delta, unit) {
-  if (unit === 'today') {
-    centerDate = new Date(TODAY);
-  } else {
-    const base = new Date(centerDate);
-    if (unit === 'day') base.setDate(base.getDate() + delta);
-    else if (unit === 'week') base.setDate(base.getDate() + delta * 7);
-    else if (unit === 'month') base.setMonth(base.getMonth() + delta);
-    else if (unit === 'year') base.setFullYear(base.getFullYear() + delta);
-    centerDate = base;
-  }
-  renderAll();
-};
+// window.shiftCenterDate = function(delta, unit) {
+  // if (unit === 'today') {
+    // centerDate = new Date(TODAY);
+  // } else {
+    // const base = new Date(centerDate);
+    // if (unit === 'day') base.setDate(base.getDate() + delta);
+    // else if (unit === 'week') base.setDate(base.getDate() + delta * 7);
+    // else if (unit === 'month') base.setMonth(base.getMonth() + delta);
+    // else if (unit === 'year') base.setFullYear(base.getFullYear() + delta);
+    // centerDate = base;
+  // }
+  // renderAll();
+// };
 
 if(qs('chkChakraNak')) qs('chkChakraNak').addEventListener('change',(e)=>{ chakraShowNak = e.target.checked; renderAll(); });
 if(qs('chkChakraVarga')) qs('chkChakraVarga').addEventListener('change',(e)=>{ chakraShowVarga = e.target.checked; renderAll(); });
@@ -4668,54 +5104,54 @@ if(qs('chkChakraAspects')) qs('chkChakraAspects').addEventListener('change',(e)=
 // ── Floating / Full-Screen Chakra Window ──
 let chakraFloatOpen = false;
 function openChakraFloat(){
-  const wrap = qs('chakraFsWrap'), 
-        transitCtrl = qs('chakraTransitControls'),
-        details = qs('chakraDetailsPanel'), 
-        body = qs('chakraFloatBody'),
-        win = qs('chakraFloatWin'), 
-        anchor = qs('chakraFloatAnchor');
-  if(!wrap || !body || !win || !anchor) return;
-  if(chakraFloatOpen) return;
-  anchor.appendChild(wrap);           // keep a place to dock back to
-  if(transitCtrl) anchor.appendChild(transitCtrl);
-  if(details) anchor.appendChild(details);
-  body.appendChild(wrap);
-  if(transitCtrl) {
-    body.appendChild(transitCtrl);
-    if(chakraShowTransit) transitCtrl.style.display = 'flex';
-  }
-  if(details) body.appendChild(details);
-  wrap.style.width='100%'; wrap.style.height='auto'; wrap.style.maxWidth='';
-  win.style.display='flex';
-  if(details) details.style.display='grid';
-  chakraFloatOpen = true;
-  renderAll();
-}
+  // const wrap = qs('chakraFsWrap'), 
+        // transitCtrl = qs('chakraTransitControls'),
+        // details = qs('chakraDetailsPanel'), 
+        // body = qs('chakraFloatBody'),
+        // win = qs('chakraFloatWin'), 
+        // anchor = qs('chakraFloatAnchor');
+  // if(!wrap || !body || !win || !anchor) return;
+  // if(chakraFloatOpen) return;
+  // anchor.appendChild(wrap);           // keep a place to dock back to
+  // if(transitCtrl) anchor.appendChild(transitCtrl);
+  // if(details) anchor.appendChild(details);
+  // body.appendChild(wrap);
+  // if(transitCtrl) {
+    // body.appendChild(transitCtrl);
+    // if(chakraShowTransit) transitCtrl.style.display = 'flex';
+  // }
+  // if(details) body.appendChild(details);
+  // wrap.style.width='100%'; wrap.style.height='auto'; wrap.style.maxWidth='';
+  // win.style.display='flex';
+  // if(details) details.style.display='grid';
+  // chakraFloatOpen = true;
+  // renderAll();
+// }
 
-function closeChakraFloat(silent){
-  const wrap = qs('chakraFsWrap'), 
-        transitCtrl = qs('chakraTransitControls'),
-        details = qs('chakraDetailsPanel'), 
-        win = qs('chakraFloatWin');
-  if(!chakraFloatOpen){ if(win) win.style.display='none'; return; }
-  if(document.fullscreenElement) { try{ document.exitFullscreen(); }catch(e){} }
-  win.classList.remove('chakra-maximized');
-  win.style.display='none';
+// function closeChakraFloat(silent){
+  // const wrap = qs('chakraFsWrap'), 
+        // transitCtrl = qs('chakraTransitControls'),
+        // details = qs('chakraDetailsPanel'), 
+        // win = qs('chakraFloatWin');
+  // if(!chakraFloatOpen){ if(win) win.style.display='none'; return; }
+  // if(document.fullscreenElement) { try{ document.exitFullscreen(); }catch(e){} }
+  // win.classList.remove('chakra-maximized');
+  // win.style.display='none';
   
-  // Dock the wheel, transit controls + details panel back to their original slot
-  const optsBar = qs('chakraOptsBar');
-  if (optsBar && optsBar.parentElement && wrap) {
-    optsBar.parentElement.insertBefore(wrap, optsBar.nextSibling);
-    if (transitCtrl) optsBar.parentElement.insertBefore(transitCtrl, wrap.nextSibling);
-    if (details) optsBar.parentElement.insertBefore(details, (transitCtrl || wrap).nextSibling);
-  }
-  chakraFloatOpen = false;
-  if(!silent) renderAll();
-}
+  ////Dock the wheel, transit controls + details panel back to their original slot
+  // const optsBar = qs('chakraOptsBar');
+  // if (optsBar && optsBar.parentElement && wrap) {
+    // optsBar.parentElement.insertBefore(wrap, optsBar.nextSibling);
+    // if (transitCtrl) optsBar.parentElement.insertBefore(transitCtrl, wrap.nextSibling);
+    // if (details) optsBar.parentElement.insertBefore(details, (transitCtrl || wrap).nextSibling);
+  // }
+  // chakraFloatOpen = false;
+  // if(!silent) renderAll();
+// }
 
-/* // ── Floating / Full-Screen Chakra Window ──
-let chakraFloatOpen = false;
-function openChakraFloatx(){
+// ── Floating / Full-Screen Chakra Window ──
+// let chakraFloatOpen = false;
+// function openChakraFloatx(){
   const wrap = qs('chakraFsWrap'), details = qs('chakraDetailsPanel'), body = qs('chakraFloatBody'),
         win = qs('chakraFloatWin'), anchor = qs('chakraFloatAnchor');
   if(!wrap || !body || !win || !anchor) return;
@@ -4730,7 +5166,7 @@ function openChakraFloatx(){
   chakraFloatOpen = true;
   renderAll();
 }
-function closeChakraFloatx(silent){
+function closeChakraFloat(silent){
   const wrap = qs('chakraFsWrap'), details = qs('chakraDetailsPanel'), win = qs('chakraFloatWin'),
         dwheel = document.querySelector('.dwheel-wrap')?.parentElement;
   if(!chakraFloatOpen){ if(win) win.style.display='none'; return; }
@@ -4745,7 +5181,8 @@ function closeChakraFloatx(silent){
   }
   chakraFloatOpen = false;
   if(!silent) renderAll();
-} */
+}
+
 if(qs('btnChakraFullscreen')) qs('btnChakraFullscreen').addEventListener('click', openChakraFloat);
 if(qs('btnChakraFloatClose')) qs('btnChakraFloatClose').addEventListener('click', ()=>closeChakraFloat(false));
 if(qs('btnChakraFloatDock')) qs('btnChakraFloatDock').addEventListener('click', ()=>closeChakraFloat(false));
@@ -5023,8 +5460,11 @@ function buildChakraData(refMode){
   let transit=[];
   if (window.BIRTH_PLANETS && window.BIRTH_ASC){
     try{
-      const refDate = (typeof centerDate !== 'undefined' && centerDate) ? centerDate : new Date();
-      const tp=getPos(refDate);
+      // const refDate = (typeof centerDate !== 'undefined' && centerDate) ? centerDate : new Date();
+      // const tp=getPos(refDate);
+      
+      const tp=getPos(new Date());
+      
       for (const [p,d] of Object.entries(tp)){
         transit.push({ p, tx:PLANET_ABBR2[p]||p.substring(0,2), sid:d.sid, sn:d.sn, house:d.house,
                        retro:d.retro, nak:d.nak, pada:d.pada, nl:d.nl, sl:d.sl });
@@ -7541,177 +7981,7 @@ window.resetPanchangToToday = function() {
   showPanchang(new Date(TODAY));
 };
 
-function showPanchang(dateOverride) {
-   if(!BIRTH_PLANETS) { alert('Calculate birth details first'); return; }
-   if (dateOverride) window.PANCHANG_UI_DATE = new Date(dateOverride);
-   //const jday=jd((window.PANCHANG_UI_DATE||TODAY).getFullYear(),(window.PANCHANG_UI_DATE||TODAY).getMonth()+1,(window.PANCHANG_UI_DATE||TODAY).getDate(),12);
-   const d=window.PANCHANG_UI_DATE||TODAY;
-   if (!(d instanceof Date) || isNaN(d.getTime())) {
-     document.getElementById('conjList').innerHTML = '<div class="pred-item" style="color:var(--rose);padding:12px;">That date isn\'t valid — pick a different one.</div>';
-     return;
-   }
-   const jday=jd(d.getFullYear(),d.getMonth()+1,d.getDate(),12);
-   const p=getPos(d);
-   // Dates far outside the ephemeris's supported range (or any other position-fetch
-   // failure) come back with missing/NaN planet data — bail out here with a clear
-   // message instead of crashing deeper in the function on `undefined.t`.
-   if (!p || !p.Sun || !p.Moon || isNaN(p.Sun.sid) || isNaN(p.Moon.sid)) {
-     document.getElementById('conjList').innerHTML = '<div class="pred-item" style="color:var(--rose);padding:12px;">Could not compute planetary positions for ' + fmtDay(d) + ' — it may be outside the supported ephemeris range. Try a date closer to today.</div>';
-     return;
-   }
-   const tithi=getTithi(jday);
-   const vara=getVara(jday); 
-   const yogaIdxRaw=getYoga(p.Sun.sid, p.Moon.sid)-1;
-   const yogaIdx=isNaN(yogaIdxRaw) ? 0 : Math.max(0, Math.min(yogaIdxRaw, 26));
-   const karanaVal=getKarana(tithi.num);
-   
-   const varaNames=['Sunday (Ravi)','Monday (Som)','Tuesday (Mangal)','Wednesday (Budh)','Thursday (Guru)','Friday (Shukra)','Saturday (Shani)'];
-   let kIdx = 0;
-   if (tithi.num===1 && tithi.phase==='Shukla') kIdx = 10;
-   else { const kIdxRaw = Math.max(0, karanaVal-1)%11; kIdx = isNaN(kIdxRaw) ? 0 : kIdxRaw; }
-   
-   const yData = P_YOGAS[yogaIdx] || P_YOGAS[0];
-   const kData = P_KARANAS[kIdx] || P_KARANAS[0];
-   const nData = P_NAKS[p.Moon.nak] || {r:"Unknown", c:"Unknown", m:"Unknown"};
-let vratFestivalHTML = '';
-   try {
-     if (window.VRAT_FESTIVAL_ENGINE) {
-       const maasIdx = Math.floor(norm360(p.Sun.sid) / 30);
-       const maasName = window.VRAT_FESTIVAL_ENGINE.MAAS_NAMES[maasIdx];
-       const vfResult = window.VRAT_FESTIVAL_ENGINE.detect({
-         tithiNum: tithi.num, weekday: vara, nakshatra: p.Moon.nak, maasName: maasName
-       });
-       vratFestivalHTML = window.VRAT_FESTIVAL_ENGINE.renderHTML(vfResult);
-     }
-   } catch (e) { console.error('Vrat/Festival detection failed:', e); }
-   const yCol = yData.t==='Auspicious' ? 'var(--green)' : yData.t==='Mixed' ? 'var(--gold)' : 'var(--rose)';
-   const kCol = kData.t==='Auspicious' ? 'var(--green)' : kData.t==='Mixed' ? 'var(--gold)' : 'var(--rose)';
 
-   // Anand Adi 29 Yogas
-   const anandYogas = ["Anand","Kaaldhand","Dhoomr","Dhatha","Saumya","Dhwanksh","Dwaj","Srivatsa","Vajra","Mudgar","Chatrak","Mitra","Maanas","Padma","Lumbaka","Utpaat","Mrityu","Kaan","Siddhi","Shubh","Amrut","Musal","Gadh","Kunjara","Raakshas","Char","Sthir","Vardhamaan","Vajra Musal"];
-   const anandMap = {
-     "Sun": ["Ashwini","Bharani","Krittika","Rohini","Mrigashira","Ardra","Punarvasu","Pushya","Ashlesha","Magha","Purva Phalguni","Uttara Phalguni","Hasta","Chitra","Swati","Vishakha","Anuradha","Jyeshtha","Mula","Purva Ashadha","Uttara Ashadha","Abhijit","Shravana","Dhanishta","Shatabhisha","Purva Bhadrapada","Uttara Bhadrapada","Revati","Ashwini"],
-     "Mon": ["Mrigashira","Ardra","Punarvasu","Pushya","Ashlesha","Magha","Purva Phalguni","Uttara Phalguni","Hasta","Chitra","Swati","Vishakha","Anuradha","Jyeshtha","Mula","Purva Ashadha","Uttara Ashadha","Abhijit","Shravana","Dhanishta","Shatabhisha","Purva Bhadrapada","Uttara Bhadrapada","Revati","Ashwini","Bharani","Krittika","Rohini","Mrigashira"],
-     "Tue": ["Ashlesha","Magha","Purva Phalguni","Uttara Phalguni","Hasta","Chitra","Swati","Vishakha","Anuradha","Jyeshtha","Mula","Purva Ashadha","Uttara Ashadha","Abhijit","Shravana","Dhanishta","Shatabhisha","Purva Bhadrapada","Uttara Bhadrapada","Revati","Ashwini","Bharani","Krittika","Rohini","Mrigashira","Ardra","Punarvasu","Pushya","Ashlesha"],
-     "Wed": ["Hasta","Chitra","Swati","Vishakha","Anuradha","Jyeshtha","Mula","Purva Ashadha","Uttara Ashadha","Abhijit","Shravana","Dhanishta","Shatabhisha","Purva Bhadrapada","Uttara Bhadrapada","Revati","Ashwini","Bharani","Krittika","Rohini","Mrigashira","Ardra","Punarvasu","Pushya","Ashlesha","Magha","Purva Phalguni","Uttara Phalguni","Hasta"],
-     "Thu": ["Anuradha","Jyeshtha","Mula","Purva Ashadha","Uttara Ashadha","Abhijit","Shravana","Dhanishta","Shatabhisha","Purva Bhadrapada","Uttara Bhadrapada","Revati","Ashwini","Bharani","Krittika","Rohini","Mrigashira","Ardra","Punarvasu","Pushya","Ashlesha","Magha","Purva Phalguni","Uttara Phalguni","Hasta","Chitra","Swati","Vishakha","Anuradha"],
-     "Fri": ["Uttara Ashadha","Abhijit","Shravana","Dhanishta","Shatabhisha","Purva Bhadrapada","Uttara Bhadrapada","Revati","Ashwini","Bharani","Krittika","Rohini","Mrigashira","Ardra","Punarvasu","Pushya","Ashlesha","Magha","Purva Phalguni","Uttara Phalguni","Hasta","Chitra","Swati","Vishakha","Anuradha","Jyeshtha","Mula","Purva Ashadha","Uttara Ashadha"],
-     "Sat": ["Shatabhisha","Purva Bhadrapada","Uttara Bhadrapada","Revati","Ashwini","Bharani","Krittika","Rohini","Mrigashira","Ardra","Punarvasu","Pushya","Ashlesha","Magha","Purva Phalguni","Uttara Phalguni","Hasta","Chitra","Swati","Vishakha","Anuradha","Jyeshtha","Mula","Purva Ashadha","Uttara Ashadha","Abhijit","Shravana","Dhanishta","Shatabhisha"]
-   };
-   let curAnand = "None";
-   const dayAbbr = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][vara];
-   const dnaks = anandMap[dayAbbr];
-   if(dnaks) { const idx = dnaks.indexOf(p.Moon.nak); if(idx!==-1) curAnand = anandYogas[idx]; }
-
-   let chogData = "N/A";
-   try {
-     const chogs = getChogadiya(jday, BIRTH.lat, BIRTH.lon, BIRTH.utcOff);
-     const nowH = d.getHours() + d.getMinutes()/60;
-     const cur = chogs.find(c => {
-        const span = c.isDay ? (chogs[1].start-chogs[0].start) : (chogs[9].start-chogs[8].start);
-        return nowH >= (c.start*24-0.01) && nowH < (c.start*24 + span*24+0.01);
-     }) || chogs[0];
-     chogData = `<span style="color:${cur.type==='Good'?'var(--green)':'var(--rose)'}">${cur.name} (${cur.type})</span>`;
-   } catch(e){}
-
-   const el=document.getElementById('conjList');
-   const pDateIso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-   const isToday = !window.PANCHANG_UI_DATE;
-   const pBtnStyle = 'background:rgba(58,240,255,0.08);border:1px solid rgba(58,240,255,0.3);color:var(--cyan);border-radius:3px;padding:3px 7px;font-size:9px;cursor:pointer;white-space:nowrap;';
-   const panchangDateBar = `
-     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;margin:0 10px 6px 10px;background:rgba(58,240,255,0.05);border:1px solid rgba(58,240,255,0.2);border-radius:6px;">
-       <input type="date" id="panchangDateInput" value="${pDateIso}" onchange="window.setPanchangDateFromInput(this)" style="background:var(--panel2,#1a1a2e);color:var(--text);border:1px solid var(--border);border-radius:3px;padding:3px 6px;font-size:10px;">
-       <div style="display:flex;gap:3px;"><button onclick="window.shiftPanchangDate(-1,'day')" title="Previous day" style="${pBtnStyle}">◀ Day</button><button onclick="window.shiftPanchangDate(1,'day')" title="Next day" style="${pBtnStyle}">Day ▶</button></div>
-       <div style="display:flex;gap:3px;"><button onclick="window.shiftPanchangDate(-1,'week')" title="Previous week" style="${pBtnStyle}">◀ Week</button><button onclick="window.shiftPanchangDate(1,'week')" title="Next week" style="${pBtnStyle}">Week ▶</button></div>
-       <div style="display:flex;gap:3px;"><button onclick="window.shiftPanchangDate(-1,'month')" title="Previous month" style="${pBtnStyle}">◀ Month</button><button onclick="window.shiftPanchangDate(1,'month')" title="Next month" style="${pBtnStyle}">Month ▶</button></div>
-       <div style="display:flex;gap:3px;"><button onclick="window.shiftPanchangDate(-1,'year')" title="Previous year" style="${pBtnStyle}">◀ Year</button><button onclick="window.shiftPanchangDate(1,'year')" title="Next year" style="${pBtnStyle}">Year ▶</button></div>
-       <button onclick="window.resetPanchangToToday()" title="Jump back to today" style="${pBtnStyle}margin-left:auto;border-color:var(--gold);color:var(--gold);">⦿ Today</button>
-     </div>`;
-   el.innerHTML=panchangDateBar+`<h3 style="color:var(--cyan);padding:10px;">🌟 Panchang Overview${isToday ? ' (Today)' : ' — ' + fmtDay(d)}</h3>
-     <div class="conj-item" style="border-left-color:var(--cyan); line-height:1.5;">
-       <strong style="color:var(--text);font-size:11px;">Date:</strong> <span style="color:var(--muted)">${fmtFull(d)}</span><br>
-       <strong style="color:var(--text);font-size:11px;">Vaara:</strong> <span style="color:var(--gold2)">${varaNames[vara]}</span><br>
-       <strong style="color:var(--text);font-size:11px;">Tithi:</strong> <span style="color:var(--cyan)">${tithi.num} - ${tithi.name} (${tithi.phase})</span><br>
-       <hr style="border:0;border-top:1px solid var(--border);margin:8px 0;">
-       <strong style="color:var(--text);font-size:11px;">Nakshatra:</strong> <span style="color:var(--gold)">${p.Moon.nak}</span> <span style="color:var(--muted);font-size:9px;">(Pada ${p.Moon.pada} · Navamsha Rashi ${navamshaRashiNum(p.Moon.sid!=null?p.Moon.sid:(p.Moon.sn||0)*30+parseFloat(p.Moon.deg||0))})</span><br>
-       <span style="color:var(--muted);font-size:10px;">├ <strong>Anand Adi:</strong> ${curAnand} Yoga</span><br>
-       <span style="color:var(--muted);font-size:10px;">└ <strong>Chogadiya:</strong> ${chogData}</span><br>
-       <hr style="border:0;border-top:1px solid var(--border);margin:8px 0;">
-       <strong style="color:var(--text);font-size:11px;">Yoga:</strong> <span style="color:${yCol}">${yogaIdx+1}. ${yData.n}</span> <span style="font-size:11px;background:${yCol}22;color:${yCol};padding:1px 4px;border-radius:2px;">${yData.t}</span><br>
-       <span style="color:var(--muted);font-size:10px;">└ <strong>Effect:</strong> ${yData.m}</span><br>
-       <hr style="border:0;border-top:1px solid var(--border);margin:8px 0;">
-       <strong style="color:var(--text);font-size:11px;">Karana:</strong> <span style="color:${kCol}">${kData.n}</span> <span style="font-size:9px;background:${kCol}22;color:${kCol};padding:1px 4px;border-radius:2px;">${kData.t}</span><br>
-       <span style="color:var(--muted);font-size:10px;">└ <strong>Uses:</strong> ${kData.m}</span><br>
-       <hr style="border:0;border-top:1px solid var(--border);margin:8px 0;">
-       <strong style="color:var(--text);font-size:11px;">Hora:</strong> <span id="curHoraDisplay">Loading...</span><br>
-     </div>
-     <h3 style="color:var(--cyan);padding:10px;display:flex;justify-content:space-between;align-items:center;">
-       <span>🌟 Transit Charts</span>
-       <span id="togglePanchangCharts" style="cursor:pointer;font-weight:bold;font-size:14px;color:var(--cyan);">[-]</span>
-     </h3>
-     <div id="panchangChartsContainer" style="display: flex; flex-direction: column; gap: 15px; align-items: center; margin-bottom: 10px; padding: 0 10px;">
-       <div style="text-align:center; width:100%;">
-         <div style="font-size:12px;color:var(--cyan);margin-bottom:4px;">Transit</div>
-         <canvas id="pTransitCanvas" width="200" height="200" style="background:var(--panel2);border-radius:3px;"></canvas>
-       </div>
-       <div style="text-align:center; width:100%;">
-         <div style="font-size:12px;color:var(--gold);margin-bottom:4px;">Lagna Tulya</div>
-         <canvas id="pLagnaTransitCanvas" width="200" height="200" style="background:var(--panel2);border-radius:3px;"></canvas>
-       </div>
-       <div style="text-align:center; width:100%;">
-         <div style="font-size:12px;color:var(--violet);margin-bottom:4px;">Moon Tulya</div>
-         <canvas id="pMoonTransitCanvas" width="200" height="200" style="background:var(--panel2);border-radius:3px;"></canvas>
-       </div>
-     </div>
-   `;
-
-   // Update Hora in display
-   try {
-     const horas = getHora(jday, BIRTH.lat, BIRTH.lon, BIRTH.utcOff);
-     const nowH = d.getHours() + d.getMinutes()/60;
-     const cur = horas.find(h => nowH >= h.start*24-0.01 && nowH < h.end*24+0.01) || horas[0];
-     
-     const insight = getPersonalHoraInsight(cur.lord, BIRTH_ASC.sign, BIRTH_PLANETS.Moon.nak);
-     const hIcon = insight.navStr.includes("Ati") ? '🌟 ' : '';
-     
-     document.getElementById('curHoraDisplay').innerHTML = `
-       <div style="margin-top:4px;">
-         <span style="color:${insight.color};font-weight:bold;font-size:12px;">${hIcon}${cur.lord}</span> 
-         <span style="color:var(--muted);font-size:9px;">(${cur.isDay?'Day':'Night'} Hora) — ${insight.status}</span>
-       </div>
-       <div style="font-size:9.5px;color:var(--gold);margin-top:4px;"><strong>Personal Sync:</strong> ${insight.navStr}</div>
-       <div style="font-size:9px;color:var(--text);margin-top:6px;line-height:1.4;">
-         <strong style="color:var(--cyan)">Purpose:</strong> ${insight.purpose}<br>
-         <strong style="color:var(--cyan)">Best Activities:</strong> ${insight.activities}
-       </div>
-       ${insight.lifeChanging}
-     `;
-   } catch(e){ 
-     console.error(e);
-     document.getElementById('curHoraDisplay').textContent = "N/A"; 
-   }
-
-   document.getElementById('conjPanel').classList.add('open');
-   
-   document.getElementById('togglePanchangCharts')?.addEventListener('click', function() {
-       const container = document.getElementById('panchangChartsContainer');
-       if (container.style.display === 'none') {
-           container.style.display = 'flex';
-           this.textContent = '[-]';
-       } else {
-           container.style.display = 'none';
-           this.textContent = '[+]';
-       }
-   });
-   
-   try {
-     const tPos = getPos(d);
-     const tAsc = computeAsc(jday, BIRTH.lat, BIRTH.lon, BIRTH.utcOff, BIRTH.ayan, 1);
-     drawDChart('pTransitCanvas', { planets: tPos, asc: tAsc });
-     drawDChart('pLagnaTransitCanvas', { planets: tPos, asc: BIRTH_ASC });
-     drawDChart('pMoonTransitCanvas', { planets: tPos, asc: { sn: BIRTH_PLANETS?.Moon?.sn ?? 0 } });
-   } catch(e) {}
-}
 
 // YOGAS PANEL LOGIC
 document.getElementById('btnYogas').addEventListener('click', showYogasPanel);
