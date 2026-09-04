@@ -145,6 +145,10 @@ window.YOGAS_DATA = [
     quality: "Positive",
     strength: 'Strong',
     varga: 1,
+    methodOfCalculation: 'Formed when the Sun and Mercury occupy the same sign/house in the natal chart, with Mercury not combust (too close to the Sun to be seen).',
+    cause: 'Mercury (intellect, communication) united with the Sun (vitality, authority) sharpens the mind and lends confidence and clarity to self-expression, provided Mercury is not overwhelmed by the Sun\'s glare (combustion).',
+    nullification: 'Weakened or negated if Mercury is combust (typically within about 14° of the Sun) or afflicted by malefic conjunction/aspect; strongest when Mercury is also in its own or exaltation sign.',
+    referenceShloka: 'A well-known combination discussed across classical texts (e.g. Phaladeepika, Saravali) under Surya-Budha yoga — precise verse numbering varies by edition, so no single canonical shloka is quoted here.',
     remedies: ['Offer green items', 'Wear emerald', 'Chant Mercury mantra', 'Study scriptures'],
     mantras: ['Om Budhaya Namaha', 'Om Herambaya Namaha', 'Om Mitrayaya Namaha'],
     deities: ['Mercury', 'Saraswati', 'Sun'],
@@ -298,6 +302,10 @@ window.YOGAS_DATA = [
     quality: "Negative",
     strength: 'Strong',
     varga: 1,
+    methodOfCalculation: 'Check the houses immediately before and after the Moon (the 12th and 2nd counted from the Moon\'s sign). If no planet (other than the Moon itself, and excluding Sun/Rahu/Ketu in this implementation) occupies either house, the Moon is considered "isolated" and Kemadruma Yoga forms.',
+    cause: 'An isolated Moon — with no planetary support flanking it — leaves the mind (which the Moon signifies) without steadying influences, classically read as sorrow, dependency, and instability.',
+    nullification: 'Classically cancelled (or greatly reduced) if the Moon is in a Kendra (1st/4th/7th/10th) from the Lagna, if the Moon is conjunct or aspected by a benefic, if the Moon is in Kendra from the Lagna lord, or if the Moon is strong (own/exalted sign). This implementation reports only the raw isolation condition; cancellation factors are not separately checked.',
+    referenceShloka: 'A major yoga discussed extensively in Brihat Parashara Hora Shastra and Phaladeepika under Kemadruma Yoga — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
     remedies: ['Strengthen 2nd/12th house lords', 'Wear pearls', 'Practice meditation', 'Build relationships'],
     mantras: ['Om Namah Shivaya', 'Maha Mrityunjaya Mantra', 'Om Chandramase Namaha'],
     deities: ['Shiva', 'Moon', 'Hanuman'],
@@ -457,6 +465,10 @@ window.YOGAS_DATA = [
     quality: "Positive",
     strength: 'Very Strong',
     varga: 1,
+    methodOfCalculation: 'One of the five classical Pancha Mahapurusha Yogas. Formed when Mercury occupies a Kendra house (1st, 4th, 7th, or 10th from the Lagna) while also being in its own sign (Gemini or Virgo) or its sign of exaltation (Virgo).',
+    cause: 'A naturally strong, well-dignified Mercury anchored in an angular house of visible life-impact (Kendra) gives sustained strength to intellect, communication, and commercial acumen throughout life.',
+    nullification: 'Weakened if Mercury is combust, retrograde and afflicted, or heavily aspected/conjoined by malefics without any offsetting benefic influence; strength is also reduced if the Kendra house itself is a natural malefic house for the ascendant in question.',
+    referenceShloka: 'One of the five Pancha Mahapurusha Yogas codified in Brihat Parashara Hora Shastra (Mahapurusha Yoga Adhyaya) — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
     remedies: ['Wear emerald', 'Chant Mercury mantra', 'Wednesday practices', 'Learning activities'],
     mantras: ['Om Budhaya Namaha', 'Om Herambaya Namaha', 'Mercury Beej Mantra'],
     deities: ['Mercury', 'Saraswati', 'Ganesha'],
@@ -3284,7 +3296,621 @@ const NEW_YOGAS = [];
         }
     });
 
-    
+    // ---------- 31. Chandradhi Yoga (Adhi Yoga from the Moon) ----------
+    NEW_YOGAS.push({
+        name: 'Chandradhi Yoga',
+        category: 'Raja Yoga',
+        quality: 'Positive',
+        planets: ['Mercury', 'Jupiter', 'Venus'],
+        keywords: ['authority', 'command', 'prosperity', 'longevity', 'victory over enemies'],
+        methodOfCalculation: 'Check the houses 6th, 7th, and 8th counted from the Moon (not the Lagna — see "Adhi Yoga" in this data set for the Lagna-based Lagnadhi Yoga variant). If natural benefics (Mercury, Jupiter, Venus) occupy at least two of these three houses, Chandradhi Yoga forms; if all three houses are occupied, it is at full strength.',
+        cause: 'Benefics flanking the Moon (mind, emotional foundation) from the 6th/7th/8th give steady support and confidence to the native\'s inner life, which in classical astrology translates into the capacity to hold positions of command.',
+        description: 'The Moon-based form of Adhi Yoga (classically the primary/original form; the Lagna-based version is separately called Lagnadhi Yoga). Formed when Mercury, Jupiter, and/or Venus occupy the 6th, 7th, and 8th houses counted from the Moon.',
+        result: 'The native becomes a commander, minister, or ruler by the strength of the planets involved — commanding authority, prosperity, freedom from enemies, good health, and a long, substantive life.',
+        nullification: 'Reduced if the Moon itself is weak or afflicted (combust, debilitated, or hemmed by malefics) even though benefics flank it; strongest when all three benefics participate and are individually well-dignified.',
+        referenceShloka: 'Brihat Jataka XIII.2 and Brihat Parashara Hora Shastra Ch. 38 both describe this combination under Adhi/Chandradhi Yoga — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Strong',
+        remedies: ['Strengthen the benefics involved through their mantras and donations', 'Worship Vishnu or Guru (Jupiter) for sustained support', 'Keep the Moon strong through Somvar (Monday) practices'],
+        mantras: ['Om Chandraya Namah', 'Om Gurave Namah', 'Om Namo Bhagavate Vasudevaya'],
+        deities: ['Chandra', 'Vishnu', 'Brihaspati'],
+        evaluate: function (c) {
+            if (!c.planets || !c.planets.Moon) return { result: false };
+            const moon = c.planets.Moon;
+            const moonHouse = moon.house;
+            if (!moonHouse) return { result: false };
+            const relHouse = (offset) => (((moonHouse - 1 + offset - 1) % 12) + 1);
+            const h6 = relHouse(6), h7 = relHouse(7), h8 = relHouse(8);
+            const benefics = BENEFICS().filter(b => b !== 'Moon');
+            const inH6 = benefics.filter(b => c.planets[b] && c.planets[b].house === h6);
+            const inH7 = benefics.filter(b => c.planets[b] && c.planets[b].house === h7);
+            const inH8 = benefics.filter(b => c.planets[b] && c.planets[b].house === h8);
+            const occupied = [inH6.length > 0, inH7.length > 0, inH8.length > 0].filter(Boolean).length;
+            const isDetected = occupied >= 2;
+            const detail = [
+                inH6.length ? `H${h6} (6th from Moon): ${inH6.join(', ')}` : '',
+                inH7.length ? `H${h7} (7th from Moon): ${inH7.join(', ')}` : '',
+                inH8.length ? `H${h8} (8th from Moon): ${inH8.join(', ')}` : ''
+            ].filter(Boolean).join('; ');
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because benefic planets occupy ${occupied} of the 6th/7th/8th houses from the Moon (${detail}), fortifying the native's standing.` : 'Benefics do not sufficiently occupy the 6th/7th/8th houses from the Moon.'
+            };
+        }
+    });
+
+    // ---------- 32. Vasumathi Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Vasumathi Yoga',
+        category: 'Property',
+        quality: 'Positive',
+        planets: ['Jupiter', 'Venus', 'Mercury', 'Moon'],
+        keywords: ['wealth', 'independence', 'prosperity', 'gains'],
+        methodOfCalculation: 'Check the Upachaya houses — 3rd, 6th, 10th, and 11th — counted from the Lagna. If natural benefics (Jupiter, Venus, Mercury, and/or a waxing Moon) occupy at least three of these four houses, Vasumathi Yoga forms.',
+        cause: 'Upachaya houses are the "houses of growth" that improve with time and effort; benefics seated there means sustained, self-earned material growth rather than one-off luck.',
+        description: 'Formed when the majority of the natural benefics occupy the Upachaya houses (3rd, 6th, 10th, 11th) from the Lagna (some classical sources also allow counting from the Moon).',
+        result: 'The native will not be dependent on others and will always command plenty of wealth, gained substantially through personal effort and courage.',
+        nullification: 'Weaker if the benefics involved are debilitated, combust, or afflicted by malefic conjunction/aspect; strongest when a benefic occupies its exaltation sign within an Upachaya house. A "pure" Vasumathi Yoga with all benefics in Upachaya houses is rare.',
+        referenceShloka: 'Described under Upachayasthana combinations in classical Jyotish compilations (e.g. Phaladeepika-tradition wealth yogas) — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Medium',
+        remedies: ['Strengthen the benefics occupying the Upachaya houses', 'Charitable giving tied to Jupiter/Venus significations', 'Cultivate self-driven effort rather than relying on inheritance'],
+        mantras: ['Om Shreem Mahalakshmiyai Namaha', 'Om Gurave Namah'],
+        deities: ['Lakshmi', 'Brihaspati'],
+        evaluate: function (c) {
+            if (!c.planets) return { result: false };
+            const upachayaHouses = [3, 6, 10, 11];
+            const benefics = BENEFICS();
+            const occupiedHouses = upachayaHouses.filter(h => benefics.some(b => c.planets[b] && c.planets[b].house === h));
+            const isDetected = occupiedHouses.length >= 3;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because benefic planets occupy ${occupiedHouses.length} of the four Upachaya houses (H${occupiedHouses.join(', H')}) from the Lagna, giving self-earned, sustained wealth.` : 'Benefics do not occupy enough of the Upachaya houses (3rd/6th/10th/11th) from the Lagna.'
+            };
+        }
+    });
+
+    // ---------- 33. Sakata Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Sakata Yoga',
+        category: 'Muhurta - Inauspicious Timing',
+        quality: 'Negative',
+        planets: ['Moon', 'Jupiter'],
+        keywords: ['fluctuating fortune', 'instability', 'poverty', 'struggle'],
+        methodOfCalculation: 'Counting Jupiter\'s house as the 1st house, check whether the Moon falls in the 6th, 8th, or 12th house from that position. If so, Sakata Yoga forms.',
+        cause: 'Jupiter (fortune, wisdom) and the Moon (mind, day-to-day fortune) in a dusthana relationship to each other means the native\'s sense of fortune and Jupiter\'s protective, expansive influence are out of step — producing an up-and-down "cart wheel" (Sakata) pattern of fortune.',
+        description: 'One of the classical fortune-fluctuation yogas: the Moon positioned in the 6th, 8th, or 12th house counted from Jupiter.',
+        result: 'The native loses fortune and may regain it; tends to be ordinary and insignificant, suffering from poverty, privation, and misery; can be stubborn and disliked by relatives.',
+        nullification: 'Classically cancelled (Sakata-Bhanga) if the Moon is in a Kendra (1st/4th/7th/10th) from the Lagna, if Jupiter is itself in a Kendra from the Lagna, or if both Moon and Jupiter are strong (own/exaltation) — in which case the milder "Mukuta Yoga" variant is sometimes read instead, bringing authority rather than hardship. This implementation reports only the raw 6th/8th/12th condition; cancellation factors are not separately checked.',
+        referenceShloka: 'A widely cited combination across Jyotish compilations (attributed in various sources to Mansagari and to Dr. B.V. Raman\'s formulation) — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Medium',
+        remedies: ['Strengthen Jupiter through Thursday practices and yellow sapphire (after consultation)', 'Strengthen the Moon through pearls and Monday practices', 'Chant Guru and Chandra mantras'],
+        mantras: ['Om Gurave Namah', 'Om Chandraya Namah'],
+        deities: ['Brihaspati', 'Chandra'],
+        evaluate: function (c) {
+            if (!c.planets || !c.planets.Moon || !c.planets.Jupiter) return { result: false };
+            const jupHouse = c.planets.Jupiter.house, moonHouse = c.planets.Moon.house;
+            if (!jupHouse || !moonHouse) return { result: false };
+            const moonFromJup = houseCount(jupHouse, moonHouse);
+            const isDetected = [6, 8, 12].includes(moonFromJup);
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because the Moon falls in the ${moonFromJup}th house counted from Jupiter, an inauspicious dusthana relationship that produces fluctuating fortune.` : 'The Moon does not fall in the 6th, 8th, or 12th house counted from Jupiter.'
+            };
+        }
+    });
+
+    // ---------- 34. Vesi Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Vesi Yoga',
+        category: 'Auspicious',
+        quality: 'Positive',
+        planets: ['Sun'],
+        keywords: ['fortune', 'virtue', 'reputation'],
+        methodOfCalculation: 'Check the 2nd house counted from the Sun. If any planet other than the Moon, Rahu, or Ketu occupies that house, Vesi Yoga forms.',
+        cause: 'A planet immediately following the Sun lends the solar identity (ego, authority, vitality) forward-moving support and visibility, strengthening the native\'s public standing.',
+        description: 'Formed when a planet (other than Moon, Rahu, Ketu) occupies the 2nd house from the Sun. Its counterpart, Vasi (Vosi) Yoga, uses the 12th house instead; when both occur together it is Ubhayachari Yoga.',
+        result: 'The native is fortunate and virtuous, leading a happy, famous, and aristocratic life — the precise flavor depends on which planet forms the yoga.',
+        nullification: 'Weakened if the qualifying planet is combust, debilitated, or heavily afflicted by malefic aspect/conjunction.',
+        referenceShloka: 'Discussed in Brihat Parashara Hora Shastra and Saravali under the Veshi/Vashi/Ubhayachari family of Sun-based yogas — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Medium',
+        remedies: ['Strengthen the Sun through Sunday practices', 'Strengthen the specific planet occupying the 2nd from Sun'],
+        mantras: ['Om Suryaya Namah'],
+        deities: ['Surya'],
+        evaluate: function (c) {
+            if (!c.planets || !c.planets.Sun) return { result: false };
+            const sunHouse = c.planets.Sun.house;
+            if (!sunHouse) return { result: false };
+            const h2 = (((sunHouse - 1 + 1) % 12) + 1);
+            const qualifying = Object.keys(c.planets).filter(p => !['Sun', 'Moon', 'Rahu', 'Ketu'].includes(p) && c.planets[p].house === h2);
+            const isDetected = qualifying.length > 0;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because ${qualifying.join(', ')} occupies the 2nd house from the Sun (H${h2}), lending the Sun forward support.` : 'No qualifying planet occupies the 2nd house from the Sun.'
+            };
+        }
+    });
+
+    // ---------- 35. Ubhayachari Yoga (Obhayachari) ----------
+    NEW_YOGAS.push({
+        name: 'Ubhayachari Yoga',
+        category: 'Auspicious',
+        quality: 'Positive',
+        planets: ['Sun'],
+        keywords: ['eloquence', 'popularity', 'wealth', 'fame'],
+        methodOfCalculation: 'Check the 2nd and 12th houses counted from the Sun. If planets other than the Moon, Rahu, or Ketu occupy BOTH houses simultaneously (Vesi Yoga in the 2nd and Vasi Yoga in the 12th together), Ubhayachari Yoga forms.',
+        cause: 'The Sun (soul, identity) is supported on both flanks — from what accumulates toward it (2nd) and what it releases outward (12th) — giving the most complete and balanced form of solar support among the three related yogas.',
+        description: 'Considered the strongest of the three solar-adjacent yogas (Vesi, Vasi, Ubhayachari), formed when qualifying planets occupy both the 2nd and 12th houses from the Sun at once.',
+        result: 'The native is an eloquent speaker with well-proportioned limbs, takes delight in everything, and is liked by all — wealthy and famous.',
+        nullification: 'Weakened if the qualifying planets are combust, debilitated, or heavily afflicted; strongest when both sides carry naturally benefic planets.',
+        referenceShloka: 'Described in Brihat Parashara Hora Shastra and Saravali (Kalyana Varma) as the most powerful of the Veshi/Vashi/Ubhayachari family — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Strong',
+        remedies: ['Strengthen the Sun through Sunday practices and ruby (after consultation)', 'Support with charity aligned to the planets on both sides'],
+        mantras: ['Om Suryaya Namah', 'Om Hraam Hreem Hraum Sah Suryaya Namah'],
+        deities: ['Surya'],
+        evaluate: function (c) {
+            if (!c.planets || !c.planets.Sun) return { result: false };
+            const sunHouse = c.planets.Sun.house;
+            if (!sunHouse) return { result: false };
+            const h2 = (((sunHouse - 1 + 1) % 12) + 1);
+            const h12 = (((sunHouse - 1 + 11) % 12) + 1);
+            const exclude = ['Sun', 'Moon', 'Rahu', 'Ketu'];
+            const in2 = Object.keys(c.planets).filter(p => !exclude.includes(p) && c.planets[p].house === h2);
+            const in12 = Object.keys(c.planets).filter(p => !exclude.includes(p) && c.planets[p].house === h12);
+            const isDetected = in2.length > 0 && in12.length > 0;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because ${in2.join(', ')} occupies the 2nd house and ${in12.join(', ')} occupies the 12th house from the Sun, supporting it from both sides.` : 'Planets do not occupy both the 2nd and 12th houses from the Sun simultaneously.'
+            };
+        }
+    });
+
+    // ---------- 36. Brahma Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Brahma Yoga',
+        category: 'Raja Yoga',
+        quality: 'Positive',
+        planets: ['Jupiter', 'Venus', 'Mercury'],
+        keywords: ['wisdom', 'respect', 'charity', 'longevity', 'luxury'],
+        methodOfCalculation: 'Three conditions checked together: (1) Jupiter occupies a Kendra (1st/4th/7th/10th) counted from the 9th lord; (2) Venus occupies a Kendra counted from the 11th lord; (3) Mercury occupies a Kendra counted from the Lagna lord or the 10th lord. All three must hold for the full yoga.',
+        cause: 'Each of the three benefics is placed angularly from the lord of a highly favorable house (fortune, gains, self/career) — a rare triple reinforcement classical texts associate with the creative, sustaining quality of Brahma.',
+        description: 'A rare and powerful combination requiring Jupiter, Venus, and Mercury to each be angularly placed from specific significant house lords (9th, 11th, and Lagna/10th respectively).',
+        result: 'The native enjoys luxurious foods and is respected by Brahmins and learned persons; highly learned, long-lived, charitable, and always inclined toward good deeds.',
+        nullification: 'Weakened by affliction (combustion, debilitation, malefic conjunction/aspect) to Jupiter, Venus, Mercury, or the 9th/11th lords involved; for some Lagnas the exact condition cannot be geometrically fulfilled, in which case a partial fulfillment still gives reduced results.',
+        referenceShloka: 'A named combination discussed in general Jyotish yoga compilations (associated with the Brahma-Vishnu-Shiva group of yogas) — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Strong',
+        remedies: ['Strengthen Jupiter, Venus, and Mercury through their respective mantras and donations', 'Support education and charitable causes', 'Respect teachers and elders'],
+        mantras: ['Om Gurave Namah', 'Om Shukraya Namah', 'Om Budhaya Namaha'],
+        deities: ['Brahma', 'Brihaspati', 'Shukra', 'Budha'],
+        evaluate: function (c) {
+            if (!c.planets || !c.asc) return { result: false };
+            const ascSn = c.asc.sn || 0;
+            const lord9 = lordOfHouse(ascSn, 9), lord11 = lordOfHouse(ascSn, 11), lordAsc = lordOfHouse(ascSn, 1), lord10 = lordOfHouse(ascSn, 10);
+            const p9 = c.planets[lord9], p11 = c.planets[lord11], pAsc = c.planets[lordAsc], p10 = c.planets[lord10];
+            const jup = c.planets.Jupiter, ven = c.planets.Venus, merc = c.planets.Mercury;
+            if (!jup || !ven || !merc || !p9 || !p11) return { result: false };
+            const jupOk = p9.house && jup.house && isKendra(houseCount(p9.house, jup.house));
+            const venOk = p11.house && ven.house && isKendra(houseCount(p11.house, ven.house));
+            const mercOk = merc.house && ((pAsc && pAsc.house && isKendra(houseCount(pAsc.house, merc.house))) || (p10 && p10.house && isKendra(houseCount(p10.house, merc.house))));
+            const isDetected = !!(jupOk && venOk && mercOk);
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because Jupiter is in a Kendra from the 9th lord (${lord9}), Venus is in a Kendra from the 11th lord (${lord11}), and Mercury is in a Kendra from the Lagna or 10th lord.` : 'Jupiter, Venus, and Mercury are not all simultaneously angular from the 9th lord, 11th lord, and Lagna/10th lord respectively.'
+            };
+        }
+    });
+
+    // ---------- 37. Dehakashta Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Dehakashta Yoga',
+        category: 'Muhurta - Inauspicious Timing',
+        quality: 'Negative',
+        planets: ['Lagna lord'],
+        keywords: ['bodily hardship', 'lack of comfort', 'affliction'],
+        methodOfCalculation: 'Check the Lagna lord\'s placement. If it occupies a Dusthana (6th, 8th, or 12th house) from the Lagna and is also conjunct or aspected by a natural malefic, Dehakashta Yoga forms.',
+        cause: 'The Lagna lord governs the physical body and general well-being; placed in a house of loss/disease/hidden trouble and further pressured by malefic influence, the body is denied the ease and comfort it would otherwise enjoy.',
+        description: 'A body-hardship (deha = body, kashta = suffering) combination: the Lagna lord afflicted in a Dusthana house.',
+        result: 'The native is devoid of bodily comforts.',
+        nullification: 'Eased if the Lagna lord is otherwise strong (own/exalted sign) despite the house placement, or if a benefic also aspects/conjoins it, offsetting the malefic pressure.',
+        referenceShloka: 'A body-affliction combination discussed among the classical "Deha" yogas in general Jyotish yoga compilations — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Medium',
+        remedies: ['Strengthen the Lagna lord through its mantra and gemstone (after consultation)', 'General health-supportive practices (yoga, Ayurveda)', 'Maha Mrityunjaya mantra for overall vitality'],
+        mantras: ['Maha Mrityunjaya Mantra'],
+        deities: ['Shiva'],
+        evaluate: function (c) {
+            if (!c.planets || !c.asc) return { result: false };
+            const ascSn = c.asc.sn || 0;
+            const lagnaLordName = lordOfHouse(ascSn, 1);
+            const lagnaLord = c.planets[lagnaLordName];
+            if (!lagnaLord || !lagnaLord.house) return { result: false };
+            const inDusthana = isDusthana(lagnaLord.house);
+            const conjunctMalefic = MALEFICS().some(m => m !== lagnaLordName && c.planets[m] && c.planets[m].house === lagnaLord.house);
+            const aspectedByMalefic = MALEFICS().some(m => m !== lagnaLordName && c.planets[m] && c.planets[m].house && hasAspect(m, c.planets[m].house, lagnaLord.house));
+            const isDetected = inDusthana && (conjunctMalefic || aspectedByMalefic);
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because the Lagna lord (${lagnaLordName}) occupies a Dusthana house (H${lagnaLord.house}) and is ${conjunctMalefic ? 'conjunct' : 'aspected by'} a natural malefic.` : 'The Lagna lord is not both in a Dusthana house and afflicted by a malefic.'
+            };
+        }
+    });
+
+    // ---------- 38. Sarpaganda Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Sarpaganda Yoga',
+        category: 'Muhurta - Inauspicious Timing',
+        quality: 'Negative',
+        planets: ['Rahu'],
+        keywords: ['snakebite', 'sudden danger', 'Rahu affliction'],
+        methodOfCalculation: 'Classically defined as Rahu joining the 2nd house together with Mandi (Gulika) — an upagraha (shadow sub-point) computed from the weekday and time of birth, not a standard planet. Because Mandi/Gulika is not part of every chart object this engine evaluates, this implementation checks a defensive approximation: Rahu occupying the 2nd house from the Lagna, optionally strengthened if Mandi/Gulika data (c.planets.Mandi or c.planets.Gulika) is present and also falls there.',
+        cause: 'Classically, Rahu (fear, poison, sudden affliction) combined with Mandi (a point associated with misfortune and hidden danger) in the 2nd house (face, family, immediate surroundings) was read as a specific marker for snakebite-type sudden danger.',
+        description: 'Definition: Rahu should join the 2nd house with Mandi (Gulika).',
+        result: 'The person will be bitten by a snake (classically read broadly as vulnerability to sudden, poison-like danger).',
+        nullification: 'Reduced or absent if Rahu is otherwise well-placed, aspected by benefics, or if Mandi/Gulika does not in fact join it in the 2nd house.',
+        referenceShloka: 'Recorded among the classical combinations collected in "300 Important Combinations" (Dr. B.V. Raman) — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Weak',
+        remedies: ['Rahu-pacifying practices (worship of Durga/Bhairava, donations on Saturdays)', 'General caution around snakes/sharp or poisonous hazards is a traditional, non-astrological precaution some practitioners also suggest alongside remedies'],
+        mantras: ['Om Rahave Namah'],
+        deities: ['Rahu', 'Nagas (serpent deities)'],
+        evaluate: function (c) {
+            if (!c.planets || !c.planets.Rahu) return { result: false };
+            const rahuHouse = c.planets.Rahu.house;
+            if (rahuHouse !== 2) return { result: false };
+            const mandi = c.planets.Mandi || c.planets.Gulika;
+            const mandiJoins = !!(mandi && mandi.house === 2);
+            return {
+                result: true,
+                rationale: mandiJoins ? 'It forms because Rahu occupies the 2nd house together with Mandi/Gulika, the full classical Sarpaganda condition.' : 'Rahu occupies the 2nd house from the Lagna (an approximation of the classical rule, since Mandi/Gulika data was not available to confirm the full condition).'
+            };
+        }
+    });
+
+    // ---------- 39. Uttam Griha Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Uttam Griha Yoga',
+        category: 'Property',
+        quality: 'Positive',
+        planets: ['4th lord'],
+        keywords: ['property', 'houses', 'home', 'success'],
+        methodOfCalculation: 'Check the 4th lord\'s placement. If it occupies a Kendra (1st/4th/7th/10th) or Trikona (1st/5th/9th) house and is conjunct at least one natural benefic there, Uttam Griha Yoga forms.',
+        cause: 'The 4th house governs home and property; its lord placed in a strong angular/trinal house and supported by benefic company brings good residences and the comfort/success associated with them.',
+        description: 'Formed when the 4th lord is in a Kendra or Trikona house together with benefic planets.',
+        result: 'The native will possess good houses; the home brings success and happiness.',
+        nullification: 'Weakened if the 4th lord is instead afflicted by malefic conjunction/aspect, or debilitated.',
+        referenceShloka: 'Recorded among the classical property combinations collected in "300 Important Combinations" (Dr. B.V. Raman) — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Medium',
+        remedies: ['Strengthen the 4th lord through its mantra and donations', 'Vastu-conscious home practices', 'Worship of Bhoomi Devi (Mother Earth) for property matters'],
+        mantras: ['Om Bhoomi Devyai Namah'],
+        deities: ['Bhoomi Devi'],
+        evaluate: function (c) {
+            if (!c.planets || !c.asc) return { result: false };
+            const ascSn = c.asc.sn || 0;
+            const lord4Name = lordOfHouse(ascSn, 4);
+            const lord4 = c.planets[lord4Name];
+            if (!lord4 || !lord4.house) return { result: false };
+            const inKendraTrikona = isKendraTrikona(lord4.house);
+            const beneficWithIt = BENEFICS().filter(b => b !== lord4Name && c.planets[b] && c.planets[b].house === lord4.house);
+            const isDetected = inKendraTrikona && beneficWithIt.length > 0;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because the 4th lord (${lord4Name}) occupies a Kendra/Trikona house (H${lord4.house}) together with benefic(s) ${beneficWithIt.join(', ')}.` : 'The 4th lord is not both in a Kendra/Trikona house and conjunct a benefic.'
+            };
+        }
+    });
+
+    // ---------- 40. Kapata Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Kapata Yoga',
+        category: 'Muhurta - Inauspicious Timing',
+        quality: 'Negative',
+        planets: ['4th lord'],
+        keywords: ['hypocrisy', 'secrecy', 'concealment'],
+        methodOfCalculation: 'Check the 4th house and its lord. If the 4th house itself is occupied by a natural malefic, AND the 4th lord is conjunct or aspected by a natural malefic, Kapata Yoga forms.',
+        cause: 'The 4th house governs the inner mind/heart; malefic pressure both within the house and on its lord classically indicates a mind that conceals its true feelings behind a guarded exterior.',
+        description: 'One of several classical Kapata (deceit/hypocrisy) combinations: a malefic in the 4th house together with the 4th lord being afflicted by malefics.',
+        result: 'The native becomes a hypocrite, concealing their own feelings and seldom revealing their true mind.',
+        nullification: 'Absent or weakened if the 4th house/lord instead receives benefic support, or if the malefic involved is itself well-dignified (own/exalted) rather than purely afflicting.',
+        referenceShloka: 'Recorded among the Kapata Yogas collected in "300 Important Combinations" (Dr. B.V. Raman) — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Medium',
+        remedies: ['Strengthen the 4th lord and pacify the malefic involved through its mantra', 'Journaling or trusted counsel to build habits of open communication'],
+        mantras: ['Om Namah Shivaya'],
+        deities: ['Shiva'],
+        evaluate: function (c) {
+            if (!c.planets || !c.asc) return { result: false };
+            const ascSn = c.asc.sn || 0;
+            const lord4Name = lordOfHouse(ascSn, 4);
+            const lord4 = c.planets[lord4Name];
+            const maleficIn4 = MALEFICS().filter(m => c.planets[m] && c.planets[m].house === 4);
+            if (!lord4 || !lord4.house || maleficIn4.length === 0) return { result: false };
+            const maleficWithLord = MALEFICS().some(m => m !== lord4Name && c.planets[m] && c.planets[m].house === lord4.house);
+            const maleficAspectingLord = MALEFICS().some(m => m !== lord4Name && c.planets[m] && c.planets[m].house && hasAspect(m, c.planets[m].house, lord4.house));
+            const isDetected = maleficIn4.length > 0 && (maleficWithLord || maleficAspectingLord);
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because a natural malefic (${maleficIn4.join(', ')}) occupies the 4th house while the 4th lord (${lord4Name}) is also afflicted by malefic conjunction/aspect.` : 'The 4th house and its lord are not both under malefic pressure.'
+            };
+        }
+    });
+
+    // ---------- 41. Nishkapata Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Nishkapata Yoga',
+        category: 'Auspicious',
+        quality: 'Positive',
+        planets: ['4th lord'],
+        keywords: ['sincerity', 'purity of heart', 'openness'],
+        methodOfCalculation: 'Check the 4th house. If it is occupied by a natural benefic, or the 4th house sign itself is a benefic\'s own/friendly/exaltation sign, Nishkapata Yoga forms.',
+        cause: 'A benefic-supported 4th house (inner mind/heart) reflects an open, untroubled inner life with nothing to hide.',
+        description: 'The counterpart to Kapata Yoga: the 4th house occupied by, or in the sign of, a natural benefic.',
+        result: 'The native is pure-hearted and hates secrecy and hypocrisy.',
+        nullification: 'Reduced if the benefic involved is itself weak, combust, or afflicted by a simultaneous malefic influence.',
+        referenceShloka: 'Recorded among the Nishkapata Yogas collected in "300 Important Combinations" (Dr. B.V. Raman) — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Medium',
+        remedies: ['Strengthen the benefic occupying the 4th house', 'Practices that cultivate emotional openness (journaling, satsang, honest communication)'],
+        mantras: ['Om Shreem Mahalakshmiyai Namaha'],
+        deities: ['Lakshmi'],
+        evaluate: function (c) {
+            if (!c.planets) return { result: false };
+            const beneficIn4 = BENEFICS().filter(b => c.planets[b] && c.planets[b].house === 4);
+            const isDetected = beneficIn4.length > 0;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because a natural benefic (${beneficIn4.join(', ')}) occupies the 4th house, keeping the inner mind open and untroubled.` : 'No natural benefic occupies the 4th house.'
+            };
+        }
+    });
+
+    // ---------- 42. Matru Satrutwa Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Matru Satrutwa Yoga',
+        category: 'Muhurta - Inauspicious Timing',
+        quality: 'Negative',
+        planets: ['Moon'],
+        keywords: ['mother', 'estrangement', 'family tension'],
+        methodOfCalculation: 'Check the Moon (mother significator) and the 4th house (house of the mother). If the Moon or the 4th house/lord is conjunct or aspected by a natural malefic, Matru Satrutwa Yoga forms.',
+        cause: 'Malefic pressure on the mother significator (Moon) or the 4th house (mother\'s house) classically indicates friction or estrangement in the relationship with the mother.',
+        description: 'A mother-relationship combination (satrutwa = enmity/estrangement): malefic affliction to the Moon or the 4th house/lord.',
+        result: 'Some cordial feelings may nonetheless exist in the native\'s mind on account of the mother, even where the underlying combination points toward tension.',
+        nullification: 'Eased considerably if the Moon and 4th lord are otherwise strong and also receive benefic support.',
+        referenceShloka: 'Recorded among the maternal-relationship combinations collected in "300 Important Combinations" (Dr. B.V. Raman) — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Weak',
+        remedies: ['Strengthen the Moon through Monday practices and pearl (after consultation)', 'Conscious relationship-repair efforts with the mother', 'Chant Chandra and Durga mantras'],
+        mantras: ['Om Chandraya Namah', 'Om Dum Durgayai Namah'],
+        deities: ['Chandra', 'Durga'],
+        evaluate: function (c) {
+            if (!c.planets || !c.planets.Moon) return { result: false };
+            const moonHouse = c.planets.Moon.house;
+            const moonAfflicted = MALEFICS().some(m => c.planets[m] && ((c.planets[m].house === moonHouse) || (c.planets[m].house && hasAspect(m, c.planets[m].house, moonHouse))));
+            const house4Afflicted = MALEFICS().some(m => c.planets[m] && ((c.planets[m].house === 4) || (c.planets[m].house && hasAspect(m, c.planets[m].house, 4))));
+            const isDetected = moonAfflicted || house4Afflicted;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because ${moonAfflicted ? 'the Moon' : 'the 4th house'} receives malefic conjunction/aspect, indicating some tension in the relationship with the mother.` : 'Neither the Moon nor the 4th house is afflicted by a natural malefic.'
+            };
+        }
+    });
+
+    // ---------- 43. Vahana Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Vahana Yoga',
+        category: 'Property',
+        quality: 'Positive',
+        planets: ['4th lord', 'Venus'],
+        keywords: ['vehicles', 'conveyances', 'material comforts'],
+        methodOfCalculation: 'Check the 4th house (house of vehicles/conveyances) and Venus (karaka for comforts/luxury). If a natural benefic occupies the 4th house, or the 4th lord is conjunct Venus, Vahana Yoga forms.',
+        cause: 'The 4th house governs vehicles and comfort; benefic occupation or a link to Venus (luxury, comfort) brings the material means to acquire them.',
+        description: 'Formed when the 4th house/lord is supported by a natural benefic or specifically by Venus.',
+        result: 'The native acquires material comforts, happiness, and conveyances; in later life, a good motor car.',
+        nullification: 'Weakened if the 4th house/lord is instead afflicted by malefics without benefic support.',
+        referenceShloka: 'Recorded among the Vahana Yogas collected in "300 Important Combinations" (Dr. B.V. Raman) — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Medium',
+        remedies: ['Strengthen Venus and the 4th lord through their mantras', 'Friday practices honoring Venus/Lakshmi'],
+        mantras: ['Om Shukraya Namah'],
+        deities: ['Shukra', 'Lakshmi'],
+        evaluate: function (c) {
+            if (!c.planets || !c.asc) return { result: false };
+            const ascSn = c.asc.sn || 0;
+            const lord4Name = lordOfHouse(ascSn, 4);
+            const lord4 = c.planets[lord4Name];
+            const beneficIn4 = BENEFICS().filter(b => c.planets[b] && c.planets[b].house === 4);
+            const lord4WithVenus = !!(lord4 && lord4.house && c.planets.Venus && c.planets.Venus.house === lord4.house && lord4Name !== 'Venus');
+            const isDetected = beneficIn4.length > 0 || lord4WithVenus;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because ${beneficIn4.length ? `a benefic (${beneficIn4.join(', ')}) occupies the 4th house` : `the 4th lord (${lord4Name}) is conjunct Venus`}, bringing material comforts and conveyances.` : 'The 4th house/lord shows no benefic or Venus support.'
+            };
+        }
+    });
+
+    // ---------- 44. Ekaputra Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Ekaputra Yoga',
+        category: 'Auspicious',
+        quality: 'Positive',
+        planets: ['Jupiter', '5th lord'],
+        keywords: ['children', 'son', 'progeny'],
+        methodOfCalculation: 'Check the 5th house (house of children) and Jupiter (putra-karaka, significator of children). If Jupiter occupies the 5th house, or aspects it, without any malefic conjunction/aspect on the 5th house or its lord, Ekaputra Yoga forms.',
+        cause: 'Jupiter\'s unafflicted connection to the 5th house — the house of children — classically assures at least one child (specifically read as at least one son in the traditional formulation), though modern readings extend this to children generally.',
+        description: 'A children-related combination: Jupiter connected to an otherwise unafflicted 5th house.',
+        result: 'The native may have at least one son (read in modern practice as at least one child).',
+        nullification: 'Negated if the 5th house or its lord is instead heavily afflicted by malefics despite Jupiter\'s connection.',
+        referenceShloka: 'Recorded among the Putra (children) Yogas collected in "300 Important Combinations" (Dr. B.V. Raman) — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Medium',
+        remedies: ['Strengthen Jupiter and the 5th lord through their mantras', 'Santan Gopal mantra for progeny matters', 'Thursday practices honoring Jupiter'],
+        mantras: ['Om Gurave Namah', 'Om Devaki Sut Govind Vasudev Jagatpate Dehi Me Tanayam Krishna Tvamaham Sharanam Gatah'],
+        deities: ['Brihaspati', 'Krishna'],
+        evaluate: function (c) {
+            if (!c.planets || !c.planets.Jupiter) return { result: false };
+            const jupHouse = c.planets.Jupiter.house;
+            if (!jupHouse) return { result: false };
+            const jupConnected = jupHouse === 5 || hasAspect('Jupiter', jupHouse, 5);
+            const house5Afflicted = MALEFICS().some(m => c.planets[m] && ((c.planets[m].house === 5) || (c.planets[m].house && hasAspect(m, c.planets[m].house, 5))));
+            const isDetected = jupConnected && !house5Afflicted;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because Jupiter ${jupHouse === 5 ? 'occupies' : 'aspects'} the 5th house of children without malefic affliction there.` : 'Jupiter is not favorably connected to an unafflicted 5th house.'
+            };
+        }
+    });
+
+    // ---------- 45. Buddhimaturya Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Buddhimaturya Yoga',
+        category: 'Auspicious',
+        quality: 'Positive',
+        planets: ['Mercury', 'Jupiter'],
+        keywords: ['intelligence', 'maturity', 'character'],
+        methodOfCalculation: 'Check Mercury\'s dignity and its relationship to Jupiter. If Mercury occupies its own sign or exaltation sign, AND is conjunct or aspected by Jupiter, Buddhimaturya Yoga forms.',
+        cause: 'A strong, well-dignified Mercury (intellect) further supported by Jupiter (wisdom, judgment) gives an intelligence that is not merely sharp but also mature and well-grounded.',
+        description: 'Formed when a strong Mercury is supported by Jupiter\'s conjunction or aspect.',
+        result: 'The native is a person of great intelligence and character.',
+        nullification: 'Reduced if Mercury is combust or otherwise afflicted despite its dignity, or if Jupiter\'s support is countered by a stronger simultaneous malefic influence.',
+        referenceShloka: 'Recorded among the intelligence (Buddhi) Yogas collected in "300 Important Combinations" (Dr. B.V. Raman) — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Medium',
+        remedies: ['Strengthen Mercury and Jupiter through their mantras', 'Study and mentorship under a learned guide', 'Wednesday and Thursday practices'],
+        mantras: ['Om Budhaya Namaha', 'Om Gurave Namah'],
+        deities: ['Budha', 'Brihaspati'],
+        evaluate: function (c) {
+            if (!c.planets || !c.planets.Mercury || !c.planets.Jupiter) return { result: false };
+            const merc = c.planets.Mercury, jup = c.planets.Jupiter;
+            if (!isStrong(merc) || !merc.house || !jup.house) return { result: false };
+            const jupConnected = merc.house === jup.house || hasAspect('Jupiter', jup.house, merc.house);
+            const isDetected = jupConnected;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because Mercury is strong (${merc.status}) and is ${merc.house === jup.house ? 'conjunct' : 'aspected by'} Jupiter, giving mature, well-grounded intelligence.` : 'Mercury is not both strong and connected to Jupiter.'
+            };
+        }
+    });
+
+    // ---------- 46. Putra Sukha Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Putra Sukha Yoga',
+        category: 'Auspicious',
+        quality: 'Positive',
+        planets: ['5th lord', 'Jupiter'],
+        keywords: ['happiness from children', 'family harmony'],
+        methodOfCalculation: 'Check the 5th lord\'s placement. If it occupies a Kendra or Trikona house and is conjunct or aspected by a natural benefic (especially Jupiter), Putra Sukha Yoga forms.',
+        cause: 'A strong, benefic-supported 5th lord in an angular/trinal house reflects harmony and joy in the relationship with one\'s children.',
+        description: 'Formed when the 5th lord is well-placed (Kendra/Trikona) and benefic-supported.',
+        result: 'The native gains happiness on account of children; grown-up children show liking, obedience, and respect toward their parents.',
+        nullification: 'Reduced if the 5th lord is instead afflicted by malefics despite favorable house placement.',
+        referenceShloka: 'Recorded among the Putra (children) Yogas collected in "300 Important Combinations" (Dr. B.V. Raman) — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Medium',
+        remedies: ['Strengthen the 5th lord and Jupiter through their mantras', 'Family time and open communication with children'],
+        mantras: ['Om Gurave Namah'],
+        deities: ['Brihaspati'],
+        evaluate: function (c) {
+            if (!c.planets || !c.asc) return { result: false };
+            const ascSn = c.asc.sn || 0;
+            const lord5Name = lordOfHouse(ascSn, 5);
+            const lord5 = c.planets[lord5Name];
+            if (!lord5 || !lord5.house) return { result: false };
+            const inKendraTrikona = isKendraTrikona(lord5.house);
+            const beneficSupport = BENEFICS().filter(b => b !== lord5Name && c.planets[b] && c.planets[b].house && (c.planets[b].house === lord5.house || hasAspect(b, c.planets[b].house, lord5.house)));
+            const isDetected = inKendraTrikona && beneficSupport.length > 0;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because the 5th lord (${lord5Name}) occupies a Kendra/Trikona house (H${lord5.house}) with benefic support from ${beneficSupport.join(', ')}.` : 'The 5th lord is not both favorably placed and benefic-supported.'
+            };
+        }
+    });
+
+    // ---------- 47. Bahu Stree Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Bahu Stree Yoga',
+        category: 'Muhurta - Inauspicious Timing',
+        quality: 'Negative',
+        planets: ['7th house'],
+        keywords: ['multiple relationships', 'instability in partnerships'],
+        methodOfCalculation: 'Check the 7th house (house of partnerships). If two or more planets occupy the 7th house, Bahu Stree Yoga forms.',
+        cause: 'Multiple planets crowding the house of marriage/partnership classically indicates a life with multiple significant relationships rather than a single, stable partnership.',
+        description: 'Formed when the 7th house is occupied by two or more planets.',
+        result: 'The native has many relations with the opposite sex.',
+        nullification: 'Softened if the occupying planets are mutually benefic and well-dignified, in which case the multiplicity may express instead as many close relationships/collaborations rather than romantic instability.',
+        referenceShloka: 'Recorded among the Kalatra (spouse/partnership) Yogas collected in "300 Important Combinations" (Dr. B.V. Raman) — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Weak',
+        remedies: ['Strengthen Venus and the 7th lord for relationship stability', 'Friday practices honoring Venus'],
+        mantras: ['Om Shukraya Namah'],
+        deities: ['Shukra'],
+        evaluate: function (c) {
+            if (!c.planets) return { result: false };
+            const occupants = Object.keys(c.planets).filter(p => !['Rahu', 'Ketu'].includes(p) && c.planets[p] && c.planets[p].house === 7);
+            const isDetected = occupants.length >= 2;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because ${occupants.length} planets (${occupants.join(', ')}) occupy the 7th house of partnerships.` : 'Fewer than two planets occupy the 7th house.'
+            };
+        }
+    });
+
+    // ---------- 48. Satkalatra Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Satkalatra Yoga',
+        category: 'Auspicious',
+        quality: 'Positive',
+        planets: ['7th lord', 'Venus'],
+        keywords: ['noble spouse', 'marital harmony', 'virtue'],
+        methodOfCalculation: 'Check the 7th lord\'s dignity. If the 7th lord occupies its own sign or exaltation sign, and is not conjunct a natural malefic, Satkalatra Yoga forms.',
+        cause: 'A strong, unafflicted 7th lord (spouse significator) reflects a life partner of genuine quality and stability.',
+        description: 'Formed when the 7th lord is strong (own/exaltation) and free from malefic conjunction.',
+        result: 'The native\'s life partner will be noble and virtuous — a person of strict moral discipline, god-fearing, and deeply attached to the native.',
+        nullification: 'Negated if the 7th lord, despite its dignity, is heavily aspected by malefics or combust.',
+        referenceShloka: 'Recorded among the Kalatra (spouse) Yogas collected in "300 Important Combinations" (Dr. B.V. Raman) — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Medium',
+        remedies: ['Strengthen the 7th lord and Venus through their mantras', 'Friday practices honoring Venus/Lakshmi'],
+        mantras: ['Om Shukraya Namah'],
+        deities: ['Shukra'],
+        evaluate: function (c) {
+            if (!c.planets || !c.asc) return { result: false };
+            const ascSn = c.asc.sn || 0;
+            const lord7Name = lordOfHouse(ascSn, 7);
+            const lord7 = c.planets[lord7Name];
+            if (!lord7) return { result: false };
+            const strong = isStrong(lord7);
+            const maleficConjunct = MALEFICS().some(m => m !== lord7Name && c.planets[m] && c.planets[m].house === lord7.house);
+            const isDetected = strong && !maleficConjunct;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because the 7th lord (${lord7Name}) is strong (${lord7.status}) and free from malefic conjunction.` : 'The 7th lord is not both strong and unafflicted.'
+            };
+        }
+    });
+
+    // ---------- 49. Ardh Kal-Sarpa Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Ardh Kal-Sarpa Yoga',
+        category: 'Muhurta - Inauspicious Timing',
+        quality: 'Negative',
+        planets: ['Rahu', 'Ketu'],
+        keywords: ['partial hemming', 'obstacles', 'instability'],
+        methodOfCalculation: 'Check the distribution of the seven classical planets (Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn) relative to the Rahu-Ketu axis. Full Kaal Sarpa Yoga requires all seven to fall on the same side (hemmed between Rahu and Ketu); Ardh (half/partial) Kaal Sarpa Yoga forms when exactly six of the seven fall on one side and exactly one planet falls on the other side, breaking the complete enclosure.',
+        cause: 'A near-total, but not complete, hemming-in of the planets by the shadow points Rahu and Ketu produces a milder version of the volatility and obstacle-prone pattern associated with full Kaal Sarpa Yoga.',
+        description: 'A partial form of Kaal Sarpa Yoga: six of the seven classical planets are hemmed on one side of the Rahu-Ketu axis, with one planet outside that enclosure.',
+        result: 'Generally brings difficulties in life — obstacles, instability, and periods of struggle, though less intense than full Kaal Sarpa Yoga.',
+        nullification: 'Its effective strength is considered whenever the one "escaping" planet is itself well-placed and strong, and is further reduced by the presence of strong Raja Yogas elsewhere in the chart; effects are said to be most pronounced during Rahu/Ketu dashas and transits.',
+        referenceShloka: 'A widely discussed modern classification (popularized alongside Kaal Sarpa Yoga) rather than a single named verse in the earliest classical texts — no canonical shloka is quoted here.',
+        strength: 'Medium',
+        remedies: ['Rahu-Ketu pacification (Kaal Sarpa Shanti puja, as per individual tradition)', 'Chant Maha Mrityunjaya Mantra', 'Nag Panchami observances honoring serpent deities'],
+        mantras: ['Maha Mrityunjaya Mantra', 'Om Rahave Namah', 'Om Ketave Namah'],
+        deities: ['Shiva', 'Rahu', 'Ketu'],
+        evaluate: function (c) {
+            if (!c.planets || !c.planets.Rahu || !c.planets.Ketu) return { result: false };
+            const rahuDeg = (c.planets.Rahu.sn * 30) + (parseFloat(c.planets.Rahu.deg) || 0);
+            const classical = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+            const present = classical.filter(p => c.planets[p]);
+            if (present.length < 6) return { result: false };
+            let onRahuSide = 0, onKetuSide = 0;
+            present.forEach(p => {
+                const deg = (c.planets[p].sn * 30) + (parseFloat(c.planets[p].deg) || 0);
+                const diff = ((deg - rahuDeg) % 360 + 360) % 360;
+                if (diff < 180) onRahuSide++; else onKetuSide++;
+            });
+            const isDetected = (onRahuSide === present.length - 1 && onKetuSide === 1) || (onKetuSide === present.length - 1 && onRahuSide === 1);
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because ${Math.max(onRahuSide, onKetuSide)} of the ${present.length} classical planets are hemmed on one side of the Rahu-Ketu axis, with exactly one planet outside — a partial hemming pattern.` : 'The classical planets are not split into a 6-and-1 pattern across the Rahu-Ketu axis.'
+            };
+        }
+    });
+
 
 // Merge NEW_YOGAS into YOGAS_DATA, skipping any name that already exists
 // (kept idempotent/defensive even though there are no known collisions
