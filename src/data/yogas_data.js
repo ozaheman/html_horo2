@@ -245,6 +245,10 @@ window.YOGAS_DATA = [
     result: "Self-made wealth, property, and intelligence.",
     quality: "Positive",
     varga: 1,
+    methodOfCalculation: 'Check the 2nd house counted from the Moon. If any planet other than the Sun (and, per most classical formulations, other than Rahu/Ketu) occupies that house, Sunapha Yoga forms.',
+    cause: 'A planet flanking the Moon from the accumulation house (2nd) lends the mind material and vocal support, translating into self-earned resources rather than inherited ones.',
+    nullification: 'Weakened if the qualifying planet is combust, debilitated, or heavily afflicted; strongest when the planet is a natural benefic (especially Jupiter or Venus) in good dignity.',
+    referenceShloka: 'One of the three classical lunar yogas (with Anapha and Durdhara) described in Brihat Parashara Hora Shastra Ch. 36 and Brihat Jataka — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
     remedies: ['Real estate investment', 'Business growth', 'Property development'],
     mantras: ['Om Chandramase Namaha', 'Om Rakaaye Namaha'],
     deities: ['Moon', 'Kubera'],
@@ -262,6 +266,10 @@ window.YOGAS_DATA = [
     result: "Polite manners, good health, and spiritual inclination.",
     quality: "Positive",
     varga: 1,
+    methodOfCalculation: 'Check the 12th house counted from the Moon. If any planet other than the Sun (and, per most classical formulations, other than Rahu/Ketu) occupies that house, Anapha Yoga forms.',
+    cause: 'A planet flanking the Moon from the release/dissolution house (12th) lends the mind an inward, refined quality — physical strength and good bearing paired with an eventual pull toward renunciation.',
+    nullification: 'Weakened if the qualifying planet is combust, debilitated, or heavily afflicted; a malefic forming the yoga tends to blunt the polite/generous expression while keeping the physical-strength component.',
+    referenceShloka: 'One of the three classical lunar yogas (with Sunapha and Durdhara) described in Brihat Parashara Hora Shastra Ch. 36 and Brihat Jataka — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
     remedies: ['Spiritual practices', 'Meditation', 'Pilgrimages', 'Health maintenance'],
     mantras: ['Om Namah Shivaya', 'Om Chandramase Namaha'],
     deities: ['Moon', 'Shiva'],
@@ -279,6 +287,10 @@ window.YOGAS_DATA = [
     result: "Abundance of wealth, vehicles, and loyal followers.",
     quality: "Positive",
     varga: 1,
+    methodOfCalculation: 'Formed when Sunapha Yoga and Anapha Yoga occur simultaneously — i.e. planets other than the Sun (and Rahu/Ketu) occupy both the 2nd and 12th houses counted from the Moon at once.',
+    cause: 'The Moon fully flanked on both sides gives it the strongest possible structural support among the three lunar yogas, combining the material/vocal gains of Sunapha with the refinement of Anapha.',
+    nullification: 'Considered the best of the three when both flanking planets are natural benefics; weakened if either or both are malefic, debilitated, or combust.',
+    referenceShloka: 'The strongest of the three classical lunar yogas described in Brihat Parashara Hora Shastra Ch. 36 and Brihat Jataka — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
     remedies: ['Property acquisition', 'Vehicle purchase', 'Support community'],
     mantras: ['Om Chandramase Namaha', 'Om Rakaaye Namaha'],
     deities: ['Moon', 'Kubera'],
@@ -3907,6 +3919,162 @@ const NEW_YOGAS = [];
             return {
                 result: isDetected,
                 rationale: isDetected ? `It forms because ${Math.max(onRahuSide, onKetuSide)} of the ${present.length} classical planets are hemmed on one side of the Rahu-Ketu axis, with exactly one planet outside — a partial hemming pattern.` : 'The classical planets are not split into a 6-and-1 pattern across the Rahu-Ketu axis.'
+            };
+        }
+    });
+
+
+    // ---------- 50. Vasi Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Vasi Yoga',
+        category: 'Auspicious',
+        quality: 'Positive',
+        planets: ['Sun'],
+        keywords: ['prosperity', 'generosity', 'popularity'],
+        methodOfCalculation: 'Check the 12th house counted from the Sun. If any planet other than the Moon (and, per most classical formulations, other than Rahu/Ketu) occupies that house, Vasi Yoga forms.',
+        cause: 'A planet immediately preceding the Sun (in the 12th, the house of release/withdrawal) lends the solar identity a reflective, generous quality — support that comes from within rather than from external validation.',
+        description: 'The counterpart to Vesi Yoga: formed when a planet (other than Moon, Rahu, Ketu) occupies the 12th house from the Sun. When both Vesi and Vasi occur together it is Ubhayachari Yoga.',
+        result: 'The native will be happy, remain prosperous and liberal, and will be liked by all people.',
+        nullification: 'Weakened if the qualifying planet is combust, debilitated, or heavily afflicted by malefic aspect/conjunction; a malefic forming the yoga gives contrary/mixed results rather than fully negating it.',
+        referenceShloka: 'Discussed in Brihat Parashara Hora Shastra and Saravali under the Veshi/Vashi/Ubhayachari family of Sun-based yogas — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Medium',
+        remedies: ['Strengthen the Sun through Sunday practices', 'Strengthen the specific planet occupying the 12th from Sun'],
+        mantras: ['Om Suryaya Namah'],
+        deities: ['Surya'],
+        evaluate: function (c) {
+            if (!c.planets || !c.planets.Sun) return { result: false };
+            const sunHouse = c.planets.Sun.house;
+            if (!sunHouse) return { result: false };
+            const h12 = (((sunHouse - 1 + 11) % 12) + 1);
+            const qualifying = Object.keys(c.planets).filter(p => !['Sun', 'Moon', 'Rahu', 'Ketu'].includes(p) && c.planets[p].house === h12);
+            const isDetected = qualifying.length > 0;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because ${qualifying.join(', ')} occupies the 12th house from the Sun (H${h12}), lending it reflective, generous support.` : 'No qualifying planet occupies the 12th house from the Sun.'
+            };
+        }
+    });
+
+    // ---------- 51. Nav Yoga (Nauka Yoga) ----------
+    NEW_YOGAS.push({
+        name: 'Nav Yoga',
+        category: 'Muhurta - Inauspicious Timing',
+        quality: 'Negative',
+        planets: ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'],
+        keywords: ['rise and fall', 'early fame', 'later misery'],
+        methodOfCalculation: 'One of the Nabhasa (Akriti) Yogas from "300 Important Combinations": check whether all seven classical planets (Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn) occupy seven contiguous houses starting from the Lagna (i.e. all fall within houses 1 through 7, with houses 8-12 empty of these seven).',
+        cause: 'All seven classical planets crowded into the first half of the chart (Lagna through 7th) — the visible, outward-facing houses — while the closing houses (8-12, endings/losses/foreign matters) are empty, is read as a life that peaks early and has no planetary support to sustain it into later years, like a boat (Nauka) that floats but eventually runs aground.',
+        description: 'Formed when all seven classical planets occupy seven contiguous houses starting from the Lagna. Related combinations in the same Nabhasa Yoga family (starting from other houses) are Kuta, Chhatra, and Chapa Yoga.',
+        result: 'The native will be occasionally happy and famous in the earlier part of life, but will later suffer from miseries.',
+        nullification: 'Its severity is read as reduced if the planets within the 1st-7th span are individually strong and well-dignified, and if the lords of the empty houses (8th-12th) are themselves strong from elsewhere in the chart.',
+        referenceShloka: 'Recorded among the Nabhasa (Akriti) Yogas in "300 Important Combinations" (Dr. B.V. Raman), following the classification tradition of Brihat Jataka\'s Nabhasa Yoga chapter — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Medium',
+        remedies: ['Build savings and support structures early to cushion later life', 'Strengthen the lords of the 8th-12th houses', 'General long-term financial planning'],
+        mantras: ['Om Namah Shivaya'],
+        deities: ['Shiva'],
+        evaluate: function (c) {
+            if (!c.planets) return { result: false };
+            const classical = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+            const houses = classical.map(p => c.planets[p] && c.planets[p].house).filter(h => h);
+            if (houses.length < 7) return { result: false };
+            const isDetected = houses.every(h => h >= 1 && h <= 7);
+            return {
+                result: isDetected,
+                rationale: isDetected ? 'It forms because all seven classical planets occupy the seven contiguous houses starting from the Lagna (H1-H7), leaving the closing houses of the chart without planetary support.' : 'The seven classical planets are not confined to the contiguous span of houses 1 through 7.'
+            };
+        }
+    });
+
+    // ---------- 52. Kuta Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Kuta Yoga',
+        category: 'Muhurta - Inauspicious Timing',
+        quality: 'Negative',
+        planets: ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'],
+        keywords: ['deceit', 'cunning', 'concealment'],
+        methodOfCalculation: 'One of the Nabhasa (Akriti) Yogas: check whether all seven classical planets occupy seven contiguous houses starting from the 4th house (i.e. all fall within houses 4 through 10).',
+        cause: 'All seven planets clustered starting from the 4th (a hidden, private house) rather than the visible Lagna is read as a life oriented toward concealment and private dealings rather than open conduct.',
+        description: 'Formed when all seven classical planets occupy seven contiguous houses starting from the 4th house. Related combinations in the same family (starting from other houses) are Nav, Chhatra, and Chapa Yoga.',
+        result: 'The native becomes a liar and cunning; classically also associated with confinement (jailor/jailed connotations in some traditions).',
+        nullification: 'Its severity is reduced if the planets within the 4th-10th span are individually well-dignified and benefic in nature, softening the deceptive tendency into mere shrewdness.',
+        referenceShloka: 'Recorded among the Nabhasa (Akriti) Yogas in "300 Important Combinations" (Dr. B.V. Raman), following the classification tradition of Brihat Jataka\'s Nabhasa Yoga chapter — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Medium',
+        remedies: ['Cultivate honesty and transparency as a conscious practice', 'Strengthen Jupiter and Mercury for clarity of judgment and speech'],
+        mantras: ['Om Gurave Namah', 'Om Budhaya Namaha'],
+        deities: ['Brihaspati', 'Budha'],
+        evaluate: function (c) {
+            if (!c.planets) return { result: false };
+            const classical = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+            const houses = classical.map(p => c.planets[p] && c.planets[p].house).filter(h => h);
+            if (houses.length < 7) return { result: false };
+            const isDetected = houses.every(h => h >= 4 && h <= 10);
+            return {
+                result: isDetected,
+                rationale: isDetected ? 'It forms because all seven classical planets occupy the seven contiguous houses starting from the 4th house (H4-H10).' : 'The seven classical planets are not confined to the contiguous span of houses 4 through 10.'
+            };
+        }
+    });
+
+    // ---------- 53. Chapa Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Chapa Yoga',
+        category: 'Muhurta - Auspicious Timing',
+        quality: 'Positive',
+        planets: ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'],
+        keywords: ['administrative power', 'wealth', 'advocacy for the poor'],
+        methodOfCalculation: 'One of the Nabhasa (Akriti) Yogas: check whether all seven classical planets occupy seven contiguous houses starting from the 10th house (i.e. all fall within houses 10, 11, 12, 1, 2, 3, 4, wrapping around the chart).',
+        cause: 'All seven planets clustered starting from the 10th (career, public standing) gives sustained public-facing capability and control over resources, classically read as the ability to command high office.',
+        description: 'Formed when all seven classical planets occupy seven contiguous houses starting from the 10th house. Related combinations in the same family (starting from other houses) are Nav, Kuta, and Chhatra Yoga.',
+        result: 'The native becomes brave, and happy in the later stages of life; inclined to help the poor and champion their causes, and becomes famous and well-liked, especially among common people.',
+        nullification: 'Strongest when the planets within the 10th-4th span are individually well-dignified; weakened if the majority are debilitated or heavily afflicted.',
+        referenceShloka: 'Recorded among the Nabhasa (Akriti) Yogas in "300 Important Combinations" (Dr. B.V. Raman), following the classification tradition of Brihat Jataka\'s Nabhasa Yoga chapter — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Strong',
+        remedies: ['Channel the yoga\'s administrative capacity into public service or advocacy work', 'Strengthen the 10th lord for sustained career results'],
+        mantras: ['Om Suryaya Namah'],
+        deities: ['Surya'],
+        evaluate: function (c) {
+            if (!c.planets) return { result: false };
+            const classical = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+            const houses = classical.map(p => c.planets[p] && c.planets[p].house).filter(h => h);
+            if (houses.length < 7) return { result: false };
+            const wrappedSpan = [10, 11, 12, 1, 2, 3, 4];
+            const isDetected = houses.every(h => wrappedSpan.includes(h));
+            return {
+                result: isDetected,
+                rationale: isDetected ? 'It forms because all seven classical planets occupy the seven contiguous houses starting from the 10th house (H10-H4, wrapping around the chart).' : 'The seven classical planets are not confined to the contiguous span of houses 10 through 4.'
+            };
+        }
+    });
+
+    // ---------- 54. Vrana Yoga ----------
+    NEW_YOGAS.push({
+        name: 'Vrana Yoga',
+        category: 'Muhurta - Inauspicious Timing',
+        quality: 'Negative',
+        planets: ['6th lord'],
+        keywords: ['disease', 'ulcer', 'affliction'],
+        methodOfCalculation: 'Check the 6th lord (house of disease). If it is a natural malefic AND occupies the Lagna, 8th house, or 10th house, Vrana Yoga forms.',
+        cause: 'The 6th house governs disease and the 6th lord being both malefic by nature and placed in a sensitive house (self, longevity/transformation, or public career) channels its disease-signification directly onto the body or public life.',
+        description: 'Definition (per classical sources): the 6th lord, being a malefic, should occupy the Lagna, 8th, or 10th house.',
+        result: 'The native may suffer from a dreadful, deep-seated disease (classically associated with cancer/ulcer-type ailments); the specific body part affected is traditionally read from which planet is involved (e.g. Sun: head, Moon: face, Mars: throat/neck, Mercury: lower stomach, Jupiter: nose, Venus: eyes, Saturn: legs, Rahu/Ketu: abdomen).',
+        nullification: 'Substantially eased if the malefic 6th lord is also aspected by a natural benefic; classical commentary itself cautions against a literal/severe reading of this yoga and recommends weighing it alongside the chart\'s overall strength.',
+        referenceShloka: 'Recorded among the classical disease (Arishta) combinations collected in "300 Important Combinations" (Dr. B.V. Raman) — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        strength: 'Weak',
+        remedies: ['Strengthen the 6th lord and pacify it through its mantra and donations', 'Maha Mrityunjaya mantra for overall protection', 'Regular medical checkups as a sensible complement to any remedy — this yoga is not a diagnosis'],
+        mantras: ['Maha Mrityunjaya Mantra'],
+        deities: ['Shiva', 'Dhanvantari'],
+        evaluate: function (c) {
+            if (!c.planets || !c.asc) return { result: false };
+            const ascSn = c.asc.sn || 0;
+            const lord6Name = lordOfHouse(ascSn, 6);
+            const lord6 = c.planets[lord6Name];
+            if (!lord6 || !lord6.house) return { result: false };
+            const isMalefic = MALEFICS().includes(lord6Name);
+            const inSensitiveHouse = [1, 8, 10].includes(lord6.house);
+            const isDetected = isMalefic && inSensitiveHouse;
+            return {
+                result: isDetected,
+                rationale: isDetected ? `It forms because the 6th lord (${lord6Name}), a natural malefic, occupies H${lord6.house} (Lagna/8th/10th).` : 'The 6th lord is not both a natural malefic and placed in the Lagna, 8th, or 10th house.'
             };
         }
     });

@@ -628,6 +628,21 @@ async function updatePredictionsDisplay() {
       const dbMap = { "Vedang Jyotish": { data: window.VEDANG_JYOTIS_BY_SHIV_SHARMA_DB || [], color: '#FFD700' } };
       const generatedHTML = window.GENERIC_ANALYZER.analyzeComprehensive(dbMap, window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {}, window.CURRENT_HOUSES || {}, window.CURRENT_ASCENDANT || 0, null);
       html += window.makeEditable('vedang_db', generatedHTML);
+    } else if (mode === 'hora') {
+      // Hora System Analysis: D-2 Parashari Hora, Labh Mandook / Parakram /
+      // Sanchay wealth variants, Surya-Chandra court, Kaal Hora at birth,
+      // Mathematical Hora Lagna (D1/D3/D9/D12), and Dasha-Hora interpretation.
+      await showProgress('Computing Hora System Analysis...');
+      if (window.HORA_ANALYSIS && typeof window.HORA_ANALYSIS.getFullReport === 'function') {
+        try {
+          const horaReport = window.HORA_ANALYSIS.getFullReport();
+          html += `<div class="pred-item">${window.HORA_ANALYSIS.renderHTML(horaReport)}</div>`;
+        } catch (err) {
+          html += `<div class="pred-item"><div class="pred-title">⚠️ Hora Analysis Error</div><div class="pred-detail">${err.message}</div></div>`;
+        }
+      } else {
+        html += `<div class="pred-item"><div class="pred-title">⚠️ hora_analysis.js module not found</div><div class="pred-detail">Make sure src/predictions/logic/hora_analysis.js is included in index.html before predictions_ui.js.</div></div>`;
+      }
     } else {
       await showProgress('Loading forecasting modules...');
       html += renderDailyCombinationsSection(targetDate);

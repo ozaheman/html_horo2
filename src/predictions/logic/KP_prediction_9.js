@@ -22,6 +22,24 @@
  * no on-the-fly recomputation, all five levels come from the same
  * tree the Dasha Explorer itself uses.
  *
+ * PROMISE vs RESULT (corrected to the standard KP dictum): for each
+ * matched period, a selected house is "promised" if any of the three
+ * running lords is that house cusp's Nakshatra/Star Lord (NL) — the
+ * NL shows what result a house is trying to deliver. Whether that
+ * promise actually fructifies, and how favourably, is read from the
+ * cusp's Sub Lord (CSL) instead — the sub lord is KP's decisive
+ * authority for fulfilment. Every result row shows both: a Promise
+ * (NL) tag on the collapsed row, and a fuller Promise/Result (CSL
+ * quality) breakdown once expanded — separate from, and in addition
+ * to, the existing Strong/Good badge, which uses the classic 4-level
+ * occupant/owner significator method rather than cuspal NL/CSL.
+ *
+ * When houses arrive from a Part 8 event via window.KP9_applyHouses
+ * with that event's named planets, a static "Combination & strength
+ * check" panel is also shown (drishti/occupation from the natal chart,
+ * strength via window.SHADBALA) — reusing Part 8's own engine exactly,
+ * since that check doesn't vary by which dasha period is open.
+ *
  * Wired the same way as Parts 7-8: window.KP_PREDICTION_9.renderForPanel
  * is called from renderDashaPanel() (main.js) and the Predictions
  * Dashboard's KP block (predictions_ui.js), right after Part 8.
@@ -103,6 +121,15 @@
       '.kpdx9-result-head:hover{background:rgba(255,255,255,.03);}' +
       '.kpdx9-result-row.open > .kpdx9-result-head{background:rgba(212,175,90,.06);}' +
       '.kpdx9-result-chain{font-size:10.5px;color:#EDE9E0;font-weight:500;}' +
+      '.kpdx9-nlcsl-tag{display:inline-block;font-size:7px;padding:1px 6px;border-radius:4px;margin-left:4px;vertical-align:middle;letter-spacing:.02em;border:1px solid;}' +
+      '.kpdx9-nl-tag{background:rgba(228,192,119,.10);color:#E4C077;border-color:rgba(228,192,119,.35);}' +
+      '.kpdx9-csl-tag{background:rgba(127,166,255,.10);color:#8fb4ff;border-color:rgba(127,166,255,.35);}' +
+      '.kpdx9-pr-tag{display:inline-block;font-size:8px;padding:2px 8px;border-radius:9px;margin-top:3px;margin-right:5px;border:1px solid;}' +
+      '.kpdx9-pr-promised{background:rgba(212,175,90,.16);color:#E4C077;border-color:rgba(212,175,90,.35);}' +
+      '.kpdx9-pr-partial{background:rgba(159,195,217,.12);color:#9FC3D9;border-color:rgba(159,195,217,.3);}' +
+      '.kpdx9-pr-notseen{background:rgba(156,148,132,.10);color:var(--muted,#9c9484);border-color:rgba(255,255,255,.08);}' +
+      '.kpdx9-pr-result{background:rgba(127,166,255,.10);color:#8fb4ff;border-color:rgba(127,166,255,.3);}' +
+      '.kpdx9-promise-result{margin-bottom:8px;}' +
       '.kpdx9-result-row.iscurrent .kpdx9-result-chain{color:#E4C077;}' +
       '.kpdx9-result-dates{font-size:9px;color:var(--muted,#9c9484);white-space:nowrap;}' +
       '.kpdx9-strength{font-size:8px;padding:2px 7px;border-radius:9px;white-space:nowrap;}' +
@@ -140,7 +167,15 @@
     Ketu: '#8A7BB0', Venus: '#E4C077', Sun: '#D98A4F', Moon: '#9FC3D9',
     Mars: '#C2604F', Rahu: '#6E8F6B', Jupiter: '#D6B24A', Saturn: '#6B7280', Mercury: '#7FAE8C'
   };
-
+  function nlCslTag(lord, maps) {
+    if (!maps) return '';
+    var tags = '';
+    var nlHouses = maps.nlMap[lord];
+    var cslHouses = maps.cslMap[lord];
+    if (nlHouses && nlHouses.length) tags += '<span class="kpdx9-nlcsl-tag kpdx9-nl-tag">NL H' + nlHouses.join(',H') + '</span>';
+    if (cslHouses && cslHouses.length) tags += '<span class="kpdx9-nlcsl-tag kpdx9-csl-tag">CSL H' + cslHouses.join(',H') + '</span>';
+    return tags;
+  }
   function getState(instanceId) { return INSTANCES[instanceId]; }
 
   // ================================================================
@@ -200,10 +235,16 @@
       var allStrong = sel.every(function (h) { return depthFor(h, mt.md.lord, mt.ad.lord, mt.pd.lord, st.houseData) >= 2; });
       var strengthClass = allStrong ? 'kpdx9-strength-strong' : 'kpdx9-strength-good';
       var strengthLabel = allStrong ? 'Strong' : 'Good';
+      var lords3 = [mt.md.lord, mt.ad.lord, mt.pd.lord];
+      var pr = promiseResultForMatch(lords3, sel, st.nlCslMaps, st.houseData);
+      var prClassMap = { promised: 'kpdx9-pr-promised', partial: 'kpdx9-pr-partial', notseen: 'kpdx9-pr-notseen' };
+      var prLabelMap = { promised: 'Promised', partial: 'Partly promised', notseen: 'Not promised' };
+      
       var rowId = instanceId + '-' + mt.mdIdx + '-' + mt.adIdx + '-' + mt.pdIdx;
       html += '<div class="kpdx9-result-row' + (mt.cur ? ' iscurrent' : '') + '" id="kpdx9-row-' + rowId + '">' +
         '<div class="kpdx9-result-head" onclick="window.KP9_toggleResult(\'' + instanceId + '\',' + mt.mdIdx + ',' + mt.adIdx + ',' + mt.pdIdx + ')">' +
-        '<div class="kpdx9-result-chain">' + mt.md.lord + '\u2013' + mt.ad.lord + '\u2013' + mt.pd.lord + (mt.cur ? '<span class="kpdx9-now-tag">now</span>' : '') + '</div>' +
+        '<div><div class="kpdx9-result-chain">' + mt.md.lord + nlCslTag(mt.md.lord, st.nlCslMaps) + '\u2013' + mt.ad.lord + nlCslTag(mt.ad.lord, st.nlCslMaps) + '\u2013' + mt.pd.lord + nlCslTag(mt.pd.lord, st.nlCslMaps) + (mt.cur ? '<span class="kpdx9-now-tag">now</span>' : '') + '</div>' +
+        '<span class="kpdx9-pr-tag ' + prClassMap[pr.promiseVerdict] + '">Promise (NL): ' + prLabelMap[pr.promiseVerdict] + '</span></div>' +
         '<div class="kpdx9-result-dates">' + fmtDT(new Date(mt.pd.start)) + ' \u2013 ' + fmtDT(new Date(mt.pd.end)) + '</div>' +
         '<div class="kpdx9-strength ' + strengthClass + '">' + strengthLabel + '</div>' +
         '<div class="kpdx9-caret">\u203a</div>' +
@@ -213,6 +254,47 @@
     });
 
     resultsEl.innerHTML = html;
+  }
+
+  function planetQuality(lord, houseData) {
+    if (window.KP_PREDICTION_7 && typeof window.KP_PREDICTION_7._planetQuality === 'function') return window.KP_PREDICTION_7._planetQuality(lord, houseData);
+    return 'Mixed';
+  }
+
+  // ================================================================
+  // PROMISE (via NL) vs RESULT (via CSL) — the core KP dictum: the star
+  // lord (NL) of a house cusp shows what result that house is trying to
+  // deliver (the promise); the sub lord (CSL) of that same cusp is the
+  // deciding authority for whether that promise actually fructifies,
+  // and whether favourably or not. Applied here to a running MD-AD-PD
+  // chain: a selected house is "promised" if any of the three running
+  // lords is that house's NL, and its "result" is read off whichever
+  // running lord is that house's CSL.
+  // ================================================================
+  function promiseResultForMatch(lords, sel, maps, houseData) {
+    var promisedHouses = sel.filter(function (h) {
+      return lords.some(function (l) { return (maps.nlMap[l] || []).indexOf(h) !== -1; });
+    });
+    var resultHouses = sel.filter(function (h) {
+      return lords.some(function (l) { return (maps.cslMap[l] || []).indexOf(h) !== -1; });
+    });
+    var promiseVerdict = promisedHouses.length === 0 ? 'notseen' : (promisedHouses.length === sel.length ? 'promised' : 'partial');
+    var cslLords = lords.filter(function (l) { return sel.some(function (h) { return (maps.cslMap[l] || []).indexOf(h) !== -1; }); });
+    var qualities = cslLords.map(function (l) { return { lord: l, quality: planetQuality(l, houseData) }; });
+    return { promisedHouses: promisedHouses, resultHouses: resultHouses, promiseVerdict: promiseVerdict, qualities: qualities };
+  }
+
+  function promiseResultHtml(pr, sel) {
+    var promiseLabelMap = { promised: 'Promised', partial: 'Partly promised', notseen: 'Not promised' };
+    var promiseClassMap = { promised: 'kpdx9-pr-promised', partial: 'kpdx9-pr-partial', notseen: 'kpdx9-pr-notseen' };
+    var promiseText = pr.promisedHouses.length ? ('H' + pr.promisedHouses.join(',H')) : 'none of the selected houses';
+    var resultText = pr.qualities.length
+      ? pr.qualities.map(function (q) { return q.lord + ' (' + q.quality + ')'; }).join(', ')
+      : 'no running lord is CSL of the selected houses';
+    return '<div class="kpdx9-promise-result">' +
+      '<span class="kpdx9-pr-tag ' + promiseClassMap[pr.promiseVerdict] + '">Promise (NL): ' + promiseLabelMap[pr.promiseVerdict] + ' \u2014 ' + promiseText + '</span>' +
+      '<span class="kpdx9-pr-tag kpdx9-pr-result">Result (CSL): ' + resultText + '</span>' +
+      '</div>';
   }
 
   // Expand a MD-AD-PD result row: show house depth + the real Sukshma
@@ -232,9 +314,13 @@
     var md = VIMSH[mdIdx], ad = md && md.subs && md.subs[adIdx], pd = ad && ad.subs && ad.subs[pdIdx];
     if (!pd) return;
     var sel = Array.from(st.selectedHouses).sort(function (a, b) { return a - b; });
+    var lords = [md.lord, ad.lord, pd.lord];
+
+    var pr = promiseResultForMatch(lords, sel, st.nlCslMaps, st.houseData);
 
     var detail = sel.map(function (h) { return '<b>H' + h + '</b> depth ' + depthFor(h, md.lord, ad.lord, pd.lord, st.houseData) + '/3'; }).join(' &nbsp;\u00b7&nbsp; ');
-    var html = '<div class="kpdx9-house-detail">Signification depth per house (how many of the 3 running lords touch it): ' + detail + '</div>' +
+    var html = promiseResultHtml(pr, sel) +
+      '<div class="kpdx9-house-detail">Signification depth per house (occupant/owner method \u2014 how many of the 3 running lords touch it): ' + detail + '</div>' +
       '<div class="kpdx9-lv-label">Sukshma refinement (level 4) within this Pratyantardasha</div>' +
       '<div id="kpdx9-sd-list-' + rowId + '"></div>';
     bodyEl.innerHTML = html;
@@ -317,18 +403,38 @@
   };
 
   window.KP9_runSearch = function (instanceId) { runSearch(instanceId); };
+  // Static "Combination & strength check" for any planets a Part 8
+  // event named (drishti/occupation via the natal chart + live Shadbala
+  // strength) — reuses Part 8's engine exactly, since this doesn't vary
+  // by which dasha period is open, only by the natal chart itself.
+  function renderCombinationPanel(instanceId) {
+    var st = getState(instanceId);
+    if (!st || !st.requiredPlanets || !st.requiredPlanets.length) return '';
+    if (!window.KP_PREDICTION_8 || typeof window.KP_PREDICTION_8._buildCombinationCheck !== 'function') return '';
+    var pseudoEvent = { houses: Array.from(st.selectedHouses), requiredPlanets: st.requiredPlanets };
+    return window.KP_PREDICTION_8._buildCombinationCheck(pseudoEvent, st.natalPlanets, st.natalAsc);
+  }
 
-  // Cross-link from Part 8: send an event's houses straight into the
-  // finder and run it immediately.
-  window.KP9_applyHouses = function (instanceId, housesCsv) {
+  function refreshCombinationPanel(instanceId) {
+    var el = document.getElementById('kpdx9-combo-' + instanceId);
+    if (el) el.innerHTML = renderCombinationPanel(instanceId);
+  }
+
+  // Cross-link from Part 8: send an event's houses (and, when known,
+  // its named planets) straight into the finder and run it immediately.
+  window.KP9_applyHouses = function (instanceId, housesCsv, planetsCsv) {
     var st = getState(instanceId);
     if (!st) return;
     var houses = housesCsv.split(',').map(Number);
     st.selectedHouses = new Set(houses);
+    st.requiredPlanets = (planetsCsv || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    
     for (var h = 1; h <= 12; h++) {
       var btn = document.getElementById('kpdx9-hbtn-' + instanceId + '-' + h);
       if (btn) btn.classList.toggle('selected', houses.indexOf(h) !== -1);
     }
+    refreshCombinationPanel(instanceId);
+    
     runSearch(instanceId);
     var card = document.getElementById('kpdx9-card-' + instanceId);
     if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -348,7 +454,14 @@
     injectStyles();
     var instanceId = ctx.instanceId || 'default';
     var preset = ctx.presetHouses || [];
-    INSTANCES[instanceId] = { houseData: houseData, selectedHouses: new Set(preset), showPast: false, lastMatches: [] };
+    var presetPlanets = ctx.presetPlanets || [];
+
+    var nlCslMaps = (window.KP_PREDICTION_7 && typeof window.KP_PREDICTION_7._buildNLCSLMaps === 'function')
+      ? window.KP_PREDICTION_7._buildNLCSLMaps(ctx.natalPlanets, ctx.natalAsc) : { nlMap: {}, cslMap: {} };
+    INSTANCES[instanceId] = {
+      houseData: houseData, selectedHouses: new Set(preset), showPast: false, lastMatches: [],
+      nlCslMaps: nlCslMaps, natalPlanets: ctx.natalPlanets, natalAsc: ctx.natalAsc, requiredPlanets: presetPlanets
+    };
 
     var html = buildHtml(ctx, instanceId, preset, ctx.sectionClass || 'dt-section');
     if (preset.length) setTimeout(function () { runSearch(instanceId); }, 0);
@@ -370,6 +483,8 @@
       '<button class="kpdx9-clear-btn" onclick="window.KP9_clearHouses(\'' + instanceId + '\')">Clear</button>' +
       '<label class="kpdx9-toggle-past"><input type="checkbox" onchange="window.KP9_togglePast(\'' + instanceId + '\', this.checked)"> show past periods too</label>' +
       '</div>';
+    html += '<div id="kpdx9-combo-' + instanceId + '">' + renderCombinationPanel(instanceId) + '</div>';
+      
     html += '<div id="kpdx9-results-' + instanceId + '"></div>';
     html += '</div>';
 
