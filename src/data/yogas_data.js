@@ -4079,6 +4079,117 @@ const NEW_YOGAS = [];
         }
     });
 
+    // ---------- 55. Shrinkhala Yoga (श्रंखला योग — Three-Planet Chain Exchange) ----------
+    NEW_YOGAS.push({
+        name: 'Shrinkhala Yoga',
+        category: 'Parivartana Yoga',
+        quality: 'Special',
+        planets: [],
+        keywords: ['chain exchange', 'three-planet parivartana', 'trishula combination', 'rare yoga'],
+        methodOfCalculation: 'Formed when three planets exchange signs in a closed chain rather than an ordinary pair: Planet A occupies the sign owned by Planet B, Planet B occupies the sign owned by Planet C, and Planet C occupies the sign owned by Planet A (A → B → C → A). This is an extension of the standard two-planet Parivartana (sign exchange) into a three-way cycle. It is a rare combination — found, by traditional estimate, in only about 15–20% of charts.',
+        cause: 'Where an ordinary Parivartana links two houses through two planets, Shrinkhala links three houses through three planets in a closed triangular circuit — classically likened to the Trishula (trident) shape, and to the recurring auspicious significance of the number three (Trimurti, Triguna). Judging its result requires three checks in sequence: (1) Mitra-Shatru — is each planet sitting in a friend\'s, neutral\'s, or enemy\'s sign; (2) Tattva — does the planet\'s own element match the element of the sign it occupies; and (3) Bhava position — are the houses involved Trikona (best), Kendra, or Dusthana (most difficult). The governing principle, illustrated repeatedly in worked examples, is that in any exchange the weaker/more "downtrodden" party benefits the most — so a debilitated or Dusthana-linked planet in the chain can end up delivering the strongest, most favourable results, while a strong, well-placed planet chained to it sees its own promise diluted or delayed.',
+        description: 'A rare three-planet mutual sign-exchange forming a closed chain (A occupies B\'s sign, B occupies C\'s sign, C occupies A\'s sign) — a stronger, more result-giving variant of ordinary two-planet Parivartana Yoga, drawing on 5, 7, 9 or 5, 6, 8 style house combinations seen in classical worked charts.',
+        result: 'Results must be read together across all three houses ruled by the chained planets, not house-by-house in isolation. The weakest of the three planets — judged by sign-friendship, elemental fit, and house nature rather than by dignity label alone — typically delivers the strongest and most favourable results, even a debilitated planet can act "no less than a boon" if it is the weak link of an otherwise strong chain. If all three houses involved are auspicious (Kendra/Trikona), the yoga is straightforwardly beneficial for all three life-areas. If the chain mixes auspicious and Dusthana (6th/8th/12th) houses, the auspicious house\'s promise gets diluted — real gains still arrive in the area ruled by the weakest link, but usually only after visible struggle, effort, or delay tied to the Dusthana house(s) in the chain.',
+        effect: 'The native experiences a tightly interlinked destiny across the three houses/life-areas ruled by the chained planets — turning points, setbacks, and successes in one area tend to echo into the other two. Because the combination itself is rare, its effects are usually pronounced and clearly traceable rather than subtle.',
+        nullification: 'Not cancelled by any single factor, but its "no pain, no gain" quality softens when all three planets are already dignified (own/exalted) and none of the three houses ruled by them is a Dusthana (6th/8th/12th) — in that case the yoga becomes simply and evenly auspicious across all three areas rather than requiring struggle before reward.',
+        referenceShloka: 'Not drawn from a standard Sanskrit verse in Brihat Parashara Hora Shastra or Phaladeepika. This three-planet chain form of Parivartana Yoga (श्रंखला योग) is a teacher-taught extension of classical two-planet Parivartana principles, explained and illustrated through worked horoscope examples (including Simha, Mithuna and Kumbha Lagna charts) rather than cited to one specific classical shloka.',
+        strength: 'Strong (Rare)',
+        remedies: [
+            'Identify and strengthen the weakest planet in the chain first — the one sitting in an enemy sign, an adverse element, or ruling a Dusthana house — through its specific planetary remedy: mantra japa, donation (daan) on its ruling weekday, or fasting.',
+            'Because results concentrate in the house ruled by the weakest chain-member, aim remedies at that specific life-area (e.g. relationship-strengthening practices if the 7th house is involved; health/service-oriented charity if the 6th house is involved).',
+            'Recite the Maha Mrityunjaya Mantra to generally stabilise a chain that runs through a Dusthana house.',
+            'Practice humility and regular charity — the yoga\'s core classical lesson is that benefit flows to the weaker party in an exchange, so grounding remedies in service rather than status-seeking supports its expression.'
+        ],
+        mantras: ['Om Tryambakam Yajamahe (Maha Mrityunjaya Mantra)', 'The specific beeja mantra of the weakest chain-member — see this chart\'s rationale below for which planet that is'],
+        deities: ['Trimurti (Brahma-Vishnu-Mahesh) — reflecting the three-fold chain'],
+        evaluate: function (c) {
+            if (!c.planets || !c.asc) return { result: false };
+            const ascSn = c.asc.sn || 0;
+            const CLASSICAL = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+            const PLANET_ELEMENT = { Sun: 'Fire', Moon: 'Water', Mars: 'Fire', Mercury: 'Earth', Jupiter: 'Ether/Air', Venus: 'Water', Saturn: 'Air' };
+            const REL = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.NATURAL_RELATIONSHIPS) || {};
+            const SIGN_ATTR = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGN_ATTRIBUTES) || {};
+
+            function housesRuledBy(planet) {
+                const out = [];
+                for (let h = 1; h <= 12; h++) { if (lordOfHouse(ascSn, h) === planet) out.push(h); }
+                return out;
+            }
+            function houseNature(hArr) {
+                if (hArr.some(h => isTrikona(h))) return 'Trikona';
+                if (hArr.some(h => isKendra(h))) return 'Kendra';
+                if (hArr.some(h => isDusthana(h))) return 'Dusthana';
+                return 'Upachaya/Other';
+            }
+            // Combined weakness/strength score for a planet, based on the three
+            // classical checks taught for this yoga: dignity in its own placement,
+            // friendship with the next lord in the chain, elemental fit with the
+            // sign it occupies, and the nature of the house(s) it rules.
+            function score(planet, nextLord) {
+                let s = 0;
+                const pos = c.planets[planet];
+                if (pos && pos.status === 'Exalt.') s += 2;
+                else if (pos && pos.status === 'Own') s += 1;
+                else if (pos && pos.status === 'Debil.') s -= 2;
+                else if (pos && pos.status === 'Enemy') s -= 1;
+                const fr = REL[planet] && REL[planet][nextLord];
+                if (fr === 'Friend') s += 1; else if (fr === 'Enemy') s -= 1;
+                const sn = pos ? pos.sn : null;
+                const elem = (sn !== null && sn !== undefined && SIGN_ATTR[sn]) ? SIGN_ATTR[sn].element : null;
+                if (elem && PLANET_ELEMENT[planet]) {
+                    const adverse = (PLANET_ELEMENT[planet] === 'Fire' && elem === 'Water') || (PLANET_ELEMENT[planet] === 'Water' && elem === 'Fire') ||
+                                    (PLANET_ELEMENT[planet] === 'Earth' && elem === 'Air') || (elem === 'Earth' && PLANET_ELEMENT[planet] === 'Air');
+                    if (PLANET_ELEMENT[planet] === elem) s += 1; else if (adverse) s -= 1;
+                }
+                const nature = houseNature(housesRuledBy(planet));
+                if (nature === 'Trikona') s += 2; else if (nature === 'Kendra') s += 1; else if (nature === 'Dusthana') s -= 2;
+                return s;
+            }
+
+            const found = [];
+            const seenKeys = new Set();
+            CLASSICAL.forEach(A => {
+                const posA = c.planets[A];
+                if (!posA || posA.sn === undefined || !posA.sign) return;
+                const B = signLord(posA.sign);
+                if (!B || B === A || !CLASSICAL.includes(B)) return;
+                const posB = c.planets[B];
+                if (!posB || posB.sn === undefined || !posB.sign) return;
+                const Cp = signLord(posB.sign);
+                if (!Cp || Cp === B || Cp === A || !CLASSICAL.includes(Cp)) return;
+                const posC = c.planets[Cp];
+                if (!posC || posC.sn === undefined || !posC.sign) return;
+                const backToA = signLord(posC.sign);
+                if (backToA !== A) return;
+
+                const key = [A, B, Cp].slice().sort().join('-');
+                if (seenKeys.has(key)) return;
+                seenKeys.add(key);
+
+                const sA = score(A, B);
+                const sB = score(B, Cp);
+                const sC = score(Cp, A);
+                const ranked = [[A, sA], [B, sB], [Cp, sC]].sort((x, y) => x[1] - y[1]);
+                const weakest = ranked[0][0];
+                const weakestHouses = housesRuledBy(weakest);
+
+                found.push({
+                    chain: `${A} (in ${posA.sign}, H${posA.house}) \u2192 ${B} (in ${posB.sign}, H${posB.house}) \u2192 ${Cp} (in ${posC.sign}, H${posC.house}) \u2192 back to ${A}`,
+                    weakest,
+                    weakestHouses,
+                    detail: `${A} score ${sA}, ${B} score ${sB}, ${Cp} score ${sC} (combining dignity, sign-friendship, elemental fit, and house nature).`
+                });
+            });
+
+            const isDetected = found.length > 0;
+            if (!isDetected) return { result: false };
+            const rationale = found.map(f =>
+                `Chain detected: ${f.chain}. Scoring each planet\'s dignity, friendship with the next sign-lord in the chain, elemental fit, and the nature of the house(s) it rules, ${f.weakest} comes out weakest — and per the classical logic of this yoga (the weaker party in an exchange gains the most), it should give the strongest, most favourable results, concentrated in house(s) ${f.weakestHouses.length ? f.weakestHouses.join(', ') : '\u2014'} that ${f.weakest} rules. ${f.detail}`
+            ).join(' | ');
+            return { result: true, rationale };
+        }
+    });
+
 
 // Merge NEW_YOGAS into YOGAS_DATA, skipping any name that already exists
 // (kept idempotent/defensive even though there are no known collisions
