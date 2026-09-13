@@ -5262,8 +5262,13 @@ function profileToBirth(p){
   };
 }
 function loadDefaultProfile(){
-  const profile=getSavedProfiles().find(p=>p.isDefault);
-  if(profile) window.BIRTH=profileToBirth(profile);
+  const profiles=getSavedProfiles();
+  const index=profiles.findIndex(p=>p.isDefault);
+  if(index<0) return false;
+  const profile=profiles[index];
+  window.BIRTH=profileToBirth(profile);
+  loadProfile(index);
+  return true;
 }
 function loadProfile(idx){
   const profiles=getSavedProfiles();
@@ -6424,12 +6429,13 @@ function renderAll(){
 // ═══════════════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════════════
-loadDefaultProfile();
+const loadedDefaultProfile=loadDefaultProfile();
 recalcBirth();
 rebuildDashas();
 YOGINI=buildYoginiDasha();
 updateDchartTitle();
-document.getElementById('appSub').textContent='Native \u00B7 Vadnagar, Gujarat, India \u00B7 17 Sept 1950 11:00 Am IST \u00B7 Lahiri \u00B7 Gemini Lagna';
+const birthDate=BIRTH.date.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+document.getElementById('appSub').textContent=`${BIRTH.name} \u00B7 ${BIRTH.city} \u00B7 ${birthDate} ${BIRTH.date.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} \u00B7 ${BIRTH.ayan} \u00B7 ${BIRTH_ASC?.sign||'?' } Lagna${loadedDefaultProfile?' \u00B7 Default':''}`;
 document.getElementById('btnVimsh').classList.add('active');
 
 // ═══════════════════════════════════════════════════════════
