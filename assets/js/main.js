@@ -5236,11 +5236,34 @@ function saveBirthProfile(data){
   localStorage.setItem('jyotish_profiles',JSON.stringify(profiles));
   updateSavedProfilesList();
 }
+function setDefaultProfile(idx){
+  const profiles=getSavedProfiles();
+  if(!profiles[idx]) return;
+  profiles.forEach((profile,i)=>{ profile.isDefault = i === idx; });
+  localStorage.setItem('jyotish_profiles',JSON.stringify(profiles));
+  updateSavedProfilesList();
+}
 function deleteProfile(idx){
   const profiles=getSavedProfiles();
   profiles.splice(idx,1);
+  if(!profiles.some(profile=>profile.isDefault) && profiles.length) profiles[0].isDefault=true;
   localStorage.setItem('jyotish_profiles',JSON.stringify(profiles));
   updateSavedProfilesList();
+}
+function profileToBirth(p){
+  const [y,mo,d]=String(p.date).split('T')[0].split('-').map(Number);
+  const [hh,mm]=(p.time||'12:00').split(':').map(Number);
+  return {
+    name:p.name||'Native', date:new Date(y,mo-1,d,hh,mm,0),
+    lat:parseFloat(p.lat)||0, lon:parseFloat(p.lon)||0,
+    utcOff:parseFloat(p.utcOff)||0, city:p.city||'', gender:p.gender||'male',
+    ayan:p.ayan||'lahiri', ephem:p.ephem||'swiss',
+    houseSystem:p.houseSystem||'whole', chartStyle:p.chartStyle||'north', useComputed:true
+  };
+}
+function loadDefaultProfile(){
+  const profile=getSavedProfiles().find(p=>p.isDefault);
+  if(profile) window.BIRTH=profileToBirth(profile);
 }
 function loadProfile(idx){
   const profiles=getSavedProfiles();
@@ -5278,9 +5301,10 @@ function updateSavedProfilesList(){
     item.setAttribute('onmouseleave', 'updateBirthPreview()');
     item.innerHTML=`
       <div style="flex:1;" onclick="loadProfile(${i})">
-        <div style="color:var(--gold2);font-weight:700;">${p.name}</div>
+        <div style="color:var(--gold2);font-weight:700;">${p.name}${p.isDefault?' <span style="color:var(--cyan);font-size:9px;">[DEFAULT]</span>':''}</div>
         <div style="font-size:9px;color:var(--muted);">${p.date.split('T')[0]} · ${p.city}</div>
       </div>
+      <button class="btn" style="padding:2px 6px;color:${p.isDefault?'var(--cyan)':'var(--muted)'};border-color:var(--dim);" title="${p.isDefault?'Default profile on launch':'Use this profile on launch'}" onclick="setDefaultProfile(${i})">${p.isDefault?'★':'☆'}</button>
       <button class="btn" style="padding:2px 6px;color:var(--rose);border-color:var(--dim);" onclick="deleteProfile(${i})">✕</button>
     `;
     el.appendChild(item);
@@ -6070,6 +6094,7 @@ function renderSvgChart() {
     document.getElementById('svgChartContainer').innerHTML = svg;
 }
 window.loadProfile=loadProfile;
+window.setDefaultProfile=setDefaultProfile;
 window.deleteProfile=deleteProfile;
 
 document.getElementById('btnBirthForm').addEventListener('click',()=>{
@@ -6190,7 +6215,7 @@ document.getElementById('importBirthFile')?.addEventListener('change', (e) => {
 // covering every profile in localStorage (getSavedProfiles()) instead of
 // the single profile currently in the form — for backing up or moving a
 // whole profile list between browsers/devices in one file.
-const BIRTH_PROFILE_FIELDS = ['name','date','time','gender','city','lat','lon','utcOff','ayan','ephem','houseSystem','chartStyle'];
+const BIRTH_PROFILE_FIELDS = ['name','date','time','gender','city','lat','lon','utcOff','ayan','ephem','houseSystem','chartStyle','isDefault'];
 
 function exportAllProfilesXML(){
   const profiles = getSavedProfiles();
@@ -6240,6 +6265,7 @@ function parseProfilesXML(xmlText){
     p.lat = parseFloat(p.lat) || 0;
     p.lon = parseFloat(p.lon) || 0;
     p.utcOff = parseFloat(p.utcOff) || 0;
+    p.isDefault = p.isDefault === 'true';
     if(p.date) profiles.push(p); // a profile needs at least a date to be usable
   });
   return profiles;
@@ -6398,6 +6424,7 @@ function renderAll(){
 // ═══════════════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════════════
+loadDefaultProfile();
 recalcBirth();
 rebuildDashas();
 YOGINI=buildYoginiDasha();
@@ -7868,7 +7895,79 @@ document.getElementById('btnMarriageAnalysis')?.addEventListener('click', ()=>{
 });
 document.getElementById('closeMarriage').addEventListener('click', function() { document.getElementById('marriagePanel').classList.remove('open'); });
 document.getElementById('closeMatching')?.addEventListener('click', function() { document.getElementById('matchingPanel').classList.remove('open'); });
+// ═══════════════════════════════════════════════════════════
+//  BIRTH TIME RECTIFICATION (BTR) — D24 Jaimini + KP methods
+// ═══════════════════════════════════════════════════════════
+window.BTR_WORKING_TIME = null;
 
+/** Computes a full {planets, asc} chart (with houses) for an arbitrary candidate time, reusing the same computeAll/computeAsc pipeline the app's own birth chart is built from — this is what lets BTR "try" different times without touching the recorded BIRTH.date. */
+function computeBTRCandidateChart(candidateDate) {
+  const utH = candidateDate.getHours() + candidateDate.getMinutes() / 60 + candidateDate.getSeconds() / 3600 - BIRTH.utcOff;
+  const jday = jd(candidateDate.getFullYear(), candidateDate.getMonth() + 1, candidateDate.getDate(), utH);
+  const planets = computeAll(jday, BIRTH.ayan, 1);
+  const asc = computeAsc(jday, BIRTH.lat, BIRTH.lon, BIRTH.utcOff, BIRTH.ayan, 1);
+  Object.keys(planets).forEach(p => {
+    if (planets[p] && planets[p].sn !== undefined) planets[p].house = ((planets[p].sn - asc.sn + 12) % 12) + 1;
+  });
+  return { planets, asc };
+}
+
+window.openBTRPanel = function () {
+  if (!BIRTH_PLANETS || !BIRTH_ASC) { alert('Calculate birth details first'); return; }
+  if (!window.BTR_D24_METHOD) { alert('BTR_D24_method.js failed to load — check the file exists and the browser console for a 404.'); return; }
+  window.BTR_WORKING_TIME = new Date(BIRTH.date);
+
+  const sel = document.getElementById('btrMethodSelect');
+  if (sel && !sel.options.length) {
+    Object.keys(window.BTR_D24_METHOD.METHODS).forEach(key => {
+      const m = window.BTR_D24_METHOD.METHODS[key];
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = m.label + (m.implemented ? '' : ' (coming soon)');
+      sel.appendChild(opt);
+    });
+  }
+  document.getElementById('btrPanel').style.transform = 'translateX(0)';
+  window.runBTR();
+};
+
+window.shiftBTRTime = function (unit, delta) {
+  const t = new Date(window.BTR_WORKING_TIME || BIRTH.date);
+  if (unit === 'h') t.setHours(t.getHours() + delta);
+  else if (unit === 'm') t.setMinutes(t.getMinutes() + delta);
+  else if (unit === 's') t.setSeconds(t.getSeconds() + delta);
+  window.BTR_WORKING_TIME = t;
+  window.runBTR();
+};
+
+window.resetBTRTime = function () {
+  window.BTR_WORKING_TIME = new Date(BIRTH.date);
+  window.runBTR();
+};
+
+window.runBTR = function () {
+  const t = window.BTR_WORKING_TIME || new Date(BIRTH.date);
+  const disp = document.getElementById('btrTimeDisplay');
+  if (disp) disp.textContent = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}:${String(t.getSeconds()).padStart(2, '0')}`;
+
+  let chart;
+  try { chart = computeBTRCandidateChart(t); }
+  catch (e) { console.error('BTR candidate chart computation failed:', e); document.getElementById('btrResults').innerHTML = '<div style="color:var(--rose);font-size:10px;">Could not compute a chart for this time.</div>'; return; }
+
+  const methodKey = document.getElementById('btrMethodSelect').value || 'd24_jaimini';
+  const result = window.BTR_D24_METHOD.runMethod(methodKey, chart.planets, chart.asc);
+  document.getElementById('btrResults').innerHTML = window.BTR_D24_METHOD.renderPanel(result, methodKey);
+
+  if (typeof drawDChart === 'function') {
+    window.BTR_D24_METHOD.getChartConfigs(chart.planets, chart.asc).forEach(cfg => {
+      try { drawDChart(cfg.canvasId, { planets: cfg.planets, asc: cfg.asc }); }
+      catch (e) { console.error('BTR chart draw failed:', cfg.canvasId, e); }
+    });
+  }
+};
+
+document.getElementById('btnBTR')?.addEventListener('click', window.openBTRPanel);
+document.getElementById('closeBTR')?.addEventListener('click', function () { document.getElementById('btrPanel').style.transform = 'translateX(100%)'; });
 document.getElementById('btnPrashna').addEventListener('click', () => {
   document.getElementById('prashnaPanel').classList.add('open');
   initPrashna();
