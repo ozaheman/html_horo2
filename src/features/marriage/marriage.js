@@ -22,9 +22,20 @@ function calculateUpapadaLagna() {
   const h12Lord = LORDS[h12Sign];
   const l12Data = BIRTH_PLANETS[h12Lord];
   if (!l12Data) return null;
-  
-  const gap = (l12Data.sn - h12Sign + 12) % 12;
-  const ulSign = (l12Data.sn + gap) % 12;
+   // Classical Jaimini Arudha/Upapada exception ("Kendra exception"): if the
+  // straightforward count would land the pada back on its own base sign (the
+  // 12th-house sign itself) or in the 7th from it, the pada is instead taken
+  // as the 10th house counted from that landing point. Reuse the shared,
+  // already-correct implementation in NAVAMSHA_ANALYSIS when available so the
+  // Upapada Lagna used across the marriage panel and the Navamsha panel never
+  // disagree; fall back to the plain (exception-free) count otherwise.
+  let ulSign;
+  if (window.NAVAMSHA_ANALYSIS && typeof window.NAVAMSHA_ANALYSIS.getPadSign === 'function') {
+    ulSign = window.NAVAMSHA_ANALYSIS.getPadSign(h12Sign, l12Data.sn);
+  } else {
+    const gap = (l12Data.sn - h12Sign + 12) % 12;
+    ulSign = (l12Data.sn + gap) % 12;
+  }
   return { sn: ulSign, sign: SIGNS[ulSign] };
 }
 
@@ -1212,6 +1223,54 @@ function runMarriageAnalysis() {
     }
   } 
   catch (e) { console.error('KP CSL-BASED 7TH HOUSE ANALYSIS FAIL', e); }
+  // 2.965 Spouse Feature & Personality Quality (Darakaraka + 7th Lord +
+  // Venus/Jupiter, cross-referenced with sign element and Nakshatra traits)
+  try {
+    if (BIRTH_PLANETS && BIRTH_ASC) {
+      const d9ForFeatures = (typeof getChartPlanetsForDiv === 'function') ? getChartPlanetsForDiv(9) : null;
+      const spouseProfile = getSpouseFeatureQualityProfile(BIRTH_PLANETS, BIRTH_ASC, d9ForFeatures ? d9ForFeatures.planets : null, window.BIRTH_GENDER || null);
+      el.innerHTML += renderSpouseFeatureQualityProfile(spouseProfile);
+      console.log('SPOUSE FEATURE & QUALITY PROFILE RENDERED');
+    }
+  } catch (e) { console.error('SPOUSE FEATURE & QUALITY PROFILE FAIL', e); }
+  // 2.966 "Good Nature, Difficult Marriage?" — 6 classical affliction checks
+  // (Venus / 7th House / Navamsa methodology)
+  try {
+    if (BIRTH_PLANETS && BIRTH_ASC) {
+      const d9ForGN = (typeof getChartPlanetsForDiv === 'function') ? getChartPlanetsForDiv(9) : null;
+      const gnData = getGoodNatureMarriageAfflictionChecks(BIRTH_PLANETS, BIRTH_ASC, d9ForGN ? d9ForGN.planets : null);
+      el.innerHTML += renderGoodNatureMarriageAfflictionChecks(gnData);
+      console.log('GOOD-NATURE MARRIAGE AFFLICTION CHECKS RENDERED');
+    }
+  } catch (e) { console.error('GOOD-NATURE MARRIAGE AFFLICTION CHECKS FAIL', e); }
+  // 2.967 Navamsa Adhipati — lifelong theme connections (Lagna lord +
+  // 7th lord), and 2.968 Upapada Lagna & Char Karaka verdict
+  try {
+    if (BIRTH_PLANETS && BIRTH_ASC) {
+      const L = (typeof LORDS !== 'undefined') ? LORDS : null;
+      const d9ForNA = (typeof getChartPlanetsForDiv === 'function') ? getChartPlanetsForDiv(9) : null;
+      const d9Map = d9ForNA ? d9ForNA.planets : null;
+      const lagnaLord = L[BIRTH_ASC.sn];
+      const h7Sign = (BIRTH_ASC.sn + 6) % 12, h7Lord = L[h7Sign];
+      const naLagna = getNavamsaAdhipatiLifelongConnection(lagnaLord, BIRTH_PLANETS, BIRTH_ASC, d9Map, 'Lagna Lord — Personality/Life Theme');
+      const naSeventh = getNavamsaAdhipatiLifelongConnection(h7Lord, BIRTH_PLANETS, BIRTH_ASC, d9Map, '7th Lord — Married-Life Theme');
+      el.innerHTML += renderNavamsaAdhipatiConnections([naLagna, naSeventh]);
+      console.log('NAVAMSA ADHIPATI LIFELONG CONNECTIONS RENDERED');
+
+      const ulData = getUpapadaCharKarakaVerdict(BIRTH_PLANETS, BIRTH_ASC);
+      el.innerHTML += renderUpapadaCharKarakaVerdict(ulData);
+      console.log('UPAPADA + CHAR KARAKA VERDICT RENDERED');
+    }
+  } catch (e) { console.error('NAVAMSA ADHIPATI / UPAPADA VERDICT FAIL', e); }
+  // 2.969 Life After Marriage — 18-month effects on the native's own life
+  try {
+    if (BIRTH_PLANETS && BIRTH_ASC) {
+      const d9ForLA = (typeof getChartPlanetsForDiv === 'function') ? getChartPlanetsForDiv(9) : null;
+      const lifeAfter = getLifeAfterMarriageAnalysis(BIRTH_PLANETS, BIRTH_ASC, d9ForLA ? d9ForLA.planets : null);
+      el.innerHTML += renderLifeAfterMarriageAnalysis(lifeAfter);
+      console.log('LIFE AFTER MARRIAGE (18-MONTH) ANALYSIS RENDERED');
+    }
+  } catch (e) { console.error('LIFE AFTER MARRIAGE ANALYSIS FAIL', e); }
   // 2.96 S.K. Sawhney Classical Dasha & Transit Marriage Timing (Ch.8,
   // "How to Identify Timing of Marriage") — a third, independently-
   // computed cross-check alongside the Parashari 7th-Lord/Venus/
@@ -2161,4 +2220,577 @@ function runBNNAnalysis(type) {
       console.error("runMarriageAnalysis not found.");
     }
   }
+}
+// ═══════════════════════════════════════════════════════════════════════
+//  STEP-BY-STEP MARRIAGE PANEL — additions per Astrologer Nitin Kashyap's
+//  transcript methodology: personality/nature, spouse feature & quality,
+//  Navamsa-based lifelong effects, Upapada + Char Karaka verdict, and
+//  Life-After-Marriage (18-month) predictions. All render*() functions
+//  follow the same inline-styled HTML card pattern used elsewhere in this
+//  file so they can simply be appended inside runMarriageAnalysis().
+// ═══════════════════════════════════════════════════════════════════════
+
+const MP_NAT_MALEFICS = ['Sun', 'Mars', 'Saturn', 'Rahu', 'Ketu'];
+const MP_NAT_BENEFICS = ['Jupiter', 'Venus', 'Mercury', 'Moon'];
+const MP_DUAL_SIGNS = [2, 5, 8, 11];   // Gemini, Virgo, Sagittarius, Pisces (द्वि-स्वभाव)
+const MP_FIRE_SIGNS = [0, 4, 8];       // Aries, Leo, Sagittarius (अग्नि तत्व)
+
+function MP_isMalefic(pName) { return MP_NAT_MALEFICS.includes(pName); }
+function MP_natRel(p1, p2) {
+  const AC = window.ASTRO_CONSTANTS;
+  if (!AC || !AC.NATURAL_RELATIONSHIPS || !AC.NATURAL_RELATIONSHIPS[p1]) return 'Neutral';
+  if (p1 === p2) return 'Own';
+  return AC.NATURAL_RELATIONSHIPS[p1][p2] || 'Neutral';
+}
+function MP_isExalted(pName, sn) {
+  const AC = window.ASTRO_CONSTANTS;
+  return !!(AC && AC.DIGNITIES && AC.DIGNITIES[pName] && AC.DIGNITIES[pName].exalt === sn);
+}
+function MP_isDebilitated(pName, sn) {
+  const AC = window.ASTRO_CONSTANTS;
+  return !!(AC && AC.DIGNITIES && AC.DIGNITIES[pName] && AC.DIGNITIES[pName].debilitation === sn);
+}
+function MP_isOwnSign(pName, sn) {
+  const AC = window.ASTRO_CONSTANTS;
+  return !!(AC && AC.DIGNITIES && AC.DIGNITIES[pName] && AC.DIGNITIES[pName].own && AC.DIGNITIES[pName].own.includes(sn));
+}
+// Vedic aspect from a planet sitting in `fromSn` onto sign `toSn` (special
+// extra aspects for Mars/Jupiter/Saturn beyond the universal 7th).
+function MP_aspectsSign(pName, fromSn, toSn) {
+  const d = ((toSn - fromSn) % 12 + 12) % 12;
+  if (d === 6) return true;
+  if (pName === 'Mars' && (d === 3 || d === 7)) return true;
+  if (pName === 'Jupiter' && (d === 4 || d === 8)) return true;
+  if (pName === 'Saturn' && (d === 2 || d === 9)) return true;
+  return false;
+}
+// "Connected" = conjunct (same sign) OR either aspects the other.
+function MP_connected(p1Name, p1Sn, p2Name, p2Sn) {
+  if (p1Sn === p2Sn) return true;
+  return MP_aspectsSign(p1Name, p1Sn, p2Sn) || MP_aspectsSign(p2Name, p2Sn, p1Sn);
+}
+function MP_connectsToSign(pName, pSn, targetSn) {
+  return pSn === targetSn || MP_aspectsSign(pName, pSn, targetSn);
+}
+function MP_nakIndex(sid) { return Math.floor(fix360(sid) / (360 / 27)) % 27; }
+function MP_nakInfo(sid) {
+  const AC = window.ASTRO_CONSTANTS;
+  if (!AC || !AC.NAKSHATRAS) return null;
+  return AC.NAKSHATRAS[MP_nakIndex(sid)] || null;
+}
+function MP_houseFromAsc(ascSn, sn) { return ((sn - ascSn + 12) % 12) + 1; }
+
+// -------------------------------------------------------------------------
+// RULE SET 1 — "Venus, 7th House & Navamsa: 6 Secrets" — why a genuinely
+// good-natured person can still have a difficult married life.
+// -------------------------------------------------------------------------
+function getGoodNatureMarriageAfflictionChecks(planets, asc, d9Planets) {
+  if (!planets || !asc) return null;
+  const ascSn = asc.sn;
+  const lagnaLord = LORDS[ascSn];
+  const h7Sign = (ascSn + 6) % 12, h7Lord = LORDS[h7Sign];
+  const h4Sign = (ascSn + 3) % 12;
+  const lagnaLordPos = planets[lagnaLord], h7LordPos = planets[h7Lord], venusPos = planets.Venus;
+  if (!lagnaLordPos || !h7LordPos) return null;
+
+  const checks = [];
+
+  // Rule 1: 7th lord is a natural malefic AND connects to Lagna or Lagna lord.
+  if (MP_isMalefic(h7Lord)) {
+    const hit = MP_connectsToSign(h7Lord, h7LordPos.sn, ascSn) || MP_connected(h7Lord, h7LordPos.sn, lagnaLord, lagnaLordPos.sn);
+    checks.push({
+      num: 1, title: 'Cruel 7th Lord Afflicting Lagna',
+      triggered: hit,
+      detail: hit
+        ? `${h7Lord} (7th lord) is a natural malefic and is connected (by placement or aspect) to the Lagna/Lagna lord (${lagnaLord}) — classically this raises the chance of being troubled BY the spouse, regardless of your own good nature.`
+        : `${h7Lord} (7th lord) ${MP_isMalefic(h7Lord) ? 'is a natural malefic but is not connected to the Lagna/Lagna lord' : 'is not a natural malefic'} — this specific rule does not apply here.`
+    });
+  } else {
+    checks.push({ num: 1, title: 'Cruel 7th Lord Afflicting Lagna', triggered: false, detail: `${h7Lord} (7th lord) is not a natural malefic — this rule does not apply.` });
+  }
+
+  // Rule 2: 2+ malefics in Lagna/7th AND Lagna lord tied to Venus (conjunct or in a Venus-owned sign).
+  const maleficsIn1n7 = Object.keys(planets).filter(p => MP_isMalefic(p) && planets[p] && (planets[p].house === 1 || planets[p].house === 7));
+  const lagnaLordWithVenus = venusPos ? (lagnaLordPos.sn === venusPos.sn || window.ASTRO_CONSTANTS.SIGN_LORDS[lagnaLordPos.sn] === 'Venus') : false;
+  const rule2Hit = maleficsIn1n7.length >= 2 && lagnaLordWithVenus;
+  checks.push({
+    num: 2, title: 'Desire Unmet — Lagna Lord Tied to Venus + 2 Malefics in Lagna/7th',
+    triggered: rule2Hit,
+    detail: rule2Hit
+      ? `${maleficsIn1n7.join(' & ')} (2+ malefics) occupy the Lagna/7th axis, and Lagna lord ${lagnaLord} is tied to Venus (${lagnaLordPos.sn === (venusPos && venusPos.sn) ? 'conjunct' : 'sitting in a Venus-owned sign'}). The native genuinely wants a good married life (Venus attachment), but the malefics mean that desired outcome doesn't fully arrive — a source of quiet suffering, not created by the native's own behaviour.`
+      : `Found ${maleficsIn1n7.length} malefic(s) in the Lagna/7th axis${lagnaLordWithVenus ? ' and Lagna lord is tied to Venus' : ' and/or Lagna lord is not tied to Venus'} — the full combination (2+ malefics AND Lagna-lord-with-Venus) is not present.`
+  });
+
+  // Rule 3: Natal 7th lord more afflicted in Navamsa (2+ malefics conjunct, debilitated, or in 6/8/12).
+  let rule3Hit = false, rule3Detail = 'Navamsa (D9) position of the 7th lord was not available to check.';
+  if (d9Planets && d9Planets[h7Lord] && d9Planets[h7Lord].sn !== undefined) {
+    const d9pos = d9Planets[h7Lord];
+    const maleficsWithItInD9 = Object.keys(d9Planets).filter(p => p !== h7Lord && MP_isMalefic(p) && d9Planets[p] && d9Planets[p].sn === d9pos.sn);
+    const debilInD9 = MP_isDebilitated(h7Lord, d9pos.sn);
+    const d9HouseFromNatalAsc = d9pos.house !== undefined ? d9pos.house : MP_houseFromAsc(ascSn, d9pos.sn);
+    const inDusthanaD9 = [6, 8, 12].includes(d9HouseFromNatalAsc);
+    rule3Hit = maleficsWithItInD9.length >= 2 || debilInD9 || inDusthanaD9;
+    const bits = [];
+    if (maleficsWithItInD9.length >= 2) bits.push(`joined by 2+ malefics in Navamsa (${maleficsWithItInD9.join(', ')})`);
+    if (debilInD9) bits.push('debilitated in Navamsa');
+    if (inDusthanaD9) bits.push(`in a Navamsa 6th/8th/12th-type house (H${d9HouseFromNatalAsc})`);
+    rule3Detail = rule3Hit
+      ? `${h7Lord} (7th lord) is already the significator of married life, and in the Navamsa it is ${bits.join(' and ')} — the affliction deepens rather than heals, so the spouse is unlikely to play a strongly supportive role.`
+      : `${h7Lord} (7th lord) does not pick up further, deepening affliction in the Navamsa — any natal-chart issues are not compounded here.`;
+  }
+  checks.push({ num: 3, title: 'Natal 7th Lord Worsens in Navamsa', triggered: rule3Hit, detail: rule3Detail });
+
+  // Rule 4: No mutual connection between Lagna lord and 7th house/7th lord, AND 7th lord retrograde.
+  const noConnection = !MP_connectsToSign(lagnaLord, lagnaLordPos.sn, h7Sign) && !MP_connected(lagnaLord, lagnaLordPos.sn, h7Lord, h7LordPos.sn) && !MP_connectsToSign(h7Lord, h7LordPos.sn, ascSn);
+  const h7LordRetro = !!(h7LordPos.retro || h7LordPos.isRetro || h7LordPos.retrograde);
+  const rule4Hit = noConnection && h7LordRetro;
+  checks.push({
+    num: 4, title: 'No Lagna–7th Connection + Retrograde 7th Lord',
+    triggered: rule4Hit,
+    detail: rule4Hit
+      ? `Lagna lord ${lagnaLord} has no placement/aspect connection to the 7th house or ${h7Lord}, and ${h7Lord} is retrograde — this points to a spouse whose own stubbornness/self-will creates friction, largely independent of the native's conduct.`
+      : `${noConnection ? 'There is no Lagna–7th connection, but the 7th lord is not retrograde' : 'A Lagna–7th connection already exists'} — this specific combination is not fully present, so its severity is reduced or absent.`
+  });
+
+  // Rule 5: Lagna lord placed in Libra (Kalpurush 7th house) and afflicted there.
+  const inLibra = lagnaLordPos.sn === 6;
+  let rule5Hit = false, rule5Detail = 'Lagna lord is not placed in Libra — this rule does not apply.';
+  if (inLibra) {
+    const lagnaLordItselfMalefic = MP_isMalefic(lagnaLord);
+    const maleficsWithLagnaLord = Object.keys(planets).filter(p => p !== lagnaLord && MP_isMalefic(p) && MP_connected(lagnaLord, lagnaLordPos.sn, p, planets[p].sn));
+    const venusAfflicted = venusPos ? Object.keys(planets).some(p => p !== 'Venus' && MP_isMalefic(p) && MP_connected('Venus', venusPos.sn, p, planets[p].sn)) : false;
+    rule5Hit = lagnaLordItselfMalefic || maleficsWithLagnaLord.length > 0 || venusAfflicted;
+    rule5Detail = rule5Hit
+      ? `Lagna lord ${lagnaLord} sits in Libra (the Kalpurush 7th house) and is afflicted (${lagnaLordItselfMalefic ? 'is itself a natural malefic' : ''}${maleficsWithLagnaLord.length ? ' connected to ' + maleficsWithLagnaLord.join(', ') : ''}${venusAfflicted ? ', and Venus (Libra\'s own lord) is itself afflicted' : ''}) — suffering through the partner/close associates is indicated. Had it been unafflicted (especially a benefic Lagna lord with Venus), this same placement would instead be a good sign for married life.`
+      : `Lagna lord ${lagnaLord} sits in Libra but shows no affliction here — this placement leans favourable rather than troublesome.`;
+  }
+  checks.push({ num: 5, title: 'Afflicted Lagna Lord in Libra (Kalpurush 7th)', triggered: rule5Hit, detail: rule5Detail });
+
+  // Rule 6: Same malefic in both natal 4th & 7th, AND that same planet also lands in D9 4th/7th.
+  let rule6Hit = false, rule6Planet = null, rule6Detail = 'No single malefic occupies BOTH the natal 4th and 7th houses — this rule does not apply.';
+  const maleficsIn4 = Object.keys(planets).filter(p => MP_isMalefic(p) && planets[p] && planets[p].house === 4);
+  const maleficsIn7 = Object.keys(planets).filter(p => MP_isMalefic(p) && planets[p] && planets[p].house === 7);
+  if (d9Planets) {
+    // Case A: literally the same planet occupies BOTH 4th and 7th natally — impossible for a single planet,
+    // so per the source teaching's fuller statement we check: any malefic in natal 4th OR 7th whose D9 house is ALSO 4th or 7th.
+    const candidates = Array.from(new Set([...maleficsIn4, ...maleficsIn7]));
+    for (const p of candidates) {
+      if (!d9Planets[p] || d9Planets[p].sn === undefined) continue;
+      const d9h = d9Planets[p].house !== undefined ? d9Planets[p].house : MP_houseFromAsc(ascSn, d9Planets[p].sn);
+      if (d9h === 4 || d9h === 7) { rule6Hit = true; rule6Planet = p; break; }
+    }
+  }
+  if (rule6Hit) {
+    const natalHouse = maleficsIn4.includes(rule6Planet) ? 4 : 7;
+    rule6Detail = `${rule6Planet} sits in the natal ${natalHouse === 4 ? '4th' : '7th'} house and ALSO lands in the 4th/7th in the Navamsa — this is unfavourable for married life, particularly during ${rule6Planet}'s dasha/antardasha. Also avoid over-involving the significations of the house ${rule6Planet} rules from your Lagna in domestic decisions.`;
+  }
+  checks.push({ num: 6, title: 'Same Malefic Repeats in D1 & D9 4th/7th', triggered: rule6Hit, detail: rule6Detail });
+
+  const triggeredCount = checks.filter(c => c.triggered).length;
+  return { checks, triggeredCount, lagnaLord, h7Lord };
+}
+
+function renderGoodNatureMarriageAfflictionChecks(data) {
+  if (!data) return '';
+  const rows = data.checks.map(c => `
+    <div style="margin:6px 0;padding:8px;border-left:3px solid ${c.triggered ? '#FF4477' : '#00DD77'};background:${c.triggered ? 'rgba(255,68,119,.06)' : 'rgba(0,221,119,.05)'};border-radius:4px;">
+      <b style="color:${c.triggered ? '#FF4477' : '#00DD77'};font-size:10px;">${c.triggered ? '⚠️' : '✓'} Rule ${c.num}: ${c.title}</b>
+      <div style="font-size:8.8px;color:var(--text);opacity:.9;margin-top:3px;line-height:1.45;">${c.detail}</div>
+    </div>`).join('');
+  return `<div class="biz-summary" style="border-color:var(--rose);background:rgba(255,68,119,0.03);margin-top:20px;border-radius:12px;">
+      <h3 style="color:var(--rose);font-size:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.05);">💔 Good Nature, Difficult Marriage? — 6 Classical Checks</h3>
+      <div style="font-size:9px;color:var(--muted);margin:8px 0;">A genuinely good nature does not guarantee a smooth married life — the 7th house/lord is a separate signification from the Lagna. These six checks (from classical teaching) explain WHEN and WHY a good-natured native can still face married-life difficulty. ${data.triggeredCount} of 6 triggered in this chart.</div>
+      ${rows}
+    </div>`;
+}
+
+// -------------------------------------------------------------------------
+// RULE SET 2 — "Life After Marriage" — what changes (for better or worse)
+// in the native's OWN life within ~18 months of marriage, read purely from
+// the native's own chart (no need for the partner's chart).
+// -------------------------------------------------------------------------
+function getLifeAfterMarriageAnalysis(planets, asc, d9Planets) {
+  if (!planets || !asc) return null;
+  const ascSn = asc.sn;
+  const AC = window.ASTRO_CONSTANTS;
+  const h7Sign = (ascSn + 6) % 12, h7Lord = LORDS[h7Sign];
+  const h3Sign = (ascSn + 2) % 12, h3Lord = LORDS[h3Sign];
+  const occupants7 = Object.keys(planets).filter(p => planets[p] && planets[p].house === 7);
+  const events = [];
+
+  // Sub-rule A: a Dusthana (3/8/12) lord sits strong (own/exalted) in the 7th house.
+  occupants7.forEach(p => {
+    const pos = planets[p];
+    const rulesHouses = [3, 8, 12].filter(h => LORDS[(ascSn + h - 1) % 12] === p);
+    if (!rulesHouses.length) return;
+    const strong = MP_isOwnSign(p, pos.sn) || MP_isExalted(p, pos.sn);
+    if (!strong) return;
+    const rel = MP_natRel(p, AC.SIGN_LORDS[pos.sn]);
+    events.push({
+      kind: 'unpleasant-event',
+      detail: `${p} — lord of the ${rulesHouses.join('/')}${rulesHouses.length>1?'th houses':'th house'} (a Dusthana) — sits strong (${MP_isOwnSign(p,pos.sn)?'own sign':'exalted'}) in the 7th house. Classically this indicates an unpleasant/unexpected event (a setback, a relative's passing, an accident, or a sudden disruption to something that was going well) within about 18 months of marriage — not caused by the spouse, but written into the native's own chart. Occupying a ${rel === 'Friend' ? 'friendly' : rel === 'Enemy' ? 'hostile' : 'neutral'} sign (relative to itself) ${rel === 'Enemy' ? 'strengthens' : rel === 'Friend' ? 'somewhat softens' : ''} this reading.`
+    });
+  });
+
+  // Sub-rule B: 3rd lord strong in 7th house, connected to Gemini/Capricorn -> relocation/transfer.
+  if (occupants7.includes(h3Lord)) {
+    const pos = planets[h3Lord];
+    const strong = MP_isOwnSign(h3Lord, pos.sn) || MP_isExalted(h3Lord, pos.sn);
+    const geminiOrCapricorn = (h3Sign === 2 || h3Sign === 9) || (pos.sn === 2 || pos.sn === 9);
+    if (strong && geminiOrCapricorn) {
+      events.push({ kind: 'relocation', detail: `${h3Lord} — 3rd lord — sits strong in the 7th house with a Gemini/Capricorn connection: expect a transfer, relocation, or change of workplace/posting within ~18 months of marriage.` });
+    }
+  }
+
+  // Sub-rule C (Navamsa-based, generalisable, works for gain OR loss): where does the
+  // 7th lord land in the Navamsa, and is it connected (placed in/aspecting) to that
+  // SAME Kalpurush house natally? If so, that house's affairs shift within 18 months.
+  let navamsaAreaEffect = null;
+  if (d9Planets && d9Planets[h7Lord] && d9Planets[h7Lord].sn !== undefined) {
+    const d9sn = d9Planets[h7Lord].sn;
+    const kpHouse = d9sn + 1; // sign index -> Kalpurush house number (1-12)
+    const d9SignLordOfThatSign = AC.SIGN_LORDS[d9sn];
+    const rel = h7Lord === d9SignLordOfThatSign ? 'Own' : MP_natRel(h7Lord, d9SignLordOfThatSign);
+    const exalted = MP_isExalted(h7Lord, d9sn), debilitated = MP_isDebilitated(h7Lord, d9sn);
+    const natalPos = planets[h7Lord];
+    const connectedNatally = MP_connectsToSign(h7Lord, natalPos.sn, (ascSn + kpHouse - 1) % 12);
+    if (connectedNatally) {
+      const favourable = exalted || rel === 'Own' || rel === 'Friend';
+      const unfavourable = debilitated || rel === 'Enemy';
+      const hs = AC.HOUSE_SIGNIFICATIONS && AC.HOUSE_SIGNIFICATIONS[kpHouse];
+      navamsaAreaEffect = {
+        kpHouse, favourable, unfavourable,
+        detail: `7th lord ${h7Lord} falls in ${SIGNS[d9sn]} in the Navamsa — the ${kpHouse}${kpHouse===1?'st':kpHouse===2?'nd':kpHouse===3?'rd':'th'} Kalpurush house (${hs ? hs.name : ''}: ${hs ? hs.keywords : ''}). It is also natally connected to this same house (placed in it or aspecting it), so per this method, within ~18 months of marriage you can expect a ${favourable ? 'positive shift (growth/support)' : unfavourable ? 'downturn/setback' : 'mixed, muted change'} in matters of ${hs ? hs.name.toLowerCase() : 'this house'} — because ${h7Lord} is ${exalted ? 'exalted' : debilitated ? 'debilitated' : rel.toLowerCase()} in that Navamsa sign (ruled by ${d9SignLordOfThatSign}).`
+      };
+    }
+  }
+
+  return { events, navamsaAreaEffect, h7Lord };
+}
+
+function renderLifeAfterMarriageAnalysis(data) {
+  if (!data) return '';
+  const evRows = data.events.length ? data.events.map(e => `
+    <div style="margin:6px 0;padding:8px;border-left:3px solid var(--gold);background:rgba(255,215,0,.05);border-radius:4px;">
+      <div style="font-size:8.8px;color:var(--text);opacity:.9;line-height:1.45;">${e.detail}</div>
+    </div>`).join('') : `<div style="font-size:9px;color:var(--muted);padding:6px;">No 7th-house Dusthana-lord or 3rd-lord relocation combination found — no specific 18-month event indicated by these two sub-rules.</div>`;
+
+  const navHtml = data.navamsaAreaEffect ? `
+    <div style="margin:10px 0 0;padding:8px;border-left:3px solid ${data.navamsaAreaEffect.favourable ? '#00DD77' : data.navamsaAreaEffect.unfavourable ? '#FF4477' : '#8888AA'};background:${data.navamsaAreaEffect.favourable ? 'rgba(0,221,119,.06)' : data.navamsaAreaEffect.unfavourable ? 'rgba(255,68,119,.06)' : 'rgba(136,136,170,.06)'};border-radius:4px;">
+      <b style="font-size:9.5px;color:${data.navamsaAreaEffect.favourable ? '#00DD77' : data.navamsaAreaEffect.unfavourable ? '#FF4477' : '#8888AA'};">Navamsa Area-of-Life Effect (18 months)</b>
+      <div style="font-size:8.8px;color:var(--text);opacity:.9;margin-top:3px;line-height:1.45;">${data.navamsaAreaEffect.detail}</div>
+    </div>` : `<div style="margin-top:10px;font-size:9px;color:var(--muted);">The 7th lord's Navamsa sign is not natally connected to its own Kalpurush house — this particular refinement doesn't yield a specific area-of-life call here.</div>`;
+
+  return `<div class="biz-summary" style="border-color:var(--gold);background:rgba(255,215,0,0.03);margin-top:20px;border-radius:12px;">
+      <h3 style="color:var(--gold);font-size:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.05);">🔮 Life After Marriage — What Changes in ~18 Months</h3>
+      <div style="font-size:9px;color:var(--muted);margin:8px 0;">Read from the native's OWN chart alone — no partner's chart is required. Effects are said to activate within about a year and a half (18 months) of the wedding; after that window, the running dasha/antardasha becomes the primary driver.</div>
+      ${evRows}
+      ${navHtml}
+    </div>`;
+}
+
+// -------------------------------------------------------------------------
+// "Lagnesh/7th-lord Navamsa Adhipati" — a lifelong-theme connection rule:
+// whichever sign a base-lord (Lagna lord or 7th lord) falls into in the
+// Navamsa, that sign's OWN lord is the "Navamsa Adhipati." Whichever natal
+// planet sits closest (by degree) to that Navamsa Adhipati determines a
+// LIFELONG connection to the house(s) that closest planet rules — supportive
+// if a natural friend, troublesome if a natural enemy.
+// -------------------------------------------------------------------------
+function getNavamsaAdhipatiLifelongConnection(baseLordName, planets, asc, d9Planets, label) {
+  if (!baseLordName || !planets || !planets[baseLordName] || !d9Planets || !d9Planets[baseLordName]) return null;
+  const AC = window.ASTRO_CONSTANTS;
+  const d9sn = d9Planets[baseLordName].sn;
+  if (d9sn === undefined) return null;
+  const navamsaAdhipati = AC.SIGN_LORDS[d9sn];
+
+  // Closest-by-degree conjunct planet to the Navamsa Adhipati, in the NATAL chart.
+  const naPos = planets[navamsaAdhipati];
+  let closest = null, closestGap = Infinity;
+  if (naPos) {
+    Object.keys(planets).forEach(p => {
+      if (p === navamsaAdhipati) return;
+      const pd = planets[p];
+      if (!pd || pd.sn !== naPos.sn) return; // must be conjunct (same sign) to count as "sitting with"
+      const gap = Math.abs((pd.deg !== undefined ? pd.deg : (pd.sid % 30)) - (naPos.deg !== undefined ? naPos.deg : (naPos.sid % 30)));
+      if (gap < closestGap) { closestGap = gap; closest = p; }
+    });
+  }
+
+  let relation = null, rulesHouses = [], verdict = 'neutral', detail;
+  if (closest) {
+    relation = MP_natRel(navamsaAdhipati, closest);
+    rulesHouses = [1,2,3,4,5,6,7,8,9,10,11,12].filter(h => LORDS[(asc.sn + h - 1) % 12] === closest);
+    verdict = relation === 'Friend' || relation === 'Own' ? 'positive' : relation === 'Enemy' ? 'negative' : 'neutral';
+    detail = `${baseLordName}'s (${label}) Navamsa sign (${SIGNS[d9sn]}) is ruled by ${navamsaAdhipati} — the "Navamsa Adhipati." In the birth chart, ${navamsaAdhipati} sits closest (by degree) to ${closest}, and the two are natural ${relation.toLowerCase()}s. Since ${closest} rules house(s) ${rulesHouses.join(', ') || '—'} from Lagna, this indicates a ${verdict === 'positive' ? 'lifelong SUPPORTIVE connection' : verdict === 'negative' ? 'lifelong TROUBLESOME connection' : 'lifelong but mixed connection'} to those house's affairs — a theme you keep returning to throughout life, not just during a temporary phase.`;
+  } else {
+    detail = `${baseLordName}'s (${label}) Navamsa sign (${SIGNS[d9sn]}) is ruled by ${navamsaAdhipati}, but no other planet sits conjunct with it in the birth chart — so this lifelong theme is tied to ${navamsaAdhipati}'s own significations and the house(s) it rules, rather than being coloured by a companion planet.`;
+  }
+
+  return { baseLordName, label, d9Sign: SIGNS[d9sn], navamsaAdhipati, closest, relation, rulesHouses, verdict, detail };
+}
+
+function renderNavamsaAdhipatiConnections(entries) {
+  const valid = (entries || []).filter(Boolean);
+  if (!valid.length) return '';
+  const rows = valid.map(e => `
+    <div style="margin:6px 0;padding:8px;border-left:3px solid ${e.verdict === 'positive' ? '#00DD77' : e.verdict === 'negative' ? '#FF4477' : '#8888AA'};background:${e.verdict === 'positive' ? 'rgba(0,221,119,.05)' : e.verdict === 'negative' ? 'rgba(255,68,119,.05)' : 'rgba(136,136,170,.05)'};border-radius:4px;">
+      <b style="font-size:9.5px;color:var(--gold);">${e.label} → Navamsa Adhipati: ${e.navamsaAdhipati}</b>
+      <div style="font-size:8.8px;color:var(--text);opacity:.9;margin-top:3px;line-height:1.45;">${e.detail}</div>
+    </div>`).join('');
+  return `<div class="biz-summary" style="border-color:#9b6fff;background:rgba(155,111,255,0.03);margin-top:20px;border-radius:12px;">
+      <h3 style="color:#9b6fff;font-size:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.05);">🧭 Navamsa Adhipati — Lifelong Theme Connections</h3>
+      <div style="font-size:9px;color:var(--muted);margin:8px 0;">Applied to both the Lagna lord (your own lifelong theme) and the 7th lord (a lifelong theme tied specifically to married life). This effect runs for life, unlike shorter-lived dasha-based events.</div>
+      ${rows}
+    </div>`;
+}
+
+// -------------------------------------------------------------------------
+// RULE SET 3 — Detailed Upapada Lagna (UL) + Char Karaka verdict.
+// Builds on calculateUpapadaLagna() (now with the Kendra exception applied)
+// and calculateCharkarakas() (AK/AmK/BK/MK/PiK/PuK/GK/DK already tagged on
+// BIRTH_PLANETS[p].karaka).
+// -------------------------------------------------------------------------
+function getUpapadaCharKarakaVerdict(planets, asc) {
+  if (!planets || !asc) return null;
+  const ul = calculateUpapadaLagna();
+  if (!ul) return null;
+  calculateCharkarakas(); // ensures planets[p].karaka is populated
+
+  const karakaOf = (label) => Object.keys(planets).find(p => planets[p] && planets[p].karaka === label);
+  const AK = karakaOf('AK'), DK = karakaOf('DK'), MK = karakaOf('MK'), GK = karakaOf('GK');
+  if (!AK || !DK) return null;
+
+  const houseFromUL = (sn) => ((sn - ul.sn + 12) % 12) + 1;
+  const akHouse = houseFromUL(planets[AK].sn);
+  const dkHouse = houseFromUL(planets[DK].sn);
+  const mkHouse = MK ? houseFromUL(planets[MK].sn) : null;
+  const gkHouse = GK ? houseFromUL(planets[GK].sn) : null;
+  const kendraTrikona = [1, 4, 5, 7, 9, 10];
+
+  const notes = [];
+
+  // Rule: AK in UL's 6/8/12 -> native's own effort/contribution lacking (exception: malefic AK in 6th is less concerning).
+  if ([6, 8, 12].includes(akHouse)) {
+    const exception = MP_isMalefic(AK) && akHouse === 6;
+    notes.push({
+      title: 'Atmakaraka (Self) in UL 6/8/12', kind: exception ? 'mild' : 'negative',
+      detail: `${AK} (Atmakaraka) falls in the ${akHouse}${akHouse===6?'th':akHouse===8?'th':'th'} house from the Upapada Lagna${exception ? `. Since ${AK} is itself a natural malefic and this is specifically the 6th, this is less concerning than usual` : ' — classically this indicates the native\'s own effort/involvement in the marriage falls short of what a good married life requires'}.`
+    });
+  }
+  // Rule: DK in UL's 6/8/12 -> spouse's own contribution lacking.
+  if ([6, 8, 12].includes(dkHouse)) {
+    const exception = MP_isMalefic(DK) && dkHouse === 6;
+    notes.push({
+      title: 'Darakaraka (Spouse) in UL 6/8/12', kind: exception ? 'mild' : 'negative',
+      detail: `${DK} (Darakaraka) falls in the ${dkHouse}th house from the Upapada Lagna${exception ? `. Being a natural malefic in specifically the 6th softens this reading` : ' — classically this indicates the spouse is not giving married life the attention/seriousness it needs, which becomes a source of friction'}.`
+    });
+  }
+  // Rule: DK in UL's 3/6/11 -> hardworking, professionally active spouse.
+  if ([3, 6, 11].includes(dkHouse)) {
+    notes.push({ title: 'Professionally Active Spouse', kind: 'info', detail: `${DK} (Darakaraka) falls in the ${dkHouse}th house from the Upapada Lagna — indicates a hard-working, professionally/career-active spouse.` });
+  }
+  // Rule: AK, DK, MK all in Kendra/Trikona from UL -> happy married life.
+  if (MK && kendraTrikona.includes(akHouse) && kendraTrikona.includes(dkHouse) && kendraTrikona.includes(mkHouse)) {
+    notes.push({ title: 'AK + DK + MK all Kendra/Trikona from UL', kind: 'positive', detail: `Atmakaraka, Darakaraka and Matrukaraka are ALL well-placed (Kendra/Trikona) from the Upapada Lagna — a strong, classical indicator of a genuinely happy married life with good roles played by both self and spouse.` });
+  }
+  // Rule: Venus in UL's 12th as AK or DK -> very auspicious.
+  if (planets.Venus && houseFromUL(planets.Venus.sn) === 12 && (AK === 'Venus' || DK === 'Venus')) {
+    notes.push({ title: 'Venus in UL 12th (as AK/DK)', kind: 'positive', detail: `Venus, as ${AK === 'Venus' ? 'Atmakaraka' : 'Darakaraka'}, falls in the 12th house from the Upapada Lagna — classically taken as very auspicious for married/bed-pleasure happiness.` });
+  }
+  // Rule: Gnatikaraka conjunct AK, or GK in Kendra/Trikona of UL (worse if GK is itself malefic).
+  if (GK) {
+    const gkWithAk = planets[GK].sn === planets[AK].sn;
+    const gkInKT = kendraTrikona.includes(gkHouse);
+    if (gkWithAk || gkInKT) {
+      const severity = MP_isMalefic(GK) ? 'more severe' : 'present but milder';
+      const houseWeight = gkHouse === 1 ? 'strongest impact (Lagna)' : gkHouse === 9 ? 'moderate impact (9th)' : gkHouse === 5 ? 'least impact, but still present (5th)' : `impact via house ${gkHouse}`;
+      notes.push({ title: 'Gnatikaraka (Obstruction) Disturbing UL', kind: 'negative', detail: `${GK} (Gnatikaraka, signifying obstruction/struggle) is ${gkWithAk ? 'conjunct the Atmakaraka' : `placed in the ${gkHouse}th (Kendra/Trikona) from the Upapada Lagna — ${houseWeight}`} — this is ${severity} because ${GK} is${MP_isMalefic(GK) ? '' : ' not'} a natural malefic, and indicates personal life disturbance tied to obstacles/rivalry.` });
+    }
+  }
+  // Rule: UL sign is a Fire sign, and AK/DK fall in dual (3/6/9/12) signs from UL -> not favourable, worse if both.
+  const ulIsFire = MP_FIRE_SIGNS.includes(ul.sn);
+  if (ulIsFire) {
+    const akSn = planets[AK].sn, dkSn = planets[DK].sn;
+    const akDual = MP_DUAL_SIGNS.includes(akSn), dkDual = MP_DUAL_SIGNS.includes(dkSn);
+    if (akDual || dkDual) {
+      notes.push({ title: 'Fire-sign UL with AK/DK in Dual Signs', kind: (akDual && dkDual) ? 'negative' : 'mild', detail: `The Upapada Lagna is a Fire sign (${ul.sign}), and ${akDual && dkDual ? 'BOTH the Atmakaraka and Darakaraka' : akDual ? 'the Atmakaraka' : 'the Darakaraka'} fall in a dual/mutable sign — classically not a favourable combination, ${akDual && dkDual ? 'more serious since both are affected; watch for repeated relationship instability or a possible second union' : 'though milder since only one of the two is affected'}.` });
+    }
+  }
+  // Rule: AK & DK both in Jupiter/Mercury/Venus-owned signs (Sag/Pis, Gem/Vir, Lib/Tau) -> practical, understanding marriage.
+  const practicalLords = ['Jupiter', 'Mercury', 'Venus'];
+  const akLordOwner = window.ASTRO_CONSTANTS.SIGN_LORDS[planets[AK].sn];
+  const dkLordOwner = window.ASTRO_CONSTANTS.SIGN_LORDS[planets[DK].sn];
+  if (practicalLords.includes(akLordOwner) && practicalLords.includes(dkLordOwner)) {
+    notes.push({ title: 'Practical, Understanding Marriage', kind: 'positive', detail: `Both Atmakaraka (in a sign owned by ${akLordOwner}) and Darakaraka (in a sign owned by ${dkLordOwner}) sit in Jupiter/Mercury/Venus-owned signs — indicates a sensible, practical marriage where both partners work through each other's flaws rather than separate over them.` });
+  }
+
+  return { ul, AK, DK, MK, GK, akHouse, dkHouse, mkHouse, gkHouse, notes };
+}
+
+function renderUpapadaCharKarakaVerdict(data) {
+  if (!data) return '';
+  const colorOf = { positive: '#00DD77', negative: '#FF4477', mild: '#FFD700', info: 'var(--cyan)' };
+  const rows = data.notes.length ? data.notes.map(n => `
+    <div style="margin:6px 0;padding:8px;border-left:3px solid ${colorOf[n.kind] || '#8888AA'};background:${colorOf[n.kind] || '#8888AA'}0D;border-radius:4px;">
+      <b style="font-size:9.5px;color:${colorOf[n.kind] || '#8888AA'};">${n.title}</b>
+      <div style="font-size:8.8px;color:var(--text);opacity:.9;margin-top:3px;line-height:1.45;">${n.detail}</div>
+    </div>`).join('') : `<div style="font-size:9px;color:var(--muted);padding:6px;">No specific Upapada/Char-Karaka combinations from this rule set triggered — a broadly neutral picture.</div>`;
+  return `<div class="biz-summary" style="border-color:var(--cyan);background:rgba(0,188,212,0.03);margin-top:20px;border-radius:12px;">
+      <h3 style="color:var(--cyan);font-size:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.05);">🕉️ Upapada Lagna &amp; Char Karaka Verdict (Jaimini)</h3>
+      <div style="font-size:9px;color:var(--muted);margin:8px 0;">Upapada Lagna: <b style="color:var(--gold);">${data.ul.sign}</b> (Kendra exception applied). AK=${data.AK} (H${data.akHouse} from UL), DK=${data.DK} (H${data.dkHouse} from UL)${data.MK ? `, MK=${data.MK} (H${data.mkHouse} from UL)` : ''}${data.GK ? `, GK=${data.GK} (H${data.gkHouse} from UL)` : ''}.</div>
+      ${rows}
+    </div>`;
+}
+
+// -------------------------------------------------------------------------
+// RULE SET 4 — Spouse Feature & Quality Profile (physical/personality),
+// synthesised from Darakaraka, 7th lord, Venus/Jupiter, and their signs +
+// nakshatras.
+// -------------------------------------------------------------------------
+const MP_KARAKA_SPOUSE_TRAITS = {
+  Sun: 'authoritative, proud, self-assured, and career/status-focused; may carry a commanding or official-minded presence',
+  Moon: 'emotionally expressive, nurturing, changeable in mood, home- and family-oriented',
+  Mars: 'assertive, energetic, direct, physically active; passionate but can run hot-tempered under stress',
+  Mercury: 'witty, communicative, intellectually sharp, adaptable; enjoys conversation, business or fine analytical work',
+  Jupiter: 'wise, traditional, generous, often a guiding or teaching presence in the relationship; may indicate a heavier/well-built or mature-looking partner',
+  Venus: 'attractive, artistic, charming, comfort- and beauty-loving; diplomatic and relationship-oriented',
+  Saturn: 'mature, reserved, serious, disciplined; often indicates an older, more responsible, or slow-to-open-up partner, sometimes with delay before the union settles'
+};
+const MP_ELEMENT_TRAITS = {
+  Fire: 'an energetic, confident bearing with a quick, assertive temperament',
+  Earth: 'a grounded, practical, stable presence with a reliable, hardworking temperament',
+  Air: 'a communicative, socially engaged presence with an intellectual, idea-driven temperament',
+  Water: 'a sensitive, emotionally deep presence with an intuitive, caring temperament'
+};
+
+function getSpouseFeatureQualityProfile(planets, asc, d9Planets, gender) {
+  if (!planets || !asc) return null;
+  const AC = window.ASTRO_CONSTANTS;
+  calculateCharkarakas();
+  const DK = Object.keys(planets).find(p => planets[p] && planets[p].karaka === 'DK');
+  const h7Sign = (asc.sn + 6) % 12, h7Lord = LORDS[h7Sign];
+  // Male charts: Venus is the primary spouse-karaka; Female charts: Jupiter.
+  // When gender isn't specified, show both, clearly labelled.
+  const refPoints = [];
+  if (DK && planets[DK]) refPoints.push({ tag: 'Darakaraka (Jaimini spouse significator)', planet: DK, pos: planets[DK] });
+  if (planets[h7Lord]) refPoints.push({ tag: '7th Lord (spouse house)', planet: h7Lord, pos: planets[h7Lord] });
+  if (!gender || gender === 'male') { if (planets.Venus) refPoints.push({ tag: 'Venus (male chart — spouse karaka)', planet: 'Venus', pos: planets.Venus }); }
+  if (!gender || gender === 'female') { if (planets.Jupiter) refPoints.push({ tag: 'Jupiter (female chart — spouse karaka)', planet: 'Jupiter', pos: planets.Jupiter }); }
+
+  const entries = refPoints.map(rp => {
+    const sn = rp.pos.sn;
+    const elem = AC.SIGN_ATTRIBUTES && AC.SIGN_ATTRIBUTES[sn] ? AC.SIGN_ATTRIBUTES[sn].element : null;
+    const nak = MP_nakInfo(rp.pos.sid !== undefined ? rp.pos.sid : (sn * 30 + (rp.pos.deg || 0)));
+    const dignity = MP_isExalted(rp.planet, sn) ? 'exalted (very strong expression of these traits)' : MP_isDebilitated(rp.planet, sn) ? 'debilitated (traits may express in a strained or suppressed way)' : MP_isOwnSign(rp.planet, sn) ? 'in own sign (a clear, confident expression)' : 'in a neutral sign';
+    return {
+      tag: rp.tag, planet: rp.planet, sign: SIGNS[sn], element: elem, dignity,
+      nakshatra: nak ? nak.name : null, nakTraits: nak ? nak.keyTraits : null, nakDeity: nak ? nak.deity : null,
+      personalityLine: MP_KARAKA_SPOUSE_TRAITS[rp.planet] || '',
+      elementLine: elem ? MP_ELEMENT_TRAITS[elem] : ''
+    };
+  });
+
+  return { entries, gender: gender || 'unspecified' };
+}
+
+function renderSpouseFeatureQualityProfile(data) {
+  if (!data || !data.entries.length) return '';
+  const rows = data.entries.map(e => `
+    <div style="margin:6px 0;padding:8px;border-left:3px solid var(--rose);background:rgba(255,68,119,.05);border-radius:4px;">
+      <b style="font-size:9.5px;color:var(--rose);">${e.tag}: ${e.planet} in ${e.sign}${e.nakshatra ? ' (' + e.nakshatra + ' Nakshatra)' : ''}</b>
+      <div style="font-size:8.8px;color:var(--text);opacity:.9;margin-top:3px;line-height:1.5;">
+        <b>Personality/feature signature:</b> ${e.personalityLine}.${e.elementLine ? ` As a ${e.element} sign, expect ${e.elementLine}.` : ''} Currently ${e.dignity}.
+        ${e.nakTraits ? `<br><b>Nakshatra flavour (${e.nakshatra}${e.nakDeity ? ', deity ' + e.nakDeity : ''}):</b> ${e.nakTraits}.` : ''}
+      </div>
+    </div>`).join('');
+  return `<div class="biz-summary" style="border-color:var(--rose);background:rgba(255,68,119,0.03);margin-top:20px;border-radius:12px;">
+      <h3 style="color:var(--rose);font-size:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.05);">👤 Spouse Feature &amp; Personality Quality</h3>
+      <div style="font-size:9px;color:var(--muted);margin:8px 0;">Synthesised from the Darakaraka (Jaimini), the 7th lord, and the classical spouse-karaka (Venus for a male chart, Jupiter for a female chart) — combining each planet's own significations, its sign's element, and its nakshatra's traits. Treat this as a composite tendency, not a literal physical description.</div>
+      ${rows}
+    </div>`;
+}
+
+// -------------------------------------------------------------------------
+// MASTER STEP-BY-STEP MARRIAGE PANEL — orchestrates all the rule sets above
+// (plus the existing timing/Upapada/spouse-nature functions already in this
+// file) into one numbered, step-by-step section. Safe to call independently
+// of runMarriageAnalysis() — e.g. from a dedicated "Step-by-Step Marriage"
+// tab/button — since it builds and returns its own HTML string rather than
+// writing directly to the DOM.
+// -------------------------------------------------------------------------
+function renderStepByStepMarriagePanel(planets, asc, opts) {
+  if (!planets || !asc) return '<div style="padding:20px;color:var(--muted);">Birth chart data not available.</div>';
+  opts = opts || {};
+  const d9Planets = opts.d9Planets || (typeof getChartPlanetsForDiv === 'function' ? (getChartPlanetsForDiv(9) || {}).planets : null);
+  const gender = opts.gender || null;
+  const L = (typeof LORDS !== 'undefined') ? LORDS : null;
+
+  const steps = [];
+
+  // Step 1 — Personality & lifelong theme (Lagna lord's Navamsa Adhipati).
+  try {
+    const lagnaLord = L[asc.sn];
+    const step1 = getNavamsaAdhipatiLifelongConnection(lagnaLord, planets, asc, d9Planets, 'Lagna Lord — Personality/Life Theme');
+    steps.push({ n: 1, title: 'Personality & Lifelong Life-Theme', html: renderNavamsaAdhipatiConnections([step1]) });
+  } catch (e) { console.error('STEP1 FAIL', e); }
+
+  // Step 2 — Spouse feature & personality quality.
+  try {
+    const spouseProfile = getSpouseFeatureQualityProfile(planets, asc, d9Planets, gender);
+    steps.push({ n: 2, title: 'Spouse Feature & Personality Quality', html: renderSpouseFeatureQualityProfile(spouseProfile) });
+  } catch (e) { console.error('STEP2 FAIL', e); }
+
+  // Step 3 — Good-nature-but-difficult-marriage 6-rule check.
+  try {
+    const gnData = getGoodNatureMarriageAfflictionChecks(planets, asc, d9Planets);
+    steps.push({ n: 3, title: 'Why Marriage May Be Hard Despite Good Nature', html: renderGoodNatureMarriageAfflictionChecks(gnData) });
+  } catch (e) { console.error('STEP3 FAIL', e); }
+
+  // Step 4 — Navamsa (D9) effect on marriage life-theme (7th lord's Navamsa Adhipati).
+  try {
+    const h7Sign = (asc.sn + 6) % 12, h7Lord = L[h7Sign];
+    const step4 = getNavamsaAdhipatiLifelongConnection(h7Lord, planets, asc, d9Planets, '7th Lord — Married-Life Theme');
+    steps.push({ n: 4, title: 'Navamsa Effect on Married Life', html: renderNavamsaAdhipatiConnections([step4]) });
+  } catch (e) { console.error('STEP4 FAIL', e); }
+
+  // Step 5 — Upapada Lagna & Char Karaka verdict.
+  try {
+    const ulData = getUpapadaCharKarakaVerdict(planets, asc);
+    steps.push({ n: 5, title: 'Upapada Lagna & Char Karaka Verdict', html: renderUpapadaCharKarakaVerdict(ulData) });
+  } catch (e) { console.error('STEP5 FAIL', e); }
+
+  // Step 6 — Marriage timing (early vs. delayed), reusing the existing Lagna/2nd/7th method.
+  try {
+    if (typeof getMarriageTimingAnalysis === 'function') {
+      const timing = getMarriageTimingAnalysis(planets, asc.sn, d9Planets, L);
+      steps.push({ n: 6, title: 'Timing of Marriage — Early vs. Delayed', html: renderMarriageTimingAnalysis(timing) });
+    }
+  } catch (e) { console.error('STEP6 FAIL', e); }
+
+  // Step 7 — Life after marriage (18-month effects).
+  try {
+    const lifeAfter = getLifeAfterMarriageAnalysis(planets, asc, d9Planets);
+    steps.push({ n: 7, title: 'Life After Marriage — 18-Month Effects', html: renderLifeAfterMarriageAnalysis(lifeAfter) });
+  } catch (e) { console.error('STEP7 FAIL', e); }
+
+  const nav = steps.map(s => `<span style="display:inline-block;margin:2px 6px 2px 0;padding:3px 9px;border-radius:12px;background:rgba(255,215,0,.1);color:var(--gold);font-size:9px;font-weight:bold;">Step ${s.n}: ${s.title}</span>`).join('');
+  const body = steps.map(s => s.html).join('');
+
+  return `<div style="margin-top:10px;">
+      <div style="padding:10px 12px;background:rgba(0,0,0,.25);border-radius:8px;margin-bottom:6px;border:1px solid rgba(255,255,255,.06);">
+        <div style="font-size:11px;color:var(--gold);font-weight:900;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;">💍 Step-by-Step Marriage Analysis</div>
+        ${nav}
+      </div>
+      ${body}
+    </div>`;
+}
+
+// Convenience entry point mirroring runMarriageAnalysis()'s DOM-writing
+// pattern, for a dedicated "Step-by-Step" button/tab if one exists.
+function runStepByStepMarriagePanel(targetElId, gender) {
+  const el = document.getElementById(targetElId || 'marriageContent');
+  if (!el || !BIRTH_PLANETS || !BIRTH_ASC) return;
+  const d9 = (typeof getChartPlanetsForDiv === 'function') ? getChartPlanetsForDiv(9) : null;
+  el.innerHTML = renderStepByStepMarriagePanel(BIRTH_PLANETS, BIRTH_ASC, { d9Planets: d9 ? d9.planets : null, gender: gender });
 }

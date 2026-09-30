@@ -4204,6 +4204,21 @@ function renderDashaPanel() {
       });
     } catch (e) { console.error('KP Part 9 render failed:', e); }
   }
+    // ── KP PART 10 — Most Powerful Planet (via reverse Nakshatra-Lord
+  // placement, H11 by default) + a Job-Change two-phase read (5th/9th end
+  // a job, 2nd/6th/10th/11th give one) for the currently running
+  // Mahadasha. ──
+  if (window.KP_PREDICTION_10 && typeof window.KP_PREDICTION_10.renderForPanel === 'function') {
+    try {
+        //alert ('kp10');
+        html += `<div class="KP_PREDICTION_10" style="font-family:'Outfit', sans-serif; color:var(--text); line-height:1.6;">`;
+      html += window.KP_PREDICTION_10.renderForPanel({
+        mahaLord: refV?.lord, adLord: refAD?.lord, pdLord: refPD?.lord,
+        sdLord: refSD?.lord, praLord: refPra?.lord,
+        natalPlanets: BIRTH_PLANETS, natalAsc: BIRTH_ASC
+      });
+    } catch (e) { console.error('KP Part 10 render failed:', e); }
+  }
   c.innerHTML = html;
 }
 
@@ -4311,7 +4326,7 @@ function renderMoneyGainTrail(){
   // Current status — Jupiter's position right now (the app's viewing date, centerDate),
   // shown as a clear badge. The actual "background" visual (shaded gain windows across
   // the visible range) is painted directly inside drawMainChart() itself, on the same
-  // canvas — a separate layered canvas can't show through mainChart's own opaque
+  // canvas — a separ)ate layered canvas can't show through mainChart's own opaque
   // background fill, so this is done as an in-canvas background layer instead.
   const nowPos = getPos(centerDate);
   if(nowPos && nowPos.Jupiter){
