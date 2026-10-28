@@ -1035,6 +1035,61 @@ const AI_PREDICTION = (function() {
         };
         return interpretations[ak] || `${ak} as Atmakaraka in ${sign} shapes the soul's journey.`;
     }
+
+    /**
+     * Helper to sort planets by degree and get the Nth highest
+     */
+    function getNthKaraka(planets, n) {
+        const sorted = planets
+            .filter(p => p && !['Rahu', 'Ketu', 'Sun'].includes(p.name))
+            .sort((a, b) => b.degree - a.degree);
+        return sorted[n] || null;
+    }
+
+    /**
+     * Calculate the 2nd highest degree planet (Amatyakaraka)
+     */
+    function calculateSecondKaraka(planets) {
+        return getNthKaraka(planets, 1);
+    }
+
+    /**
+     * Calculate the 3rd highest degree planet (Bhratrikaraka)
+     */
+    function calculateThirdKaraka(planets) {
+        return getNthKaraka(planets, 2);
+    }
+
+    /**
+     * Calculate the 4th highest degree planet (Matrikaraka)
+     */
+    function calculateFourthKaraka(planets) {
+        return getNthKaraka(planets, 3);
+    }
+
+    /**
+     * Calculate the 5th highest degree planet (Putrakaraka)
+     */
+    function calculateFifthKaraka(planets) {
+        return getNthKaraka(planets, 4);
+    }
+
+    /**
+     * Calculate the 6th highest degree planet (Gnatikaraka)
+     */
+    function calculateSixthKaraka(planets) {
+        return getNthKaraka(planets, 5);
+    }
+
+    /**
+     * Calculate the 7th highest degree planet (Darakaraka)
+     */
+    function calculateSeventhKaraka(planets) {
+        return getNthKaraka(planets, 6);
+    }
+
+    // ========== SECTION 12.5: BHAVAT BHAVAM SPECIALIZED HOROSCOPES ==========
+
     
     // ========== SECTION 12.5: BHAVAT BHAVAM SPECIALIZED HOROSCOPES ==========
     
@@ -1714,12 +1769,23 @@ const AI_PREDICTION = (function() {
                 moonNakshatra: analyzeNakshatra(moonAnalyzed.longitude || moonAnalyzed.degree)
             },
             
+
             // Section 2: Jaimini Chara Karakas & Karakamasa
             jaimini: {
                 charaKarakas: calculateCharaKarakas(planetsToUse),
                 atmakaraka: atmakaraka,
                 karakamasa: karakamasa,
-                charaDasha: birthDate ? calculateCharaDasha(asc.signIndex, planetsToUse, birthDate) : []
+                charaDasha: birthDate ? calculateCharaDasha(asc.signIndex, planetsToUse, birthDate) : [],
+                // Comprehensive 7-karaka analysis
+                sevenKarakas: {
+                    atmakaraka: planetsToUse.find(p => p.name === atmakaraka),
+                    amatyakaraka: calculateSecondKaraka(planetsToUse, atmakaraka),
+                    bhratrikaraka: calculateThirdKaraka(planetsToUse, atmakaraka),
+                    matrikaraka: calculateFourthKaraka(planetsToUse, atmakaraka),
+                    putrakaraka: calculateFifthKaraka(planetsToUse, atmakaraka),
+                    gnatikaraka: calculateSixthKaraka(planetsToUse, atmakaraka),
+                    darakaraka: calculateSeventhKaraka(planetsToUse, atmakaraka)
+                }
             },
 
             // Section 3: Tajika Varshaphala
@@ -1813,7 +1879,19 @@ const AI_PREDICTION = (function() {
                 houseNature: HOUSE_NATURE[houseNum]
             });
         }
-        
+
+        // Jemini predictions — computed AFTER report is fully built so report.houses / report.jaimini are available
+        if (window.JEMINI_PREDICTION) {
+            report.jaimini.jeminiPredictions = window.JEMINI_PREDICTION.generateJaiminiPredictions({
+                natal: {
+                    planets: planetsToUse,
+                    houses: report.houses || []
+                },
+                jaimini: report.jaimini,
+                arudha: report.arudha
+            });
+        }
+
         return report;
     }
     
@@ -2041,6 +2119,66 @@ const AI_PREDICTION = (function() {
             </div>`;
         }
 
+        // ── JEMINI (JAMINI) PREDICTION MODULE ──────────────────────────────
+        // Add Jaimini-based predictions including 7 Karakas, Karakamsa, Chara Chart
+        if (report.jaimini?.jeminiPredictions) {
+            const jp = report.jaimini.jeminiPredictions;
+            html += `\n        <div style="background:rgba(255, 215, 0, 0.06);border:1px solid rgba(255, 215, 0, 0.3);border-radius:12px;padding:16px;margin-bottom:20px;">
+              <div style="font-size:13px;font-weight:bold;color:#FFD700;margin-bottom:10px;">✨ JEMINI (Jaimini) PREDICTION MODULE</div>
+          
+              <!-- Atmakaraka Analysis -->
+              ${jp.atmakarakaAnalysis.planet ? `
+                <div style="background:rgba(255,255,255,0.03);padding:10px 14px;border-radius:6px;margin-bottom:8px;">
+                  <div style="color:#FFD700;font-size:10px;font-weight:bold;margin-bottom:4px;">🔥 Atmakaraka (AK)</div>
+                  <div style="font-size:11px;color:var(--text);line-height:1.6;">${jp.atmakarakaAnalysis.prediction}</div>
+                </div>` : ''}
+          
+              <!-- Amatyakaraka Analysis -->
+              ${jp.amatyakarakaAnalysis.planet ? `
+                <div style="background:rgba(255,255,255,0.03);padding:10px 14px;border-radius:6px;margin-bottom:8px;">
+                  <div style="color:#FFD700;font-size:10px;font-weight:bold;margin-bottom:4px;">💼 Amatyakaraka (AmK)</div>
+                  <div style="font-size:11px;color:var(--text);line-height:1.6;">${jp.amatyakarakaAnalysis.prediction}</div>
+                </div>` : ''}
+          
+              <!-- Darakaraka Analysis -->
+              ${jp.darakarakaAnalysis.planet ? `
+                <div style="background:rgba(255,255,255,0.03);padding:10px 14px;border-radius:6px;margin-bottom:8px;">
+                  <div style="color:#FFD700;font-size:10px;font-weight:bold;margin-bottom:4px;">💍 Darakaraka (DK)</div>
+                  <div style="font-size:11px;color:var(--text);line-height:1.6;">${jp.darakarakaAnalysis.prediction}</div>
+                </div>` : ''}
+          
+              <!-- Karakamsa Analysis -->
+              ${jp.karakamsaAnalysis ? `
+                <div style="background:rgba(255,255,255,0.03);padding:10px 14px;border-radius:6px;margin-bottom:8px;">
+                  <div style="color:#FFD700;font-size:10px;font-weight:bold;margin-bottom:4px;">✨ Karakamsa (Swamsa)</div>
+                  <div style="font-size:11px;color:var(--text);line-height:1.6;">${jp.karakamsaAnalysis.detailed?.description || jp.karakamsaAnalysis.meaning}</div>
+                </div>` : ''}
+          
+              <!-- Chara Dasha Analysis -->
+              ${jp.charaDashaAnalysis ? `
+                <div style="background:rgba(255,255,255,0.03);padding:10px 14px;border-radius:6px;margin-bottom:8px;">
+                  <div style="color:#FFD700;font-size:10px;font-weight:bold;margin-bottom:4px;">📅 Chara Dasha</div>
+                  <div style="font-size:11px;color:var(--text);line-height:1.6;">${jp.charaDashaAnalysis.description}</div>
+                </div>` : ''}
+          
+              <!-- Jaimini Aspects -->
+              ${jp.jaiminiAspects && jp.jaiminiAspects.length > 0 ? `
+                <div style="background:rgba(255,255,255,0.03);padding:10px 14px;border-radius:6px;margin-bottom:8px;">
+                  <div style="color:#FFD700;font-size:10px;font-weight:bold;margin-bottom:4px;">🔮 Jaimini Sign Aspects</div>
+                  <div style="font-size:11px;color:var(--text);line-height:1.6;">${jp.jaiminiAspects.slice(0,3).map(a=>`${a.planet1} -> ${a.planet2} (${a.type}): ${a.note}`).join('<br>') || 'No aspects'}</div>
+                </div>` : ''}
+              
+              <!-- Main Predictions -->
+              ${jp.predictions.length > 0 ? `
+                <div style="margin-top:10px;">
+                  <div style="color:#FFD700;font-size:10px;font-weight:bold;margin-bottom:6px;">🎯 Key Predictions:</div>
+                  ${jp.predictions.slice(0,3).map(p=>`
+                    <div style="font-size:11px;color:var(--text);line-height:1.6;margin-bottom:5px;"><strong>${p.title}:</strong> ${p.content}</div>`).join('')}
+                </div>` : ''}
+            </div>`;
+        }
+
+
         // ── REMEDIES ──────────────────────────────────────────────────────
         if (report.remedies && report.remedies.length > 0) {
             html += `
@@ -2104,7 +2242,33 @@ const AI_PREDICTION = (function() {
         MALEFICS,
         SIGNS,
         SIGN_LORDS,
-        NAKSHATRAS
+        NAKSHATRAS,
+
+        // Jemini (Jaimini) Module
+        generateJeminiPredictions: function(report) {
+            if (window.JEMINI_PREDICTION) {
+                return window.JEMINI_PREDICTION.generateJaiminiPredictions(report);
+            }
+            return null;
+        },
+        analyzeJaiminiAspects: function(planets) {
+            if (window.JEMINI_PREDICTION) {
+                return window.JEMINI_PREDICTION.calculateJaiminiAspects(planets);
+            }
+            return [];
+        },
+        getVargaCharts: function() {
+            if (window.JEMINI_PREDICTION) {
+                return window.JEMINI_PREDICTION.getVargaCharts();
+            }
+            return [];
+        },
+        analyzeVargaCharts: function(chartData) {
+            if (window.JEMINI_PREDICTION) {
+                return window.JEMINI_PREDICTION.analyzeVargaCharts(chartData);
+            }
+            return { charts: {}, keyInsights: [], recommendations: [] };
+        }
     };
 
     // ========== SECTION 21: BNN & JAIMINI ANALYSIS ENGINE ==========

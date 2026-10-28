@@ -86,6 +86,7 @@
     <button class="btn" id="btnPrashna" title="Prashna Kundali (Horary Astrology)" style="border-color:rgba(155,111,255,.4);color:rgba(155,111,255,.6);">🔮 PRASHNA</button>
     <button class="btn" id="btnYogas" title="Show Important Yogas" style="border-color:rgba(255,215,0,.4);color:rgba(255,215,0,.6);">✨ YOGAS</button>
     <button class="btn violet" id="btnPredictions" title="Show Predictions & Forecasts">🔮 PREDICTIONS</button>
+    <button class="btn violet" id="btnJemini" title="Jemini (Jaimini) Analysis">✶ JAIMINI</button>
     <button class="btn" id="btnNumerology" title="Numerology (Lo Shu Grid) Analysis" style="border-color:rgba(0,191,255,.4);color:rgba(0,191,255,.6);">🔢 NUMEROLOGY</button>
     <button class="btn" id="btnLalKitab" title="Lal Kitab Remedies & Predictions" style="border-color:rgba(255,68,68,.4);color:rgba(255,68,68,.6);">🔴 LAL KITAB</button>
      <button class="btn" id="btnDiseasePredictor" title="Disease Predictor — Indian Astrology and Diseases (Parimal Purkāyastha, 1956)" style="border-color:rgba(255,68,68,.4);color:rgba(255,68,68,.7);">🩺 DISEASES</button>
@@ -634,7 +635,31 @@
   </div>
 </div>
 
-<!-- PRASHNA (HORARY) PANEL -->
+<!-- JAIMINI (JAIMINI) ANALYSIS PANEL -->
+<div id="jaiminiPanel" style="position:fixed;right:0;top:0;bottom:0;width:560px;max-width:100vw;background:rgba(4,4,18,.98);border-left:1px solid var(--border2);z-index:200;transform:translateX(100%);transition:transform .3s cubic-bezier(.25,.46,.45,.94);overflow-y:auto;backdrop-filter:blur(12px);">
+  <div class="conj-hdr">
+    <h2 style="color:#FFD700">✶ JAIMINI (JAIMINI) ANALYSIS</h2>
+    <div style="display:flex;gap:10px;align-items:center;">
+       <button class="close-btn" id="closeJaimini">✕</button>
+    </div>
+  </div>
+  <div style="padding:8px 12px;font-family:'Courier New',monospace;font-size:9px;color:var(--muted);background:rgba(255,215,0,.05);border-bottom:1px solid var(--border);">
+    Chara Karakas · Chara Dasha · Karakamsa · Char Lagna — Jaimini Sutras methodology
+  </div>
+  <div style="padding:15px;background:rgba(255,215,0,0.05);border-bottom:1px solid var(--border);">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.5;">
+      Computes Atmakaraka, Amatyakaraka, Darakaraka and all 7 Chara Karakas from the natal chart, derives the Char Lagna, Karakamsa and the sign-based Chara Dasha timeline.
+    </div>
+    <button class="btn primary" id="btnGenerateJaimini" style="width:100%; border-color:#FFD700; color:#FFD700; background:rgba(255,215,0,.1); padding:8px;">⟲ Generate Jaimini Analysis</button>
+  </div>
+  <div id="jaiminiContent" style="padding-bottom:100px;">
+    <div style="text-align:center;padding:40px 20px;color:var(--muted);font-family:'Courier New',monospace;font-size:11px;">
+      Click 'Generate' to run the full Jaimini chart analysis.
+    </div>
+  </div>
+</div>
+
+
 <div id="prashnaPanel">
   <div class="conj-hdr">
     <h2 style="color:var(--violet)">🔮 PRASHNA KUNDALI</h2>
@@ -1075,6 +1100,8 @@
 <script src="./src/data/celebrities_data.js"></script>
 
 <!-- Prediction System Files -->
+ 
+ 
 <script src="./src/predictions/logic/analysis.js"></script>
 <script src="./src/features/ashtakvarga/ashtakvarga_core.js"></script>
 <script src="./src/features/ashtakvarga/ashtakvarga_secrets.js"></script>
@@ -1131,6 +1158,8 @@
 <script src="./src/predictions/logic/bnn_prediction.js"></script>
 <script src="./src/predictions/logic/bnn_engine.js"></script>
 <script src="./src/predictions/logic/bnn_logic.js"></script>
+
+
 <script src="./src/predictions/logic/predictions_ui.js"></script>
 <script src="./src/predictions/logic/gochar.js"></script>
 <script src="./src/predictions/logic/sawhney_event_timing.js"></script>
@@ -1146,6 +1175,7 @@
 <script src="./src/predictions/logic/KP_prediction_8.js"></script>
 <script src="./src/predictions/logic/KP_prediction_9.js"></script>
 <script src="./src/predictions/logic/KP_prediction_10.js"></script>
+<script src="./src/predictions/logic/KP_prediction_11.js"></script>
 <script src="./src/predictions/logic/RKP.js"></script>
 <!-- Test Verification -->
 <script src="./src/predictions/logic/test_verification.js"></script>
@@ -1159,6 +1189,9 @@
 <script src="./src/features/lalkitab/lalkitab.js"></script>
 
 <script src="./src/predictions/logic/AI_prediction.js"></script>
+<script src="./src/predictions/logic/jemini_prediction.js"></script>
+<script src="./src/predictions/logic/varga_text_analysis.js"></script>
+
 <!-- Scripts moved -->
 <script src="./assets/js/main.js"></script>
 </body>

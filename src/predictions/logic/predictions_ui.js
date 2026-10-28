@@ -139,6 +139,98 @@ function initPredictionsUI() {
 
   console.log('✅ Predictions UI initialized');
 }
+document.addEventListener('DOMContentLoaded', function () {
+    // ── Jaimini panel open / close ─────────────────────────────────
+    const jeminiBtn    = document.getElementById('btnJemini');
+    const jaiminiPanel = document.getElementById('jaiminiPanel');
+    const closeJaimini = document.getElementById('closeJaimini');
+    const btnGenerate  = document.getElementById('btnGenerateJaimini');
+
+    if (jeminiBtn && jaiminiPanel) {
+        jeminiBtn.addEventListener('click', () => {
+            jaiminiPanel.style.transform = 'translateX(0)';
+        });
+    }
+
+    if (closeJaimini && jaiminiPanel) {
+        closeJaimini.addEventListener('click', () => {
+            jaiminiPanel.style.transform = 'translateX(100%)';
+        });
+    }
+
+    if (btnGenerate) {
+        btnGenerate.addEventListener('click', runJaiminiAnalysis);
+    }
+
+    function runJaiminiAnalysis() {
+        const contentDiv = document.getElementById('jaiminiContent');
+        if (!contentDiv) return;
+
+        if (!window.JEMINI_PREDICTION) {
+            contentDiv.innerHTML = `<div style="padding:20px;color:var(--rose);font-family:'Courier New',monospace;font-size:11px;">
+                ⚠ JEMINI_PREDICTION module not loaded.<br>
+                Ensure jemini_prediction.js is included in index.html.
+            </div>`;
+            return;
+        }
+
+        // Gather planet data from available globals
+        const planets = window.BIRTH_PLANETS || window.CURRENT_PLANETARY_POSITIONS || null;
+        const ascObj  = window.BIRTH_ASC || window.CURRENT_ASCENDANT || null;
+
+        if (!planets || Object.keys(planets).length === 0) {
+            contentDiv.innerHTML = `<div style="padding:20px;color:var(--rose);font-family:'Courier New',monospace;font-size:11px;">
+                ⚠ No birth chart data found.<br>
+                Please enter birth details and click <strong>Calculate &amp; Close</strong> first.
+            </div>`;
+            return;
+        }
+
+        // Normalise planets: ensure each planet has a numeric .longitude
+        const normalisedPlanets = {};
+        Object.entries(planets).forEach(([name, data]) => {
+            if (!data) return;
+            normalisedPlanets[name] = {
+                longitude: data.sid !== undefined ? data.sid : (data.longitude || 0),
+                sign:      data.sign || '',
+                degree:    data.degree !== undefined ? data.degree
+                           : ((data.sid !== undefined ? data.sid : (data.longitude || 0)) % 30)
+            };
+        });
+
+        // Lagna sign
+        let lagnaSign = 'Aries';
+        if (ascObj) {
+            if (ascObj.sign) {
+                lagnaSign = ascObj.sign;
+            } else if (typeof ascObj.signIndex === 'number') {
+                const signs = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo',
+                               'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+                lagnaSign = signs[ascObj.signIndex] || 'Aries';
+            } else if (typeof ascObj.sid === 'number') {
+                const signs = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo',
+                               'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+                lagnaSign = signs[Math.floor(ascObj.sid / 30) % 12] || 'Aries';
+            }
+        }
+
+        const birthDate = (window.BIRTH && window.BIRTH.date) ? window.BIRTH.date : new Date();
+
+        try {
+            contentDiv.innerHTML = `<div style="padding:20px;text-align:center;color:var(--cyan);
+                font-family:'Courier New',monospace;font-size:11px;">⟳ Computing Jaimini analysis…</div>`;
+
+            const analysis = window.JEMINI_PREDICTION.generateJaiminiAnalysis(normalisedPlanets, lagnaSign, birthDate);
+            contentDiv.innerHTML = window.JEMINI_PREDICTION.generateJaiminiHTML(analysis);
+        } catch (err) {
+            console.error('Jaimini analysis failed:', err);
+            contentDiv.innerHTML = `<div style="padding:20px;color:var(--rose);font-family:'Courier New',monospace;font-size:11px;">
+                ⚠ Error running Jaimini analysis:<br>${err.message}
+            </div>`;
+        }
+    }
+});
+
 
 /**
  * Show progress in the UI
@@ -450,6 +542,18 @@ async function updatePredictionsDisplay() {
             } catch (kp9Err) {
               console.error('KP Part 9 analysis failed:', kp9Err);
               html += `<div class="pred-item"><div class="pred-title">⚠️ KP Part 9 analysis error</div><div class="pred-detail">${kp9Err.message}</div></div>`;
+            }
+          }
+          // KP Part 11 — Krishnamurti Ansh Phale (249-division table):
+          // nature (Lagna row), disease (6th cusp row), profession (10th cusp row).
+          if (window.KP_PREDICTION_11) {
+            try {
+              html += window.KP_PREDICTION_11.renderForPanel({
+                natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC,
+                sectionClass: 'pred-section-title'
+              });
+            } catch (kp11Err) {
+              console.error('KP Part 11 analysis failed:', kp11Err);
             }
           }
         } catch (kpMainErr) {
