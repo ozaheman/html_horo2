@@ -1,0 +1,396 @@
+{
+  "1981-09-18_01-20": {
+    "birth": "1981-09-18T01:20:00+05:30",
+    "birthLabel": "18 September 1981 01:20 Mumbai",
+    "planets": {
+      "Sun": {
+        "sid": 151.32305555555556,
+        "expectedLords": [
+          "MER",
+          "SUN",
+          "JUP",
+          "JUP"
+        ]
+      },
+      "Moon": {
+        "sid": 21.291111111111114,
+        "expectedLords": [
+          "MAR",
+          "VEN",
+          "JUP",
+          "SUN"
+        ]
+      },
+      "Mars": {
+        "sid": 106.39694444444446,
+        "expectedLords": [
+          "MON",
+          "SAT",
+          "JUP",
+          "MAR"
+        ]
+      },
+      "Mercury": {
+        "sid": 176.86194444444445,
+        "expectedLords": [
+          "MER",
+          "MAR",
+          "JUP",
+          "MER"
+        ]
+      },
+      "Jupiter": {
+        "sid": 171.59083333333334,
+        "expectedLords": [
+          "MER",
+          "MON",
+          "VEN",
+          "JUP"
+        ]
+      },
+      "Venus": {
+        "sid": 192.1875,
+        "expectedLords": [
+          "VEN",
+          "RAH",
+          "SAT",
+          "RAH"
+        ]
+      },
+      "Saturn": {
+        "sid": 167.09833333333333,
+        "expectedLords": [
+          "MER",
+          "MON",
+          "SAT",
+          "MAR"
+        ]
+      },
+      "Rahu": {
+        "sid": 95.24333333333334,
+        "expectedLords": [
+          "MON",
+          "SAT",
+          "SAT",
+          "JUP"
+        ]
+      },
+      "Ketu": {
+        "sid": 275.24333333333334,
+        "expectedLords": [
+          "SAT",
+          "SUN",
+          "MER",
+          "MER"
+        ]
+      }
+    },
+    "cusps": [
+      {
+        "sid": 80.60472222222222,
+        "expectedLords": [
+          "MER",
+          "JUP",
+          "JUP",
+          "MER"
+        ]
+      },
+      {
+        "sid": 105.3875,
+        "expectedLords": [
+          "MON",
+          "SAT",
+          "JUP",
+          "SAT"
+        ]
+      },
+      {
+        "sid": 132.81694444444443,
+        "expectedLords": [
+          "SUN",
+          "KET",
+          "MER",
+          "JUP"
+        ]
+      },
+      {
+        "sid": 164.13111111111112,
+        "expectedLords": [
+          "MER",
+          "MON",
+          "JUP",
+          "SAT"
+        ]
+      },
+      {
+        "sid": 197.73749999999998,
+        "expectedLords": [
+          "VEN",
+          "RAH",
+          "SUN",
+          "JUP"
+        ]
+      },
+      {
+        "sid": 230.3525,
+        "expectedLords": [
+          "MAR",
+          "MER",
+          "VEN",
+          "RAH"
+        ]
+      },
+      {
+        "sid": 260.6047222222222,
+        "expectedLords": [
+          "JUP",
+          "VEN",
+          "JUP",
+          "SAT"
+        ]
+      },
+      {
+        "sid": 285.3875,
+        "expectedLords": [
+          "SAT",
+          "MON",
+          "JUP",
+          "MAR"
+        ]
+      },
+      {
+        "sid": 312.81694444444446,
+        "expectedLords": [
+          "SAT",
+          "RAH",
+          "MER",
+          "MER"
+        ]
+      },
+      {
+        "sid": 344.1311111111111,
+        "expectedLords": [
+          "JUP",
+          "SAT",
+          "RAH",
+          "KET"
+        ]
+      },
+      {
+        "sid": 17.7375,
+        "expectedLords": [
+          "MAR",
+          "VEN",
+          "MAR",
+          "MER"
+        ]
+      },
+      {
+        "sid": 50.3525,
+        "expectedLords": [
+          "VEN",
+          "MON",
+          "KET",
+          "MER"
+        ]
+      }
+    ]
+  },
+  "1977-10-07_23-45": {
+    "birth": "1977-10-07T23:45:00+05:30",
+    "birthLabel": "7 October 1977 23:45 Mumbai",
+    "planets": {
+      "Sun": {
+        "sid": 170.91222222222223,
+        "expectedLords": [
+          "MER",
+          "MON",
+          "VEN",
+          "SUN"
+        ]
+      },
+      "Moon": {
+        "sid": 107.52888888888889,
+        "expectedLords": [
+          "MON",
+          "MER",
+          "MER",
+          "MON"
+        ]
+      },
+      "Mars": {
+        "sid": 87.53805555555556,
+        "expectedLords": [
+          "MER",
+          "JUP",
+          "VEN",
+          "RAH"
+        ]
+      },
+      "Mercury": {
+        "sid": 162.53527777777776,
+        "expectedLords": [
+          "MER",
+          "MON",
+          "RAH",
+          "SAT"
+        ]
+      },
+      "Jupiter": {
+        "sid": 72.18833333333333,
+        "expectedLords": [
+          "MER",
+          "RAH",
+          "SAT",
+          "RAH"
+        ]
+      },
+      "Venus": {
+        "sid": 145.06194444444446,
+        "expectedLords": [
+          "SUN",
+          "VEN",
+          "MER",
+          "RAH"
+        ]
+      },
+      "Saturn": {
+        "sid": 123.59444444444443,
+        "expectedLords": [
+          "SUN",
+          "KET",
+          "SUN",
+          "VEN"
+        ]
+      },
+      "Rahu": {
+        "sid": 171.60861111111112,
+        "expectedLords": [
+          "MER",
+          "MON",
+          "VEN",
+          "JUP"
+        ]
+      },
+      "Ketu": {
+        "sid": 351.60861111111114,
+        "expectedLords": [
+          "JUP",
+          "MER",
+          "SUN",
+          "MON"
+        ]
+      }
+    },
+    "cusps": [
+      {
+        "sid": 76.965,
+        "expectedLords": [
+          "MER",
+          "RAH",
+          "VEN",
+          "SAT"
+        ]
+      },
+      {
+        "sid": 101.63527777777779,
+        "expectedLords": [
+          "MON",
+          "SAT",
+          "MON",
+          "SAT"
+        ]
+      },
+      {
+        "sid": 128.69361111111112,
+        "expectedLords": [
+          "SUN",
+          "KET",
+          "JUP",
+          "VEN"
+        ]
+      },
+      {
+        "sid": 159.68833333333333,
+        "expectedLords": [
+          "MER",
+          "SUN",
+          "VEN",
+          "MER"
+        ]
+      },
+      {
+        "sid": 193.39416666666665,
+        "expectedLords": [
+          "VEN",
+          "RAH",
+          "MER",
+          "MON"
+        ]
+      },
+      {
+        "sid": 226.41166666666666,
+        "expectedLords": [
+          "MAR",
+          "SAT",
+          "JUP",
+          "RAH"
+        ]
+      },
+      {
+        "sid": 256.965,
+        "expectedLords": [
+          "JUP",
+          "VEN",
+          "MON",
+          "MER"
+        ]
+      },
+      {
+        "sid": 281.6352777777778,
+        "expectedLords": [
+          "SAT",
+          "MON",
+          "MAR",
+          "KET"
+        ]
+      },
+      {
+        "sid": 308.6936111111111,
+        "expectedLords": [
+          "SAT",
+          "RAH",
+          "JUP",
+          "JUP"
+        ]
+      },
+      {
+        "sid": 339.68833333333333,
+        "expectedLords": [
+          "JUP",
+          "SAT",
+          "VEN",
+          "SAT"
+        ]
+      },
+      {
+        "sid": 13.394166666666667,
+        "expectedLords": [
+          "MAR",
+          "VEN",
+          "VEN",
+          "VEN"
+        ]
+      },
+      {
+        "sid": 46.41166666666666,
+        "expectedLords": [
+          "VEN",
+          "MON",
+          "SAT",
+          "KET"
+        ]
+      }
+    ]
+  }
+}

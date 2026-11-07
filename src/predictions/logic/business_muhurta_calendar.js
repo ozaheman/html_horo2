@@ -261,6 +261,82 @@ window.BUSINESS_MUHURTA = {
         setTimeout(() => URL.revokeObjectURL(url), 2000);
     },
 
+    // ===================== GOOGLE CALENDAR (EXPLICIT USER-AUTHORIZED SYNC) =====================
+
+    /** Returns a portable UTC event, independent of the browser's local timezone. */
+    calendarEventPayload: function (ev) {
+        if (!ev || !ev.dateTime || !Number.isFinite(Number(ev.utcOffsetHours))) throw new Error('Missing event time zone offset.');
+        const d = ev.dateTime;
+        const local = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), 0);
+        const utcStart = local - Number(ev.utcOffsetHours) * 3600000;
+        if (!Number.isFinite(utcStart)) throw new Error('Invalid event date.');
+        const start = new Date(utcStart), end = new Date(utcStart + (ev.durationMinutes || 60) * 60000);
+        return {
+            summary: String(ev.summary || 'Auspicious business event'),
+            description: String(ev.description || ''),
+            start: { dateTime: start.toISOString(), timeZone: 'UTC' },
+            end: { dateTime: end.toISOString(), timeZone: 'UTC' },
+            extendedProperties: { private: { source: 'vedic-business-muhurta' } }
+        };
+    },
+
+    /** The browser must be served over http://localhost or HTTPS, not file://. */
+    _loadGoogleIdentity: function () {
+        if (window.google && window.google.accounts && window.google.accounts.oauth2) return Promise.resolve();
+        if (this._googleIdentityPromise) return this._googleIdentityPromise;
+        this._googleIdentityPromise = new Promise((resolve, reject) => {
+            const el = document.createElement('script');
+            el.src = 'https://accounts.google.com/gsi/client';
+            el.async = true;
+            el.onload = () => window.google && window.google.accounts && window.google.accounts.oauth2 ? resolve() : reject(new Error('Google Identity Services unavailable.'));
+            el.onerror = () => reject(new Error('Could not load Google authorization. Check the network.'));
+            document.head.appendChild(el);
+        }).catch(err => { this._googleIdentityPromise = null; throw err; });
+        return this._googleIdentityPromise;
+    },
+
+    /** Requests calendar.events scope only when user presses Sync; never saves OAuth tokens. */
+    _requestGoogleCalendarToken: async function (clientId) {
+        if (!/^https?:/.test(location.protocol) && location.hostname !== 'localhost') {
+            throw new Error('Google authorization requires an HTTPS or localhost app (not file://).');
+        }
+        await this._loadGoogleIdentity();
+        return new Promise((resolve, reject) => {
+            const tokenClient = window.google.accounts.oauth2.initTokenClient({
+                client_id: clientId,
+                scope: 'https://www.googleapis.com/auth/calendar.events',
+                callback: response => response && response.access_token ? resolve(response.access_token) : reject(new Error((response && response.error) || 'Google authorization was not granted.')),
+                error_callback: error => reject(new Error((error && error.type) || 'Google authorization was cancelled.'))
+            });
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        });
+    },
+
+    /** Inserts selected dates into the user's primary Google Calendar after consent.
+        Does not run in the background or automatically repeat; repeat sync can make duplicates. */
+    syncGoogleCalendar: async function (events, clientId, onProgress) {
+        if (!events || !events.length) throw new Error('Generate auspicious dates first.');
+        if (!clientId || !String(clientId).trim()) throw new Error('Configure a Google OAuth Web Client ID first.');
+        if (events.length > 100) throw new Error('Sync at most 100 events at once. Narrow the date range or event selection.');
+        const accessToken = await this._requestGoogleCalendarToken(String(clientId).trim());
+        let created = 0;
+        for (const ev of events) {
+            const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+                body: JSON.stringify(this.calendarEventPayload(ev))
+            });
+            if (!res.ok) {
+                let detail = '';
+                try { const err = await res.json(); detail = err.error && err.error.message || ''; } catch (_) {}
+                throw new Error('Created ' + created + ' of ' + events.length + ' events. Google returned ' + res.status + (detail ? ': ' + detail : '') + '.');
+            }
+            created++;
+            if (typeof onProgress === 'function') onProgress(created, events.length);
+        }
+        return created;
+    },
+
     // ===================== HTML RENDERING =====================
 
     _verdictColor: function (v) {
@@ -491,7 +567,17 @@ window.BUSINESS_MUHURTA = {
             ${checks}
           </div>
           <button id="bmCalGenerate" class="btn" style="font-size:9px;padding:4px 8px;">GENERATE</button>
-          <button id="bmCalDownload" class="btn gold" style="font-size:9px;padding:4px 8px;display:none;">⬇ DOWNLOAD .ICS</button>
+          <div id="bmCalExportActions" style="display:none;margin-top:7px;padding:7px;border:1px solid var(--border,#333);border-radius:4px;">
+            <div style="font-size:9px;font-weight:bold;margin-bottom:5px;">Export selected auspicious dates</div>
+            <label style="font-size:9px;display:flex;align-items:center;gap:6px;margin:4px 0;">Event length (minutes) <input id="bmCalDuration" type="number" min="15" max="1440" step="15" value="60" style="max-width:65px;background:var(--bg3,#111);color:var(--text);"></label>
+            <button id="bmCalDownload" class="btn gold" type="button" style="font-size:9px;padding:4px 8px;">⬇ DOWNLOAD .ICS</button>
+            <button id="bmCalGoogle" class="btn" type="button" style="font-size:9px;padding:4px 8px;">Sync to Google Calendar</button>
+            <details style="margin-top:6px;"><summary style="font-size:9px;cursor:pointer;">Google Calendar setup / manual import</summary>
+              <div style="font-size:9px;color:var(--muted);line-height:1.6;margin-top:4px;">For direct sync, the application owner must configure a Google Cloud OAuth 2.0 <b>Web application Client ID</b> and add this website's origin to Authorized JavaScript origins. Calendar access is requested only on clicking Sync; events are added to the primary calendar. For an offline installation, download .ics and import it at <a href="https://calendar.google.com/calendar/u/0/r/settings/export" target="_blank" rel="noopener noreferrer">Google Calendar → Settings → Import &amp; export</a>. An .ics file is a one-time import, not a live subscription.</div>
+              <label style="font-size:9px;display:block;margin-top:4px;">OAuth Web Client ID <input id="bmCalGoogleClientId" type="text" placeholder="...apps.googleusercontent.com" autocomplete="off" style="display:block;width:100%;box-sizing:border-box;background:var(--bg3,#111);color:var(--text);border:1px solid var(--border,#333);padding:4px;margin-top:3px;"></label>
+            </details>
+            <div id="bmCalSyncStatus" role="status" aria-live="polite" style="font-size:9px;margin-top:5px;color:var(--muted);"></div>
+          </div>
           <div id="bmCalResults" style="margin-top:8px;max-height:260px;overflow-y:auto;"></div>
         </div>`;
     },
@@ -505,12 +591,27 @@ window.BUSINESS_MUHURTA = {
     _wireCalendarGenerator: function (opts) {
         const genBtn = document.getElementById('bmCalGenerate');
         const dlBtn = document.getElementById('bmCalDownload');
+        const exportActions = document.getElementById('bmCalExportActions');
+        const syncBtn = document.getElementById('bmCalGoogle');
+        const syncStatus = document.getElementById('bmCalSyncStatus');
         const resultsEl = document.getElementById('bmCalResults');
         const selAllBtn = document.getElementById('bmCalSelectAll');
         const selNoneBtn = document.getElementById('bmCalSelectNone');
         if (!genBtn) return;
         let lastResults = [];
         let lastHH = 10, lastMM = 0;
+        let snapshotIds = [];
+        const getDuration = () => {
+            const input = document.getElementById('bmCalDuration');
+            return Math.min(1440, Math.max(15, Number(input && input.value) || 60));
+        };
+        const selectedEvents = () => lastResults.filter(r => r.score >= 2).sort((a,b) => a.date - b.date).map(r => ({
+            dateTime: r.evalMoment || new Date(r.date.getFullYear(), r.date.getMonth(), r.date.getDate(), lastHH, lastMM, 0),
+            utcOffsetHours: opts.utcOffsetHours,
+            durationMinutes: getDuration(),
+            summary: `Auspicious: ${r.scenario.label.replace(/^[^\w]+/, '')}`,
+            description: `${r.scenario.rationale} | ${r.verdict} (score ${r.score}) | Nakshatra: ${r.panchang.nakshatra.name}, Tithi: ${r.panchang.tithi.ofPaksha} ${r.panchang.tithi.paksha} (${r.panchang.tithi.group}), Vara: ${r.panchang.vara.name}, Yoga: ${r.panchang.yoga.name}, Karana: ${r.panchang.karana.name} | Reasons: ${r.reasons.join(' ')}`
+        }));
 
         if (selAllBtn) selAllBtn.addEventListener('click', () => {
             document.querySelectorAll('.bmCalScenarioChk').forEach(c => { c.checked = true; });
@@ -520,12 +621,14 @@ window.BUSINESS_MUHURTA = {
         });
 
         genBtn.addEventListener('click', () => {
+            exportActions.style.display = 'none';
+            lastResults = [];
             const startVal = document.getElementById('bmCalStart').value;
             const endVal = document.getElementById('bmCalEnd').value;
             const timeVal = document.getElementById('bmCalTime').value || '10:00';
             const scenarioIds = Array.from(document.querySelectorAll('.bmCalScenarioChk:checked')).map(c => c.value);
             if (!startVal || !endVal) { resultsEl.innerHTML = '<div style="color:var(--rose);font-size:9px;">Pick both a start and end date.</div>'; return; }
-            if (!scenarioIds.length) { resultsEl.innerHTML = '<div style="color:var(--rose);font-size:9px;">Tick at least one business event type.</div>'; dlBtn.style.display = 'none'; return; }
+            if (!scenarioIds.length) { resultsEl.innerHTML = '<div style="color:var(--rose);font-size:9px;">Tick at least one business event type.</div>'; exportActions.style.display = 'none'; return; }
             const start = new Date(startVal + 'T00:00:00');
             const end = new Date(endVal + 'T00:00:00');
             if (end < start) { resultsEl.innerHTML = '<div style="color:var(--rose);font-size:9px;">End date must be on/after start date.</div>'; return; }
@@ -546,7 +649,7 @@ window.BUSINESS_MUHURTA = {
             if (!good.length) {
                 const fallback = lastResults.slice().sort((a, b) => b.score - a.score)[0];
                 resultsEl.innerHTML = `<div style="font-size:9px;color:var(--amber);">No day scored "Good" or better in this range for the selected event type(s). Best available: ${fallback ? E.fmtDate(fallback.date) + ' (' + fallback.scenario.label + ', ' + fallback.verdict + ', ' + fallback.score + ')' : 'n/a'}.</div>`;
-                dlBtn.style.display = 'none';
+                exportActions.style.display = 'none';
                 return;
             }
             resultsEl.innerHTML = `<div style="font-size:9px;color:var(--green);margin-bottom:4px;">${good.length} auspicious day/event combination(s) found${allScenarios ? ' across all event types' : ''} at ${timeVal}:</div>` +
@@ -555,23 +658,35 @@ window.BUSINESS_MUHURTA = {
                     <span style="color:var(--muted);">${r.panchang.nakshatra.name} · ${r.panchang.tithi.group} · ${r.panchang.vara.name}</span>
                     <span style="color:${window.BUSINESS_MUHURTA._verdictColor(r.verdict)};font-weight:bold;">${r.verdict} (+${r.score})</span>
                   </div>`).join('');
-            dlBtn.style.display = 'inline-block';
+            snapshotIds = scenarioIds.slice();
+            exportActions.style.display = 'block';
+            if (syncStatus) syncStatus.textContent = 'Ready to export ' + good.length + ' events. Dates are evaluated at a fixed UTC offset (' + opts.utcOffsetHours + ' hours).';
         });
 
         dlBtn.addEventListener('click', () => {
-            const good = lastResults.filter(r => r.score >= 2).sort((a, b) => a.date - b.date);
-            if (!good.length) return;
-            const events = good.map(r => ({
-                dateTime: r.evalMoment || new Date(r.date.getFullYear(), r.date.getMonth(), r.date.getDate(), lastHH, lastMM, 0),
-                utcOffsetHours: opts.utcOffsetHours,
-                durationMinutes: 60,
-                summary: `Auspicious: ${r.scenario.label.replace(/^[^\w]+/, '')}`,
-                description: `${r.scenario.rationale} | ${r.verdict} (score ${r.score}) | Nakshatra: ${r.panchang.nakshatra.name}, Tithi: ${r.panchang.tithi.ofPaksha} ${r.panchang.tithi.paksha} (${r.panchang.tithi.group}), Vara: ${r.panchang.vara.name}, Yoga: ${r.panchang.yoga.name}, Karana: ${r.panchang.karana.name} | Reasons: ${r.reasons.join(' ')}`
-            }));
+            const events = selectedEvents();
+            if (!events.length) return;
             const ics = window.BUSINESS_MUHURTA.buildICS(events);
-            const scenarioIds = Array.from(document.querySelectorAll('.bmCalScenarioChk:checked')).map(c => c.value);
-            const allScenarios = scenarioIds.length === window.BUSINESS_MUHURTA.SCENARIOS.length;
-            window.BUSINESS_MUHURTA.downloadICS(ics, allScenarios ? 'muhurta-all-business-events.ics' : `muhurta-${scenarioIds.join('-')}.ics`);
+            const allScenarios = snapshotIds.length === window.BUSINESS_MUHURTA.SCENARIOS.length;
+            window.BUSINESS_MUHURTA.downloadICS(ics, allScenarios ? 'muhurta-all-business-events.ics' : `muhurta-${snapshotIds.join('-')}.ics`);
+            if (syncStatus) syncStatus.textContent = 'Downloaded ' + events.length + ' event(s). Import the .ics file into Google Calendar, Apple Calendar or Outlook.';
+        });
+        if (syncBtn) syncBtn.addEventListener('click', async () => {
+            const events = selectedEvents();
+            if (!events.length) return;
+            if (!window.confirm('Add ' + events.length + ' auspicious date(s) to your primary Google Calendar? Repeating sync may create duplicate events.')) return;
+            const clientField = document.getElementById('bmCalGoogleClientId');
+            const clientId = (clientField && clientField.value.trim()) || window.GOOGLE_CALENDAR_CLIENT_ID || '';
+            syncBtn.disabled = true;
+            if (syncStatus) syncStatus.textContent = 'Requesting Google Calendar permission…';
+            try {
+                const n = await window.BUSINESS_MUHURTA.syncGoogleCalendar(events, clientId, (done,total) => {
+                    if (syncStatus) syncStatus.textContent = 'Added ' + done + ' of ' + total + ' event(s)…';
+                });
+                if (syncStatus) syncStatus.textContent = '✓ Added ' + n + ' event(s) to Google Calendar. Changes made in either calendar do not automatically synchronize.';
+            } catch (err) {
+                if (syncStatus) syncStatus.textContent = 'Could not sync: ' + err.message + ' Use .ics export for manual import.';
+            } finally { syncBtn.disabled = false; }
         });
     },
 

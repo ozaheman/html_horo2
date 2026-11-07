@@ -665,9 +665,20 @@ window.KP_PREDICTION = {
     /** All 12 cusps' KP lords in one call: {1:{sid,nakLord,subLord,subSubLord}, ...}. */
     getAllCusps: function (ascSid) {
         const out = {};
+        // Natal D1: use genuine UNEQUAL Placidus starts supplied by Part 12.
+        // Other/historical/horary ascendants keep the legacy equal-house
+        // approximation, explicitly tagged so it cannot be mistaken for KP.
+        let real = null;
+        if (window.KP_PREDICTION_12 && window.BIRTH && window.BIRTH_ASC &&
+            (typeof CURRENT_DIV === 'undefined' || CURRENT_DIV === 1) &&
+            Number.isFinite(ascSid) && Number.isFinite(window.BIRTH_ASC.sid) &&
+            Math.abs(((ascSid - window.BIRTH_ASC.sid + 540) % 360) - 180) < 0.2) {
+            const calc = window.KP_PREDICTION_12.getCusps(window.BIRTH);
+            if (calc && Array.isArray(calc.cusps) && calc.cusps.length === 12) real = calc.cusps;
+        }
         for (let h = 1; h <= 12; h++) {
-            const sid = this.getCuspSid(ascSid, h);
-            out[h] = Object.assign({ house: h, sid: sid }, this._getKPLords(sid));
+            const sid = real ? real[h-1] : this.getCuspSid(ascSid, h);
+            out[h] = Object.assign({ house: h, sid: sid, cuspMethod:real?'Placidus':'equal-house fallback' }, this._getKPLords(sid));
         }
         return out;
     },
@@ -842,7 +853,9 @@ window.KP_PREDICTION = {
      * For every planet, the full list of houses (1-12) for which it is the
      * Cuspal Sub Lord anywhere in the chart — "the numbers a planet gives."
      */
-    getPlanetNumbers: function (allCusps) {
+    getReverseCSLAssignments: function (allCusps) {
+        // Kept as a SEPARATE diagnostic: houses whose cusp sub lord = planet.
+        // This is NOT the planet's ordinary KP significator-house list.
         const numbers = {};
         Object.keys(allCusps).forEach(h => {
             const subLord = allCusps[h].subLord;
@@ -850,6 +863,25 @@ window.KP_PREDICTION = {
         });
         Object.keys(numbers).forEach(p => numbers[p].sort((a, b) => a - b));
         return numbers;
+    },
+    getPlanetNumbers: function (allCusps) {
+        // The previous implementation returned REVERSE CSL-of-cusp assignments.
+        // The lectures explicitly require planet + Nakshatra-lord's actual
+        // occupancy/rulership significations, not cusp-CSL memberships.
+        // Return the verified Placidus natal significations when and only
+        // when the supplied cusps belong to the currently loaded natal D1.
+        const first = allCusps && allCusps[1];
+        if (first && first.cuspMethod === 'Placidus' &&
+            window.KP_PREDICTION_13 && window.KP_PREDICTION_13.analyzeLive) {
+            const d=window.KP_PREDICTION_13.analyzeLive();
+            if (d && !d.error && Math.abs((((first.sid-d.cusps[0])+540)%360)-180)<0.001) {
+                const out={};
+                d.rows.forEach(r => {out[r.planet]=r.houses.slice();});
+                return out;
+            }
+        }
+        // Horary/unknown birth data: retain earlier fallback transparently.
+        return this.getReverseCSLAssignments(allCusps);
     },
 // ===================== 3½. RAHU/KETU "SCRIPT" -- SIGN-DISPOSITOR RULE (RECONFIRMED) =====================
     //
@@ -1387,25 +1419,29 @@ window.KP_PREDICTION = {
      *   4. Planets occupying the nakshatra of the house's lord
      */
     getSignificators: function (houseNum, natalPlanetsMap, ascSignNum, lords) {
-        const L = this._lords(lords);
-        const occupants = Object.keys(natalPlanetsMap).filter(p => natalPlanetsMap[p] && natalPlanetsMap[p].house === houseNum);
-        const starLordOfOccupants = new Set();
-        occupants.forEach(p => {
-            const pd = natalPlanetsMap[p];
-            if (pd && pd.sid !== undefined) starLordOfOccupants.add(this._getKPLords(pd.sid).nakLord);
-        });
-        const houseLord = L ? L[(ascSignNum + houseNum - 1) % 12] : null;
-        let starLordOfHouseLord = null;
-        if (houseLord && natalPlanetsMap[houseLord] && natalPlanetsMap[houseLord].sid !== undefined) {
-            starLordOfHouseLord = this._getKPLords(natalPlanetsMap[houseLord].sid).nakLord;
+        const L=this._lords(lords), names=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
+        const natal=window.KP_PREDICTION_13 && window.KP_PREDICTION_13.analyzeLive &&
+          window.KP_PREDICTION_13.analyzeLive();
+        // Use the same exact 4-grade Placidus table as Part 13 for natal D1.
+        // These legacy member names are retained for existing UI consumers.
+        if (natal && !natal.error && natal.fourGrades && natal.fourGrades[houseNum-1] &&
+            natalPlanetsMap === window.BIRTH_PLANETS) {
+            const g=natal.fourGrades[houseNum-1];
+            return {house:houseNum,level1_occupants:g.B,level2_starLordOfOccupants:g.A,
+                level3_houseLord:g.D[0],level4_starLordOfHouseLord:g.C[0]||null,
+                gradeA:g.A,gradeB:g.B,gradeC:g.C,gradeD:g.D,
+                level4_planetsInStarOfHouseLord:g.C,cuspMethod:'Placidus'};
         }
-        return {
-            house: houseNum,
-            level1_occupants: occupants,
-            level2_starLordOfOccupants: Array.from(starLordOfOccupants),
-            level3_houseLord: houseLord,
-            level4_starLordOfHouseLord: starLordOfHouseLord
-        };
+        const occupants=names.filter(p=>natalPlanetsMap[p]&&natalPlanetsMap[p].house===houseNum);
+        const houseLord=L?L[(ascSignNum+houseNum-1)%12]:null;
+        const star=p=>this._getKPLords(natalPlanetsMap[p].sid).nakLord;
+        const gradeA=names.filter(p=>natalPlanetsMap[p]&&occupants.includes(star(p)));
+        const gradeC=names.filter(p=>natalPlanetsMap[p]&&star(p)===houseLord);
+        return {house:houseNum,level1_occupants:occupants,
+            level2_starLordOfOccupants:gradeA,level3_houseLord:houseLord,
+            level4_starLordOfHouseLord:gradeC[0]||null,
+            level4_planetsInStarOfHouseLord:gradeC,
+            gradeA,gradeB:occupants,gradeC,gradeD:houseLord?[houseLord]:[],cuspMethod:'legacy sign-house fallback'};
     },
 
     /**
@@ -2934,7 +2970,7 @@ window.KP_PREDICTION = {
         }).join('');
         return `<details open style="margin-top:6px;">
                   <summary style="cursor:pointer;color:#FF69B4;font-size:10.5px;font-weight:bold;">📐 Cuspal Table — All 12 House Cusps (SignLord / StarLord / SubLord / SSL / Significators / Aspects)</summary>
-                  <div style="font-size:8px;color:var(--muted);margin:4px 0;">Columns A/B/C/D follow the classical 4-level significator scheme: B=OCCU (occupants, strongest), A=Star Lord of occupants, D=Sign/House Lord, C=planet in Sign Lord's own star (weakest) — same data as the "4-level Significators" method, laid out KP-software-style. "Cuspal-Asp" is this module's documented convention: the cusp's own outgoing aspect = the opposite (7th) house, since a bare cusp has no special-aspect rule of its own.</div>
+                  <div style="font-size:8px;color:var(--muted);margin:4px 0;">Columns A/B/C/D follow KP: A=planets in star of occupants (strongest), B=occupants, C=planets in cusp lord’s star, D=cusp lord — same data as the "4-level Significators" method, laid out KP-software-style. "Cuspal-Asp" is this module's documented convention: the cusp's own outgoing aspect = the opposite (7th) house, since a bare cusp has no special-aspect rule of its own.</div>
                   <div style="overflow-x:auto;margin-top:6px;">
                   <table style="width:100%;border-collapse:collapse;font-size:9px;color:var(--text);">
                     <thead><tr style="border-bottom:1px solid var(--border);color:var(--muted);text-align:left;">

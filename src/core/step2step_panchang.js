@@ -482,75 +482,48 @@ const requestedDivs = [
     }
     
     // Calculate Dasamsa (D10) chart
+    // Parashari D10: ten divisions of 3 degrees; odd signs start from
+    // themselves, even signs from the ninth sign (inclusive).
     function calculateDasamsa(planetsData, ascData) {
+      function varga(lon) {
+        const x = ((Number(lon) % 360) + 360) % 360;
+        const natalSign = Math.floor(x / 30);
+        const part = Math.min(9, Math.floor(((x % 30) + 1e-10) / 3));
+        const firstSign = (natalSign + (natalSign % 2 === 1 ? 8 : 0)) % 12;
+        const sn = (firstSign + part) % 12;
+        const deg = ((x % 3) / 3) * 30;
+        return {sid: sn * 30 + deg, longitude: sn * 30 + deg, sn, deg, sign: SIGNS[sn]};
+      }
+      const asc = varga(ascData.sid);
       const d10Planets = {};
-      const ascLon = ascData.sid;
-      //const ascSn = ascData.sn;
-      //const ascDeg = ascData.deg;
-      
-      //const ascLon = ascSn * 30 + ascDeg;
-      const d10AscLon = (ascLon * 10) % 360;
-      const d10AscSn = Math.floor(d10AscLon / 30);
-      const d10AscDeg = d10AscLon % 30;
-      
       Object.keys(planetsData).forEach(p => {
         const lon = planetsData[p].sid !== undefined ? planetsData[p].sid : planetsData[p].longitude;
-        const d10Lon = (lon * 10) % 360;
-        const d10Sn = Math.floor(d10Lon / 30);
-        const relativeHouse = ((d10Sn - d10AscSn + 12) % 12) + 1;
-        
-        d10Planets[p] = {
-          sid: d10Lon,
-          longitude: d10Lon,
-          sn: d10Sn,
-          deg: d10Lon % 30,
-          house: relativeHouse,
-          sign: SIGNS[d10Sn]
-        };
+        if (!Number.isFinite(Number(lon))) return;
+        const q = varga(lon);
+        q.house = ((q.sn - asc.sn + 12) % 12) + 1;
+        d10Planets[p] = q;
       });
-      
-      return {
-        planets: d10Planets,
-        asc: { sid: d10AscLon, sn: d10AscSn, deg: d10AscDeg, sign: SIGNS[d10AscSn] }
-      };
+      return { planets: d10Planets, asc };
     }
-    
+
     // Calculate Indu Lagna (Wealth Lagna)
+    // Uttara Kalamrita Indu Lagna: ninth lords from Lagna and Moon,
+    // add fixed kala values and count the remainder inclusively from Moon.
+    // This is a sign-based auxiliary Lagna, not a physical ecliptic point.
     function calculateInduLagna(planetsData, ascData) {
-      /* const LORDS = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.SIGN_LORDS) 
-        ? window.ASTRO_CONSTANTS.SIGN_LORDS 
-        : {0:'Mars',1:'Venus',2:'Mercury',3:'Moon',4:'Sun',5:'Mercury',6:'Venus',7:'Mars',8:'Jupiter',9:'Saturn',10:'Saturn',11:'Jupiter'}; */
-      const moonLon = planetsData.Moon ? (planetsData.Moon.sid || planetsData.Moon.longitude) : 0;
-      const sunLon = planetsData.Sun ? (planetsData.Sun.sid || planetsData.Sun.longitude) : 0;
-      
-      const moonSn = Math.floor(moonLon / 30);
-      const sunSn = Math.floor(sunLon / 30);
-      //const moonSn = planetsData.Moon ? Math.floor((planetsData.Moon.sid || planetsData.Moon.longitude) / 30) : ascData.sn;
-      //
-      // Get degrees of Sun and Moon lords
-      const lordMoon = LORDS[moonSn];
-      const lordSun = LORDS[sunSn];
-      const lordMoonDeg = planetsData[lordMoon] ? (planetsData[lordMoon].sid || planetsData[lordMoon].longitude) : 0;
-       const lordSunDeg = planetsData[lordSun] ? (planets[lordSun].sid || planets[lordSun].longitude) : 0;
-      
-      const induLon = (lordMoonDeg + lordSunDeg) % 360;
-      //const lordSunDeg = planetsData[lordSun] ? (planetsData[lordSun].sid || planetsData[lordSun].longitude) : 0;
-      
-      //const sumDeg = lordMoonDeg + lordSunDeg;
-      //const induLon = sumDeg % 360;
-      const induSn = Math.floor(induLon / 30);
-      //const induDeg = induLon % 30;
-      
-      return {
-        sid: induLon,
-        sn: induSn,
-       deg: induLon % 30,
-        sign: SIGNS[induSn],
-        name: "Indu Lagna (Wealth)"
-      };
+      const moonLon = Number(planetsData.Moon?.sid ?? planetsData.Moon?.longitude);
+      if (!Number.isFinite(moonLon)) throw new Error('Moon longitude unavailable for Indu Lagna');
+      const moonSn = Math.floor(((moonLon % 360) + 360) % 360 / 30);
+      const KALA = {Sun:30, Moon:16, Mars:6, Mercury:8, Jupiter:10, Venus:12, Saturn:1};
+      const lord1 = LORDS[(ascData.sn + 8) % 12];
+      const lord2 = LORDS[(moonSn + 8) % 12];
+      const sum = KALA[lord1] + KALA[lord2];
+      const count = sum % 12 || 12;
+      const sn = (moonSn + count - 1) % 12;
+      return { sid:sn * 30, sn, deg:0, sign:SIGNS[sn], kalaTotal:sum,
+        count, lagnaNinthLord:lord1, moonNinthLord:lord2 };
     }
-    
-    // Calculate Arudha Lagna (Pada Lagna)
+
     function calculateArudhaLagna(ascData, planetsData) {
     
       
@@ -562,7 +535,8 @@ const requestedDivs = [
         return { sn: ascSn, sign: SIGNS[ascSn], name: "Arudha Lagna (Pada)" };
       }
       
-      const lordSn = ascLordData.sn;
+      const lordLon = Number(ascLordData.sid ?? ascLordData.longitude);
+      const lordSn = Number.isFinite(lordLon) ? Math.floor(((lordLon % 360) + 360) % 360 / 30) : ascLordData.sn;
       let diff = (lordSn - ascSn + 12) % 12;
       let arudhaSn = (lordSn + diff) % 12;
       
@@ -717,44 +691,9 @@ const requestedDivs = [
 
     html += `</div></div>`;
 
-    // Draw key charts. Uses a small bounded retry loop (instead of a single
-    // fixed-delay setTimeout) because the HTML returned by this function is
-    // assigned into the DOM by the caller — if that assignment happens even
-    // slightly later than expected (e.g. batched with other prediction
-    // sections, or behind a loading-spinner delay), a single 100ms attempt
-    // can fire before the canvases exist and silently draw nothing.
-    (function scheduleKeyChartDraw() {
-      let attempts = 0;
-      const maxAttempts = 30; // ~3s worth of retries at 100ms apart
-      function tryDraw() {
-        attempts++;
-        let allFound = true;
-        chartIds.forEach(function(chartInfo) {
-          const canvas = document.getElementById(chartInfo.id);
-          if (!canvas) { allFound = false; return; }
-          if (canvas.dataset.drawn === '1') return; // already drawn, don't redraw every retry
-          if (typeof window.drawDChart !== 'function') { allFound = false; return; }
-          try {
-            const customData = {
-              planets: chartInfo.data.planets,
-              asc: chartInfo.data.asc,
-              showAspects: true
-            };
-            window.drawDChart(chartInfo.id, customData);
-            canvas.dataset.drawn = '1';
-          } catch (e) {
-            console.error(`Error drawing ${chartInfo.data.name}:`, e);
-            canvas.dataset.drawn = '1'; // don't retry a chart that threw — data issue, not a timing issue
-          }
-        });
-        if (!allFound && attempts < maxAttempts) {
-          setTimeout(tryDraw, 100);
-        } else if (!allFound) {
-          console.warn('STEP2STEP_PANCHANG: some key chart canvases never appeared in the DOM after', maxAttempts, 'attempts — check that the returned HTML was actually inserted.');
-        }
-      }
-      setTimeout(tryDraw, 100);
-    })();
+    // Queue render descriptors. Caller inserts the returned HTML and then
+    // synchronously draws the canvases; never race a long async report build.
+    window.__step2stepKeyCharts = chartIds;
     // ============================================================
     // 9. ANALYSIS SECTION FOR KEY CHARTS
     // ============================================================
@@ -1546,24 +1485,7 @@ if (pMeta.patelStatus) {
         return meanings[houseNum] || 'Life Area';
     }
 
-    // Draw all charts after HTML is rendered
-    setTimeout(function() {
-        chartIds.forEach(function(chartInfo) {
-            const canvas = document.getElementById(chartInfo.id);
-            if (canvas && typeof window.drawDChart === 'function') {
-                try {
-                    const customData = {
-                        planets: chartInfo.data.planets,
-                        asc: chartInfo.data.asc,
-                        showAspects: true
-                    };
-                    window.drawDChart(chartInfo.id, customData);
-                } catch(e) {
-                    console.error(`Error drawing chart ${chartInfo.id}:`, e);
-                }
-            }
-        });
-    }, 100);
+    window.__step2stepRotatedCharts = chartIds;
 
     // ============================================================
     // 9. DEEP ASTROLOGICAL TABLES
@@ -1971,6 +1893,14 @@ if (pMeta.patelStatus) {
             function tryDraw() {
               attempts++;
               let allFound = true;
+              const combined = document.getElementById('sudarshanCombinedCanvas');
+              if (!combined) allFound = false;
+              else if (combined.dataset.drawn !== '1') {
+                try {
+                  window.SUDARSHAN_CHAKRA.drawCombinedChart('sudarshanCombinedCanvas', planets, ascData);
+                  combined.dataset.drawn = '1';
+                } catch (e) { console.error('Error drawing combined Sudarshan Chakra', e); allFound = false; }
+              }
               scChartConfigs.forEach(function(cfg) {
                 const canvas = document.getElementById(cfg.canvasId);
                 if (!canvas) { allFound = false; return; }
@@ -1998,7 +1928,39 @@ if (pMeta.patelStatus) {
       console.warn('Sudarshan Chakra analysis failed:', e);
     }
 
+    // Planet / rashi / nakshatra tattva is an interpretive overlay; never
+    // override the actual sign, house and planet placements with it.
+    html += window.STEP2STEP_PANCHANG.renderTatvaAnalysis(planets, ascData);
     return html;
+  },
+  renderTatvaAnalysis: function(planets, asc) {
+    const signNames = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+    const signElement = ['Fire','Earth','Air','Water','Fire','Earth','Air','Water','Fire','Earth','Air','Water'];
+    const grahaElement = { Sun:'Fire', Moon:'Water', Mars:'Fire', Mercury:'Earth', Jupiter:'Ether', Venus:'Water', Saturn:'Air', Rahu:'Air', Ketu:'Fire' };
+    const theme = {Fire:'initiative and urgency',Earth:'practicality and structure',Air:'communication and exchange',Water:'feeling and adaptability',Ether:'meaning and expansive perspective'};
+    const esc = v => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const rows = [];
+    const counts = { Fire:0, Earth:0, Air:0, Water:0 };
+    for (const name of ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu']) {
+      const pd = planets[name];
+      const lon = Number(pd?.sid ?? pd?.longitude);
+      if (!Number.isFinite(lon)) continue;
+      const norm = ((lon % 360) + 360) % 360;
+      const sn = Math.floor(norm/30);
+      const nak = _s2sGetNakDetails(norm);
+      counts[signElement[sn]]++;
+      const house = ((sn - asc.sn + 12) % 12) + 1;
+      const nakElement = grahaElement[nak.lord] || 'Unknown';
+      const relation = grahaElement[name] === signElement[sn] ? 'reinforcing' : 'contrasting';
+      rows.push(`<tr><td>${esc(name)}</td><td>${esc(grahaElement[name])}</td><td>${esc(signNames[sn])} · ${signElement[sn]}</td><td>${house}</td><td>${esc(nak.name)} · Pada ${nak.pada}<small style="display:block;color:var(--muted)">Lord ${esc(nak.lord)} (${nakElement}) · Sub ${esc(nak.subLord)}</small></td><td>${relation}</td></tr>`);
+    }
+    const strongest = Object.keys(counts).sort((a,b) => counts[b]-counts[a]);
+    const dom = strongest.filter(k => counts[k] === counts[strongest[0]]).join(' / ');
+    return `<details class="pred-item" style="border-left:3px solid #51bda9;margin-top:14px"><summary class="pred-title" style="cursor:pointer;color:#51bda9">Planet, Rashi & Nakshatra Tattva — nine-graha analysis</summary>
+      <p style="font-size:11px">Ascendant ${esc(signNames[asc.sn])}: ${signElement[asc.sn]} element (${theme[signElement[asc.sn]]}). Planet placements emphasize ${dom} by sign occupancy (${counts.Fire} Fire / ${counts.Earth} Earth / ${counts.Air} Air / ${counts.Water} Water).</p>
+      <div style="overflow-x:auto"><table style="width:100%;font-size:10px;border-collapse:collapse"><thead><tr><th>Planet</th><th>Graha tattva</th><th>Rashi tattva</th><th>House</th><th>Nakshatra / Pada</th><th>Element</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>
+      <p style="font-size:10px;color:var(--muted)">Traditional interpretive layer: planet nature, sign element and nakshatra lord refine — but do not override — house lordship, dignity, aspects and current Dasha. Node and Jupiter element correspondences vary across traditions. Reinforcing elements suggest similar symbolic qualities; contrasting elements suggest mixed themes. The Nakshatra lord adds another layer, not an automatic prediction. No psychological or medical diagnosis is implied.</p>
+    </details>`;
   }
 };
 /**

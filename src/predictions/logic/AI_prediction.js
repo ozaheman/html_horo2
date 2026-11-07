@@ -50,24 +50,42 @@ const AI_PREDICTION = (function() {
      * shape the ascendant object actually has, based on the natal horoscope.
      */
     function normalizeAscendant(asc) {
-        if (!asc || typeof asc !== 'object') {
-            return { signIndex: 0, sid: 0, sign: SIGNS[0] };
+        // Numeric ascendants elsewhere in this project are sidereal longitudes,
+        // NOT 0-based sign indices. The caller should normally pass BIRTH_ASC.
+        if (typeof asc === 'number' && Number.isFinite(asc)) {
+            const sid = ((asc % 360) + 360) % 360;
+            const signIndex = Math.floor(sid / 30);
+            return { sid, sn: signIndex, signIndex, sign: SIGNS[signIndex] };
         }
-        let signIndex = asc.signIndex;
-        if (signIndex === undefined || signIndex === null || isNaN(signIndex)) {
-            if (asc.sn !== undefined && !isNaN(asc.sn)) {
-                signIndex = asc.sn;
+        if (!asc || typeof asc !== 'object') {
+            return { error: 'Natal Ascendant is missing. Calculate the birth chart first.', signIndex: NaN };
+        }
+        let signIndex = asc.signIndex == null ? NaN : Number(asc.signIndex);
+        if (!Number.isInteger(signIndex) || signIndex < 0 || signIndex > 11) {
+            if (Number.isInteger(Number(asc.sn)) && Number(asc.sn) >= 0 && Number(asc.sn) < 12) {
+                signIndex = Number(asc.sn);
             } else {
-                const lon = asc.sid !== undefined ? asc.sid
-                          : (asc.longitude !== undefined ? asc.longitude
-                          : (asc.deg !== undefined ? asc.deg : 0));
-                signIndex = Math.floor(((lon % 360) + 360) % 360 / 30);
+                const lon = Number(asc.sid ?? asc.longitude ?? asc.deg);
+                if (!Number.isFinite(lon)) return { ...asc, error: 'Cannot determine natal ascendant sign.', signIndex: NaN };
+                signIndex = Math.floor((((lon % 360) + 360) % 360) / 30);
             }
         }
-        return { ...asc, signIndex: signIndex, sign: asc.sign || SIGNS[signIndex] };
+        return { ...asc, signIndex, sn: signIndex, sign: SIGNS[signIndex] };
     }
-    
-    
+
+    function natalSignIndex(planet) {
+        if (planet?.sn != null && Number.isInteger(Number(planet.sn)) && Number(planet.sn) >= 0 && Number(planet.sn) < 12)
+            return Number(planet.sn);
+        if (planet?.signIndex != null && Number.isInteger(Number(planet.signIndex)) && Number(planet.signIndex) >= 0 && Number(planet.signIndex) < 12)
+            return Number(planet.signIndex);
+        const sid = Number(planet?.sid ?? planet?.longitude ?? planet?.degree);
+        return Number.isFinite(sid) ? Math.floor((((sid % 360) + 360) % 360) / 30) : NaN;
+    }
+
+    function vedicHouseFromSign(planetSign, lagnaSign) {
+        return ((planetSign - lagnaSign + 12) % 12) + 1;
+    }
+
     // House Nature (Kendra, Trikona, Dusthana, Upachaya)
     const HOUSE_NATURE = {
         1: { type: "Kendra+Trikona", pol: 2, desc: "Self, body, health" },
@@ -196,13 +214,13 @@ const AI_PREDICTION = (function() {
             const focusSignification = HOUSE_SIGNIFICATIONS[h];
 
             const rotatedPlanets = planets.map(p => {
-                const planetSign = p.signIndex !== undefined ? p.signIndex : Math.floor((p.longitude || p.degree) / 30);
+                const planetSign = natalSignIndex(p);
                 // Calculate new house relative to the new Ascendant
-                const newHouse = ((planetSign - newAscSignIndex + 12) % 12) + 1;
+                const newHouse = vedicHouseFromSign(planetSign, newAscSignIndex);
                 
                 return {
                     name: p.name,
-                    natalHouse: p.house,
+                    natalHouse: vedicHouseFromSign(planetSign, ascSignIndex),
                     rotatedHouse: newHouse,
                     sign: SIGNS[planetSign],
                     signIndex: planetSign
@@ -254,20 +272,21 @@ const AI_PREDICTION = (function() {
         const baseSignif = HOUSE_SIGNIFICATIONS[baseHouse];
         
         // Calculate new ascendant for rotated chart (based on base house sign)
-        const baseSignIndex = ((asc.signIndex + baseHouse - 1) % 12);
+        const natalAsc = normalizeAscendant(asc);
+        const baseSignIndex = ((natalAsc.signIndex + baseHouse - 1) % 12);
         const rotatedAsc = { signIndex: baseSignIndex, sign: SIGNS[baseSignIndex] };
         
         // Recalculate planet positions relative to the new lagna sign
         const rotatedPlanets = [];
         for (const planet of planets) {
-            const planetSign = planet.signIndex !== undefined ? planet.signIndex : Math.floor((planet.longitude || planet.degree) / 30);
-            const rotatedHouse = ((planetSign - baseSignIndex + 12) % 12) + 1;
+            const planetSign = natalSignIndex(planet);
+            const rotatedHouse = vedicHouseFromSign(planetSign, baseSignIndex);
             
             rotatedPlanets.push({
                 ...planet,
                 rotatedHouse: rotatedHouse,
                 rotatedSign: SIGNS[planetSign],
-                originalHouse: planet.house
+                originalHouse: vedicHouseFromSign(planetSign, natalAsc.signIndex)
             });
         }
         
@@ -293,7 +312,7 @@ const AI_PREDICTION = (function() {
             baseSignification: baseSignif,
             rotatedAscendant: rotatedAsc,
             rotatedAnalysis: rotatedAnalysis,
-            summary: generateBhavatBhavamSummary(baseHouse, rotatedAnalysis)
+            summary: generateBhavatBhavamSummary(baseHouse, { rotatedAnalysis })
         };
     }
     
@@ -1097,62 +1116,11 @@ const AI_PREDICTION = (function() {
      * General Bhavat Bhavam House Rotation Logic
      */
      //
-    // FIX: This section used to redeclare analyzeBhavatBhavam / getRotationMapping /
-    // getRotatedSignificance with the SAME NAMES as the sign-aware, natal-ascendant-based
-    // versions defined earlier (Section 2). In JavaScript, a later function declaration
-    // with the same name silently overwrites the earlier one in the same scope, so the
-    // real, correct implementation (which factors in the natal ascendant's actual sign)
-    // was being shadowed by this simplified, house-number-only duplicate below it.
-    // The duplicate has been removed; these wrappers now call the single, correct
-    // analyzeBhavatBhavam(baseHouse, planets, asc) defined in Section 2, which — combined
-    // with the normalizeAscendant() fix above — now correctly rotates the chart based on
-    // the actual natal ascendant instead of assuming Aries.
-     function analyzeBhavatBhavam(targetLagnaHouse, planets, natalAsc) {
-        const rotationMap = getRotationMapping(targetLagnaHouse);
-        const summaries = [];
-        
-        for (let h = 1; h <= 12; h++) {
-            const natalHouse = rotationMap[h];
-            const occupants = planets.filter(p => p.house === natalHouse);
-            const significance = getRotatedSignificance(h);
-            
-            if (occupants.length > 0) {
-                summaries.push(`<strong>${significance}:</strong> ${occupants.map(p => p.name).join(', ')} in the rotated ${h}${h==1?'st':h==2?'nd':h==3?'rd':'th'} house.`);
-            }
-        }
-        
-        return {
-            lagna: targetLagnaHouse,
-            map: rotationMap,
-            summary: summaries.join(' ') || "The planetary sequence for this life area shows a steady karmic flow with no major obstructive clusters."
-        };
-    }
-    
-    function getRotationMapping(lagnaHouse) {
-        const mapping = {};
-        for (let h = 1; h <= 12; h++) {
-            mapping[h] = (lagnaHouse + h - 2) % 12 + 1;
-        }
-        return mapping;
-    }
-    
-    function getRotatedSignificance(houseNum) {
-        const significations = {
-            1: "Core existence and path", 2: "Vital assets and values", 3: "Efforts and surrounding environment",
-            4: "Core happiness and foundations", 5: "Creative output and legacy", 6: "Obstacles and daily grind",
-            7: "External manifestation and partnership", 8: "Deep changes and transformations", 9: "Wisdom and higher purpose",
-            10: "Reputation and external achievement", 11: "Gains and fulfillments", 12: "Endings and subtler realms"
-        };
-        return significations[houseNum];
-    } 
-    
-    function analyzeMotherHoroscope(planets, asc) { return analyzeBhavatBhavam(4, planets, asc); }
-    function analyzeFatherHoroscope(planets, asc) { return analyzeBhavatBhavam(9, planets, asc); }
-    function analyzeSpouseHoroscope(planets, asc) { return analyzeBhavatBhavam(7, planets, asc); }
-    function analyzeChildrenHoroscope(planets, asc) { return analyzeBhavatBhavam(5, planets, asc); }
-    function analyzeWealthHoroscope(planets, asc) { return analyzeBhavatBhavam(2, planets, asc); }
-    function analyzeCareerHoroscope(planets, asc) { return analyzeBhavatBhavam(10, planets, asc); }
-    
+    // KP15: A second version of these functions previously shadowed the
+    // sign-aware implementation in Section 2. Keep ONE canonical mapping.
+    // Vedic house order runs anti-clockwise on the NORTH INDIAN chart:
+    // new house n = natal house ((base + n - 2) mod 12) + 1, count inclusive.
+
     // ========== SECTION 13: GENERAL HOUSE PREDICTIONS ==========
     
     const HOUSE_GENERAL_PREDICTIONS = {
@@ -1674,8 +1642,9 @@ const AI_PREDICTION = (function() {
      */
     function generateReport(inputData) {
         const { planets, age, dashaInfo, transitPlanets, birthDate } = inputData;
-        const asc = normalizeAscendant(inputData.asc); // FIX: use natal ascendant's real sign, not a default Aries
-        
+        const asc = normalizeAscendant(inputData.asc);
+        if (asc.error || !Number.isInteger(asc.signIndex)) return { error: asc.error || 'Natal ascendant unavailable' };
+
         // Find Moon
         const moon = planets.find(p => p && (p.name === 'Moon'));
         if (!moon) return { error: "Moon position not found for BNN analysis." };
@@ -1683,12 +1652,17 @@ const AI_PREDICTION = (function() {
         // Pre-calculate planetary attributes for all planets
         const analyzedPlanets = planets.map(p => {
             if (!p) return null;
-            const dignity = assessDignity(p.name, p.longitude || p.degree, p.signIndex);
+            const dignity = assessDignity(p.name, p.longitude ?? p.degree, natalSignIndex(p));
             const sunLon = planets.find(s => s.name === 'Sun')?.longitude || 0;
             const isCombust = checkCombustion(p.name, sunLon, p.longitude || p.degree);
             
+            const signIndex = natalSignIndex(p);
             return {
                 ...p,
+                degree: Number(p.degree ?? p.longitude ?? p.sid ?? 0),
+                longitude: Number(p.longitude ?? p.sid ?? p.degree ?? 0),
+                signIndex,
+                house: vedicHouseFromSign(signIndex, asc.signIndex),
                 dignity: dignity.status,
                 status: dignity.status,
                 strength: dignity.score,
@@ -2024,7 +1998,8 @@ const AI_PREDICTION = (function() {
         // ── BHAVAT BHAVAM RELATIONSHIP SECTION ────────────────────────────
         html += `
         <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:14px;margin-bottom:20px;">
-          <div style="color:var(--cyan);font-size:13px;font-weight:bold;margin-bottom:10px;">🔄 BHAVAT BHAVAM (Relationship Sign Rotation Analysis)</div>
+          <div style="color:var(--cyan);font-size:13px;font-weight:bold;margin-bottom:5px;">🔄 BHAVAT BHAVAM — House from House</div>
+          <div style="font-size:10px;color:var(--muted);line-height:1.6;margin-bottom:9px;">Natal Lagna: <strong>${SIGNS[ascSignIndex]}</strong>. Vedic whole-sign houses advance anticlockwise on the North Indian chart; each selected natal house becomes rotated House 1. Count inclusively. For example, spouse's 2nd = natal 8th.</div>
           <div style="display:grid;grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));gap:12px;">
           ${[
             {label:'👩 Mother (4th Sign as Lagna)', color:'var(--rose)', data: report.bhavatBhavam.mother},
@@ -2034,7 +2009,10 @@ const AI_PREDICTION = (function() {
           ].map(r => `
             <div style="border-left:3px solid ${r.color};padding:8px 12px;background:rgba(255,255,255,0.02);border-radius:0 6px 6px 0;">
               <div style="color:${r.color};font-weight:bold;font-size:11px;margin-bottom:4px;">${r.label}</div>
-              <p style="margin:0;font-size:11px;line-height:1.7;color:var(--muted);">${r.data?.summary || 'Analytical cycle continuing...'}</p>
+              <div style="font-size:10px;color:var(--text);margin-bottom:5px;">Rotated Lagna: <strong>${r.data?.rotatedAscendant?.sign || '—'}</strong> · Rotated H2 = natal H${r.data?.rotatedAnalysis?.[2]?.originalHouse ?? '—'} · Rotated H7 = natal H${r.data?.rotatedAnalysis?.[7]?.originalHouse ?? '—'}</div>
+              <details><summary style="cursor:pointer;font-size:10px;color:var(--cyan);">Show 12-house rotation and interpretation</summary>
+              <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;margin:8px 0;">${Array.from({length:12},(_,i)=>i+1).map(i=>`<span style="border:1px solid var(--border2);border-radius:3px;padding:4px;text-align:center;font-size:9px;">R${i} → N${r.data?.rotatedAnalysis?.[i]?.originalHouse || '?'}</span>`).join('')}</div>
+              <div style="white-space:pre-line;font-size:10px;line-height:1.5;color:var(--muted);">${r.data?.summary || 'Not available'}</div></details>
             </div>`).join('')}
           </div>
         </div>`;

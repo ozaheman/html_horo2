@@ -779,65 +779,56 @@
     <h2 style="color:var(--violet)">🔮 PREDICTIONS & FORECASTS</h2>
     <button class="close-btn" id="closePredictions">✕</button>
   </div>
-  <div style="padding:10px 15px;background:rgba(155,111,255,0.05);border-bottom:1px solid var(--border);">
-    <div style="font-size:10px;color:var(--muted);line-height:1.4;">
-      Event forecasting using dasha cycles, transit analysis, and Phaladeepika principles.
-    </div>
-  </div>
-  <div style="padding:15px;">
-    <div style="margin-bottom:15px;">
-      <label style="font-family:'Courier New',monospace;font-size:9px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;">Prediction Mode</label>
-      <select id="predictionModeSel" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:11px;padding:4px;border-radius:2px;margin-bottom:10px;outline:none;">
-      <option value="gochar">🪐 Gochar (Live Transit) — Active Bhava, Benefic/Malefic, Sudarshan Chakra</option>
-              <option value="kp">🪔 KP (Krishnamurti Paddhati) — Houses, Significators, Timing, Horary</option>
-        <option value="step2step">⭐️ Step by Step Panchang & Rotated Kundali</option>
-        <option value="ai">🌌 AI Prediction (BNN + Jaimini + Arudha)</option>
-        <option value="hora">🕉️ Hora Analysis (D2/D9/D3/D12 + Kaal Hora)</option>
-        <option value="comprehensive">🌌 Comprehensive Master Report (All Rules)</option>
-        <option value="default">Classical Texts (Phaladeepika etc)</option>
-        <option value="tushar">Deep Knowledge Base & Tushar Roy</option>
+  <div class="pred-control-shell">
+    <label class="pred-label" for="predictionModeSel">Analysis method</label>
+    <select id="predictionModeSel" class="pred-mode-select">
+      <optgroup label="Main analyses">
+        <option value="kp" selected>KP · Significators, Dasha and event timing</option>
+        <option value="ai">BNN + Jaimini + Arudha · AI interpretation</option>
+        <option value="gochar">Gochar · Live transits</option>
+        <option value="step2step">Step-by-Step · Panchang & rotated chart</option>
+        <option value="hora">Hora · D2/D9/D3/D12</option>
+        <option value="default">Classical texts · Phaladeepika</option>
+      </optgroup>
+      <optgroup label="Extended research & source libraries">
+        <option value="comprehensive">Comprehensive master report</option>
+        <option value="tushar">Tushar Roy knowledge base</option>
         <option value="saral">Saral Jyotish</option>
         <option value="astro">Astro Pathshala</option>
         <option value="arun_pandit">Arun Pandit</option>
         <option value="astrology_made_easy">Astrology Made Easy</option>
-        <option value="bnn">BNN</option>
+        <option value="bnn">BNN reference</option>
         <option value="kaalpurush">Kaalpurush Astrology</option>
         <option value="tathastu">Tathastu Anubhav</option>
         <option value="professor">The Professor</option>
-        <option value="vedang">Vedang Jyotish (Shiv Sharma)</option>
-      </select>
-      
-      <label style="font-family:'Courier New',monospace;font-size:9px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;">Forecast Range</label>
-      
-      <div style="display:flex; padding-bottom:5px; justify-content:space-between; align-items:center; margin-bottom:5px;">
-        <div style="display:flex; gap:2px;">
-          <button class="btn sky" onclick="shiftPredDate(-1, 'year')" title="-1 Year" style="padding:2px 4px;font-size:9px;">«Y</button>
-          <button class="btn sky" onclick="shiftPredDate(-1, 'month')" title="-1 Month" style="padding:2px 4px;font-size:9px;">«M</button>
-          <button class="btn sky" onclick="shiftPredDate(-1, 'week')" title="-1 Week" style="padding:2px 4px;font-size:9px;">«W</button>
-          <button class="btn sky" onclick="shiftPredDate(-1, 'day')" title="-1 Day" style="padding:2px 4px;font-size:9px;">«D</button>
-        </div>
-        <div style="font-family:'Courier New',monospace;font-size:8px;color:var(--muted);">STEP</div>
-        <div style="display:flex; gap:2px;">
-          <button class="btn sky" onclick="shiftPredDate(+1, 'day')" title="+1 Day" style="padding:2px 4px;font-size:9px;">D»</button>
-          <button class="btn sky" onclick="shiftPredDate(+1, 'week')" title="+1 Week" style="padding:2px 4px;font-size:9px;">W»</button>
-          <button class="btn sky" onclick="shiftPredDate(1, 'month')" title="+1 Month" style="padding:2px 4px;font-size:9px;">M»</button>
-          <button class="btn sky" onclick="shiftPredDate(1, 'year')" title="+1 Year" style="padding:2px 4px;font-size:9px;">Y»</button>
-        </div>
-      </div>
-      
-      <div style="display:flex;gap:5px;margin-bottom:10px;">
-        <input type="date" id="pred-start" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:10px;padding:4px;border-radius:2px;">
-        <input type="date" id="pred-end" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:10px;padding:4px;border-radius:2px;">
-      </div>
-      
-      <div class="chk-group" style="padding:5px 0; display:flex; flex-direction:column; gap:5px;">
-        <label><input type="checkbox" id="chkCalculateSahams"> <span style="color:var(--cyan)">Calculate Tajaka Sahams (Life Events)</span></label>
-        <label><input type="checkbox" id="chkShowSahamsTransit"> <span style="color:var(--gold)">Sahams / Varshaphala (Transit Chart)</span></label>
-        <label><input type="checkbox" id="chkMarkKharDasha"> <span style="color:var(--rose)">Mark Khar/Ashtam in Dasha</span></label>
-      </div>
+        <option value="vedang">Vedang Jyotish</option>
+      </optgroup>
+    </select>
+    <div class="pred-forecast-dates">
+      <div><label class="pred-label" for="pred-start">From</label><input type="date" id="pred-start"></div>
+      <div><label class="pred-label" for="pred-end">To</label><input type="date" id="pred-end"></div>
     </div>
-    <div id="pred-progress" style="display:none; margin-bottom:10px; padding:8px; border:1px solid var(--border); border-radius:4px; font-family:'Courier New',monospace; font-size:10px; color:var(--cyan); background:rgba(0,0,0,0.2);"></div>
-    <button class="btn primary" id="btnUpdatePredictions" style="width:100%; padding:6px; border-color:var(--violet); color:var(--violet); background:rgba(155,111,255,0.1);">⟲ Analyze</button>
+    <details class="pred-control-details" id="predAdvancedOptions">
+      <summary>Advanced timing & chart options</summary>
+      <div class="pred-date-step">
+        <span>Move date range</span>
+        <button type="button" onclick="shiftPredDate(-1,'year')">− Year</button>
+        <button type="button" onclick="shiftPredDate(-1,'month')">− Month</button>
+        <button type="button" onclick="shiftPredDate(-1,'week')">− Week</button>
+        <button type="button" onclick="shiftPredDate(-1,'day')">− Day</button>
+        <button type="button" onclick="shiftPredDate(1,'day')">+ Day</button>
+        <button type="button" onclick="shiftPredDate(1,'week')">+ Week</button>
+        <button type="button" onclick="shiftPredDate(1,'month')">+ Month</button>
+        <button type="button" onclick="shiftPredDate(1,'year')">+ Year</button>
+      </div>
+      <div class="chk-group pred-chart-options">
+        <label><input type="checkbox" id="chkCalculateSahams"> Calculate Tajaka Sahams</label>
+        <label><input type="checkbox" id="chkShowSahamsTransit"> Varshaphala transit overlay</label>
+        <label><input type="checkbox" id="chkMarkKharDasha"> Mark Khar / Ashtam Dasha</label>
+      </div>
+    </details>
+    <div id="pred-progress" style="display:none" class="pred-progress"></div>
+    <button class="btn primary pred-analyze" id="btnUpdatePredictions" type="button">⟲ Analyze selected method</button>
   </div>
   <div id="predictionsContent" style="padding:15px;padding-bottom:50px;">
     <div style="text-align:center;padding:40px 20px;color:var(--muted);font-family:Courier New,monospace;font-size:11px;">
@@ -1176,6 +1167,11 @@
 <script src="./src/predictions/logic/KP_prediction_9.js"></script>
 <script src="./src/predictions/logic/KP_prediction_10.js"></script>
 <script src="./src/predictions/logic/KP_prediction_11.js"></script>
+<!-- Part 12: wealth planet positive/negative KP significators and Dasha finder -->
+<script src="./src/predictions/logic/KP_prediction_12.js"></script>
+<script src="./src/predictions/logic/KP_prediction_13.js"></script>
+<!-- Part 14: book 249-division Ansh Phale, with Diseases/Business panel results -->
+<script src="./src/predictions/logic/KP_prediction_14_ansh.js"></script>
 <script src="./src/predictions/logic/RKP.js"></script>
 <!-- Test Verification -->
 <script src="./src/predictions/logic/test_verification.js"></script>

@@ -342,35 +342,23 @@ window.KP_PREDICTION_10 = {
         const data = KP.getFruitfulSignificators(houseNum, natalPlanetsMap, ascSignNum, lords);
         const sig = data.significators;
 
-        const steps = [];
-        steps.push({
-            level: 'A', title: 'Occupants of House ' + houseNum,
-            planets: sig.level1_occupants,
-            reasoning: sig.level1_occupants.length
-                ? `${sig.level1_occupants.join(', ')} physically sit in House ${houseNum} — each directly signifies it (a planet always signifies the house it occupies).`
-                : `No planet occupies House ${houseNum} — this level contributes no significator; the house leans on its owner and star-lord chains instead (Levels C/D below).`
-        });
-        steps.push({
-            level: 'B', title: 'Star Lords of the Occupants',
-            planets: sig.level2_starLordOfOccupants,
-            reasoning: sig.level2_starLordOfOccupants.length
-                ? `${sig.level2_starLordOfOccupants.join(', ')} — each is the Nakshatra (star) Lord of a Level-A occupant, so each delivers that occupant's result and therefore also signifies House ${houseNum}.`
-                : `No Level-A occupants, so no star-lord chain to follow at this level.`
-        });
-        steps.push({
-            level: 'C', title: 'Owner (Sign Lord) of House ' + houseNum,
-            planets: sig.level3_houseLord ? [sig.level3_houseLord] : [],
-            reasoning: sig.level3_houseLord
-                ? `${sig.level3_houseLord} owns (is the Rashi Swami of) House ${houseNum}'s sign — ownership itself is a direct, always-present significator line.`
-                : `House ${houseNum}'s owner could not be resolved.`
-        });
-        steps.push({
-            level: 'D', title: 'Star Lord of the Owner',
-            planets: sig.level4_starLordOfHouseLord ? [sig.level4_starLordOfHouseLord] : [],
-            reasoning: sig.level4_starLordOfHouseLord
-                ? `${sig.level4_starLordOfHouseLord} is the Nakshatra Lord of ${sig.level3_houseLord} (the owner) — it delivers the owner's result, extending the ownership significance one level further.`
-                : `Owner's star lord could not be resolved.`
-        });
+        // Classic four-grade KP priority (verified against the reference
+        // snapshots): A=planets IN occupant's star; B=occupants;
+        // C=planets IN cusp-lord's star; D=cusp lord.
+        const gA=sig.gradeA||sig.level2_starLordOfOccupants||[];
+        const gB=sig.gradeB||sig.level1_occupants||[];
+        const gC=sig.gradeC||sig.level4_planetsInStarOfHouseLord||[];
+        const gD=sig.gradeD||(sig.level3_houseLord?[sig.level3_houseLord]:[]);
+        const steps = [
+            {level:'A',title:'Planets in star of a house occupant',planets:gA,
+                reasoning:gA.length?`${gA.join(', ')} occupy a star ruled by an occupant of House ${houseNum} (strongest KP channel).`:'No planets occupy a house occupant’s star.'},
+            {level:'B',title:'Planets occupying House '+houseNum,planets:gB,
+                reasoning:gB.length?`${gB.join(', ')} physically occupy House ${houseNum} under the selected house system.`:'No direct occupants.'},
+            {level:'C',title:'Planets in cusp sign lord’s star',planets:gC,
+                reasoning:gC.length?`${gC.join(', ')} occupy a star ruled by the cusp sign lord.`:'No planets in the cusp lord’s stars.'},
+            {level:'D',title:'Cusp sign lord',planets:gD,
+                reasoning:gD.length?`${gD.join(', ')} rules the cusp sign, a baseline house signification.`:'Cusp lord unavailable.'}
+        ];
 
         // Ranking: a planet appearing at MORE levels is a stronger
         // significator (classical KP ranking order is A+B > C+D, but any

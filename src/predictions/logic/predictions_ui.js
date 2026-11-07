@@ -78,14 +78,19 @@ function initPredictionsUI() {
     updatePredictionsDisplay();
   });
 
+  const predictionMode = document.getElementById('predictionModeSel');
+  predictionMode?.addEventListener('change', () => {
+    const c = document.getElementById('predictionsContent');
+    if (c) c.innerHTML = '<div class="pred-empty-state">Method changed. Select <strong>Analyze</strong> to generate this report for the chosen dates.</div>';
+  });
   PREDICTIONS_UI.initialized = true;
 
   // Sahams Transit Toggle
   const chkShowSahamsTransit = document.getElementById('chkShowSahamsTransit');
   if (chkShowSahamsTransit) {
     chkShowSahamsTransit.addEventListener('change', (e) => {
-      window.showVarshaphala = e.target.checked;
-      if (window.renderSvgChart) window.renderSvgChart();
+      if (typeof window.setVarshaMode === 'function') window.setVarshaMode(e.target.checked);
+      else { window.showVarshaphala = e.target.checked; if (window.renderSvgChart) window.renderSvgChart(); }
     });
   }
 
@@ -257,6 +262,96 @@ function clearProgress() {
 }
 
 /**
+ * KP15 — progressive disclosure of KP tools. One report is built (all existing
+ * modules and onclick hooks are kept intact) but only one workflow stage is
+ * shown at a time. Avoid duplicating source results or removing cross-links.
+ */
+function renderKpWorkflow(rawHtml) {
+  const pieces = String(rawHtml).split(/<!--kp:block:([a-z0-9]+)-->/g);
+  const byKey = Object.create(null);
+  for (let i = 1; i < pieces.length; i += 2) {
+    byKey[pieces[i]] = pieces[i + 1] || '';
+  }
+  const fallback = pieces[0]?.trim() || '';
+  if (fallback) byKey.core = (byKey.core || '') + fallback;
+  const labels = {
+    core: 'KP foundation · cusps, significators and natal chart',
+    p7: 'Running Mahadasha → Antardasha and career signatures',
+    p13: 'Verified promise and Dasha result checks',
+    p12: 'Wealth significators and money periods',
+    p6: 'Wealth sources and profession',
+    p8: 'Event promise library',
+    p9: 'Find Dasha timing for selected houses',
+    p2: 'Dasha Pravesh, Muhurat and special KP rules',
+    p3: 'Retrograde, conjunctions and horary',
+    p4: 'Guide planet and extended techniques',
+    p5: 'Full house-signification reference',
+    p11: 'Krishnamurti 249-division book references'
+  };
+  const stages = [
+    { key: 'overview', title: 'Overview', number: '01', desc: 'Start with the running Dasha, then inspect the underlying cusps and significators.', ids: ['p7','core'] },
+    { key: 'wealth', title: 'Wealth & career', number: '02', desc: 'Check money-house promise first, then rank Mahadasha/Antardasha periods.', ids: ['p13','p12','p6'] },
+    { key: 'events', title: 'Events & timing', number: '03', desc: 'Select an event promise, then send its house numbers to the timing finder.', ids: ['p8','p9'] },
+    { key: 'advanced', title: 'Advanced rules', number: '04', desc: 'Optional supplementary techniques, separate from the primary event promise.', ids: ['p2','p3','p4'] },
+    { key: 'library', title: 'References', number: '05', desc: 'Detailed rule tables and 249-division reference entries.', ids: ['p5','p11'] }
+  ];
+  const has = (id) => !!byKey[id]?.trim();
+  const nav = stages.map((stage, i) => `
+    <button type="button" class="kp-workflow-tab${i === 0 ? ' active' : ''}" role="tab"
+      aria-selected="${i === 0}" data-kp-tab="${stage.key}"
+      onclick="window.kpSelectWorkflowTab('${stage.key}',this)">${stage.number} ${stage.title}</button>`).join('');
+  const panes = stages.map((stage, i) => {
+    const blocks = stage.ids.filter(has).map((id) => {
+      const expanded = (stage.key === 'overview' && id === 'p7') ||
+                       (stage.key === 'wealth' && id === 'p13') ||
+                       (stage.key === 'events' && id === 'p9');
+      return `<details class="kp-workflow-block" data-kp-block="${id}"${expanded ? ' open' : ''}>
+          <summary>${labels[id]}</summary><div class="kp-workflow-block-body">${byKey[id]}</div>
+        </details>`;
+    }).join('');
+    return `<section class="kp-workflow-pane${i === 0 ? ' active' : ''}" data-kp-pane="${stage.key}"
+      role="tabpanel" ${i === 0 ? '' : 'hidden'}>
+      <p class="kp-workflow-desc">${stage.desc}</p>
+      ${blocks || '<p class="kp-workflow-desc">No module results are available for this step.</p>'}
+      </section>`;
+  }).join('');
+  return `<div class="kp-workflow-hub" id="kpWorkflowHub">
+    <div class="kp-workflow-intro"><strong>KP analysis</strong> <span>Promise → Dasha → Timing</span></div>
+    <div class="kp-workflow-tabs" role="tablist" aria-label="KP analysis steps">${nav}</div>
+    ${panes}</div>`;
+}
+
+window.kpRedrawVisibleCharts = function () {
+  const cfgs = window.PREDICTIONS_UI?.kpChartConfigs || [];
+  if (typeof drawDChart !== 'function') return;
+  cfgs.forEach(cfg => {
+    const canvas = document.getElementById(cfg.canvasId);
+    // Details and tabs are initially collapsed, so avoid measuring a zero-size canvas.
+    if (!canvas || !canvas.getClientRects().length || !canvas.getBoundingClientRect().width) return;
+    try { drawDChart(cfg.canvasId, {planets:cfg.planets, asc:cfg.asc}); }
+    catch(err) { console.warn('Deferred KP chart failed:',cfg.canvasId,err); }
+  });
+};
+
+window.kpSelectWorkflowTab = function (key, btn) {
+  const hub = document.getElementById('kpWorkflowHub');
+  if (!hub) return;
+  hub.querySelectorAll('[data-kp-tab]').forEach(el => {
+    const active = el.dataset.kpTab === key;
+    el.classList.toggle('active', active);
+    el.setAttribute('aria-selected', String(active));
+    el.tabIndex = active ? 0 : -1;
+  });
+  hub.querySelectorAll('[data-kp-pane]').forEach(el => {
+    const active = el.dataset.kpPane === key;
+    el.classList.toggle('active', active);
+    el.hidden = !active;
+  });
+  if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(window.kpRedrawVisibleCharts);
+  if (btn) hub.scrollIntoView({ block: 'start', behavior: 'smooth' });
+};
+
+/**
  * Update predictions display with current date range
  */
 async function updatePredictionsDisplay() {
@@ -340,6 +435,8 @@ async function updatePredictionsDisplay() {
         html += `<div class="pred-item"><div class="pred-title">⚠️ Natal chart not available</div></div>`;
       } else {
         try {
+          const kpHtmlStart = html.length;
+          html += '<!--kp:block:core-->';
           const transitPlanets = (typeof getPos === 'function') ? getPos(targetDate) : null;
           let transitAsc = null;
           if (typeof computeAsc === 'function' && typeof jd === 'function' && window.BIRTH) {
@@ -383,6 +480,7 @@ async function updatePredictionsDisplay() {
           }) : [];
 
           gocharChartConfigsToRender = chartConfigs.concat(kpChartConfigs);
+          PREDICTIONS_UI.kpChartConfigs = gocharChartConfigsToRender;
 
           if (window.GOCHAR && chartConfigs.length) {
             html += window.GOCHAR._renderChartPanels ? window.GOCHAR._renderChartPanels(chartConfigs) : '';
@@ -396,6 +494,7 @@ async function updatePredictionsDisplay() {
           // rule, Competitive Prashna defeat-houses, 12th-CSL investment
           // formula, 2nd-CSL wealth-source table, Jupiter Yearly panel).
           // Purely additive — degrades gracefully if inputs are missing.
+          html += '<!--kp:block:p2-->';
           if (window.KP_PREDICTION_2) {
             try {
               const kp2Analysis = window.KP_PREDICTION_2.analyze2({
@@ -420,6 +519,7 @@ async function updatePredictionsDisplay() {
           // Sun+Rahu, Mars+Ketu, Mars+Rahu), four-trine conjunction
           // reading, full 3-rule retrograde filter, tiered 5th-house
           // money/childbirth grading, and the curated horary library.
+          html += '<!--kp:block:p3-->';
           if (window.KP_PREDICTION_3) {
             try {
               const kp3Analysis = window.KP_PREDICTION_3.analyze3({
@@ -439,6 +539,7 @@ async function updatePredictionsDisplay() {
           // Dasha Pravesh Guide-Planet method (with worked case
           // studies), marriage-override check, and the 3rd-CSL
           // authorship/publication rule.
+          html += '<!--kp:block:p4-->';
           if (window.KP_PREDICTION_4) {
             try {
               const kp4Analysis = window.KP_PREDICTION_4.analyze4({
@@ -464,6 +565,7 @@ async function updatePredictionsDisplay() {
           // master reference table (Event of Life -> Primary House ->
           // Supporting Houses), bulk cross-checked against the active
           // chart plus an interactive single-event evaluator UI.
+          html += '<!--kp:block:p5-->';
           if (window.KP_PREDICTION_5) {
             try {
               const kp5Analysis = window.KP_PREDICTION_5.analyze5({
@@ -484,6 +586,7 @@ async function updatePredictionsDisplay() {
           // with the 2-8 family-business Alignment Technique, the 8th-house
           // modern commission/dropshipping + funding-timing theory, and
           // the Vikas Kumar worked case study.
+          html += '<!--kp:block:p6-->';
           if (window.KP_PREDICTION_6) {
             try {
               const kp6Analysis = window.KP_PREDICTION_6.analyze6({
@@ -501,6 +604,7 @@ async function updatePredictionsDisplay() {
           // rule cards (Job vs Business, Transfer & Promotion). Same
           // renderer also powers the Dasha Explorer panel; sectionClass
           // is passed so its headers match this panel's own style.
+          html += '<!--kp:block:p7-->';
           if (window.KP_PREDICTION_7) {
             try {
               html += window.KP_PREDICTION_7.renderForPanel({
@@ -518,6 +622,7 @@ async function updatePredictionsDisplay() {
                     // KP Part 8 — Promise (NL) vs Result (CSL) event-library
           // verdicts. instanceId keeps this copy's search/detail state
           // separate from the one rendered inside the Dasha Explorer.
+          html += '<!--kp:block:p8-->';
           if (window.KP_PREDICTION_8) {
             try {
               html += window.KP_PREDICTION_8.renderForPanel({
@@ -533,6 +638,7 @@ async function updatePredictionsDisplay() {
           // VIMSH tree (Mahadasha→Antardasha→Pratyantardasha→Sukshma→
           // Pran). Same instanceId as Part 8 above so its "Find timing"
           // cross-link button reaches the matching finder instance.
+          html += '<!--kp:block:p9-->';
           if (window.KP_PREDICTION_9) {
             try {
               html += window.KP_PREDICTION_9.renderForPanel({
@@ -544,8 +650,31 @@ async function updatePredictionsDisplay() {
               html += `<div class="pred-item"><div class="pred-title">⚠️ KP Part 9 analysis error</div><div class="pred-detail">${kp9Err.message}</div></div>`;
             }
           }
+          // KP Part 12 — transcript-defined wealth significators (positive
+          // H2/H6/H10/H11 vs negative H5/H8/H9/H12), with Dasha chain.
+          html += '<!--kp:block:p12-->';
+          if (window.KP_PREDICTION_12) {
+            try {
+              html += window.KP_PREDICTION_12.renderForPanel({
+                natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC,
+                birth: window.BIRTH, vimsh: window.VIMSH,
+                referenceDate: targetDate, sectionClass: 'pred-section-title'
+              });
+            } catch (kp12Err) {
+              console.error('KP Part 12 wealth/Dasha analysis failed:', kp12Err);
+            }
+          }
+          // KP Part 13 — screenshot-validated Placidus significators and
+          // explicit event-promise vs Dasha-window checks.
+          html += '<!--kp:block:p13-->';
+          if (window.KP_PREDICTION_13) {
+            try { html += window.KP_PREDICTION_13.renderForPanel({
+              sectionClass:'pred-section-title', now:targetDate
+            }); } catch (e) { console.error('KP Part 13 failed', e); }
+          }
           // KP Part 11 — Krishnamurti Ansh Phale (249-division table):
           // nature (Lagna row), disease (6th cusp row), profession (10th cusp row).
+          html += '<!--kp:block:p11-->';
           if (window.KP_PREDICTION_11) {
             try {
               html += window.KP_PREDICTION_11.renderForPanel({
@@ -556,6 +685,7 @@ async function updatePredictionsDisplay() {
               console.error('KP Part 11 analysis failed:', kp11Err);
             }
           }
+          html = html.slice(0, kpHtmlStart) + renderKpWorkflow(html.slice(kpHtmlStart));
         } catch (kpMainErr) {
           console.error('KP main analysis error:', kpMainErr);
           html += `<div class="pred-item"><div class="pred-title">⚠️ KP analysis error</div><div class="pred-detail">${kpMainErr.message}</div></div>`;
@@ -599,8 +729,12 @@ async function updatePredictionsDisplay() {
       }
     } else if (mode === 'ai') {
       await showProgress('Synthesizing 19-Factor AI Prediction...');
-      const d1 = window.CURRENT_PLANETARY_POSITIONS || window.BIRTH_PLANETS || {};
-      const asc = window.CURRENT_ASCENDANT || window.BIRTH_ASC || { signIndex: 0 };
+      const d1 = window.BIRTH_PLANETS || {};
+      const asc = window.BIRTH_ASC; // natal D1, not currently selected Moon/transit chart
+      if (!asc || !Number.isFinite(Number(asc.sid ?? asc.longitude)))
+        throw new Error('Calculate the natal Ascendant before running AI Prediction.');
+      const natalAscSign = Number.isInteger(Number(asc.sn)) ? Number(asc.sn) :
+        Math.floor((((Number(asc.sid ?? asc.longitude) % 360) + 360) % 360) / 30);
       const bDate = window.BIRTH?.date || new Date();
       const targetDate = PREDICTIONS_UI.currentStartDate || new Date();
       const age = targetDate.getFullYear() - bDate.getFullYear();
@@ -609,13 +743,15 @@ async function updatePredictionsDisplay() {
       const transitJupiter = d1.Jupiter || {};
 
       const planetsArr = Object.entries(d1).map(([name, data]) => {
-        const deg = data.sid !== undefined ? data.sid : (data.longitude || 0);
+        const deg = Number(data.sid ?? data.longitude ?? 0);
+        const signIndex = Math.floor((((deg % 360) + 360) % 360) / 30);
         return {
           name,
           degree: deg,
           longitude: deg,
-          signIndex: Math.floor(deg / 30),
-          house: data.house || 1,
+          sn: signIndex,
+          signIndex,
+          house: ((signIndex - natalAscSign + 12) % 12) + 1,
           sign: data.sign || "",
           isRetrograde: !!data.isRetrograde
         };
@@ -1038,10 +1174,37 @@ async function updatePredictionsDisplay() {
     await showProgress('Rendering Prediction Dashboard...');
     content.innerHTML = window.I18N ? window.I18N.t(html) : html;
     clearProgress();
+    // Step-by-Step charts are rendered only AFTER their HTML is committed.
+    // The older timer could expire during awaited report construction, leaving
+    // D1/D9/D10/Indu/Arudha and rotated charts visibly empty.
+    if (mode === 'step2step' && typeof window.drawDChart === 'function') {
+      for (const cfg of (window.__step2stepKeyCharts || []).concat(window.__step2stepRotatedCharts || [])) {
+        const cv = document.getElementById(cfg.id);
+        if (!cv) { console.warn('Step2Step canvas missing:', cfg.id); continue; }
+        try {
+          window.drawDChart(cfg.id, {planets:cfg.data.planets, asc:cfg.data.asc, showAspects:true});
+          cv.dataset.drawn='1';
+        } catch(e) {
+          console.error('Step2Step chart failed:', cfg.data.name || cfg.id, e);
+        }
+      }
+      window.__step2stepKeyCharts = null;
+      window.__step2stepRotatedCharts = null;
+    }
+    // The KP foundation starts collapsed; draw its canvases when a tab/detail opens.
+    if (mode === 'kp') {
+      content.querySelectorAll('details.kp-workflow-block').forEach(el => {
+        el.addEventListener('toggle', () => window.requestAnimationFrame?.(window.kpRedrawVisibleCharts));
+      });
+    } else {
+      PREDICTIONS_UI.kpChartConfigs = null;
+    }
     // Gochar & KP modes draw their D1/D9/Transit/Rashi-Tulya/Moon canvases now that
     // the <canvas> elements exist in the DOM (chart drawing needs real DOM nodes).
     if ((mode === 'gochar' || mode === 'kp') && gocharChartConfigsToRender && typeof drawDChart === 'function') {
       gocharChartConfigsToRender.forEach(cfg => {
+        const c = document.getElementById(cfg.canvasId);
+        if (mode === 'kp' && (!c || !c.getClientRects().length || !c.getBoundingClientRect().width)) return;
         try { drawDChart(cfg.canvasId, { planets: cfg.planets, asc: cfg.asc }); } catch (dErr) { console.error('Gochar chart draw failed:', cfg.canvasId, dErr); }
       });
     }

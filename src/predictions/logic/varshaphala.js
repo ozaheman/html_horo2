@@ -48,8 +48,16 @@ window.VARSHAPHALA = {
       return null;
     }
 
-    const natalSunSid = window.BIRTH_PLANETS.Sun.sid;
-    const natalAscSn = window.BIRTH_ASC.sn;
+    // Always derive natal D1 positions from the birth instant: the user may
+    // currently be viewing D9/D24 or another division when opening Step 2 Step.
+    const originalJD = (typeof window.birthJD === 'function') ? window.birthJD() : window.BIRTH_JD;
+    const natalD1 = Number.isFinite(originalJD) && typeof window.computeAll === 'function'
+      ? window.computeAll(originalJD, window.BIRTH.ayan, 1) : window.BIRTH_PLANETS;
+    const natalD1Asc = Number.isFinite(originalJD) && typeof window.computeAsc === 'function'
+      ? window.computeAsc(originalJD, window.BIRTH.lat, window.BIRTH.lon, window.BIRTH.utcOff, window.BIRTH.ayan, 1) : window.BIRTH_ASC;
+    if (!natalD1 || !natalD1.Sun || !natalD1Asc) return null;
+    const natalSunSid = natalD1.Sun.sid;
+    const natalAscSn = natalD1Asc.sn;
     const bDate = window.BIRTH.date;
     const age = targetYear - bDate.getFullYear();
 
@@ -231,25 +239,32 @@ const munthaHouse = varshaS2H(munthaSn, varshaAsc.sn);    const lords = {0:"Mars
     
     // 6.5 Maasaphala (Monthly Returns)
     const maasaphala = [];
-    let currentSunSid = natalSunSid;
-    
-    // Calculate 12 monthly returns
+    // Calculate twelve 30° solar-longitude steps. The old monthly search
+    // bracket [29.5*(m-1), +2d] did NOT contain the actual return for
+    // many months, silently returning the bracket boundary instead.
     for(let m=1; m<=12; m++) {
-        let mStartJD = midJD + (m-1)*29.5;
-        let mEndJD = mStartJD + 2;
+        const approximateJD = midJD + (m-1) * (365.2422/12);
+        let mStartJD = approximateJD - 10;
+        let mEndJD = approximateJD + 10;
         let targetSid = window.norm360(natalSunSid + (m-1)*30);
-        
-        let mMidJD, mDiff;
-        let mIter = 0;
-        while(mIter < 30) {
-            mMidJD = (mStartJD + mEndJD) / 2;
-            const mPos = window.computeAll(mMidJD, ayan, 1);
-            mDiff = window.norm360(mPos.Sun.sid - targetSid);
-            if (mDiff > 180) mDiff -= 360;
-            if (Math.abs(mDiff) < tolerance) break;
-            if (mDiff > 0) mEndJD = mMidJD;
-            else mStartJD = mMidJD;
-            mIter++;
+        const residual = (j) => {
+            let x = window.norm360(window.computeAll(j, ayan, 1).Sun.sid - targetSid);
+            return x > 180 ? x - 360 : x;
+        };
+        let left=residual(mStartJD),right=residual(mEndJD);
+        // Bisection only on a valid sign-change bracket; never publish a
+        // non-root as a monthly return if numerical inputs are inconsistent.
+        if (left > 0 || right < 0) {
+            console.warn('Maasaphala: could not bracket monthly solar return', m);
+            continue;
+        }
+        let mMidJD=approximateJD;
+        for(let mIter=0; mIter<45; mIter++) {
+            mMidJD = (mStartJD + mEndJD)/2;
+            const diff=residual(mMidJD);
+            if(Math.abs(diff) < tolerance) break;
+            if(diff>0)mEndJD=mMidJD;
+            else mStartJD=mMidJD;
         }
         
         const mAsc = window.computeAsc(mMidJD, window.BIRTH.lat, window.BIRTH.lon, window.BIRTH.utcOff, ayan, 1);
@@ -306,6 +321,7 @@ const munthaHouse = varshaS2H(munthaSn, varshaAsc.sn);    const lords = {0:"Mars
       asc: varshaAsc,
       planets: varshaPlanets,
       yearLord: yearLord,
+      yearLordMethod: 'heuristic contender score (not full Tajika Panchavargiya Bala)',
       yearLordHouse: yearLordHouse,
       yearLordQuality: yearLordQuality,
       muntha: { sn: munthaSn, sign: munthaSign, house: munthaHouse, lord: munthesh, quality: this.classifyHouse(munthaHouse) },

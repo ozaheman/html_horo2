@@ -1012,9 +1012,9 @@ const HOUSE_NATURE = { 1: { pol: 2, lbl: 'Kendra+Trikona' }, 2: { pol: 0, lbl: '
 //  AYANAMSA TABLE (value at J2000, drift per year)
 // ═══════════════════════════════════════════════════════════
 const AYANAMSA_TABLE = {
-  lahiri: { at2000: 23.8521, rate: 50.2879 },  // degrees at J2000.0, arcsec/year
+  lahiri: { at2000: 23.85709235, rate: 50.2879 }, // Swiss Ephemeris J2000 reference  // degrees at J2000.0, arcsec/year
   raman: { at2000: 22.4600, rate: 50.2333 },
-  krishnamurti: { at2000: 23.8600, rate: 50.2333 },
+  krishnamurti: { at2000: 23.76024004, rate: 50.2333 }, // corrected KP ayanamsa; previously ~0.10° too large
   yukteshwar: { at2000: 22.4600, rate: 50.2333 },
   fagan: { at2000: 24.7400, rate: 50.2333 },
   tropical: { at2000: 0, rate: 0 },
@@ -1506,6 +1506,8 @@ function buildPdfAsc() {
 }
 
 function recalcBirth() {
+  VARSHA_CHART = null;
+  window.VARSHA_CHART = null;
   const actualDiv = (CURRENT_DIV === 'indu' || CURRENT_DIV === 'arudha') ? 1 : CURRENT_DIV;
   BIRTH_JD = birthJD();
   const usePdf = !BIRTH.useComputed; // use PDF data for default native
@@ -2182,12 +2184,15 @@ function buildVimsh(birthDate, moonNakLord, elapsedInLord, totalYrsOfLord) {
   };
 
   const initialMD = { lord: moonNakLord, start: new Date(cur), end, years: rem, partial: true };
-  initialMD.subs = addSubs(cur, new Date(cur.getTime() + totalYrsOfLord * 365.25 * 86400000), moonNakLord, 2);
-  // Need to clip the partial MD subs if they fall before birth
-  initialMD.subs = initialMD.subs.filter(s => s.end > birthDate).map(s => {
-    if (s.start < birthDate) s.start = new Date(birthDate);
-    return s;
+  // Crucial: the 1st MD is already partly elapsed at birth. Its nested AD/PD
+  // must be laid out from the full *historical MD start*, not from birth.
+  const fullMDStart = new Date(cur.getTime() - elapsedInLord * 365.25 * 86400000);
+  const clipToBirth = items => (items || []).filter(item => item.end > birthDate).map(item => {
+    const sub = {...item, start: new Date(Math.max(item.start.getTime(), birthDate.getTime()))};
+    if (item.subs) sub.subs = clipToBirth(item.subs);
+    return sub;
   });
+  initialMD.subs = clipToBirth(addSubs(fullMDStart, end, moonNakLord, 2));
   dashas.push(initialMD);
 
   cur = end; idx = (idx + 1) % 9;
@@ -2361,6 +2366,8 @@ let activePlanets = new Set(Object.keys(PCFG));
 let showVimsh = true, showYogini = false, showConj = false, showNatal = true, showAspects = false, showRetro = false, showDegLabel = false;
 let showNatalConj = false, showNatalAspects = false;
 let showVarshaphala = false, VARSHA_CHART = null;
+window.showVarshaphala = false;
+window.VARSHA_CHART = null;
 let conjOpen = false, chartFocus = 'lagna', showKarakas = false, trackAK = false, trackAmK = false, trackDK = false;
 let animating = false, animTimer = null;
 const activeAspects = new Set(['0', '60', '90', '120', '180', 'vedic']);
@@ -4239,6 +4246,22 @@ function renderDashaPanel() {
       });
     } catch (e) { console.error('KP Part 11 render failed:', e); }
   }
+  // KP PART 12 — wealth significators: merged planet + star lord house
+  // numbers, Placidus cusps, money-positive vs money-negative house filter,
+  // and the currently running/upcoming Vimshottari MD/AD/PD windows.
+  if (window.KP_PREDICTION_12 && typeof window.KP_PREDICTION_12.renderForPanel === 'function') {
+    try {
+      html += window.KP_PREDICTION_12.renderForPanel({
+        natalPlanets: BIRTH_PLANETS, natalAsc: BIRTH_ASC,
+        birth: BIRTH, vimsh: VIMSH, referenceDate: ref,
+        sectionClass: 'dt-section'
+      });
+    } catch (e) { console.error('KP Part 12 wealth/Dasha render failed:', e); }
+  }
+  if (window.KP_PREDICTION_13 && typeof window.KP_PREDICTION_13.renderForPanel === 'function') {
+    try { html += window.KP_PREDICTION_13.renderForPanel({sectionClass:'dt-section',now:ref}); }
+    catch (e) { console.error('KP Part 13 verification and event analysis failed',e); }
+  }
   c.innerHTML = html;
 }
 
@@ -4892,13 +4915,24 @@ document.getElementById('chkNatal').addEventListener('change', e => { showNatal 
 document.getElementById('chkAspects').addEventListener('change', e => { showAspects = e.target.checked; renderAll(); });
 document.getElementById('chkRetro').addEventListener('change', e => { showRetro = e.target.checked; renderAll(); });
 document.getElementById('chkDegLabel').addEventListener('change', e => { showDegLabel = e.target.checked; renderAll(); });
-document.getElementById('chkVarshaphala').addEventListener('change', e => {
-  showVarshaphala = e.target.checked;
-  if (showVarshaphala && !VARSHA_CHART && window.VARSHAPHALA) {
-    // Generate varshaphala for centerDate's year
-    VARSHA_CHART = window.VARSHAPHALA.castAnnualChart(centerDate.getFullYear());
+// One synchronized annual-chart state for the toggle, floating SVG and Predictions panel.
+// Recast on a new year or natal-chart change. Never display an old year's cached chart.
+window.setVarshaMode = function(enabled, year) {
+  showVarshaphala = !!enabled;
+  window.showVarshaphala = showVarshaphala;
+  const desiredYear = Number.isInteger(+year) ? +year : centerDate.getFullYear();
+  if (showVarshaphala && window.VARSHAPHALA && (!VARSHA_CHART || VARSHA_CHART.year !== desiredYear)) {
+    VARSHA_CHART = window.VARSHAPHALA.castAnnualChart(desiredYear);
   }
-  renderAll();
+  window.VARSHA_CHART = VARSHA_CHART;
+  for (const id of ['chkVarshaphala', 'chkShowSahamsTransit']) {
+    const box = document.getElementById(id); if (box) box.checked = showVarshaphala;
+  }
+  if (typeof renderAll === 'function') renderAll();
+  if (typeof renderSvgChart === 'function') renderSvgChart();
+};
+document.getElementById('chkVarshaphala').addEventListener('change', e => {
+  window.setVarshaMode(e.target.checked, centerDate.getFullYear());
 });
 let show64Navamsha = false;
 document.getElementById('chk64Navamsha').addEventListener('change', e => { show64Navamsha = e.target.checked; renderAll(); });
@@ -6091,7 +6125,7 @@ function renderSvgChart() {
   let baseAsc = window.BIRTH_ASC;
   const data = [];
 
-  if (window.showVarshaphala && window.VARSHA_CHART) {
+  if (showVarshaphala && VARSHA_CHART) {
     basePlanets = VARSHA_CHART.planets;
     baseAsc = VARSHA_CHART.asc;
 
@@ -6128,10 +6162,23 @@ function renderSvgChart() {
       data.push({ tx: p.substring(0, 2), tx1: p.substring(0, 2), sign: d.sn + 1, bhava: d.house, long: d.sid, combust: d.combust, status: d.status, retro: d.retro });
     }
   }
-  const title = (window.showVarshaphala && window.VARSHA_CHART) ? `Varshaphala (${VARSHA_CHART.year})` : "D1 Chart";
+  const title = (showVarshaphala && VARSHA_CHART) ? `Varshaphala (${VARSHA_CHART.year})` : "D1 Chart";
   const svg = Writesvg(data, title);
   document.getElementById('svgChartContainer').innerHTML = svg;
 }
+// Independent annual-chart and Step 2 Step modules load before main.js;
+// expose the actual functions they reference through window.*.
+window.jd = jd;
+window.norm360 = norm360;
+window.computeAll = computeAll;
+window.computeAsc = computeAsc;
+window.birthJD = birthJD;
+window.s2h = s2h;
+window.getAyanamsa = getAyanamsa;
+// Independent modules render charts AFTER their HTML is inserted into the DOM.
+window.drawDChart = drawDChart;
+window.Writesvg = Writesvg;
+window.renderSvgChart = renderSvgChart;
 window.loadProfile = loadProfile;
 window.setDefaultProfile = setDefaultProfile;
 window.deleteProfile = deleteProfile;
@@ -6348,6 +6395,10 @@ function updateRange() {
 }
 
 function renderAll() {
+  if (showVarshaphala && window.VARSHAPHALA && (!VARSHA_CHART || VARSHA_CHART.year !== centerDate.getFullYear())) {
+    VARSHA_CHART = window.VARSHAPHALA.castAnnualChart(centerDate.getFullYear());
+    window.VARSHA_CHART = VARSHA_CHART;
+  }
   if (CURRENT_DIV === 1) calculateCharkarakas();
   updateRange();
 
@@ -7083,6 +7134,12 @@ function runBusinessAnalysis() {
   var el = document.getElementById('bizContent');
   if (!el) { console.error("bizContent element not found"); return; }
   el.innerHTML = '';
+
+  // KP 249-division book: 10th cusp profession, 4th spouse profession, Lagna nature.
+  if (window.KP_PREDICTION_11?.renderForBusinessPanel) {
+    try { el.insertAdjacentHTML('beforeend', window.KP_PREDICTION_11.renderForBusinessPanel()); }
+    catch (e) { console.warn('KP business reference failed:', e); }
+  }
 
   var charts = [
     { div: 1, label: 'D1', name: 'Rasi (Birth Chart)' },
@@ -8607,6 +8664,11 @@ document.getElementById('btnGenerateNumerology')?.addEventListener('click', () =
 
 document.getElementById('btnDiseasePredictor')?.addEventListener('click', () => {
   document.getElementById('diseasePanel').style.transform = 'translateX(0)';
+  const area = document.getElementById('diseaseContent');
+  if (area && window.KP_PREDICTION_11?.renderForDiseasePanel && !area.querySelector('[data-kp14]')) {
+    try { area.insertAdjacentHTML('afterbegin', window.KP_PREDICTION_11.renderForDiseasePanel()); }
+    catch (e) { console.warn('KP disease reference failed:',e); }
+  }
 });
 document.getElementById('closeDisease')?.addEventListener('click', () => {
   document.getElementById('diseasePanel').style.transform = 'translateX(100%)';
@@ -8627,7 +8689,8 @@ document.getElementById('btnGenerateDiseaseReport')?.addEventListener('click', (
   } catch (e) { dashaCtx = {}; }
 
   const report = window.DISEASE_PREDICTOR.generateReport(window.BIRTH_PLANETS, window.BIRTH_ASC, dashaCtx);
-  contentEl.innerHTML = window.DISEASE_PREDICTOR.renderHTML(report);
+  contentEl.innerHTML = (window.KP_PREDICTION_11?.renderForDiseasePanel
+    ? window.KP_PREDICTION_11.renderForDiseasePanel() : '') + window.DISEASE_PREDICTOR.renderHTML(report);
 });
 
 
