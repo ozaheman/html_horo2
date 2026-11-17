@@ -659,7 +659,40 @@ window.KP_PREDICTION = {
 
     /** House cusp longitude (equal-house approximation — see module header). */
     getCuspSid: function (ascSid, houseNum) {
+        // KP uses PLACIDUS cusps. When the app has computed them for THIS ascendant
+        // (window.KP_PLACIDUS_CUSPS, set in main.js) use them; otherwise (horary/transit
+        // ascendants, polar latitudes) fall back to the equal-house approximation.
+        const pc = this._placidusFor(ascSid);
+        if (pc) return houseNum === 1 ? ascSid : pc.sid[houseNum];
         return (ascSid + (houseNum - 1) * 30) % 360;
+    },
+    /** Placidus cusp set matching this Ascendant (within 0.05 deg), else null. */
+    _placidusFor: function (ascSid) {
+        const pc = (typeof window !== 'undefined') ? window.KP_PLACIDUS_CUSPS : null;
+        if (!pc || !pc.sid || ascSid === undefined || ascSid === null) return null;
+        const d = Math.abs(((pc.sid[1] - ascSid + 540) % 360) - 180);
+        return d < 0.05 ? pc : null;
+    },
+
+    /** 'placidus' or 'equal' — which cusp system getCuspSid() is using for this Ascendant. */
+    getCuspSystem: function (ascSid) { return this._placidusFor(ascSid) ? 'placidus' : 'equal'; },
+
+    /** KP (Placidus) house number of a sidereal longitude, or null if Placidus isn't available. */
+    getKPHouseOf: function (sidLon, ascSid) {
+        const pc = this._placidusFor(ascSid);
+        return (pc && window.KP_PLACIDUS) ? window.KP_PLACIDUS.houseOf(sidLon, pc.sid) : null;
+    },
+
+    /** Houses a planet owns in the KP sense: houses whose CUSP falls in a sign it rules. null if Placidus unavailable. */
+    getKPOwnedHouses: function (planet, ascSid, lords) {
+        const pc = this._placidusFor(ascSid), L = this._lords(lords);
+        if (!pc || !L) return null;
+        const out = [];
+        for (let h = 1; h <= 12; h++) {
+            const c = (h === 1) ? ascSid : pc.sid[h];
+            if (L[Math.floor(this._norm360(c) / 30)] === planet) out.push(h);
+        }
+        return out;
     },
 
     /** All 12 cusps' KP lords in one call: {1:{sid,nakLord,subLord,subSubLord}, ...}. */
@@ -676,9 +709,14 @@ window.KP_PREDICTION = {
             const calc = window.KP_PREDICTION_12.getCusps(window.BIRTH);
             if (calc && Array.isArray(calc.cusps) && calc.cusps.length === 12) real = calc.cusps;
         }
-        for (let h = 1; h <= 12; h++) {
+        /* for (let h = 1; h <= 12; h++) {
             const sid = real ? real[h-1] : this.getCuspSid(ascSid, h);
             out[h] = Object.assign({ house: h, sid: sid, cuspMethod:real?'Placidus':'equal-house fallback' }, this._getKPLords(sid));
+        } */
+        
+         for (let h = 1; h <= 12; h++) {
+            const sid = this.getCuspSid(ascSid, h);
+            out[h] = Object.assign({ house: h, sid: sid }, this._getKPLords(sid));
         }
         return out;
     },
@@ -864,6 +902,146 @@ window.KP_PREDICTION = {
         Object.keys(numbers).forEach(p => numbers[p].sort((a, b) => a - b));
         return numbers;
     },
+    // ===================== 3¼. RAHU/KETU SIGNIFICATORS -- AGENT METHOD (researched, selectable) =====================
+    //
+    // SOURCES CROSS-CHECKED:
+    //   * K. S. Krishnamurti, KP Reader I & VI: Rahu/Ketu are AGENTS of (a) the planets
+    //     conjoined with or aspecting them and (b) the owner of the sign they occupy; as
+    //     planets they also give the results of their STAR LORD. Nodes never aspect each other.
+    //   * Rahul Kaushik, "Rahu-Ketu ki sach" transcript: five sources in this order of
+    //     strength -- (house occupied, from the KP chart) / Aspect / Yuti / NL / RL; aspects
+    //     and sign lord from the Lagna (rashi) chart; Vedic aspects (all 7th; Jupiter 5,7,9;
+    //     Mars 4,7,8; Saturn 3,7,10); conjunction = within 4 degrees in the same sign.
+    //   * Other KP sources differ on (i) the orb (3deg20' = 1/4 nakshatra is the common
+    //     classical orb; 4deg in the transcript), (ii) aspect type (classical KP practice uses
+    //     conjunction/60/90/120/180 within the orb; the transcript uses Vedic house aspects) and
+    //     (iii) the PRIORITY order. The set of houses a node signifies is the UNION of all
+    //     sources, so (i)-(ii) can change membership; (iii) only changes the ranking label.
+    //   Therefore the method is a named PRESET (NODE_PRESETS) selected by setNodeMethod();
+    //   the default is 'kaushik' (the user's transcript).
+    //
+    // "A planet's houses" = reverse-CSL numbers + houses it owns + the house it sits in.
+    // With Placidus cusps available: owned = houses whose CUSP is in a sign it rules, and
+    // placement = Placidus house (the KP chart). Without: whole-sign (rashi) houses.
+    // Computed WITHOUT the node blend, so this can feed the blend without recursion.
+    NODE_PRESETS: {
+        kaushik:    { label: 'Rahul Kaushik transcript', orbDeg: 4,        aspectStyle: 'vedic',   sameSign: true,  order: ['aspect', 'yuti', 'star', 'sign'] },
+        ksk_reader: { label: 'KSK Reader style',         orbDeg: 10 / 3,   aspectStyle: 'western', sameSign: false, order: ['yuti', 'star', 'aspect', 'sign'] }
+    },
+    NODE_METHOD_NAME: 'kaushik',
+    setNodeMethod: function (nameOrObj) {
+        if (typeof nameOrObj === 'string' && this.NODE_PRESETS[nameOrObj]) { this.NODE_METHOD_NAME = nameOrObj; this.NODE_CUSTOM = null; return true; }
+        if (nameOrObj && typeof nameOrObj === 'object') { this.NODE_CUSTOM = Object.assign({}, this.NODE_PRESETS[this.NODE_METHOD_NAME], nameOrObj); return true; }
+        return false;
+    },
+    getNodeMethod: function () { return this.NODE_CUSTOM || this.NODE_PRESETS[this.NODE_METHOD_NAME]; },
+
+    NODE_ASPECT_OFFSETS: { Mars: [4, 7, 8], Jupiter: [5, 7, 9], Saturn: [3, 7, 10] },
+    WESTERN_ASPECTS: [60, 90, 120, 180],
+
+    _planetHousesNoBlend: function (planet, rawNumbers, L, ascSignNum, natalPlanetsMap, ascSid) {
+        const kpOwned = this.getKPOwnedHouses(planet, ascSid, L);
+        const owned = [];
+        if (kpOwned) owned.push(...kpOwned);
+        else if (L && ascSignNum !== undefined) {
+            for (let h = 1; h <= 12; h++) { if (L[(ascSignNum + h - 1) % 12] === planet) owned.push(h); }
+        }
+        const pd = natalPlanetsMap && natalPlanetsMap[planet];
+        let placed = [];
+        if (pd) {
+            const kpH = (pd.sid !== undefined) ? this.getKPHouseOf(pd.sid, ascSid) : null;
+            const hh = kpH || pd.house;
+            if (hh) placed = [hh];
+        }
+        return Array.from(new Set([].concat(rawNumbers[planet] || [], owned, placed))).sort((a, b) => a - b);
+    },
+
+    getNodeSignificators: function (node, ascSid, ascSignNum, natalPlanetsMap, lords, methodOverride) {
+        const L = this._lords(lords);
+        const pd = natalPlanetsMap && natalPlanetsMap[node];
+        if (!pd || pd.sid === undefined || pd.sn === undefined) return null;
+        const M = Object.assign({}, this.getNodeMethod(), methodOverride && typeof methodOverride === 'object' ? methodOverride : (typeof methodOverride === 'string' && this.NODE_PRESETS[methodOverride] ? this.NODE_PRESETS[methodOverride] : {}));
+
+        const rawNumbers = this.getPlanetNumbers(this.getAllCusps(ascSid));
+        const housesOf = (p) => this._planetHousesNoBlend(p, rawNumbers, L, ascSignNum, natalPlanetsMap, ascSid);
+
+        // 0. Own house: KP chart. Placidus if available -> else equal-bhava approximation -> else rashi.
+        const rashiHouse = pd.house;
+        let ownHouse = this.getKPHouseOf(pd.sid, ascSid), houseSource = 'placidus';
+        if (!ownHouse) {
+            houseSource = 'equal-bhava approx';
+            try {
+                const bc = this.getBhavaChalitPlacements(ascSid, ascSignNum, natalPlanetsMap);
+                const row = bc.placements.find(r => r.planet === node);
+                ownHouse = row ? row.bhavaHouse : null;
+            } catch (e) { ownHouse = null; }
+        }
+        if (!ownHouse) { ownHouse = rashiHouse; houseSource = 'rashi'; }
+
+        const angle = (a, b) => { const d = Math.abs(this._norm360(a) - this._norm360(b)); return Math.min(d, 360 - d); };
+
+        // 1. Aspects
+        const aspect = [];
+        Object.keys(natalPlanetsMap).forEach(p => {
+            if (p === node || p === 'Rahu' || p === 'Ketu') return;
+            const d = natalPlanetsMap[p];
+            if (!d) return;
+            if (M.aspectStyle === 'western') {
+                if (d.sid === undefined) return;
+                const sep = angle(d.sid, pd.sid);
+                const hit = this.WESTERN_ASPECTS.find(A => Math.abs(sep - A) <= M.orbDeg);
+                if (hit !== undefined) aspect.push({ planet: p, aspectNo: hit + '°', orbDeg: Math.round(Math.abs(sep - hit) * 100) / 100, houses: housesOf(p) });
+            } else {
+                if (d.house === undefined) return;
+                const offs = this.NODE_ASPECT_OFFSETS[p] || [7];
+                const hit = offs.find(o => this._mod12(d.house + o - 1) === rashiHouse);
+                if (hit !== undefined) aspect.push({ planet: p, aspectNo: hit, houses: housesOf(p) });
+            }
+        });
+
+        // 2. Conjunction (orb; same sign required for the 'kaushik' preset)
+        const conjunct = [];
+        Object.keys(natalPlanetsMap).forEach(p => {
+            if (p === node || p === 'Rahu' || p === 'Ketu') return;
+            const d = natalPlanetsMap[p];
+            if (!d || d.sid === undefined) return;
+            if (M.sameSign && d.sn !== pd.sn) return;
+            const orb = angle(d.sid, pd.sid);
+            if (orb <= M.orbDeg + 1e-9) conjunct.push({ planet: p, orbDeg: Math.round(orb * 100) / 100, houses: housesOf(p) });
+        });
+        conjunct.sort((x, y) => x.orbDeg - y.orbDeg);
+
+        // 3. Star lord   4. Sign lord (Lagna chart)
+        const starPlanet = this._getKPLords(pd.sid).nakLord;
+        const signPlanet = L ? L[pd.sn] : null;
+        const starLord = { planet: starPlanet, houses: housesOf(starPlanet) };
+        const signLord = { planet: signPlanet, houses: signPlanet ? housesOf(signPlanet) : [] };
+
+        const all = new Set();
+        if (ownHouse) all.add(ownHouse);
+        aspect.concat(conjunct, [starLord, signLord]).forEach(t => t.houses.forEach(h => all.add(h)));
+        const houses = Array.from(all).sort((a, b) => a - b);
+
+        // Ranked list per the preset's order of strength (own house always first)
+        const tiers = { aspect: aspect.map(a => ({ source: 'aspect', planet: a.planet, houses: a.houses })),
+                        yuti: conjunct.map(c => ({ source: 'yuti', planet: c.planet, houses: c.houses })),
+                        star: [{ source: 'star', planet: starPlanet, houses: starLord.houses }],
+                        sign: [{ source: 'sign', planet: signPlanet, houses: signLord.houses }] };
+        const ranked = [{ source: 'house', planet: node, houses: [ownHouse] }];
+        M.order.forEach(k => tiers[k].forEach(t => ranked.push(t)));
+
+        const hs = (a) => a.length ? 'H' + a.join(',H') : 'none';
+        const explanation = `${node} sits in H${ownHouse} (${houseSource}). ` +
+            `Aspect: ${aspect.length ? aspect.map(a => a.planet + ' [' + hs(a.houses) + ']').join('; ') : 'none'}. ` +
+            `Yuti (<=${Math.round(M.orbDeg * 100) / 100}°): ${conjunct.length ? conjunct.map(c => c.planet + ' ' + c.orbDeg + '° [' + hs(c.houses) + ']').join('; ') : 'none'}. ` +
+            `Star lord: ${starPlanet} [${hs(starLord.houses)}]. Sign lord: ${signPlanet} [${hs(signLord.houses)}]. ` +
+            `Order (${M.label}): ${M.order.join(' > ')}. All houses: ${hs(houses)}.`;
+
+        return { node: node, method: M, ownHouse: ownHouse, houseSource: houseSource, rashiHouse: rashiHouse,
+                 cuspSystem: this.getCuspSystem(ascSid),
+                 aspect: aspect, conjunct: conjunct, starLord: starLord, signLord: signLord,
+                 ranked: ranked, houses: houses, explanation: explanation };
+    },
     getPlanetNumbers: function (allCusps) {
         // The previous implementation returned REVERSE CSL-of-cusp assignments.
         // The lectures explicitly require planet + Nakshatra-lord's actual
@@ -980,7 +1158,16 @@ window.KP_PREDICTION = {
         // are deliberately NOT folded in here — they are proxy/context
         // info surfaced separately via conjunctPlanets/aspectingPlanets
         // below, not part of the documented 4-part formula.
-        const combinedHouses = Array.from(new Set([
+         // UPDATED per the "Rahu-Ketu ki sach" transcript (see getNodeSignificators, §3¼):
+        // the node's house set now INCLUDES its own house, the houses of every
+        // aspecting planet, every planet within 4 degrees (yuti), the full star
+        // lord and the sign lord (dispositor) — in addition to the dispositor
+        // placement / owned / CSL houses and star-lord numbers used before.
+        const sig = this.getNodeSignificators(node, ascSid, ascSignNum, natalPlanetsMap, lords);
+        // sig.houses already contains the sign lord's placement / owned / CSL houses and the
+        // star lord's houses (computed in KP/Placidus terms when available), so use it alone
+        // when present; the rashi-based pieces below are only the fallback.
+        const combinedHouses = sig ? sig.houses.slice() : Array.from(new Set([
             dispositorPlacementHouse, ...ownedHouses, ...cslHouses, ...starLordHouses
         ].filter(h => h !== null && h !== undefined))).sort((a, b) => a - b);
         /* const combinedHouses = Array.from(new Set([
@@ -993,7 +1180,9 @@ window.KP_PREDICTION = {
             node: node, sign: this.SIGN_NAMES[pd.sn], dispositor: dispositor,
             dispositorPlacementHouse: dispositorPlacementHouse,
             dispositorOwnedHouses: ownedHouses, dispositorCSLHouses: cslHouses,
-            conjunctPlanets: conjunctPlanets, aspectingPlanets: aspectingPlanets,
+           conjunctPlanets: sig ? sig.conjunct.map(c => c.planet) : conjunctPlanets,
+            aspectingPlanets: sig ? sig.aspect.map(a => a.planet) : aspectingPlanets,
+            significators: sig,
             starLord: nodeKP.nakLord,
             combinedHouses: combinedHouses,
             /* explanation: `${node} sits in H${nodeHouse} (${this.SIGN_NAMES[pd.sn]} ruled by ${dispositor}). Proxies: Conjunct [${conjunctPlanets.join(', ') || 'none'}], Aspected by [${aspectingPlanets.join(', ') || 'none'}], Star Lord [${nodeKP.nakLord}]. Houses signified: H${combinedHouses.join(', H') || 'none'}.` */
@@ -1418,7 +1607,28 @@ window.KP_PREDICTION = {
      *   3. The house's (rashi) lord
      *   4. Planets occupying the nakshatra of the house's lord
      */
-    getSignificators: function (houseNum, natalPlanetsMap, ascSignNum, lords) {
+     getSignificators: function (houseNum, natalPlanetsMap, ascSignNum, lords) {
+        const L = this._lords(lords);
+        const occupants = Object.keys(natalPlanetsMap).filter(p => natalPlanetsMap[p] && natalPlanetsMap[p].house === houseNum);
+        const starLordOfOccupants = new Set();
+        occupants.forEach(p => {
+            const pd = natalPlanetsMap[p];
+            if (pd && pd.sid !== undefined) starLordOfOccupants.add(this._getKPLords(pd.sid).nakLord);
+        });
+        const houseLord = L ? L[(ascSignNum + houseNum - 1) % 12] : null;
+        let starLordOfHouseLord = null;
+        if (houseLord && natalPlanetsMap[houseLord] && natalPlanetsMap[houseLord].sid !== undefined) {
+            starLordOfHouseLord = this._getKPLords(natalPlanetsMap[houseLord].sid).nakLord;
+        }
+        return {
+            house: houseNum,
+            level1_occupants: occupants,
+            level2_starLordOfOccupants: Array.from(starLordOfOccupants),
+            level3_houseLord: houseLord,
+            level4_starLordOfHouseLord: starLordOfHouseLord
+        };
+    },
+    getSignificators1: function (houseNum, natalPlanetsMap, ascSignNum, lords) {
         const L=this._lords(lords), names=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
         const natal=window.KP_PREDICTION_13 && window.KP_PREDICTION_13.analyzeLive &&
           window.KP_PREDICTION_13.analyzeLive();

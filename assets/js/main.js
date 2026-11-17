@@ -1602,6 +1602,13 @@ function recalcBirth() {
   // Expose to window for prediction modules
   window.BIRTH_PLANETS = BIRTH_PLANETS;
   window.BIRTH_ASC = BIRTH_ASC;
+  // KP needs PLACIDUS cusps (cuspal sub lords). Derived from the Ascendant actually displayed + latitude,
+  // so the cusps always agree with BIRTH_ASC. Only for the D1 chart; null -> engine falls back to equal-house.
+  try {
+    window.KP_PLACIDUS_CUSPS = (window.KP_PLACIDUS && actualDiv === 1 && BIRTH && isFinite(BIRTH.lat))
+      ? window.KP_PLACIDUS.computeFromAsc(BIRTH_ASC.sid, BIRTH.lat, getAyanamsa(BIRTH_JD, BIRTH.ayan), BIRTH_JD)
+      : null;
+  } catch (e) { window.KP_PLACIDUS_CUSPS = null; }
   window.CURRENT_PLANETARY_POSITIONS = BIRTH_PLANETS;
   window.CURRENT_ASCENDANT = BIRTH_ASC.sid;
   // BUGFIX: the transit-chart "Sahams on Transit Chart" overlay

@@ -39,9 +39,9 @@
  *      nature/character, the 6th cusp row gives disease, the 10th cusp row
  *      gives profession, the 4th cusp row gives the future spouse's profession.
  *
- * NOTE on cusps: Part 1's getAllCusps() uses an equal-house approximation
- * (no Placidus calculator exists in the app) — so rows for cusps 4/6/10 are
- * only as exact as that approximation. The Lagna row is exact.
+* NOTE on cusps: Part 1's getAllCusps() now uses true PLACIDUS cusps (KP_placidus.js)
+ * whenever they are available for the displayed Ascendant, and falls back to an
+ * equal-house approximation only otherwise (horary charts, polar latitudes).
  */
 window.KP_PREDICTION_11 = {
 
@@ -158,17 +158,49 @@ window.KP_PREDICTION_11 = {
             '<div style="font-size:9px;color:var(--muted);margin-top:2px;">Row ' + r.no + ' · ' + this.SIGN_MR[r.signIdx] + ' (' + r.sign + ') from ' + this.fmtStart(r) + ' · ' + this._esc(lords) + '</div>' +
             body + '</div>';
     },
+     // ===================== RAHU / KETU SIGNIFICATOR SHEET =====================
+    // Renders KP_PREDICTION.getNodeSignificators() in the transcript's sheet order:
+    //   KE <house> / Aspect / Yuti / NL / RL   (strongest -> weakest).
+    renderNodeSignificators: function (ctx) {
+        const KP = window.KP_PREDICTION;
+        if (!KP || typeof KP.getNodeSignificators !== 'function' || !ctx || !ctx.natalPlanets || !ctx.natalAsc) return '';
+        const ascSid = (ctx.natalAsc.sid !== undefined) ? ctx.natalAsc.sid : (ctx.natalAsc.sn * 30) + (parseFloat(ctx.natalAsc.deg) || 0);
+        const lords = (typeof LORDS !== 'undefined') ? LORDS : null;
+        const hs = (a) => a && a.length ? a.map(h => 'H' + h).join(' ') : '—';
+        const abbr = { Sun: 'SU', Moon: 'MO', Mars: 'MA', Mercury: 'ME', Jupiter: 'JU', Venus: 'VE', Saturn: 'SA', Rahu: 'RA', Ketu: 'KE' };
+        const cell = (label, val) => '<div style="display:flex;gap:8px;margin-top:3px;font-size:9.5px;"><span style="min-width:70px;color:var(--muted);">' + label + '</span><span style="color:var(--text);">' + val + '</span></div>';
+        let out = '', methodLabel = '';
+        ['Rahu', 'Ketu'].forEach((node) => {
+            const r = KP.getNodeSignificators(node, ascSid, ctx.natalAsc.sn, ctx.natalPlanets, lords);
+            if (!r) return;
+            methodLabel = r.method.label + ' — order: ' + r.method.order.join(' > ');
+            const asp = r.aspect.length ? r.aspect.map(a => abbr[a.planet] + ' (' + (typeof a.aspectNo === 'number' ? a.aspectNo + (a.aspectNo === 3 ? 'rd' : 'th') : a.aspectNo) + ') → ' + hs(a.houses)).join(' · ') : 'No';
+            const yut = r.conjunct.length ? r.conjunct.map(c => abbr[c.planet] + ' (' + c.orbDeg + '°) → ' + hs(c.houses)).join(' · ') : 'No';
+            const shifted = ' <span style="color:var(--muted);">(' + r.houseSource + (r.ownHouse !== r.rashiHouse ? '; Rashi H' + r.rashiHouse : '') + ')</span>';
+            out += '<div style="padding:8px 10px;margin-top:6px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;">' +
+                '<div style="font-size:10px;color:#D4A64A;font-weight:600;">' + this._esc(node) + ' — significators</div>' +
+                cell('House (KP)', 'H' + r.ownHouse + shifted) +
+                cell('1 · Aspect', this._esc(asp)) +
+                cell('2 · Yuti ≤' + (Math.round(r.method.orbDeg * 100) / 100) + '°', this._esc(yut)) +
+                cell('3 · NL', this._esc(abbr[r.starLord.planet] + ' → ' + hs(r.starLord.houses))) +
+                cell('4 · RL', this._esc(abbr[r.signLord.planet] + ' → ' + hs(r.signLord.houses))) +
+                '<div style="font-size:10px;margin-top:5px;color:#00DD77;">All houses: ' + hs(r.houses) + '</div></div>';
+        });
+        if (!out) return '';
+        return '<div style="font-size:9px;color:var(--muted);margin:10px 0 2px;">Rahu / Ketu act as agents: they give the results of the planets aspecting or conjoining them, their own star lord and their sign lord, plus their own house. Method: <b>' + this._esc(methodLabel) + '</b> (change with KP_PREDICTION.setNodeMethod(\'kaushik\' | \'ksk_reader\')). Aspects and sign lord from the Lagna chart; house from the KP chart.</div>' + out;
+    },
 
     renderForPanel: function (ctx) {
         if (!ctx || !ctx.natalAsc) return '';
         try {
-            const ascSid = (ctx.natalAsc.sn * 30) + (parseFloat(ctx.natalAsc.deg) || 0);
+            const ascSid = (ctx.natalAsc.sid !== undefined) ? ctx.natalAsc.sid : (ctx.natalAsc.sn * 30) + (parseFloat(ctx.natalAsc.deg) || 0);
             const reading = this.readChart(ascSid);
             const cls = ctx.sectionClass || '';
             return '<div class="biz-summary" style="border-color:#C9A24B;background:rgba(201,162,75,0.03);margin-top:20px;border-radius:12px;">' +
                 '<h3 class="' + cls + '" style="color:#C9A24B;font-size:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.05);">📖 KP Ansh Phale — 249-Division Table (Nature · Disease · Profession)</h3>' +
-                '<div style="font-size:9px;color:var(--muted);margin:8px 0;">Book rule: the Lagna row shows nature, the 6th cusp row disease, the 10th cusp row profession, the 4th cusp row the future spouse\'s profession. Lists are indicative, not exhaustive. Cusps 4/6/10 use the engine\'s equal-house approximation.</div>' +
+                 '<div style="font-size:9px;color:var(--muted);margin:8px 0;">Book rule: the Lagna row shows nature, the 6th cusp row disease, the 10th cusp row profession, the 4th cusp row the future spouse\'s profession. Lists are indicative, not exhaustive. Cusp system: ' + (window.KP_PREDICTION && window.KP_PREDICTION.getCuspSystem && window.KP_PREDICTION.getCuspSystem(ascSid) === 'placidus' ? 'Placidus (KP standard).' : 'equal-house approximation (Placidus unavailable for this chart).') + '</div>' +
                 this.renderChart(reading) +
+                this.renderNodeSignificators(ctx) +
                 '</div>';
         } catch (e) { console.error('KP Part 11 renderForPanel failed:', e); return ''; }
     },
