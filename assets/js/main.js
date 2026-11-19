@@ -330,15 +330,79 @@ function panchangValueFns() {
 const KARANA_NAMES_CYCLE = ['Kimstughna', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti', 'Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti', 'Shakuni', 'Chatushpada', 'Naga'];
 const YOGA_NAMES_27 = ['Vishkambha', 'Priti', 'Ayushman', 'Saubhagya', 'Shobhana', 'Atiganda', 'Sukarma', 'Dhriti', 'Shula', 'Ganda', 'Vriddhi', 'Dhruva', 'Vyaghata', 'Harshana', 'Vajra', 'Siddhi', 'Vyatipata', 'Variyana', 'Parigha', 'Shiva', 'Siddha', 'Sadhya', 'Shubha', 'Shukla', 'Brahma', 'Indra', 'Vaidhriti'];
 
+// ============================================================================
+// UNIFIED QUALITY COLOUR CODE  (used by the 24h Dial and the Timeline)
+//   green = Auspicious  → profit, gain, good work
+//   amber = Mixed       → routine / neutral work only
+//   red   = Inauspicious→ loss, obstacles, avoid new or important work
+// ============================================================================
+const Q_COLORS = { good: '#00DD77', mixed: '#FFC84A', bad: '#FF4477' };
+const Q_NAMES = { good: 'Auspicious', mixed: 'Mixed', bad: 'Inauspicious' };
+
+/** Normalises any quality wording (Auspicious / Benefic / Good / Malefic / Neutral …) to 'good' | 'mixed' | 'bad'. */
+function qNorm(t) {
+  t = String(t || '').toLowerCase();
+  if (/^(good|auspicious|benefic)/.test(t)) return 'good';
+  if (/^(bad|inauspicious|malefic)/.test(t)) return 'bad';
+  return 'mixed';
+}
+
+/** Tithi 1-30. Classical grouping: Rikta (4,9,14) & Amavasya = bad; Nanda-1, 6 and Ashtami = mixed; rest + Purnima = good. */
+function tithiQuality(num) {
+  if (num === 30) return 'bad';
+  if (num === 15) return 'good';
+  const n = num % 15;
+  if ([4, 9, 14].includes(n)) return 'bad';
+  if ([1, 6, 8].includes(n)) return 'mixed';
+  return 'good';
+}
+
+/** Nakshatra index 0-26 (NAK_NAMES order) – driven by the existing P_NAKS class: Ugra/Tikshna = bad, Mixed = mixed, others good. */
+function nakshatraQuality(idx) {
+  const name = NAK_NAMES[((idx % 27) + 27) % 27];
+  const key = name === 'Purva Bhadra' ? 'Purva Bhadrapada' : name === 'Uttara Bhadra' ? 'Uttara Bhadrapada' : name;
+  const c = (P_NAKS[key] && P_NAKS[key].c) || '';
+  if (/Ugra|Tikshna/.test(c)) return 'bad';
+  if (/Mixed/.test(c)) return 'mixed';
+  return 'good';
+}
+
+/** Yoga index 0-26 – straight from the existing P_YOGAS table. */
+function yogaQuality(idx) {
+  const y = P_YOGAS[((idx % 27) + 27) % 27];
+  return y ? qNorm(y.t) : 'mixed';
+}
+
+/** Karana by name (timeline names → P_KARANAS names). Vishti/Bhadra = bad; Shakuni/Chatushpada/Naga/Kintughna = mixed. */
+const KARANA_ALIAS = { Garaja: 'Gara', Kimstughna: 'Kintughna', Vishti: 'Vishti (Bhadra)' };
+function karanaQuality(name) {
+  const k = P_KARANAS.find(x => x.n === (KARANA_ALIAS[name] || name));
+  return k ? qNorm(k.t) : 'mixed';
+}
+
+/** Choghadiya: Amrit/Shubh/Labh = good, Chal = mixed, Udveg/Kaal/Rog = bad (from getChogadiya's own type field). */
+function chogQuality(c) {
+  return c.type === 'Good' ? 'good' : c.type === 'Bad' ? 'bad' : 'mixed';
+}
+
+/** Small colour-key shown under the Dial and Timeline. */
+function qualityLegendHTML() {
+  const sw = (q, txt) => `<span style="display:inline-flex;align-items:center;gap:4px;margin:2px 10px 2px 0;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${Q_COLORS[q]}55;border:1px solid ${Q_COLORS[q]};"></span><span style="color:${Q_COLORS[q]};">${txt}</span></span>`;
+  return `<div style="font-size:9.5px;text-align:left;line-height:1.6;margin-top:8px;">`
+    + sw('good', 'Auspicious — profit, gain, good work')
+    + sw('mixed', 'Mixed — routine work only')
+    + sw('bad', 'Inauspicious — loss, avoid new / important work')
+    + `</div>`;
+}
+
 /**
- * Gathers everything renderPanchangTimelineSVG needs: the Tithi/
- * Nakshatra/Yoga/Karana active at the window start, each one's next
- * transition (name + time) if it falls inside the window, sunrise/
- * sunset/next-sunrise, Choghadiya segments, and the weekday — all for
- * the window running from today's sunrise to tomorrow's sunrise, matching
- * the reference timeline's own span.
+ * Gathers everything renderPanchangTimelineSVG needs for the window running
+ * from today's sunrise to tomorrow's sunrise. Every row is a list of
+ * segments {start, end, label, quality, realStart, realEnd}. Panchang rows
+ * (Tithi/Nakshatra/Yoga/Karana) now capture EVERY change inside the window
+ * (Karana changes ~4× a day), not just the first one.
  */
-function getPanchangTimelineData(dateForDay, lat, lon, utcOff) {
+function getPanchangTimelineData(dateForDay, lat, lon, utcOff, horaList, chogList) {
   const jday = jd(dateForDay.getFullYear(), dateForDay.getMonth() + 1, dateForDay.getDate(), 12);
   const res = calcSunriseSunset(jday, lat, lon, utcOff);
   const nextRes = calcSunriseSunset(jday + 1, lat, lon, utcOff);
@@ -346,122 +410,212 @@ function getPanchangTimelineData(dateForDay, lat, lon, utcOff) {
   const fracToDate = (frac) => new Date(dayMidnight.getTime() + frac * 86400000);
 
   const winStart = fracToDate(res.sunrise);
-  const winEnd = fracToDate(nextRes.sunrise + 1); // next calendar day's sunrise
+  const winEnd = fracToDate(nextRes.sunrise + 1);
   const sunset = fracToDate(res.sunset);
+  const total = winEnd.getTime() - winStart.getTime();
+  const toWinFrac = (d) => (d.getTime() - winStart.getTime()) / total;
 
   const fns = panchangValueFns();
-  const toWinFrac = (d) => (d.getTime() - winStart.getTime()) / (winEnd.getTime() - winStart.getTime());
-
-  function rowData(key, namesLookup) {
-    const val = fns[key](winStart);
-    const nextDate = findNextPanchangTransition(winStart, fns[key], 2);
-    const inWindow = nextDate && nextDate < winEnd;
-    return {
-      label: namesLookup(val),
-      nextLabel: inWindow ? namesLookup(fns[key](nextDate)) : null,
-      transitionFrac: inWindow ? toWinFrac(nextDate) : null,
-      transitionTime: inWindow ? fmtFracTime((nextDate - dayMidnight) / 86400000) : null
-    };
+  function panchangRow(key, labelFn, qualFn) {
+    const fn = fns[key];
+    const segs = [];
+    let cur = winStart, val = fn(cur), first = true;
+    for (let guard = 0; guard < 8; guard++) {
+      const nxt = findNextPanchangTransition(cur, fn, (winEnd - cur) / 86400000);
+      const inWin = !!nxt && nxt < winEnd;
+      segs.push({ start: cur, end: inWin ? nxt : winEnd, label: labelFn(val), quality: qualFn(val), realStart: !first, realEnd: inWin });
+      if (!inWin) break;
+      cur = nxt; val = fn(nxt); first = false;
+    }
+    return segs;
   }
 
-  const tithiNames = ['Pratipada', 'Dwitiya', 'Tritiya', 'Chaturthi', 'Panchami', 'Shashthi', 'Saptami', 'Ashtami', 'Navami', 'Dashami', 'Ekadashi', 'Dwadashi', 'Trayodashi', 'Chaturdashi', 'Purnima/Amavasya'];
-  const tithiLabel = (num) => { const n = ((num - 1) % 15); const phase = num <= 15 ? 'Shukla' : 'Krishna'; return `${tithiNames[n]}, ${phase}`; };
+  const tithiNames = ['Pratipada', 'Dwitiya', 'Tritiya', 'Chaturthi', 'Panchami', 'Shashthi', 'Saptami', 'Ashtami', 'Navami', 'Dashami', 'Ekadashi', 'Dwadashi', 'Trayodashi', 'Chaturdashi'];
+  const tithiLabel = (num) => {
+    if (num === 15) return 'Purnima';
+    if (num === 30) return 'Amavasya';
+    return `${tithiNames[(num - 1) % 15]}, ${num <= 15 ? 'Shukla' : 'Krishna'}`;
+  };
+  const kName = (i) => KARANA_NAMES_CYCLE[i % KARANA_NAMES_CYCLE.length];
+
+  const atFrac = (f) => new Date(dayMidnight.getTime() + f * 86400000);
+  const chogSegs = (chogList || []).map(c => ({ start: atFrac(c.start), end: atFrac(c.end), label: c.name, quality: chogQuality(c), realStart: true, realEnd: true }));
+  const horaSegs = (horaList || []).map(h => ({ start: atFrac(h.start), end: atFrac(h.end), label: h.lordHi, quality: qNorm(h.status), realStart: true, realEnd: true }));
 
   return {
     winStart, winEnd, sunrise: winStart, sunset, nextSunrise: winEnd,
     dow: getVara(jday),
-    tithi: rowData('tithi', tithiLabel),
-    nakshatra: rowData('nakshatra', (idx) => NAK_NAMES[idx]),
-    yoga: rowData('yoga', (idx) => YOGA_NAMES_27[idx % 27]),
-    karana: rowData('karana', (idx) => KARANA_NAMES_CYCLE[idx % KARANA_NAMES_CYCLE.length]),
-    chogadiya: getChogadiya(jday, lat, lon, utcOff) || [],
-    toWinFrac: toWinFrac
+    toWinFrac,
+    rows: [
+      { key: 'tithi', label: 'Tithi', segs: panchangRow('tithi', tithiLabel, tithiQuality) },
+      { key: 'nakshatra', label: 'Nakshatra', segs: panchangRow('nakshatra', (i) => NAK_NAMES[i], nakshatraQuality) },
+      { key: 'yoga', label: 'Yoga', segs: panchangRow('yoga', (i) => (P_YOGAS[i % 27] || P_YOGAS[0]).n, yogaQuality) },
+      { key: 'karana', label: 'Karana', segs: panchangRow('karana', kName, (i) => karanaQuality(kName(i))) },
+      { key: 'choghadiya', label: 'Choghadiya', segs: chogSegs },
+      { key: 'hora', label: 'Hora', segs: horaSegs }
+    ]
   };
 }
 
 /**
- * Horizontal multi-row Panchang timeline strip — Tithi / Nakshatra / Yoga
- * / Karana / Choghadiya running from today's sunrise to tomorrow's
- * sunrise, with transition markers, matching the reference layout: hour
- * axis, day/night shading, sun icons at sunrise/sunset, and a dashed
- * arrow + time label wherever a factor changes inside the window.
+ * Colour-coded Panchang timeline (sunrise → next sunrise).
+ * Rows: Tithi / Nakshatra / Yoga / Karana / Choghadiya / Hora. Every block is
+ * tinted green / amber / red by quality, shows its name plus when it ends (or
+ * its start–end), and has a hover tooltip. Row names sit in a fixed left
+ * column so they stay visible while the chart scrolls sideways.
  */
-function renderPanchangTimelineSVG(data) {
-  const W = 1040, ROW_H = 46, PAD_L = 90, PAD_R = 20, AXIS_Y = 70, TOP = 40;
-  const rows = ['tithi', 'nakshatra', 'yoga', 'karana', 'chogadiya'];
-  const rowLabels = { tithi: 'Tithi', nakshatra: 'Nakshatra', yoga: 'Yoga', karana: 'Karana', chogadiya: 'Choghadiya' };
-  const H = TOP + AXIS_Y + rows.length * ROW_H + 40;
-  const plotW = W - PAD_L - PAD_R;
-  const x = (frac) => PAD_L + frac * plotW;
+function renderPanchangTimelineSVG(data, nowDate) {
+  window.__tlClipSeq = window.__tlClipSeq || 0;
+  const PX_H = 58, ROW_H = 44, HEAD = 58, FOOT = 8, LABEL_W = 82, PAD_R = 12;
+  const total = data.winEnd.getTime() - data.winStart.getTime();
+  const plotW = Math.round((total / 3600000) * PX_H);
+  const rows = data.rows;
+  const bodyH = rows.length * ROW_H;
+  const H = HEAD + bodyH + FOOT;
+  const x = (f) => f * plotW;
+  const hm = (d) => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  const FONT = 'Arial,sans-serif';
 
-  const sunriseFrac = data.toWinFrac(data.sunrise);
-  const sunsetFrac = data.toWinFrac(data.sunset);
-  const totalHours = (data.winEnd - data.winStart) / 3600000;
+  // ---- fixed label column ----
+  let lab = `<svg width="${LABEL_W}" height="${H}" viewBox="0 0 ${LABEL_W} ${H}" xmlns="http://www.w3.org/2000/svg" style="flex:none;font-family:${FONT};">`;
+  rows.forEach((r, i) => {
+    const ry = HEAD + i * ROW_H;
+    lab += `<text x="6" y="${ry + ROW_H / 2 + 4}" font-size="10.5" font-weight="bold" fill="#E6C766">${r.label}</text>`;
+    lab += `<line x1="0" y1="${ry + ROW_H}" x2="${LABEL_W}" y2="${ry + ROW_H}" stroke="#2a2a44" stroke-width="0.5"/>`;
+  });
+  lab += `</svg>`;
 
-  let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="background:transparent;font-family:Arial,sans-serif;">`;
+  // ---- scrolling plot ----
+  let svg = `<svg width="${plotW + PAD_R}" height="${H}" viewBox="0 0 ${plotW + PAD_R} ${H}" xmlns="http://www.w3.org/2000/svg" style="font-family:${FONT};">`;
+  const sunsetF = Math.max(0, Math.min(1, data.toWinFrac(data.sunset)));
+  svg += `<rect x="0" y="${HEAD}" width="${x(sunsetF)}" height="${bodyH}" fill="#C8A84B" opacity="0.06"/>`;
+  svg += `<rect x="${x(sunsetF)}" y="${HEAD}" width="${plotW - x(sunsetF)}" height="${bodyH}" fill="#000" opacity="0.22"/>`;
 
-  // Day/night background shading
-  const gridTop = TOP + AXIS_Y - 20, gridBottom = H - 20;
-  svg += `<rect x="${PAD_L}" y="${gridTop}" width="${x(sunsetFrac) - PAD_L}" height="${gridBottom - gridTop}" fill="var(--gold)" opacity="0.06"/>`;
-  svg += `<rect x="${x(sunsetFrac)}" y="${gridTop}" width="${x(1) - x(sunsetFrac)}" height="${gridBottom - gridTop}" fill="#000" opacity="0.15"/>`;
-
-  // Hour axis
-  svg += `<line x1="${PAD_L}" y1="${AXIS_Y + TOP}" x2="${W - PAD_R}" y2="${AXIS_Y + TOP}" stroke="var(--border2)" stroke-width="1"/>`;
-  for (let h = 0; h <= Math.ceil(totalHours); h++) {
-    const frac = h / totalHours;
-    if (frac > 1) break;
-    const tx = x(frac);
-    svg += `<line x1="${tx}" y1="${AXIS_Y + TOP - 5}" x2="${tx}" y2="${AXIS_Y + TOP}" stroke="var(--muted)" stroke-width="0.7"/>`;
-    const clockHour = (data.winStart.getHours() + h) % 24;
-    svg += `<text x="${tx}" y="${AXIS_Y + TOP - 9}" font-size="9" fill="var(--muted)" text-anchor="middle">${clockHour === 0 ? 12 : (clockHour % 12 || 12)}</text>`;
+  // hour axis + faint vertical grid at real clock hours
+  const firstHour = new Date(data.winStart); firstHour.setMinutes(0, 0, 0); firstHour.setHours(firstHour.getHours() + 1);
+  for (let t = firstHour.getTime(); t < data.winEnd.getTime(); t += 3600000) {
+    const gx = x((t - data.winStart.getTime()) / total);
+    const hr = new Date(t).getHours();
+    const mid = hr === 0;
+    svg += `<line x1="${gx}" y1="${HEAD - 6}" x2="${gx}" y2="${HEAD}" stroke="${mid ? '#C8A84B' : '#6a6a8a'}" stroke-width="0.8"/>`;
+    svg += `<line x1="${gx}" y1="${HEAD}" x2="${gx}" y2="${HEAD + bodyH}" stroke="${mid ? '#C8A84B' : '#ffffff'}" stroke-width="0.5" opacity="${mid ? 0.5 : 0.07}"/>`;
+    svg += `<text x="${gx}" y="${HEAD - 10}" font-size="9" fill="${mid ? '#C8A84B' : '#8f8fb0'}" text-anchor="middle">${(hr % 12 || 12)}${hr < 12 ? 'a' : 'p'}</text>`;
   }
+  svg += `<line x1="0" y1="${HEAD}" x2="${plotW}" y2="${HEAD}" stroke="#2a2a44" stroke-width="1"/>`;
 
-  // Sunrise / sunset markers
-  const sunriseDayFrac = (data.sunrise - new Date(data.sunrise.getFullYear(), data.sunrise.getMonth(), data.sunrise.getDate()).getTime()) / 86400000;
-  svg += `<text x="${x(sunriseFrac)}" y="${TOP}" font-size="14" text-anchor="middle">☀️</text>`;
-  svg += `<text x="${x(sunriseFrac)}" y="${TOP + 16}" font-size="9" fill="var(--gold)" text-anchor="middle" font-weight="bold">${fmtFracTime(sunriseDayFrac, true)}</text>`;
-  svg += `<text x="${x(sunsetFrac)}" y="${TOP}" font-size="14" text-anchor="middle">🌇</text>`;
+  // sunrise / sunset / next sunrise
+  svg += `<text x="2" y="16" font-size="13">☀️</text><text x="2" y="30" font-size="9" fill="#C8A84B" font-weight="bold">${hm(data.sunrise)}</text>`;
+  svg += `<text x="${x(sunsetF)}" y="16" font-size="13" text-anchor="middle">🌇</text><text x="${x(sunsetF)}" y="30" font-size="9" fill="#a78bfa" font-weight="bold" text-anchor="middle">${hm(data.sunset)}</text>`;
+  svg += `<text x="${plotW}" y="16" font-size="13" text-anchor="end">☀️</text><text x="${plotW}" y="30" font-size="9" fill="#C8A84B" font-weight="bold" text-anchor="end">${hm(data.nextSunrise)}</text>`;
 
-  // Rows
-  rows.forEach((key, i) => {
-    const rowY = TOP + AXIS_Y + i * ROW_H;
-    const midY = rowY + ROW_H / 2;
-    svg += `<text x="4" y="${midY + 4}" font-size="10" fill="var(--gold2)" font-weight="bold">${rowLabels[key]}</text>`;
-    svg += `<line x1="${PAD_L}" y1="${rowY + ROW_H}" x2="${W - PAD_R}" y2="${rowY + ROW_H}" stroke="var(--border2)" stroke-width="0.5" opacity="0.5"/>`;
-
-    if (key === 'chogadiya') {
-      // getChogadiya() gives each segment's start as a day-fraction relative to
-      // this calendar day's midnight (can exceed 1.0 past midnight); each
-      // segment implicitly ends where the next one starts.
-      const dayMidnightMs = new Date(data.winStart.getFullYear(), data.winStart.getMonth(), data.winStart.getDate(), 0, 0, 0).getTime();
-      data.chogadiya.forEach((c, ci) => {
-        const segStartDate = new Date(dayMidnightMs + c.start * 86400000);
-        const segEndDate = (ci < data.chogadiya.length - 1)
-          ? new Date(dayMidnightMs + data.chogadiya[ci + 1].start * 86400000)
-          : data.winEnd;
-        const sf = data.toWinFrac(segStartDate), ef = data.toWinFrac(segEndDate);
-        if (ef < 0 || sf > 1) return;
-        const cx1 = x(Math.max(0, sf)), cx2 = x(Math.min(1, ef));
-        const col = c.type === 'Good' ? 'var(--green)' : c.type === 'Bad' ? 'var(--rose)' : 'var(--gold)';
-        svg += `<line x1="${cx1}" y1="${rowY + 6}" x2="${cx1}" y2="${rowY + ROW_H - 6}" stroke="${col}" stroke-width="1.2"/>`;
-        svg += `<text x="${(cx1 + cx2) / 2}" y="${midY + 3}" font-size="8.5" fill="${col}" text-anchor="middle" font-weight="bold">${c.name}</text>`;
-      });
-    } else {
-      const r = data[key];
-      const endX = r.transitionFrac !== null ? x(r.transitionFrac) : (W - PAD_R);
-      svg += `<text x="${(PAD_L + endX) / 2}" y="${midY + 4}" font-size="10.5" fill="var(--text)" text-anchor="middle">${r.label}</text>`;
-      if (r.transitionFrac !== null) {
-        svg += `<line x1="${endX}" y1="${rowY + 4}" x2="${endX}" y2="${rowY + ROW_H - 4}" stroke="var(--rose)" stroke-width="1" stroke-dasharray="2,2"/>`;
-        svg += `<text x="${endX}" y="${rowY + ROW_H - 2}" font-size="8" fill="var(--rose)" text-anchor="middle">◀▶ ${r.transitionTime}</text>`;
-        svg += `<text x="${(endX + (W - PAD_R)) / 2}" y="${midY + 4}" font-size="10.5" fill="var(--text)" text-anchor="middle" opacity="0.85">${r.nextLabel}</text>`;
-      }
-    }
+  // rows
+  rows.forEach((r, i) => {
+    const ry = HEAD + i * ROW_H;
+    svg += `<line x1="0" y1="${ry + ROW_H}" x2="${plotW}" y2="${ry + ROW_H}" stroke="#2a2a44" stroke-width="0.5"/>`;
+    const fs = r.key === 'hora' ? 9 : 10.5;
+    r.segs.forEach(s => {
+      const f1 = Math.max(0, data.toWinFrac(s.start)), f2 = Math.min(1, data.toWinFrac(s.end));
+      if (f2 <= f1) return;
+      const sx = x(f1), sw = x(f2) - sx;
+      const col = Q_COLORS[s.quality] || Q_COLORS.mixed;
+      let sub;
+      if (s.realStart && s.realEnd) sub = `${hm(s.start)}–${hm(s.end)}`;
+      else if (!s.realStart && s.realEnd) sub = `till ${hm(s.end)}`;
+      else if (s.realStart && !s.realEnd) sub = `from ${hm(s.start)}`;
+      else sub = 'whole span';
+      const id = 'tlc' + (++window.__tlClipSeq);
+      svg += `<g><title>${r.label}: ${s.label} · ${sub} · ${Q_NAMES[s.quality]}</title>`;
+      svg += `<rect x="${(sx + 0.5).toFixed(1)}" y="${ry + 3}" width="${Math.max(0, sw - 1).toFixed(1)}" height="${ROW_H - 6}" rx="3" fill="${col}" fill-opacity="0.22" stroke="${col}" stroke-opacity="0.75" stroke-width="0.8"/>`;
+      svg += `<clipPath id="${id}"><rect x="${sx.toFixed(1)}" y="${ry + 3}" width="${Math.max(0, sw - 2).toFixed(1)}" height="${ROW_H - 6}"/></clipPath>`;
+      svg += `<g clip-path="url(#${id})"><text x="${(sx + 5).toFixed(1)}" y="${ry + ROW_H / 2 - 1}" font-size="${fs}" font-weight="bold" fill="${col}">${s.label}</text>`;
+      svg += `<text x="${(sx + 5).toFixed(1)}" y="${ry + ROW_H / 2 + 10}" font-size="7.5" fill="#9a9abb">${sub}</text></g></g>`;
+    });
   });
 
-  svg += `<text x="${W / 2}" y="${H - 4}" font-size="10" fill="var(--muted)" text-anchor="middle">${['Raviwara', 'Somwara', 'Mangalwara', 'Budhwara', 'Guruwara', 'Shukrawara', 'Shaniwara'][data.dow]}</text>`;
+  // "now" marker
+  if (nowDate) {
+    const nf = data.toWinFrac(nowDate);
+    if (nf >= 0 && nf <= 1) {
+      svg += `<line x1="${x(nf)}" y1="${HEAD - 6}" x2="${x(nf)}" y2="${HEAD + bodyH}" stroke="#3AF0FF" stroke-width="1.5" stroke-dasharray="3,2"/>`;
+      svg += `<circle cx="${x(nf)}" cy="${HEAD - 6}" r="3.5" fill="#3AF0FF"/>`;
+    }
+  }
+  svg += `</svg>`;
+
+  return `<div style="display:flex;align-items:flex-start;text-align:left;">${lab}<div style="overflow-x:auto;flex:1;min-width:0;">${svg}</div></div>`;
+}
+
+/**
+ * Three-ring 24h dial. `rings` = [{ rOut, rIn, fs, lanes?, items:[{startFrac,endFrac,label,quality,tip}] }]
+ * listed outermost → innermost. A ring with `lanes:true` splits into sub-lanes
+ * where windows overlap (Muhurat windows such as Rahu Kalam / Dur Muhurt can).
+ * Fractions are fractions of a calendar day; values > 1 wrap past midnight.
+ */
+function renderMultiRingDialSVG(rings, nowFrac, centerText) {
+  const S = 400, CX = 200, CY = 200, R_RIM = 172, R_CORE = 42;
+  const pt = (r, deg) => { const a = deg * Math.PI / 180; return [CX + r * Math.sin(a), CY - r * Math.cos(a)]; };
+  const n2 = (v) => v.toFixed(2);
+  let svg = `<svg viewBox="0 0 ${S} ${S}" width="100%" xmlns="http://www.w3.org/2000/svg" style="max-width:420px;font-family:Arial,sans-serif;">`;
+  svg += `<circle cx="${CX}" cy="${CY}" r="${R_RIM}" fill="rgba(20,20,30,0.85)" stroke="#C8A84B" stroke-width="1.5"/>`;
+
+  for (let h = 0; h < 24; h++) {
+    const deg = h * 15, major = h % 3 === 0;
+    const [x1, y1] = pt(R_RIM, deg), [x2, y2] = pt(R_RIM + (major ? 7 : 4), deg);
+    svg += `<line x1="${n2(x1)}" y1="${n2(y1)}" x2="${n2(x2)}" y2="${n2(y2)}" stroke="#C8A84B" stroke-width="${major ? 1.5 : 0.7}" opacity="0.75"/>`;
+    if (major) {
+      const [tx, ty] = pt(R_RIM + 18, deg);
+      svg += `<text x="${n2(tx)}" y="${n2(ty + 3)}" font-size="8" fill="#C8A84B" text-anchor="middle">${h % 12 === 0 ? 12 : h % 12}${h >= 12 ? 'PM' : 'AM'}</text>`;
+    }
+  }
+
+  rings.forEach(ring => {
+    svg += `<circle cx="${CX}" cy="${CY}" r="${ring.rOut}" fill="rgba(12,12,22,0.92)" stroke="#2a2a44" stroke-width="1"/>`;
+    const th = ring.rOut - ring.rIn;
+    const items = ring.items.filter(it => isFinite(it.startFrac) && isFinite(it.endFrac) && it.endFrac > it.startFrac).map(it => Object.assign({}, it));
+    let laneCount = 1;
+    if (ring.lanes) {
+      const laneEnds = [];
+      items.sort((a, b) => a.startFrac - b.startFrac).forEach(it => {
+        let l = laneEnds.findIndex(e => it.startFrac >= e - 1e-6);
+        if (l === -1) { l = laneEnds.length; laneEnds.push(0); }
+        laneEnds[l] = it.endFrac; it.lane = l;
+      });
+      laneCount = Math.max(1, laneEnds.length);
+    }
+    items.forEach(it => {
+      const overlaps = laneCount > 1 && items.some(o => o !== it && o.startFrac < it.endFrac && o.endFrac > it.startFrac);
+      const lanesHere = overlaps ? laneCount : 1;     // stand-alone windows keep the full ring thickness
+      const lane = overlaps ? (it.lane || 0) : 0;
+      const laneTh = th / lanesHere;
+      const rO = ring.rOut - lane * laneTh - 0.5, rI = ring.rOut - (lane + 1) * laneTh + 0.5;
+      const d1 = it.startFrac * 360, d2 = it.endFrac * 360;
+      const [ox1, oy1] = pt(rO, d1), [ox2, oy2] = pt(rO, d2), [ix2, iy2] = pt(rI, d2), [ix1, iy1] = pt(rI, d1);
+      const large = (d2 - d1) > 180 ? 1 : 0;
+      const col = Q_COLORS[it.quality] || Q_COLORS.mixed;
+      svg += `<g><title>${it.tip || it.label}</title><path d="M ${n2(ox1)} ${n2(oy1)} A ${rO} ${rO} 0 ${large} 1 ${n2(ox2)} ${n2(oy2)} L ${n2(ix2)} ${n2(iy2)} A ${rI} ${rI} 0 ${large} 0 ${n2(ix1)} ${n2(iy1)} Z" fill="${col}" fill-opacity="0.30" stroke="${col}" stroke-opacity="0.9" stroke-width="0.8"/>`;
+      // radial label — only if it physically fits
+      const fs = ring.fs || 8, rm = (rO + rI) / 2, mid = (d1 + d2) / 2;
+      const arcW = (d2 - d1) * Math.PI / 180 * rm;
+      const textLen = String(it.label).length * fs * 0.58;
+      if (textLen <= (rO - rI) - 3 && arcW >= fs + 1.5) {
+        const [tx, ty] = pt(rm, mid);
+        let rot = mid - 90; if (((mid % 360) + 360) % 360 > 180) rot += 180;
+        svg += `<text x="${n2(tx)}" y="${n2(ty)}" dy=".35em" font-size="${fs}" font-weight="bold" fill="${col}" text-anchor="middle" transform="rotate(${n2(rot)} ${n2(tx)} ${n2(ty)})">${it.label}</text>`;
+      }
+      svg += `</g>`;
+    });
+  });
+
+  svg += `<circle cx="${CX}" cy="${CY}" r="${R_CORE}" fill="rgba(6,6,14,0.97)" stroke="#2a2a44" stroke-width="1"/>`;
+  const na = ((nowFrac % 1) + 1) % 1 * 360;
+  const [nx, ny] = pt(rings[0] ? rings[0].rOut : R_RIM, na);
+  svg += `<line x1="${CX}" y1="${CY}" x2="${n2(nx)}" y2="${n2(ny)}" stroke="#3AF0FF" stroke-width="2" stroke-dasharray="3,2"/>`;
+  svg += `<circle cx="${n2(nx)}" cy="${n2(ny)}" r="4" fill="#3AF0FF"/><circle cx="${CX}" cy="${CY}" r="4" fill="#C8A84B"/>`;
+  if (centerText) svg += `<text x="${CX}" y="${CY + 20}" font-size="9" font-weight="bold" fill="#C8A84B" text-anchor="middle">${centerText}</text>`;
   svg += `</svg>`;
   return svg;
 }
+
 function render24hDialSVG(items, currentFrac = 0.5, title = "24-Hour Wheel") {
   const W = 320, H = 320, CX = 160, CY = 160, R_OUT = 140, R_IN = 70;
   let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="background:transparent; font-family:Arial, sans-serif;">`;
@@ -640,7 +794,7 @@ function showPanchang(dateOverride) {
     dMuhurts.forEach(seg => {
       const sTime = res.sunrise + (seg - 1) * dayMuhurtSpan;
       const eTime = res.sunrise + seg * dayMuhurtSpan;
-      muhurtList.push({ name: 'Dur Muhurt', quality: 'Inauspicious', color: 'var(--rose)', startTime: fmtFracTime(sTime), endTime: fmtFracTime(eTime) });
+      muhurtList.push({ name: 'Dur Muhurt', quality: 'Inauspicious', color: 'var(--rose)', startFrac: sTime, endFrac: eTime, startTime: fmtFracTime(sTime), endTime: fmtFracTime(eTime) });
     });
   }
 
@@ -763,14 +917,14 @@ function showPanchang(dateOverride) {
             <th style="padding:4px;">Quality</th>
           </tr>
           ${chogList.map(c => {
-      const isGood = c.quality === 'Auspicious' || c.type === 'Good';
-      const col = isGood ? 'var(--green)' : 'var(--rose)';
+      const cq = chogQuality(c);
+      const col = cq === 'good' ? 'var(--green)' : cq === 'bad' ? 'var(--rose)' : 'var(--gold)';
       return `
               <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
                 <td style="padding:4px;color:var(--muted);">${c.isDay ? 'Day' : 'Night'}</td>
                 <td style="padding:4px;font-weight:bold;color:${col};">${c.name}</td>
                 <td style="padding:4px;font-family:monospace;color:var(--text);">${fmtFracTime(c.start)} – ${fmtFracTime(c.end)}</td>
-                <td style="padding:4px;"><span style="background:${col}22;color:${col};padding:1px 6px;border-radius:3px;font-weight:bold;">${isGood ? 'Auspicious' : 'Inauspicious'}</span></td>
+                <td style="padding:4px;"><span style="background:${col}22;color:${col};padding:1px 6px;border-radius:3px;font-weight:bold;">${Q_NAMES[cq]}</span></td>
               </tr>`;
     }).join('')}
         </table>
@@ -778,7 +932,7 @@ function showPanchang(dateOverride) {
 
   } else if (activeTab === 'muhurt') {
     // Muhurt & Sensitive Windows Table
-    const chakraItems = muhurtList.filter(m => m.startFrac !== undefined).map(m => ({
+    const chakraItems = muhurtList.filter(m => m.startFrac !== undefined && m.name !== 'Dur Muhurt').map(m => ({
       startFrac: m.startFrac, endFrac: m.endFrac, label: m.name.split(' ')[0], quality: m.quality, color: m.color
     }));
     const muhurtaChakraSVG = render24hDialSVG(chakraItems, nowFrac, "Muhurta Chakra");
@@ -839,34 +993,52 @@ function showPanchang(dateOverride) {
         </table>
       </div>`;
   } else if (activeTab === 'dial') {
-    // 24-Hour Circular Dial SVG Wheel
-    const horaDialItems = horaList.map(h => ({
-      startFrac: h.start,
-      endFrac: h.end,
-      label: h.lordHi,
-      quality: h.status === 'Benefic' ? 'Auspicious' : h.status === 'Malefic' ? 'Inauspicious' : 'Neutral',
-      color: h.color
-    }));
-
-    const svgDial = render24hDialSVG(horaDialItems, nowFrac, "24h Hora Wheel");
+    // 24-Hour Dial: Hora (outer) + Choghadiya (middle) + Muhurat (inner), colour-coded
+    const fmtHM = (f) => fmtFracTime(f);
+    const dialRings = [
+      {
+        rOut: 172, rIn: 130, fs: 8.5,
+        items: horaList.map(h => ({
+          startFrac: h.start, endFrac: h.end, label: h.lordHi, quality: qNorm(h.status),
+          tip: `Hora · ${h.lordHi} (${h.lord}) · ${h.startTime}–${h.endTime} · ${h.status}`
+        }))
+      },
+      {
+        rOut: 127, rIn: 92, fs: 8.5,
+        items: chogList.map(c => ({
+          startFrac: c.start, endFrac: c.end, label: c.name, quality: chogQuality(c),
+          tip: `Choghadiya · ${c.name} · ${fmtHM(c.start)}–${fmtHM(c.end)} · ${Q_NAMES[chogQuality(c)]}`
+        }))
+      },
+      {
+        rOut: 89, rIn: 44, fs: 7.5, lanes: true,
+        items: muhurtList.filter(m => m.startFrac !== undefined).map(m => ({
+          startFrac: m.startFrac, endFrac: m.endFrac, label: m.name.split(' ')[0], quality: qNorm(m.quality),
+          tip: `Muhurat · ${m.name} · ${m.startTime}–${m.endTime} · ${m.quality}`
+        }))
+      }
+    ];
+    const svgDial = renderMultiRingDialSVG(dialRings, nowFrac, fmtFracTime(nowFrac));
 
     tabContentHTML = `
       <div class="conj-item" style="border-left-color:var(--gold);text-align:center;">
-        <div style="font-size:11px;font-weight:bold;color:var(--gold);margin-bottom:8px;">⭕ 24-Hour Circular Hora Wheel</div>
+        <div style="font-size:11px;font-weight:bold;color:var(--gold);margin-bottom:8px;">⭕ 24-Hour Dial — Hora · Choghadiya · Muhurat</div>
         <div style="display:flex;justify-content:center;margin:10px 0;">
           ${svgDial}
         </div>
-        <div style="font-size:9px;color:var(--muted);">Outer numbers: 24h clock · Sectors: Hora Lords · Pointer: Current time</div>
+        <div style="font-size:9px;color:var(--muted);">Outer ring: Hora · Middle ring: Choghadiya · Inner ring: Muhurat windows (overlaps split into lanes) · Pointer: current time · Tap/hover a sector for details</div>
+        ${qualityLegendHTML()}
       </div>`;
   } else if (activeTab === 'timeline') {
-    // Horizontal multi-row Panchang strip (Tithi/Nakshatra/Yoga/Karana/Choghadiya)
-    const timelineData = getPanchangTimelineData(d, BIRTH.lat, BIRTH.lon, BIRTH.utcOff);
-    const timelineSVG = renderPanchangTimelineSVG(timelineData);
+    // Colour-coded multi-row strip: Tithi / Nakshatra / Yoga / Karana / Choghadiya / Hora
+    const timelineData = getPanchangTimelineData(d, BIRTH.lat, BIRTH.lon, BIRTH.utcOff, horaList, chogList);
+    const timelineHTML = renderPanchangTimelineSVG(timelineData, d);
     tabContentHTML = `
-      <div class="conj-item" style="border-left-color:var(--cyan);text-align:center;">
-        <div style="font-size:11px;font-weight:bold;color:var(--cyan);margin-bottom:8px;">📊 Panchang Timeline — Sunrise to Sunrise</div>
-        <div style="overflow-x:auto;">${timelineSVG}</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:4px;">Each row runs sunrise-to-sunrise; a dashed marker shows exactly when that factor changes, if it changes within the window.</div>
+      <div class="conj-item" style="border-left-color:var(--cyan);">
+        <div style="font-size:11px;font-weight:bold;color:var(--cyan);margin-bottom:8px;text-align:center;">📊 Panchang Timeline — Sunrise to Sunrise</div>
+        ${timelineHTML}
+        ${qualityLegendHTML()}
+        <div style="font-size:9px;color:var(--muted);margin-top:6px;text-align:center;">Scroll sideways for the full day. Each block shows when it ends (“till”), or its start–end; dashed cyan line = current time. Hover a block for details.</div>
       </div>`;
   }
 
@@ -1185,10 +1357,10 @@ function getChogadiya(jday, lat, lon, utcOff) {
 
   const chogs = [];
   for (let i = 0; i < 8; i++) {
-    chogs.push({ name: names[dSeq[i]], type: types[dSeq[i]], start: dStart + i * dPeriod, isDay: true });
+    chogs.push({ name: names[dSeq[i]], type: types[dSeq[i]], start: dStart + i * dPeriod, end: dStart + (i + 1) * dPeriod, isDay: true });
   }
   for (let i = 0; i < 8; i++) {
-    chogs.push({ name: names[nSeq[i]], type: types[nSeq[i]], start: nStart + i * nPeriod, isDay: false });
+    chogs.push({ name: names[nSeq[i]], type: types[nSeq[i]], start: nStart + i * nPeriod, end: nStart + (i + 1) * nPeriod, isDay: false });
   }
   return chogs;
 }

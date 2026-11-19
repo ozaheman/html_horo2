@@ -51,7 +51,8 @@ window.PREDICTION_ANALYSIS = {
         retrograde: p.retro || false,
         combust: p.combust || false,
         speed: p.speed || 0,
-        nakshatraLord: getNakshatraLord(p.nak)
+        nakshatraLord: getNakshatraLord(p.nak),
+        reference: getNakshatraReference(p.nak, p.pada)   // akshar, shakti, temperament, deity, symbol, yoni, ...
       });
     });
     
@@ -241,7 +242,8 @@ window.PREDICTION_ANALYSIS = {
         nakshatra: p.nak || 'Unknown',
         pada: p.pada || 1,
         lord: getNakshatraLord(p.nak),
-        nature: getNakshatraNature(p.nak || '')
+        nature: getNakshatraNature(p.nak || ''),
+        reference: getNakshatraReference(p.nak, p.pada)
       };
     });
     
@@ -251,7 +253,8 @@ window.PREDICTION_ANALYSIS = {
       nakshatra: asc.nak || 'Unknown',
       pada: asc.pada || 1,
       lord: getNakshatraLord(asc.nak),
-      nature: getNakshatraNature(asc.nak || '')
+      nature: getNakshatraNature(asc.nak || ''),
+      reference: getNakshatraReference(asc.nak, asc.pada)
     };
     
     return {
@@ -386,7 +389,9 @@ window.PREDICTION_ANALYSIS = {
  */
 function getNakshatraLord(nakName) {
   const nak = window.ASTRO_CONSTANTS.NAKSHATRAS.find(n => n.name === nakName);
-  return nak ? nak.lord : 'Unknown';
+  if (nak) return nak.lord;
+  const ref = getNakshatraReference(nakName, 1);   // handles spellings such as 'Mula' / 'Dhanishta'
+  return ref ? ref.lord : 'Unknown';
 }
 
 /**
@@ -394,7 +399,9 @@ function getNakshatraLord(nakName) {
  */
 function getNakshatraNature(nakName) {
   const nak = window.ASTRO_CONSTANTS.NAKSHATRAS.find(n => n.name === nakName);
-  return nak ? nak.nature : 'See Nakshatra details';
+  if (nak && nak.nature) return nak.nature;
+  const ref = getNakshatraReference(nakName, 1);
+  return ref ? ref.temperament : 'See Nakshatra details';
 }
 
 /**
@@ -403,4 +410,21 @@ function getNakshatraNature(nakName) {
 function getSignLord(signName) {
   const signIndex = window.ASTRO_CONSTANTS.SIGNS.indexOf(signName);
   return window.ASTRO_CONSTANTS.SIGN_LORDS[signIndex] || 'Unknown';
+}
+
+/**
+ * Helper: reference data (akshar, shakti, temperament, deity, symbol, yoni ...) for a nakshatra + pada.
+ * Uses nakshatra_reference.js (names like 'Mula' / 'Purva Bhadra' are normalised through its aliases).
+ */
+function getNakshatraReference(nakName, pada) {
+  const R = window.NAKSHATRA_REFERENCE;
+  const n = R && R.getByName ? R.getByName(nakName) : null;
+  if (!n) return null;
+  const p = n.padas[Math.min(3, Math.max(0, (parseInt(pada) || 1) - 1))];
+  return {
+    akshar: p.akshar, aksharDev: p.dev, navamsaSign: R.SIGNS[p.navamsa],
+    deity: n.deity, symbol: n.symbol, meaning: n.meaning, shakti: n.shakti, temperament: n.temperament,
+    gana: n.gana, yoni: n.yoni, bodyPart: n.bodyPart, gaze: n.gaze, gender: n.gender, jati: n.jati, loka: n.loka,
+    characteristics: n.characteristics, lord: n.lord
+  };
 }

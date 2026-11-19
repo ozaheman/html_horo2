@@ -59,10 +59,12 @@ window.VRAT_FESTIVAL_ENGINE = {
     // ===================== MAJOR (ANNUAL) FESTIVALS =====================
     // Keyed by "<MaasName>-<Paksha>-<tithi within that paksha>", pinned to
     // the solar-sign-based Maas this app already computes elsewhere
-    // (see getMaas() / PANCHANG_ENGINE.getMaas()). This is an approximation
-    // consistent with that simplification — a full lunisolar calendar
-    // (tracking the actual amanta/purnimanta month boundary) would refine
-    // a handful of these further; that's a good next addition.
+    // (see getMaas() / PANCHANG_ENGINE.getMaas()). UPDATE: the month name must now be the PURNIMANTA name
+    // (Shukla paksha = the amanta month; Krishna paksha = the next month's name), which is what these keys
+    // already use (e.g. Maha Shivratri 'Magha-Krishna-14', Diwali 'Karttika-Krishna-15'). The Sun-sign proxy
+    // used before mislabelled most of every month, so those festivals were missed on their real dates.
+    // PANCHANG_ENGINE.getMaasAccurate() supplies it (new-moon based, with Adhika detection);
+    // fromPanchangEngineResult() below passes p.maasPurnimanta.
     MAJOR_FESTIVALS: {
         'Magha-Shukla-5': { name: 'Vasant Panchami', deity: 'Saraswati', note: 'Worship of the goddess of knowledge and the arts; marks the start of spring.' },
         'Magha-Krishna-14': { name: 'Maha Shivratri', deity: 'Shiva', note: 'The great night of Shiva — the most important Shivratri of the year; night-long vigil, fasting, and abhishek.' },
@@ -129,6 +131,8 @@ window.VRAT_FESTIVAL_ENGINE = {
             }
         }
 
+        // Festivals are not observed in an Adhika (extra) month; the nija month's festivals fall in the next month.
+        if (o.adhika) { festivals.length = 0; }
         const weekdayVrat = (o.weekday !== undefined) ? (this.WEEKDAY_VRATS[o.weekday] || null) : null;
 
         return { vrats: vrats, festivals: festivals, weekdayVrat: weekdayVrat };
@@ -143,7 +147,8 @@ window.VRAT_FESTIVAL_ENGINE = {
             ofPaksha: p.tithi ? p.tithi.ofPaksha : undefined,
             weekday: p.date ? p.date.getDay() : undefined,
             nakshatra: p.nakshatra ? p.nakshatra.name : undefined,
-            maasName: p.maas
+            maasName: p.maasPurnimanta || p.maas,
+            adhika: p.maasInfo ? p.maasInfo.adhika : false
         };
     },
 

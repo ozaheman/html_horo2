@@ -415,7 +415,24 @@ const AI_PREDICTION = (function() {
     function analyzeNakshatra(longitude) {
         const normalized = ((longitude % 360) + 360) % 360;
         const nak = NAKSHATRAS.find(n => normalized >= n.startDeg && normalized < n.endDeg);
+        // Reference data from nakshatra_reference.js (akshar, shakti, temperament, deity, symbol, yoni, KP sub lord ...)
+        const REF = (window.NAKSHATRA_REFERENCE && window.NAKSHATRA_REFERENCE.fromLongitude) ? window.NAKSHATRA_REFERENCE.fromLongitude(normalized) : null;
+        const refFields = REF ? {
+            akshar: REF.akshar, aksharDev: REF.aksharDev, navamsaSign: REF.navamsaSign, subLord: REF.subLord,
+            deity: REF.nakshatra.deity, symbol: REF.nakshatra.symbol, shakti: REF.nakshatra.shakti,
+            temperament: REF.nakshatra.temperament, yoni: REF.nakshatra.yoni, bodyPart: REF.nakshatra.bodyPart,
+            gaze: REF.nakshatra.gaze, jati: REF.nakshatra.jati, loka: REF.nakshatra.loka,
+            characteristics: REF.nakshatra.characteristics
+        } : {};
         
+        if (!nak && REF) {
+            // ASTRO_CONSTANTS.NAKSHATRAS missing/unmatched: fall back to the reference table
+            return Object.assign({
+                name: REF.nakshatra.name, lord: REF.nakshatra.lord, pada: REF.pada, padaMeaning: "",
+                nature: REF.nakshatra.temperament, gana: REF.nakshatra.gana,
+                interpretation: REF.nakshatra.characteristics, fullInterpretation: REF.nakshatra.characteristics
+            }, refFields);
+        }
         if (!nak) return { name: "Unknown", lord: "Unknown", pada: 1, nature: "Neutral", interpretation: "Unknown" };
         
         const pada = Math.floor(((normalized - nak.startDeg) / (nak.endDeg - nak.startDeg)) * 4) + 1;
@@ -436,7 +453,8 @@ const AI_PREDICTION = (function() {
             cause: nak.cause,
             effect: nak.effect,
             interpretation: nak.interpretation,
-            fullInterpretation: `${nak.interpretation} | Cause: ${nak.cause}, Effect: ${nak.effect}`
+            fullInterpretation: `${nak.interpretation} | Cause: ${nak.cause}, Effect: ${nak.effect}`,
+            ...refFields
         };
     }
     

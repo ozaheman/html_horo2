@@ -286,14 +286,16 @@ function renderKpWorkflow(rawHtml) {
     p3: 'Retrograde, conjunctions and horary',
     p4: 'Guide planet and extended techniques',
     p5: 'Full house-signification reference',
-    p11: 'Krishnamurti 249-division book references'
+    p11: 'Krishnamurti 249-division book references',
+    strength: 'Result strength · A/B/C/D levels, DBA and event checklist',
+    nakref: 'Nakshatra reference · akshar, shakti, temperament'
   };
   const stages = [
     { key: 'overview', title: 'Overview', number: '01', desc: 'Start with the running Dasha, then inspect the underlying cusps and significators.', ids: ['p7','core'] },
     { key: 'wealth', title: 'Wealth & career', number: '02', desc: 'Check money-house promise first, then rank Mahadasha/Antardasha periods.', ids: ['p13','p12','p6'] },
-    { key: 'events', title: 'Events & timing', number: '03', desc: 'Select an event promise, then send its house numbers to the timing finder.', ids: ['p8','p9'] },
+    { key: 'events', title: 'Events & timing', number: '03', desc: 'Select an event promise, then send its house numbers to the timing finder.', ids: ['p8','p9','strength'] },
     { key: 'advanced', title: 'Advanced rules', number: '04', desc: 'Optional supplementary techniques, separate from the primary event promise.', ids: ['p2','p3','p4'] },
-    { key: 'library', title: 'References', number: '05', desc: 'Detailed rule tables and 249-division reference entries.', ids: ['p5','p11'] }
+    { key: 'library', title: 'References', number: '05', desc: 'Detailed rule tables and 249-division reference entries.', ids: ['p5','p11','nakref'] }
   ];
   const has = (id) => !!byKey[id]?.trim();
   const nav = stages.map((stage, i) => `
@@ -683,6 +685,34 @@ async function updatePredictionsDisplay() {
               });
             } catch (kp11Err) {
               console.error('KP Part 11 analysis failed:', kp11Err);
+            }
+          }
+          // KP result strength (A/B/C/D levels, borrowed levels, node agents, independent houses,
+          // DBA / fruitful-significator event checklist) — KP_result_strength.js.
+          html += '<!--kp:block:strength-->';
+          if (window.KP_RESULT_STRENGTH) {
+            try {
+              html += window.KP_RESULT_STRENGTH.renderForPanel({
+                natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC,
+                mahaLord: dashaInfo?.mahadasha?.lord, adLord: dashaInfo?.antardasha?.lord,
+                pdLord: dashaInfo?.pratyantar?.lord,
+                transitPlanets: transitPlanets, transitAsc: transitAsc, now: targetDate,
+                sectionClass: 'pred-section-title'
+              });
+            } catch (strengthErr) {
+              console.error('KP result strength failed:', strengthErr);
+            }
+          }
+          // Nakshatra reference (akshar, shakti, temperament, deity, symbol, gana/yoni) — nakshatra_reference.js.
+          html += '<!--kp:block:nakref-->';
+          if (window.NAKSHATRA_REFERENCE) {
+            try {
+              html += window.NAKSHATRA_REFERENCE.renderForPanel({
+                natalPlanets: window.BIRTH_PLANETS, natalAsc: window.BIRTH_ASC,
+                sectionClass: 'pred-section-title'
+              });
+            } catch (nakErr) {
+              console.error('Nakshatra reference failed:', nakErr);
             }
           }
           html = html.slice(0, kpHtmlStart) + renderKpWorkflow(html.slice(kpHtmlStart));

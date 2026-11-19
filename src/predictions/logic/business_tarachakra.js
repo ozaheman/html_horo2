@@ -431,12 +431,23 @@ function buildTaraDetailCard(taraName, taraNum, stars, rulerPlanet, color, icon,
     if (nak.birthStarOf) {
       html += `<span style="padding:2px 7px;border-radius:10px;font-size:9px;background:rgba(155,111,255,.08);border:1px solid rgba(155,111,255,.2);color:var(--violet);">⭐ Birth ✦ ${nak.birthStarOf}</span>`;
     }
+    // Nakshatra reference (akshar / type / gana) from nakshatra_reference.js
+    const _nr = (window.NAKSHATRA_REFERENCE && window.NAKSHATRA_REFERENCE.getByName) ? window.NAKSHATRA_REFERENCE.getByName(nak.name) : null;
+    if (_nr) {
+      const _chip = (txt, rgb, clr) => `<span style="padding:2px 7px;border-radius:10px;font-size:9px;background:rgba(${rgb},.08);border:1px solid rgba(${rgb},.2);color:${clr};">${txt}</span>`;
+      html += _chip('🔤 ' + _nr.padas.map(p => p.akshar).join(' · '), '0,188,212', 'var(--cyan)');
+      html += _chip('⚡ ' + _nr.temperament, '255,170,0', 'var(--gold)');
+      html += _chip(_nr.gana + ' gana', '155,111,255', 'var(--violet)');
+    }
     html += `</div>`;
 
     // Articles
     html += `<div style="font-size:9.5px;color:var(--muted);line-height:1.4;">`;
     html += `<span style="color:${color};font-weight:600;">Miscellaneous Articles: </span>${nak.articles}`;
     html += `</div>`;
+    if (_nr) {
+      html += `<div style="font-size:9.5px;color:var(--muted);line-height:1.4;margin-top:3px;"><span style="color:${color};font-weight:600;">Shakti: </span>${_nr.shakti} · <span style="color:${color};font-weight:600;">Deity: </span>${_nr.deity} · <span style="color:${color};font-weight:600;">Symbol: </span>${_nr.symbol}</div>`;
+    }
     html += `</div>`;
   });
   html += `</div>`;

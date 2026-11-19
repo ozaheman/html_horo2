@@ -92,6 +92,10 @@ window.PANCHANG_ENGINE = {
     CHOGADIYA_DAY_START: { 0: 'Udveg', 1: 'Amrit', 2: 'Rog', 3: 'Labh', 4: 'Shubh', 5: 'Char', 6: 'Kaal' },
     // Night-sequence starting Chogadiya per weekday.
     CHOGADIYA_NIGHT_START: { 0: 'Shubh', 1: 'Char', 2: 'Kaal', 3: 'Udveg', 4: 'Amrit', 5: 'Rog', 6: 'Labh' },
+    // Night cycle (muhurta_panchanga_reference.md section 7.2): the night does NOT continue the day cycle.
+    // Day: Udveg > Char > Labh > Amrit > Kaal > Shubh > Rog.   Night: Shubh > Amrit > Char > Rog > Kaal > Labh > Udveg.
+    // The night START table above was already right; stepping through the DAY cycle from it was not.
+    CHOGADIYA_NIGHT_SEQUENCE: ['Shubh', 'Amrit', 'Char', 'Rog', 'Kaal', 'Labh', 'Udveg'],
     // Hora (planetary hours): the classical Chaldean order, descending by
     // apparent orbital speed — Saturn (slowest) down to the Moon
     // (fastest), then repeating. Hora #1 of the day always belongs to
@@ -239,7 +243,10 @@ window.PANCHANG_ENGINE = {
         const name = this.YOGA_NAMES[idx];
         const severe = this.YOGA_SEVERE_BAD.includes(name);
         const bad = this.YOGA_BAD.includes(name);
-        return { index: idx, name: name, nature: severe ? 'severe-bad' : bad ? 'bad' : 'good' };
+        const MP = window.MUHURTA_PANCHANGA, row = MP && MP.YOGA ? MP.YOGA[idx] : null;
+        return { index: idx, name: name, nature: severe ? 'severe-bad' : bad ? 'bad' : 'good',
+                 meaning: row ? row.meaning : undefined, inauspiciousPortion: row ? row.inauspicious : undefined,
+                 rejectedForMarriage: row ? /rejected for marriage/i.test(row.quality) || [17, 12, 10, 15, 9, 1, 6, 13, 19].indexOf(idx + 1) >= 0 : undefined };
     },
 
     getRitu: function (sunSid, ayan) {
@@ -255,13 +262,60 @@ window.PANCHANG_ENGINE = {
         return this.MAAS_NAMES[sign];
     },
 
+    // ----- Lunar month (Maas): amanta / purnimanta / adhika --------------------------------------
+    // The older getMaas(sunSid) names the month after the Sun's CURRENT sign. That is wrong for most of
+    // every month (e.g. Chaitra Shukla Pratipada falls while the Sun is still in sidereal Pisces, which
+    // that proxy calls Phalguna), so festival keys such as Ram Navami or Diwali missed their dates.
+    // Rule used here (amanta): a lunar month is named for the sign the Sun ENTERS during it (Sun in
+    // Pisces at the starting new moon -> Chaitra). A month whose two new moons have the Sun in the SAME
+    // sign contains no sankranti = Adhika (named after the nija month that follows). Purnimanta (North
+    // India): the Krishna paksha belongs to the NEXT amanta month name; Shukla is the same in both.
+    // Not handled: kshaya months and the Adhika month's own purnimanta Krishna naming (flagged).
+    _maasCache: null,
+    _elong: function (date) {
+        const p = this.getSiderealPositions(date);
+        return this._norm360(p.moonSid - p.sunSid);
+    },
+    /** Nearest new moon after (+1) or before (-1) a date: iterate on the signed elongation. */
+    _findNewMoon: function (date, direction) {
+        const e = this._elong(date);
+        let days = direction > 0 ? (360 - e) / 12.19 : e / 12.19;
+        if (days < 0.01) days = direction > 0 ? 29.53 : 0;
+        let t = new Date(date.getTime() + direction * days * 86400000);
+        for (let i = 0; i < 8; i++) {
+            const signed = ((this._elong(t) + 180) % 360) - 180;   // -180..180, 0 at the new moon
+            if (Math.abs(signed) < 0.005) break;
+            t = new Date(t.getTime() - (signed / 12.19) * 86400000);
+        }
+        return t;
+    },
+    getMaasAccurate: function (date) {
+        const c = this._maasCache;
+        if (c && date >= c.start && date < c.end) return c;
+        let prev = this._findNewMoon(date, -1), next = this._findNewMoon(date, +1);
+        if (prev > date) prev = new Date(prev.getTime() - 29.53 * 86400000);   // rounding guard
+        const s0 = Math.floor(this.getSiderealPositions(prev).sunSid / 30), s1 = Math.floor(this.getSiderealPositions(next).sunSid / 30);
+        const idx = (s0 + 1) % 12;
+        const info = {
+            amanta: this.MAAS_NAMES[idx],
+            // Purnimanta Krishna paksha = the NEXT amanta month's name. After an Adhika month the next month is the nija month of the SAME name.
+            purnimantaKrishna: this.MAAS_NAMES[s0 === s1 ? idx : (idx + 1) % 12], index: idx,
+            adhika: s0 === s1, kshayaPossible: ((s1 - s0 + 12) % 12) >= 2,
+            start: prev, end: next, sunSignAtStart: s0
+        };
+        this._maasCache = info;
+        return info;
+    },
+    /** The month name for a given paksha under the purnimanta convention (what the festival tables use). */
+    getMaasPurnimanta: function (info, paksha) { return paksha === 'Krishna' ? info.purnimantaKrishna : info.amanta; },
+
     getChogadiya: function (date, sunrise, sunset) {
         if (!sunrise || !sunset) return null;
         const dow = date.getDay();
         const dayStart = this.CHOGADIYA_DAY_START[dow];
         const nightStart = this.CHOGADIYA_NIGHT_START[dow];
         const dayStartIdx = this.CHOGADIYA_SEQUENCE.indexOf(dayStart);
-        const nightStartIdx = this.CHOGADIYA_SEQUENCE.indexOf(nightStart);
+        const nightStartIdx = this.CHOGADIYA_NIGHT_SEQUENCE.indexOf(nightStart);
         const daySpan = (sunset - sunrise) / 8;
         // Night span approximated as (next sunrise - sunset); since we don't
         // have tomorrow's exact sunrise here, reuse today's daylight length
@@ -277,7 +331,7 @@ window.PANCHANG_ENGINE = {
             });
         }
         for (let i = 0; i < 8; i++) {
-            const nm = this.CHOGADIYA_SEQUENCE[(nightStartIdx + i) % 7];
+            const nm = this.CHOGADIYA_NIGHT_SEQUENCE[(nightStartIdx + i) % 7];
             segments.push({
                 period: 'night', name: nm, quality: this.CHOGADIYA_QUALITY[nm],
                 start: new Date(sunset.getTime() + i * nightSpan), end: new Date(sunset.getTime() + (i + 1) * nightSpan)
@@ -340,12 +394,15 @@ window.PANCHANG_ENGINE = {
     },
 
     /** Abhijit Muhurat — the 8th of 15 muhurtas of the day, centred on local solar noon; ~1/15th of daylight span wide. */
-    getAbhijitMuhurat: function (sunrise, sunset) {
+    getAbhijitMuhurat: function (sunrise, sunset, dow) {
         if (!sunrise || !sunset) return null;
         const daySpan = sunset - sunrise;
         const muhurtaLen = daySpan / 15;
         const solarNoon = new Date(sunrise.getTime() + daySpan / 2);
-        return { start: new Date(solarNoon.getTime() - muhurtaLen / 2), end: new Date(solarNoon.getTime() + muhurtaLen / 2), solarNoon: solarNoon };
+        // md section 8.2: Abhijit = LNT +/- (sunset - sunrise)/30 with LNT = (sunrise + sunset)/2 (this is exactly that).
+        // On Wednesday it coincides with Rahu Kala and is NOT used for auspicious work; never travel south in it.
+        return { start: new Date(solarNoon.getTime() - muhurtaLen / 2), end: new Date(solarNoon.getTime() + muhurtaLen / 2), solarNoon: solarNoon,
+                 malefic: dow === 3, note: dow === 3 ? 'Wednesday: Abhijit coincides with Rahu Kala - do not use for auspicious work' : 'No travel to the south during Abhijit' };
     },
 
     /** Brahma Muhurat — the 2nd-to-last muhurta before sunrise (~1.5h before sunrise, ~48min window). */
@@ -372,12 +429,15 @@ window.PANCHANG_ENGINE = {
         const karana = this.getKarana(sunSid, moonSid);
         const yoga = this.getYoga(sunSid, moonSid);
         const ritu = this.getRitu(sunSid, ayan);
-        const maas = this.getMaas(sunSid);
+        let maasInfo = null;
+        try { maasInfo = this.getMaasAccurate(date); } catch (e) { maasInfo = null; }
+        const maas = maasInfo ? maasInfo.amanta : this.getMaas(sunSid);      // amanta name (plain string, backward compatible)
+        const maasPurnimanta = maasInfo ? this.getMaasPurnimanta(maasInfo, tithi.paksha) : maas;
         const chogadiya = this.getChogadiya(date, sunrise, sunset);
         const hora = this.getHora(date, sunrise, sunset);
         const currentHora = this.getCurrentHora(date, hora);
         const inauspicious = this.getInauspiciousWindows(date, sunrise, sunset);
-        const abhijit = this.getAbhijitMuhurat(sunrise, sunset);
+        const abhijit = this.getAbhijitMuhurat(sunrise, sunset, vara ? this.VARA.indexOf(vara) : date.getDay());
         const brahma = this.getBrahmaMuhurat(sunrise);
 
         // Special combined yogas
@@ -386,9 +446,26 @@ window.PANCHANG_ENGINE = {
         const raviPushyaYoga = isPushyaDay && vara.name === 'Sunday'; // a form of Sarvartha Siddhi
         const sarvarthaSiddhi = raviPushyaYoga; // simplified: extend with full day+nakshatra table if needed
 
+        // Bhadra (Vishti) is malefic only in certain tithi halves (md section 5): night 2nd half of 3,4,10,11; day 1st half of 7,8,14,15.
+        const MP = window.MUHURTA_PANCHANGA;
+        if (karana.name === 'Vishti' && MP && MP.bhadraMalefic) {
+            const secondHalf = karana.index % 2 === 1, isDay = !!(sunrise && sunset && date >= sunrise && date < sunset);
+            karana.bhadraMalefic = MP.bhadraMalefic(tithi.ofPaksha, secondHalf, isDay);
+        }
+        // The Vedic day runs sunrise to sunrise: before sunrise it is still the previous weekday.
+        const vedicWeekday = (sunrise && date < sunrise) ? (date.getDay() + 6) % 7 : date.getDay();
+        // Full Siddha / Amrita / Ku-yoga / Tatkalika / gandanta / panchaka checks from muhurta_panchanga.js (optional module).
+        let muhurta = null;
+        if (MP && MP.evaluate) {
+            try {
+                const hr = (d) => d ? (d.getTime() - new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()) / 3600000 : undefined;
+                muhurta = MP.evaluate({ date: date, sunSid: sunSid, moonSid: moonSid, sunrise: hr(sunrise), sunset: hr(sunset) });
+            } catch (e) { muhurta = null; }
+        }
+
         return {
             date, lat, lon, sunSid, moonSid, ayan, sunrise, sunset, utcOffsetHours: resolvedOffset,
-            ritu, maas, nakshatra, tithi, vara, karana, yoga,
+            ritu, maas, maasPurnimanta, maasInfo, vedicWeekday, muhurta, nakshatra, tithi, vara, karana, yoga,
             chogadiya, hora, currentHora, inauspicious, abhijit, brahma,
             specialYogas: { guruPushyaYoga, raviPushyaYoga, sarvarthaSiddhi, isPushyaDay }
         };
@@ -407,7 +484,15 @@ window.PANCHANG_ENGINE = {
         if (p.currentHora) lines.push(`Current Hora: ${p.currentHora.lord} (${p.currentHora.lordDevanagari}), ${this.fmtTime(p.currentHora.start, p.utcOffsetHours)}–${this.fmtTime(p.currentHora.end, p.utcOffsetHours)}.`);
         if (p.specialYogas.guruPushyaYoga) lines.push('⭐ Guru Pushya Yoga today — one of the most favoured windows for commerce/wealth all day.');
         if (p.specialYogas.raviPushyaYoga) lines.push('⭐ Ravi Pushya Yoga today — Sarvartha Siddhi-like, generally excellent all day.');
-        if (p.abhijit) lines.push(`Abhijit Muhurat: ${this.fmtTime(p.abhijit.start, p.utcOffsetHours)}–${this.fmtTime(p.abhijit.end, p.utcOffsetHours)} — universally auspicious window, overrides most ordinary contradictions.`);
+        if (p.abhijit) lines.push(p.abhijit.malefic
+            ? `Abhijit Muhurat ${this.fmtTime(p.abhijit.start, p.utcOffsetHours)}–${this.fmtTime(p.abhijit.end, p.utcOffsetHours)} — Wednesday: it coincides with Rahu Kala, do not use it for auspicious work.`
+            : `Abhijit Muhurat: ${this.fmtTime(p.abhijit.start, p.utcOffsetHours)}–${this.fmtTime(p.abhijit.end, p.utcOffsetHours)} — auspicious window that overrides most ordinary contradictions (no travel to the south).`);
+        if (p.karana && p.karana.bhadraMalefic) lines.push('⚠ Bhadra (Vishti) is in its malefic phase now — avoid auspicious work.');
+        if (p.maasInfo && p.maasInfo.adhika) lines.push('Adhika (extra) lunar month — traditionally avoided for new auspicious beginnings such as marriage.');
+        if (p.muhurta) {
+            (p.muhurta.positives || []).forEach(x => lines.push('✔ ' + x));
+            (p.muhurta.flags || []).forEach(x => lines.push('⚠ ' + x));
+        }
         if (p.inauspicious) lines.push(`Avoid Rahu Kaal ${this.fmtTime(p.inauspicious.rahuKaal.start, p.utcOffsetHours)}–${this.fmtTime(p.inauspicious.rahuKaal.end, p.utcOffsetHours)} for new beginnings.`);
         return lines;
     },

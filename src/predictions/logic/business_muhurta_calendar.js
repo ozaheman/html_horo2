@@ -357,7 +357,7 @@ window.BUSINESS_MUHURTA = {
           <div class="pred-title" style="color:#FFD700;">🕉 Panchang — ${E.fmtDate(panchang.date, off)}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9.5px;margin:6px 0;">
             <div><span style="color:var(--muted);">Ritu:</span> <b>${panchang.ritu.name}</b></div>
-            <div><span style="color:var(--muted);">Maas:</span> <b>${panchang.maas}</b></div>
+            <div><span style="color:var(--muted);">Maas:</span> <b>${panchang.maas}</b>${panchang.maasPurnimanta && panchang.maasPurnimanta !== panchang.maas ? ` <span style="color:var(--muted);">(purnimanta: ${panchang.maasPurnimanta})</span>` : ''}${panchang.maasInfo && panchang.maasInfo.adhika ? ' <b style="color:#FF9F43;">Adhika</b>' : ''}</div>
             <div><span style="color:var(--muted);">Nakshatra:</span> <b>${panchang.nakshatra.name}</b> (pada ${panchang.nakshatra.pada}) — ${panchang.nakshatra.natureInfo.label}</div>
             <div><span style="color:var(--muted);">Tithi:</span> <b>${panchang.tithi.ofPaksha} ${panchang.tithi.paksha}</b> (${panchang.tithi.group})</div>
             <div><span style="color:var(--muted);">Vara:</span> <b>${panchang.vara.name}</b> (${panchang.vara.ruler})</div>
@@ -371,7 +371,7 @@ window.BUSINESS_MUHURTA = {
             Gulika ${E.fmtTime(panchang.inauspicious.gulikaKaal.start, off)}–${E.fmtTime(panchang.inauspicious.gulikaKaal.end, off)}
           </div>
           <div style="margin-top:6px;padding:6px 8px;background:rgba(0,221,119,.06);border:1px solid rgba(0,221,119,.25);border-radius:4px;font-size:9px;">
-            <b style="color:#00DD77;">Abhijit Muhurat:</b> ${E.fmtTime(panchang.abhijit.start, off)}–${E.fmtTime(panchang.abhijit.end, off)} (universally auspicious)
+            <b style="color:#00DD77;">Abhijit Muhurat:</b> ${E.fmtTime(panchang.abhijit.start, off)}–${E.fmtTime(panchang.abhijit.end, off)} ${panchang.abhijit.malefic ? '<span style="color:#FF9F43;">(Wednesday: coincides with Rahu Kala, not for auspicious work)</span>' : '(auspicious; no travel to the south)'}
             ${panchang.brahma ? `<br><b style="color:#66CCFF;">Brahma Muhurat:</b> ${E.fmtTime(panchang.brahma.start, off)}–${E.fmtTime(panchang.brahma.end, off)} (best for meditation/rituals)` : ''}
           </div>
           <details style="margin-top:6px;">
