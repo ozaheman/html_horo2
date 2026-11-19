@@ -168,8 +168,8 @@ window.ASTRO_KNOWLEDGE = {
     "Jupiter_Saturn": { title: "Jupiter & Saturn Conjunct", description: "Dharma (Jupiter) meets Karma (Saturn). Responsible, structured approach to religion and law." },
     "Venus_Saturn": { title: "Venus & Saturn Conjunct", description: "Loyal, dutiful in relationships. Late marriage. Finds beauty in antique/old things. Realistic romance." },
     // Advanced Conjunctions
-    "Three_Planets": { title: "Three Planet Conjunction", description: "Creates a strong focal point in the chart. Blends multiple energies, making the house highly active but complex." },
-    "Four_Planets": { title: "Four Planet Conjunction", description: "Sanyaasa Yoga tendency. Intense focus on one area of life, leading to detachment from others." },
+    "Three_Planets": { title: "Three Planet Conjunction", description: "Saravali gives specific three-planet combinations in Chapter 16; the count alone has no single result. Judge the exact planets and their condition." },
+    "Four_Planets": { title: "Four Planet Conjunction", description: "Saravali gives specific four-planet combinations in Chapter 17; the count alone does not establish a renunciation yoga. Check the exact planets and source qualifications." },
   },
 
   // Advanced Concepts

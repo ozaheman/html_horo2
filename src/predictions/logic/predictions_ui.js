@@ -913,6 +913,25 @@ async function updatePredictionsDisplay() {
       } else {
         html += `<div class="pred-item"><div class="pred-title">⚠️ hora_analysis.js module not found</div><div class="pred-detail">Make sure src/predictions/logic/hora_analysis.js is included in index.html before predictions_ui.js.</div></div>`;
       }
+    } else if (mode.startsWith('classical_')) {
+      await showProgress('Generating classical source predictions...');
+      if (!window.CLASSICAL_SOURCES) {
+        html += `<div class="pred-item"><div class="pred-title">⚠️ Classical source module not found</div><div class="pred-detail">Make sure src/predictions/logic/classical_sources.js is included in index.html.</div></div>`;
+      } else {
+        const dashaInfo = (mode === 'classical_laghu' || mode === 'classical_gochar') && window.PREDICTION_FORECASTING
+          ? window.PREDICTION_FORECASTING.getCurrentDashaInfo(targetDate)
+          : null;
+        const report = window.CLASSICAL_SOURCES.generate(mode, {
+          planets: window.BIRTH_PLANETS,
+          ascendant: window.BIRTH_ASC,
+          dashaInfo: dashaInfo,
+          transitPlanets: mode === 'classical_gochar' && typeof getPos === 'function'
+            ? getPos(targetDate)
+            : null,
+          currentDate: targetDate
+        });
+        html += window.CLASSICAL_SOURCES.renderHTML(report);
+      }
     } else {
       await showProgress('Loading forecasting modules...');
       html += renderDailyCombinationsSection(targetDate);
@@ -1501,63 +1520,77 @@ function renderAstrologyKnowledgeSection() {
   let html = '<div class="pred-item" style="border-left: 3px solid var(--amber); background: rgba(255, 155, 58, 0.05);">';
   html += '<div class="pred-title" style="color:var(--amber);">📚 Deep Astrological Insights</div>';
 
-  // Basic rendering of planets in houses
   const planets = (window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.PLANETS) || [];
+  const houseValues = Object.values(houses);
   let foundInsights = false;
 
   planets.forEach(p => {
-    const loc = Object.values(houses).find(h => h.planets && h.planets.includes(p));
+    const loc = houseValues.find(h => h.planets && h.planets.includes(p));
     if (loc && loc.house) {
       const insight = window.getAstrologyInsight('planet_in_house', `${p}_${loc.house}`);
       if (insight) {
         foundInsights = true;
+        const occupants = Array.isArray(loc.planets) ? loc.planets.length : 1;
+        const occupancyLabel = occupants === 1 ? '1 planet in house' : occupants + ' planets in house';
         html += `
           <div style="margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:3px;">
-            <div style="font-weight:700; font-size:10px; color:var(--text); margin-bottom:2px;">${insight.title}</div>
-            <div contenteditable="plaintext-only" spellcheck="false" title="Click to edit" onblur="window.savePredictionOverride('${insight.key || mandiInsight?.key}', this.innerText)" style="font-size:9.5px; color:var(--muted); line-height:1.4; outline:none; border-bottom:1px dashed transparent; transition:all 0.2s; padding:2px; cursor:text;" onfocus="this.style.borderBottom='1px dashed var(--cyan)'; this.style.color='var(--text)'; this.style.background='rgba(255,255,255,0.05)';" onblur="this.style.borderBottom='1px dashed transparent'; this.style.color='var(--muted)'; this.style.background='transparent'; window.savePredictionOverride('${insight?.key || mandiInsight?.key}', this.innerText)">${insight?.description || mandiInsight?.description}</div>
+            <div style="font-weight:700; font-size:10px; color:var(--text); margin-bottom:2px;">${insight.title} · ${occupancyLabel}</div>
+            ${window.makeEditable ? window.makeEditable(insight.key, insight.description) : `<div style="font-size:9.5px; color:var(--muted); line-height:1.4;">${insight.description}</div>`}
           </div>
         `;
       }
     }
   });
 
-  // Basic check for conjunctions mapping
-  const houseVals = Object.values(houses).filter(h => h.planets && h.planets.length > 1);
-  houseVals.forEach(h => {
-    if (h.planets.length === 2) {
-      const insight1 = window.getAstrologyInsight('conjunction', `${h.planets[0]}_${h.planets[1]}`);
-      const insight2 = window.getAstrologyInsight('conjunction', `${h.planets[1]}_${h.planets[0]}`);
-      const insight = insight1 || insight2;
-      if (insight) {
-        foundInsights = true;
-        html += `
-          <div style="margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:3px; border-left:2px solid var(--violet);">
-            <div style="font-weight:700; font-size:10px; color:var(--violet); margin-bottom:2px;">${insight.title}</div>
-            <div contenteditable="plaintext-only" spellcheck="false" title="Click to edit" onblur="window.savePredictionOverride('${insight.key || mandiInsight?.key}', this.innerText)" style="font-size:9.5px; color:var(--muted); line-height:1.4; outline:none; border-bottom:1px dashed transparent; transition:all 0.2s; padding:2px; cursor:text;" onfocus="this.style.borderBottom='1px dashed var(--cyan)'; this.style.color='var(--text)'; this.style.background='rgba(255,255,255,0.05)';" onblur="this.style.borderBottom='1px dashed transparent'; this.style.color='var(--muted)'; this.style.background='transparent'; window.savePredictionOverride('${insight?.key || mandiInsight?.key}', this.innerText)">${insight?.description || mandiInsight?.description}</div>
-          </div>
-        `;
+  const saravaliPlanets = new Set((window.SARAVALI_CONJUNCTIONS && window.SARAVALI_CONJUNCTIONS.planets) || []);
+  houseValues.filter(h => Array.isArray(h.planets) && h.planets.length > 1).forEach(h => {
+    const occupants = h.planets;
+    const classicalOccupants = occupants.filter(name => saravaliPlanets.has(name));
+    const matches = window.SARAVALI_CONJUNCTIONS && classicalOccupants.length > 1
+      ? window.SARAVALI_CONJUNCTIONS.getExact(classicalOccupants)
+      : null;
+    const countLabel = occupants.length === 1 ? '1 planet' : occupants.length + ' planets';
+    const houseLabel = Number.isInteger(Number(h.house)) ? 'House ' + Number(h.house) : 'this house';
+    const extraPlanets = occupants.filter(name => !saravaliPlanets.has(name));
+    const title = `${countLabel} in ${houseLabel}: ${occupants.join(', ')}`;
+    let details = '';
+
+    if (matches && matches.length) {
+      const combinationKey = classicalOccupants.slice().sort().join('_');
+      details = matches.map((match, index) => {
+        const editKey = 'saravali_conjunction_' + combinationKey + '_' + index;
+        const prediction = window.makeEditable
+          ? window.makeEditable(editKey, match.text)
+          : `<div style="font-size:9.5px; color:var(--muted); line-height:1.4;">${match.text}</div>`;
+        const warning = match.warning
+          ? `<div style="margin-top:4px; color:var(--amber);">Source qualification: ${match.warning}</div>`
+          : '';
+        return `${prediction}<div style="margin-top:4px; font-size:9px; color:var(--cyan);">Shloka reference: ${match.reference} · <a href="./reference/saravali-1.md" target="_blank" rel="noopener">open source extract</a></div>${warning}`;
+      }).join('');
+
+      if (classicalOccupants.length === 2) {
+        details += '<div style="margin-top:4px; font-size:9px; color:var(--muted);">Saravali, Ch. 15, sloka 23 says to qualify these results by the planets’ divisional strength.</div>';
+      } else if (classicalOccupants.length === 3) {
+        details += '<div style="margin-top:4px; font-size:9px; color:var(--muted);">Also consider Saravali, Ch. 16, slokas 36–38, which qualifies results by the planets’ benefic or malefic nature.</div>';
+      } else if (classicalOccupants.length === 5 || classicalOccupants.length === 6) {
+        details += '<div style="margin-top:4px; font-size:9px; color:var(--amber);">Saravali, Ch. 19, sloka 8 adds a general caution for five- and six-planet conjunctions; it may differ from the combination-specific result above.</div>';
       }
-    } else if (h.planets.length === 3) {
-      const insight = window.getAstrologyInsight('conjunction', `Three_Planets`);
-      if (insight) {
-        html += `
-          <div style="margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:3px; border-left:2px solid var(--violet);">
-            <div style="font-weight:700; font-size:10px; color:var(--violet); margin-bottom:2px;">${h.planets.join(', ')} (3 Planet Conjunction in H${h.house})</div>
-            <div contenteditable="plaintext-only" spellcheck="false" title="Click to edit" onblur="window.savePredictionOverride('${insight.key || mandiInsight?.key}', this.innerText)" style="font-size:9.5px; color:var(--muted); line-height:1.4; outline:none; border-bottom:1px dashed transparent; transition:all 0.2s; padding:2px; cursor:text;" onfocus="this.style.borderBottom='1px dashed var(--cyan)'; this.style.color='var(--text)'; this.style.background='rgba(255,255,255,0.05)';" onblur="this.style.borderBottom='1px dashed transparent'; this.style.color='var(--muted)'; this.style.background='transparent'; window.savePredictionOverride('${insight?.key || mandiInsight?.key}', this.innerText)">${insight?.description || mandiInsight?.description}</div>
-          </div>
-        `;
+
+      if (extraPlanets.length) {
+        details += `<div style="margin-top:4px; font-size:9px; color:var(--muted);">${extraPlanets.join(', ')} are not covered by this Saravali conjunction entry.</div>`;
       }
-    } else if (h.planets.length >= 4) {
-      const insight = window.getAstrologyInsight('conjunction', `Four_Planets`);
-      if (insight) {
-        html += `
-          <div style="margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:3px; border-left:2px solid var(--violet);">
-            <div style="font-weight:700; font-size:10px; color:var(--violet); margin-bottom:2px;">${h.planets.join(', ')} (${h.planets.length} Planet Conjunction)</div>
-            <div contenteditable="plaintext-only" spellcheck="false" title="Click to edit" onblur="window.savePredictionOverride('${insight.key || mandiInsight?.key}', this.innerText)" style="font-size:9.5px; color:var(--muted); line-height:1.4; outline:none; border-bottom:1px dashed transparent; transition:all 0.2s; padding:2px; cursor:text;" onfocus="this.style.borderBottom='1px dashed var(--cyan)'; this.style.color='var(--text)'; this.style.background='rgba(255,255,255,0.05)';" onblur="this.style.borderBottom='1px dashed transparent'; this.style.color='var(--muted)'; this.style.background='transparent'; window.savePredictionOverride('${insight?.key || mandiInsight?.key}', this.innerText)">${insight?.description || mandiInsight?.description}</div>
-          </div>
-        `;
-      }
+    } else {
+      details = '<div style="font-size:9.5px; color:var(--muted); line-height:1.4;">No exact Saravali conjunction entry was found for this set. A planet count alone is not a classical prediction; assess the identities, house, dignity, aspects, lord, and timing instead.</div>' +
+        '<div style="margin-top:4px; font-size:9px; color:var(--amber);">REFERENCE NEEDED — VERIFY an exact source rule for this combination.</div>';
     }
+
+    foundInsights = true;
+    html += `
+      <div style="margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:3px; border-left:2px solid var(--violet);">
+        <div style="font-weight:700; font-size:10px; color:var(--violet); margin-bottom:2px;">${title}</div>
+        ${details}
+      </div>
+    `;
   });
 
   // Display advanced concepts dynamically

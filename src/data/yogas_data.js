@@ -2586,7 +2586,105 @@ window.YOGAS_DATA = [
         return found;
     }
 
-    
+    const NABHASA_PLANETS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+    const NABHASA_BENEFICS = ['Moon', 'Mercury', 'Jupiter', 'Venus'];
+    const NABHASA_MALEFICS = ['Sun', 'Mars', 'Saturn'];
+
+    function getNabhasaPositions(c) {
+        if (!c || !c.planets) return null;
+        const ascSn = c.asc && Number(c.asc.sn);
+        const positions = NABHASA_PLANETS.map(name => {
+            const pos = c.planets[name];
+            const house = pos && Number(pos.house);
+            if (!pos || !Number.isInteger(house) || house < 1 || house > 12) return null;
+
+            let sn = pos.sn !== undefined && pos.sn !== null ? Number(pos.sn) : NaN;
+            if (!Number.isInteger(sn) || sn < 0 || sn > 11) {
+                const signNames = YOGA_SIGNS();
+                sn = typeof pos.sign === 'string' ? signNames.indexOf(pos.sign) : -1;
+            }
+            if ((!Number.isInteger(sn) || sn < 0 || sn > 11) &&
+                Number.isInteger(ascSn) && ascSn >= 0 && ascSn < 12) {
+                sn = (ascSn + house - 1) % 12;
+            }
+
+            return { name, house, sn };
+        });
+        return positions.every(Boolean) ? positions : null;
+    }
+
+    function matchesNabhasaRule(c, definition) {
+        const positions = getNabhasaPositions(c);
+        if (!positions || !definition || !definition.rule) return false;
+        const rule = definition.rule;
+
+        if (rule.type === 'modality') {
+            if (positions.some(position => !Number.isInteger(position.sn))) return false;
+            return positions.every(position => rule.signs.includes(position.sn));
+        }
+        if (rule.type === 'dala') {
+            const occupiedKendras = new Set(positions
+                .filter(position => rule.planets.includes(position.name) && isKendra(position.house))
+                .map(position => position.house));
+            return occupiedKendras.size >= rule.minimumKendras;
+        }
+        if (rule.type === 'house-sets') {
+            return rule.sets.some(set => positions.every(position => set.includes(position.house)));
+        }
+        if (rule.type === 'house-set') {
+            return positions.every(position => rule.houses.includes(position.house));
+        }
+        if (rule.type === 'mixed-houses') {
+            return positions
+                .filter(position => rule.benefics.includes(position.name))
+                .every(position => rule.beneficHouses.includes(position.house)) &&
+                positions
+                    .filter(position => rule.malefics.includes(position.name))
+                    .every(position => rule.maleficHouses.includes(position.house));
+        }
+        if (rule.type === 'sankhya') {
+            const earlierNabhasa = NABHASA_YOGAS.some(other =>
+                other.rule.type !== 'sankhya' && matchesNabhasaRule(c, other));
+            if (earlierNabhasa || positions.some(position => !Number.isInteger(position.sn))) return false;
+            return new Set(positions.map(position => position.sn)).size === rule.signCount;
+        }
+        return false;
+    }
+
+    const NABHASA_YOGAS = [
+        { name: 'Rajju Yoga', rule: { type: 'modality', signs: [0, 3, 6, 9] }, shloka: '7', effects: '18', result: 'The classical text associates Rajju Yoga with movement, travel, and livelihood away from the birthplace.' },
+        { name: 'Musala Yoga', rule: { type: 'modality', signs: [1, 4, 7, 10] }, shloka: '7', effects: '19', result: 'The classical text associates Musala Yoga with firmness, reputation, knowledge, and material resources.' },
+        { name: 'Nala Yoga', rule: { type: 'modality', signs: [2, 5, 8, 11] }, shloka: '7', effects: '20', result: 'The classical text associates Nala Yoga with practical skill, resourcefulness, and support for relatives.' },
+        { name: 'Maala Yoga', rule: { type: 'dala', planets: NABHASA_BENEFICS, minimumKendras: 3 }, shloka: '8', effects: '21', result: 'The classical text associates Maala Yoga with comfort, conveyances, and enjoyment.' },
+        { name: 'Sarpa Yoga', rule: { type: 'dala', planets: NABHASA_MALEFICS, minimumKendras: 3 }, shloka: '8', effects: '22', result: 'The classical text associates Sarpa Yoga with hardship and dependence; interpret alongside mitigating combinations.' },
+        { name: 'Gada Yoga', rule: { type: 'house-sets', sets: [[1, 4], [4, 7], [7, 10], [10, 1]] }, shloka: '9', effects: '23', result: 'The classical text associates Gada Yoga with persistent effort, learning, and resources.' },
+        { name: 'Sakata (Nabhasa) Yoga', rule: { type: 'house-sets', sets: [[1, 7]] }, shloka: '9', effects: '24', result: 'The classical text associates this Nabhasa form of Sakata Yoga with fluctuations and material hardship.' },
+        { name: 'Vihaga Yoga', rule: { type: 'house-sets', sets: [[4, 10]] }, shloka: '9', effects: '25', result: 'The classical text associates Vihaga Yoga with movement, travel, and unsettled conduct.' },
+        { name: 'Sringataka Yoga', rule: { type: 'house-sets', sets: [[1, 5, 9]] }, shloka: '9', effects: '26', result: 'The classical text associates Sringataka Yoga with ambition, conflict, and public standing.' },
+        { name: 'Hala Yoga', rule: { type: 'house-sets', sets: [[2, 6, 10], [3, 7, 11], [4, 8, 12]] }, shloka: '10', effects: '27', result: 'The classical text associates Hala Yoga with agricultural work, labor, and periods of hardship.' },
+        { name: 'Vajra Yoga', rule: { type: 'mixed-houses', benefics: NABHASA_BENEFICS, beneficHouses: [1, 7], malefics: NABHASA_MALEFICS, maleficHouses: [4, 10] }, shloka: '10-11', effects: '28', result: 'The classical text associates Vajra Yoga with resilience and a mixed pattern of ease and difficulty.' },
+        { name: 'Yava Yoga', rule: { type: 'mixed-houses', benefics: NABHASA_BENEFICS, beneficHouses: [4, 10], malefics: NABHASA_MALEFICS, maleficHouses: [1, 7] }, shloka: '11', effects: '29', result: 'The classical text associates Yava Yoga with generosity, discipline, and steadiness.' },
+        { name: 'Kamala Yoga', rule: { type: 'house-set', houses: [1, 4, 7, 10] }, shloka: '12', effects: '30', result: 'The classical text associates Kamala Yoga with virtue, fame, longevity, and prosperity.' },
+        { name: 'Vapi Yoga', rule: { type: 'house-sets', sets: [[2, 5, 8, 11], [3, 6, 9, 12]] }, shloka: '12', effects: '31', result: 'The classical text associates Vapi Yoga with accumulation, lasting resources, and comfort.' },
+        { name: 'Yupa Yoga', rule: { type: 'house-set', houses: [1, 2, 3, 4] }, shloka: '13', effects: '32', result: 'The classical text associates Yupa Yoga with spiritual study, religious observance, and distinction.' },
+        { name: 'Sara Yoga', rule: { type: 'house-set', houses: [4, 5, 6, 7] }, shloka: '13', effects: '33', result: 'The classical text associates Sara Yoga with work involving animals, weapons, or confinement.' },
+        { name: 'Sakthi Yoga', rule: { type: 'house-set', houses: [7, 8, 9, 10] }, shloka: '13', effects: '34', result: 'The classical text associates Sakthi Yoga with perseverance and martial ability, alongside material difficulty.' },
+        { name: 'Danda Yoga', rule: { type: 'house-set', houses: [1, 10, 11, 12] }, shloka: '13', effects: '35', result: 'The classical text associates Danda Yoga with separation, hardship, and service.' },
+        { name: 'Nauka Yoga', rule: { type: 'house-set', houses: [1, 2, 3, 4, 5, 6, 7] }, shloka: '14', effects: '36', result: 'The classical text associates Nauka Yoga with livelihood connected to water and material resources.' },
+        { name: 'Koota Yoga', rule: { type: 'house-set', houses: [4, 5, 6, 7, 8, 9, 10] }, shloka: '14', effects: '37', result: 'The classical text associates Koota Yoga with confinement, secrecy, and a difficult reputation.' },
+        { name: 'Chatra Yoga', rule: { type: 'house-set', houses: [1, 7, 8, 9, 10, 11, 12] }, shloka: '14', effects: '38', result: 'The classical text associates Chatra Yoga with support from others, leadership, and longevity.' },
+        { name: 'Chapa Yoga', rule: { type: 'house-set', houses: [1, 2, 3, 4, 10, 11, 12] }, shloka: '14', effects: '39', result: 'The classical text associates Chapa Yoga with resourcefulness and improved circumstances later in life.' },
+        { name: 'Ardhachandra Yoga', sourceLabel: 'Saravali', rule: { type: 'house-sets', sets: [[2, 3, 4, 5, 6, 7, 8], [3, 4, 5, 6, 7, 8, 9], [5, 6, 7, 8, 9, 10, 11], [6, 7, 8, 9, 10, 11, 12], [8, 9, 10, 11, 12, 1, 2], [9, 10, 11, 12, 1, 2, 3], [11, 12, 1, 2, 3, 4, 5], [12, 1, 2, 3, 4, 5, 6]] }, shloka: 'Ch. 21, shloka 13; effects in shloka 25', referenceShloka: 'Saravali, Ch. 21, shloka 13 (formation); effects in shloka 25. BPHS, Ch. 35, shloka 40 (effect).', result: 'The classical text associates Ardhachandra Yoga with fortune, leadership, strength, and public regard.' },
+        { name: 'Chakra Yoga', rule: { type: 'house-set', houses: [1, 3, 5, 7, 9, 11] }, shloka: '15', effects: '41', result: 'The classical text associates Chakra Yoga with authority and high status.' },
+        { name: 'Samudra Yoga', rule: { type: 'house-set', houses: [2, 4, 6, 8, 10, 12] }, shloka: '15', effects: '42', result: 'The classical text associates Samudra Yoga with wealth, enjoyment, and stable resources.' },
+        { name: 'Vallaki/Veena Yoga', rule: { type: 'sankhya', signCount: 7 }, shloka: '16-17', effects: '43', result: 'The classical text associates this seven-sign Sankhya form with music, skill, prosperity, and leadership.' },
+        { name: 'Daama (Dama) Yoga', rule: { type: 'sankhya', signCount: 6 }, shloka: '16-17', effects: '44', result: 'The classical text associates this six-sign Sankhya form with helpfulness, learning, and resources.' },
+        { name: 'Paasa (Pasa) Yoga', rule: { type: 'sankhya', signCount: 5 }, shloka: '16-17', effects: '45', result: 'The classical text associates this five-sign Sankhya form with skill, activity, and many dependants.' },
+        { name: 'Kedara Yoga', rule: { type: 'sankhya', signCount: 4 }, shloka: '16-17', effects: '46', result: 'The classical text associates this four-sign Sankhya form with agriculture, usefulness, and material support.' },
+        { name: 'Soola (Shoola) Yoga', rule: { type: 'sankhya', signCount: 3 }, shloka: '16-17', effects: '47', result: 'The classical text associates this three-sign Sankhya form with struggle, intensity, and courage.' },
+        { name: 'Yuga Yoga', rule: { type: 'sankhya', signCount: 2 }, shloka: '16-17', effects: '48', result: 'The classical text associates this two-sign Sankhya form with deprivation and social difficulty.' },
+        { name: 'Gola Yoga', rule: { type: 'sankhya', signCount: 1 }, shloka: '16-17', effects: '49', result: 'The classical text associates this one-sign Sankhya form with limited resources and hardship.' }
+    ];
 
 const NEW_YOGAS = [];
     // ---------- 1. Adhi Yoga (from Lagna) ----------
@@ -2697,18 +2795,18 @@ const NEW_YOGAS = [];
 
     // ---------- 4–15. The 12 Bhava-Strength Yogas ----------
     const BHAVA_YOGAS = [
-        { house: 1, name: 'Chamara Yoga', result: 'The native grows in prosperity like the waxing Moon, is well-behaved, wealthy, highly renowned, long-lived, and becomes a lord of men.' },
+        { house: 1, name: 'Lagna Bhava Strength Yoga', result: 'The native grows in prosperity like the waxing Moon, is well-behaved, wealthy, highly renowned, long-lived, and becomes a lord of men.' },
         { house: 2, name: 'Dhenu Yoga', result: 'The native is exceptionally well-equipped with gold, wealth, grains, and precious stones, living a life equal to an emperor.' },
         { house: 3, name: 'Shaurya Yoga', result: 'The native is blessed with devoted younger brothers, is exceptionally brave, valiant, and admired by others.' },
         { house: 4, name: 'Jaladhi Yoga', result: 'The native owns a beautiful mansion, uses excellent vehicles, is rich in cattle and grains, and is highly respected and happy.' },
-        { house: 5, name: 'Chhatra Yoga', result: 'The native is blessed with a happy family, children, and wealth; possesses a sharp intellect and is revered by leaders.' },
+        { house: 5, name: 'Fifth Bhava Strength Yoga', result: 'The native is blessed with a happy family, children, and wealth; possesses a sharp intellect and is revered by leaders.' },
         { house: 6, name: 'Astra Yoga', result: 'The native is capable of conquering powerful foes and rules over others, though may be somewhat arrogant.' },
         { house: 7, name: 'Kama Yoga', result: 'The native surpasses their father in good qualities, is highly prosperous, and strictly devoted to their own spouse.' },
         { house: 8, name: 'Asura Yoga', result: 'A Dusthana strengthening — the native may become self-serving, a talebearer, and prone to sinful cravings despite material gain.' },
         { house: 9, name: 'Bhagya Yoga', result: 'The native observes a righteous code of conduct, pleases the Gods, travels in comfort, and brings glory to their family.' },
         { house: 10, name: 'Khyati Yoga', result: 'The native becomes a respected leader who protects others through righteous conduct, enjoying fame, wealth, and a prosperous family.' },
         { house: 11, name: 'Parijata Yoga', result: 'The native constantly celebrates auspicious occasions, becomes wealthy, highly learned, and fond of music and stories.' },
-        { house: 12, name: 'Musala Yoga', result: 'A Dusthana strengthening — wealth is accumulated only with great difficulty and remains unstable, though spent only for legitimate purposes.' }
+        { house: 12, name: 'Vyaya Bhava Strength Yoga', result: 'A Dusthana strengthening — wealth is accumulated only with great difficulty and remains unstable, though spent only for legitimate purposes.' }
     ];
 
     BHAVA_YOGAS.forEach(def => {
@@ -2972,38 +3070,6 @@ const NEW_YOGAS = [];
             return {
                 result: isDetected,
                 rationale: isDetected ? `It forms because Jupiter, Saturn, and the 5th Lord (${lord5}) are all dignified and placed in Kendra/Trikona houses.` : 'Jupiter, Saturn, and the 5th Lord are not all simultaneously dignified in Kendra/Trikona houses.'
-            };
-        }
-    });
-
-    // ---------- 24. Sankhya Yoga ----------
-    NEW_YOGAS.push({
-        name: 'Sankhya Yoga',
-        category: 'Numerical Placement Yoga',
-        quality: 'Special',
-        planets: [],
-        keywords: ['sign distribution', 'numerical destiny'],
-        methodOfCalculation: 'Count how many distinct zodiac signs are occupied by the seven classical planets (Sun through Saturn). The resulting count (1 through 7) determines the specific sub-yoga: 7 signs = Vallaki/Veena, 6 = Dharma, 5 = Hasha, 4 = Kendra, 3 = Shula, 2 = Yuga, 1 = Gola.',
-        cause: 'How concentrated or spread the seven planets are across the zodiac reflects how focused vs. scattered the native\'s life energies and interests will be.',
-        description: 'A family of 7 yogas classified purely by how many distinct signs the seven classical planets occupy.',
-        result: '7 signs (Vallaki/Veena): wealthy, fond of dancing/music. 6 (Dharma): generous, kingly. 5 (Hasha): enjoys life, good conduct. 4 (Kendra): acquires wealth and land. 3 (Shula): poor, wrathful. 2 (Yuga): heretical, without wealth. 1 (Gola): short-lived, indolent, sinful.',
-        nullification: 'Not classically nullified — this is a descriptive/temperamental yoga rather than a fortune-bearing one; its effects blend with the rest of the chart.',
-        referenceShloka: '(Sankhya Yoga classification, classical Jataka texts.)',
-        strength: 'Moderate',
-        remedies: ['If 1–3 signs occupied (Gola/Yuga/Shula), deliberately diversify activities/interests as a behavioral remedy to counter excessive concentration'],
-        mantras: [],
-        deities: [],
-        evaluate: function (c) {
-            if (!c.planets) return { result: false };
-            const seven = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
-            const signsOccupied = new Set();
-            seven.forEach(p => { if (c.planets[p] && c.planets[p].sn !== undefined) signsOccupied.add(c.planets[p].sn); });
-            const count = signsOccupied.size;
-            const names = { 7: 'Vallaki/Veena Yoga', 6: 'Dharma Yoga', 5: 'Hasha Yoga', 4: 'Kendra Yoga', 3: 'Shula Yoga', 2: 'Yuga Yoga', 1: 'Gola Yoga' };
-            const subName = names[count] || 'Unclassified';
-            return {
-                result: count >= 1 && count <= 7,
-                rationale: `The seven classical planets occupy ${count} distinct sign(s), forming the specific sub-combination: ${subName}.`
             };
         }
     });
@@ -3422,7 +3488,7 @@ const NEW_YOGAS = [];
         description: 'Formed when a planet (other than Moon, Rahu, Ketu) occupies the 2nd house from the Sun. Its counterpart, Vasi (Vosi) Yoga, uses the 12th house instead; when both occur together it is Ubhayachari Yoga.',
         result: 'The native is fortunate and virtuous, leading a happy, famous, and aristocratic life — the precise flavor depends on which planet forms the yoga.',
         nullification: 'Weakened if the qualifying planet is combust, debilitated, or heavily afflicted by malefic aspect/conjunction.',
-        referenceShloka: 'Discussed in Brihat Parashara Hora Shastra and Saravali under the Veshi/Vashi/Ubhayachari family of Sun-based yogas — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        referenceShloka: 'BPHS, Ch. 38, shlokas 1-4 (Vesi and effects).',
         strength: 'Medium',
         remedies: ['Strengthen the Sun through Sunday practices', 'Strengthen the specific planet occupying the 2nd from Sun'],
         mantras: ['Om Suryaya Namah'],
@@ -3453,7 +3519,7 @@ const NEW_YOGAS = [];
         description: 'Considered the strongest of the three solar-adjacent yogas (Vesi, Vasi, Ubhayachari), formed when qualifying planets occupy both the 2nd and 12th houses from the Sun at once.',
         result: 'The native is an eloquent speaker with well-proportioned limbs, takes delight in everything, and is liked by all — wealthy and famous.',
         nullification: 'Weakened if the qualifying planets are combust, debilitated, or heavily afflicted; strongest when both sides carry naturally benefic planets.',
-        referenceShloka: 'Described in Brihat Parashara Hora Shastra and Saravali (Kalyana Varma) as the most powerful of the Veshi/Vashi/Ubhayachari family — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        referenceShloka: 'BPHS, Ch. 38, shlokas 1-4 (Ubhayachari and effects).',
         strength: 'Strong',
         remedies: ['Strengthen the Sun through Sunday practices and ruby (after consultation)', 'Support with charity aligned to the planets on both sides'],
         mantras: ['Om Suryaya Namah', 'Om Hraam Hreem Hraum Sah Suryaya Namah'],
@@ -3924,19 +3990,19 @@ const NEW_YOGAS = [];
     });
 
 
-    // ---------- 50. Vasi Yoga ----------
+    // ---------- 50. Vosi (Vasi) Yoga ----------
     NEW_YOGAS.push({
-        name: 'Vasi Yoga',
+        name: 'Vosi/Vasi Yoga',
         category: 'Auspicious',
         quality: 'Positive',
         planets: ['Sun'],
         keywords: ['prosperity', 'generosity', 'popularity'],
         methodOfCalculation: 'Check the 12th house counted from the Sun. If any planet other than the Moon (and, per most classical formulations, other than Rahu/Ketu) occupies that house, Vasi Yoga forms.',
         cause: 'A planet immediately preceding the Sun (in the 12th, the house of release/withdrawal) lends the solar identity a reflective, generous quality — support that comes from within rather than from external validation.',
-        description: 'The counterpart to Vesi Yoga: formed when a planet (other than Moon, Rahu, Ketu) occupies the 12th house from the Sun. When both Vesi and Vasi occur together it is Ubhayachari Yoga.',
+        description: 'The counterpart to Vesi Yoga: formed when a planet (other than Moon, Rahu, Ketu) occupies the 12th house from the Sun. The name is also transliterated as Vasi; when both solar flanks are occupied, Ubhayachari Yoga forms.',
         result: 'The native will be happy, remain prosperous and liberal, and will be liked by all people.',
         nullification: 'Weakened if the qualifying planet is combust, debilitated, or heavily afflicted by malefic aspect/conjunction; a malefic forming the yoga gives contrary/mixed results rather than fully negating it.',
-        referenceShloka: 'Discussed in Brihat Parashara Hora Shastra and Saravali under the Veshi/Vashi/Ubhayachari family of Sun-based yogas — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        referenceShloka: 'BPHS, Ch. 38, shlokas 1-4 (Vosi/Vasi and effects).',
         strength: 'Medium',
         remedies: ['Strengthen the Sun through Sunday practices', 'Strengthen the specific planet occupying the 12th from Sun'],
         mantras: ['Om Suryaya Namah'],
@@ -3955,21 +4021,21 @@ const NEW_YOGAS = [];
         }
     });
 
-    // ---------- 51. Nav Yoga (Nauka Yoga) ----------
+    // ---------- 51. Nauka Yoga ----------
     NEW_YOGAS.push({
-        name: 'Nav Yoga',
-        category: 'Muhurta - Inauspicious Timing',
-        quality: 'Negative',
+        name: 'Nauka Yoga',
+        category: 'Nabhasa Yoga',
+        quality: 'Special',
         planets: ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'],
-        keywords: ['rise and fall', 'early fame', 'later misery'],
-        methodOfCalculation: 'One of the Nabhasa (Akriti) Yogas from "300 Important Combinations": check whether all seven classical planets (Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn) occupy seven contiguous houses starting from the Lagna (i.e. all fall within houses 1 through 7, with houses 8-12 empty of these seven).',
-        cause: 'All seven classical planets crowded into the first half of the chart (Lagna through 7th) — the visible, outward-facing houses — while the closing houses (8-12, endings/losses/foreign matters) are empty, is read as a life that peaks early and has no planetary support to sustain it into later years, like a boat (Nauka) that floats but eventually runs aground.',
-        description: 'Formed when all seven classical planets occupy seven contiguous houses starting from the Lagna. Related combinations in the same Nabhasa Yoga family (starting from other houses) are Kuta, Chhatra, and Chapa Yoga.',
-        result: 'The native will be occasionally happy and famous in the earlier part of life, but will later suffer from miseries.',
-        nullification: 'Its severity is read as reduced if the planets within the 1st-7th span are individually strong and well-dignified, and if the lords of the empty houses (8th-12th) are themselves strong from elsewhere in the chart.',
-        referenceShloka: 'Recorded among the Nabhasa (Akriti) Yogas in "300 Important Combinations" (Dr. B.V. Raman), following the classification tradition of Brihat Jataka\'s Nabhasa Yoga chapter — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        keywords: ['Nabhasa', 'Akriti', 'seven-house span'],
+        methodOfCalculation: 'One of the Nabhasa Akriti Yogas: all seven classical planets must be confined to the seven contiguous houses from the Ascendant through the 7th.',
+        cause: 'This is a chart-wide planetary-distribution combination in the BPHS Nabhasa classification.',
+        description: 'Nauka Yoga is formed when all seven classical planets occupy houses 1 through 7 from the Ascendant.',
+        result: 'The classical text associates Nauka Yoga with livelihood connected to water and material resources.',
+        nullification: 'Nabhasa effects are classically considered across planetary periods; judge the result with planetary strength and the rest of the chart.',
+        referenceShloka: 'BPHS, Ch. 35, shloka 14 (formation); effects in shloka 36.',
         strength: 'Medium',
-        remedies: ['Build savings and support structures early to cushion later life', 'Strengthen the lords of the 8th-12th houses', 'General long-term financial planning'],
+        remedies: [],
         mantras: ['Om Namah Shivaya'],
         deities: ['Shiva'],
         evaluate: function (c) {
@@ -3988,16 +4054,16 @@ const NEW_YOGAS = [];
     // ---------- 52. Kuta Yoga ----------
     NEW_YOGAS.push({
         name: 'Kuta Yoga',
-        category: 'Muhurta - Inauspicious Timing',
+        category: 'Nabhasa Yoga',
         quality: 'Negative',
         planets: ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'],
         keywords: ['deceit', 'cunning', 'concealment'],
         methodOfCalculation: 'One of the Nabhasa (Akriti) Yogas: check whether all seven classical planets occupy seven contiguous houses starting from the 4th house (i.e. all fall within houses 4 through 10).',
         cause: 'All seven planets clustered starting from the 4th (a hidden, private house) rather than the visible Lagna is read as a life oriented toward concealment and private dealings rather than open conduct.',
-        description: 'Formed when all seven classical planets occupy seven contiguous houses starting from the 4th house. Related combinations in the same family (starting from other houses) are Nav, Chhatra, and Chapa Yoga.',
+        description: 'Formed when all seven classical planets occupy houses 4 through 10. Related combinations are Nauka, Chatra, and Chapa Yoga.',
         result: 'The native becomes a liar and cunning; classically also associated with confinement (jailor/jailed connotations in some traditions).',
         nullification: 'Its severity is reduced if the planets within the 4th-10th span are individually well-dignified and benefic in nature, softening the deceptive tendency into mere shrewdness.',
-        referenceShloka: 'Recorded among the Nabhasa (Akriti) Yogas in "300 Important Combinations" (Dr. B.V. Raman), following the classification tradition of Brihat Jataka\'s Nabhasa Yoga chapter — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        referenceShloka: 'BPHS, Ch. 35, shloka 14 (formation); effects in shloka 37.',
         strength: 'Medium',
         remedies: ['Cultivate honesty and transparency as a conscious practice', 'Strengthen Jupiter and Mercury for clarity of judgment and speech'],
         mantras: ['Om Gurave Namah', 'Om Budhaya Namaha'],
@@ -4018,16 +4084,16 @@ const NEW_YOGAS = [];
     // ---------- 53. Chapa Yoga ----------
     NEW_YOGAS.push({
         name: 'Chapa Yoga',
-        category: 'Muhurta - Auspicious Timing',
+        category: 'Nabhasa Yoga',
         quality: 'Positive',
         planets: ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'],
         keywords: ['administrative power', 'wealth', 'advocacy for the poor'],
         methodOfCalculation: 'One of the Nabhasa (Akriti) Yogas: check whether all seven classical planets occupy seven contiguous houses starting from the 10th house (i.e. all fall within houses 10, 11, 12, 1, 2, 3, 4, wrapping around the chart).',
         cause: 'All seven planets clustered starting from the 10th (career, public standing) gives sustained public-facing capability and control over resources, classically read as the ability to command high office.',
-        description: 'Formed when all seven classical planets occupy seven contiguous houses starting from the 10th house. Related combinations in the same family (starting from other houses) are Nav, Kuta, and Chhatra Yoga.',
-        result: 'The native becomes brave, and happy in the later stages of life; inclined to help the poor and champion their causes, and becomes famous and well-liked, especially among common people.',
+        description: 'Formed when all seven classical planets occupy houses 10, 11, 12, 1, 2, 3, and 4. Related combinations are Nauka, Koota, and Chatra Yoga.',
+        result: 'The classical text associates Chapa Yoga with resourcefulness and improved circumstances later in life.',
         nullification: 'Strongest when the planets within the 10th-4th span are individually well-dignified; weakened if the majority are debilitated or heavily afflicted.',
-        referenceShloka: 'Recorded among the Nabhasa (Akriti) Yogas in "300 Important Combinations" (Dr. B.V. Raman), following the classification tradition of Brihat Jataka\'s Nabhasa Yoga chapter — exact verse numbering varies by edition, so no single canonical shloka is quoted here.',
+        referenceShloka: 'BPHS, Ch. 35, shloka 14 (formation); effects in shloka 39.',
         strength: 'Strong',
         remedies: ['Channel the yoga\'s administrative capacity into public service or advocacy work', 'Strengthen the 10th lord for sustained career results'],
         mantras: ['Om Suryaya Namah'],
@@ -4079,6 +4145,416 @@ const NEW_YOGAS = [];
         }
     });
 
+
+    const CLASSICAL_MALEFICS = ['Sun', 'Mars', 'Saturn', 'Rahu', 'Ketu'];
+
+    function getSignIndex(pos) {
+        if (!pos) return -1;
+        const index = pos.sn !== undefined && pos.sn !== null ? Number(pos.sn) : YOGA_SIGNS().indexOf(pos.sign);
+        return Number.isInteger(index) && index >= 0 && index < 12 ? index : -1;
+    }
+
+    function planetsAtHouse(c, house) {
+        if (!c || !c.planets) return [];
+        return Object.keys(c.planets).filter(name => c.planets[name] && Number(c.planets[name].house) === house);
+    }
+
+    function hasPlanetAtHouse(c, planetNames, house) {
+        return planetNames.some(name => c.planets && c.planets[name] && Number(c.planets[name].house) === house);
+    }
+
+    function hasAllHousesOccupied(c, houses) {
+        return houses.every(house => planetsAtHouse(c, house).length > 0);
+    }
+
+    function isOwnExaltedOrFriendly(planetName, pos) {
+        if (!pos) return false;
+        if (isStrong(pos)) return true;
+        const sn = getSignIndex(pos);
+        const signLordName = sn >= 0 ? signLord(YOGA_SIGNS()[sn]) : null;
+        const relationships = window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.NATURAL_RELATIONSHIPS;
+        return !!(signLordName && relationships && relationships[planetName] &&
+            relationships[planetName][signLordName] === 'Friend');
+    }
+
+    function isExalted(planetName, pos) {
+        const sn = getSignIndex(pos);
+        const dignities = window.ASTRO_CONSTANTS && window.ASTRO_CONSTANTS.DIGNITIES;
+        return sn >= 0 && !!(dignities && dignities[planetName] && dignities[planetName].exalt === sn);
+    }
+
+    function hasBeneficsAtRelativeHouses(c, referencePlanet, relativeHouses) {
+        const reference = c.planets && c.planets[referencePlanet];
+        if (!reference || !reference.house) return false;
+        return relativeHouses.every(offset => {
+            const house = ((Number(reference.house) + offset - 2 + 12) % 12) + 1;
+            return hasPlanetAtHouse(c, NABHASA_BENEFICS, house);
+        });
+    }
+
+    function isInNavamsaKendraOrTrikonaOrExalted(planetName, pos) {
+        return !!(pos && (isKendraTrikona(Number(pos.house)) || isExalted(planetName, pos)));
+    }
+
+    function getNavamsaSignIndex(pos) {
+        const sign = getSignIndex(pos);
+        const degree = pos && parseFloat(pos.deg);
+        if (sign < 0 || !Number.isFinite(degree)) return -1;
+        const startSigns = [0, 9, 6, 3, 0, 9, 6, 3, 0, 9, 6, 3];
+        const part = Math.max(0, Math.min(8, Math.floor(degree / (30 / 9))));
+        return (startSigns[sign] + part) % 12;
+    }
+
+    const BPHS_NAMED_YOGAS = [
+        {
+            name: 'Subha Yoga (BPHS)',
+            shloka: 'Ch. 36, shlokas 1-2',
+            method: 'A natural benefic occupies the Ascendant, or natural benefics occupy both the 2nd and 12th houses.',
+            result: 'The classical text associates Subha Yoga with eloquence, a pleasant disposition, and virtuous conduct.',
+            check: c => hasPlanetAtHouse(c, NABHASA_BENEFICS, 1) ||
+                (hasPlanetAtHouse(c, NABHASA_BENEFICS, 2) && hasPlanetAtHouse(c, NABHASA_BENEFICS, 12))
+        },
+        {
+            name: 'Asubha Yoga',
+            shloka: 'Ch. 36, shlokas 1-2',
+            method: 'A natural malefic occupies the Ascendant, or natural malefics occupy both the 2nd and 12th houses.',
+            result: 'The classical text associates Asubha Yoga with sensuality, harmful conduct, and difficulty respecting others’ resources.',
+            check: c => hasPlanetAtHouse(c, CLASSICAL_MALEFICS, 1) ||
+                (hasPlanetAtHouse(c, CLASSICAL_MALEFICS, 2) && hasPlanetAtHouse(c, CLASSICAL_MALEFICS, 12))
+        },
+        {
+            name: 'Parvata Yoga',
+            shloka: 'Ch. 36, shlokas 7-8',
+            method: 'Benefics occupy angular houses, and the 7th and 8th houses are vacant or occupied only by benefics.',
+            result: 'The classical text associates Parvata Yoga with prosperity, learning, generosity, and public regard.',
+            check: c => hasPlanetAtHouse(c, NABHASA_BENEFICS, 1) ||
+                hasPlanetAtHouse(c, NABHASA_BENEFICS, 4) ||
+                hasPlanetAtHouse(c, NABHASA_BENEFICS, 7) ||
+                hasPlanetAtHouse(c, NABHASA_BENEFICS, 10)
+                    ? [7, 8].every(house => planetsAtHouse(c, house).every(name => NABHASA_BENEFICS.includes(name)))
+                    : false
+        },
+        {
+            name: 'Chamara Yoga',
+            shloka: 'Ch. 36, shlokas 11-12',
+            method: 'Either the exalted Ascendant lord occupies an angle and receives Jupiter’s aspect, or at least two benefics occupy the 1st, 7th, 9th, or 10th houses.',
+            result: 'The classical text associates Chamara Yoga with scholarship, longevity, eloquence, and honor.',
+            check: c => {
+                if (!c.asc) return false;
+                const ascLordName = lordOfHouse(Number(c.asc.sn) || 0, 1);
+                const ascLord = c.planets && c.planets[ascLordName];
+                const jupiter = c.planets && c.planets.Jupiter;
+                const exaltedForm = ascLord && isExalted(ascLordName, ascLord) && isKendra(Number(ascLord.house)) &&
+                    jupiter && (Number(jupiter.house) === Number(ascLord.house) || hasAspect('Jupiter', Number(jupiter.house), Number(ascLord.house)));
+                const beneficCount = NABHASA_BENEFICS.filter(name =>
+                    c.planets && c.planets[name] && [1, 7, 9, 10].includes(Number(c.planets[name].house))).length;
+                return !!exaltedForm || beneficCount >= 2;
+            }
+        },
+        {
+            name: 'Shankha Yoga',
+            shloka: 'Ch. 36, shlokas 13-14',
+            method: 'Either the 5th and 6th lords occupy mutual angles while the Ascendant lord is strong, or the Ascendant and 10th lords occupy movable signs while the 9th lord is strong.',
+            result: 'The classical text associates Shankha Yoga with prosperity, intelligence, virtue, and longevity.',
+            check: c => {
+                if (!c.asc) return false;
+                const ascSn = Number(c.asc.sn) || 0;
+                const ascLordName = lordOfHouse(ascSn, 1);
+                const lord5 = c.planets && c.planets[lordOfHouse(ascSn, 5)];
+                const lord6 = c.planets && c.planets[lordOfHouse(ascSn, 6)];
+                const ascLord = c.planets && c.planets[ascLordName];
+                const lord10 = c.planets && c.planets[lordOfHouse(ascSn, 10)];
+                const lord9 = c.planets && c.planets[lordOfHouse(ascSn, 9)];
+                const firstForm = lord5 && lord6 && ascLord && isStrong(ascLord) &&
+                    isKendra(houseCount(Number(lord5.house), Number(lord6.house)));
+                const movable = [0, 3, 6, 9];
+                const secondForm = ascLord && lord10 && lord9 && isStrong(lord9) &&
+                    movable.includes(getSignIndex(ascLord)) && movable.includes(getSignIndex(lord10));
+                return !!firstForm || !!secondForm;
+            }
+        },
+        {
+            name: 'Bheri Yoga',
+            shloka: 'Ch. 36, shlokas 15-16',
+            method: 'The 9th lord is strong and either the 12th, 1st, 2nd, and 7th houses are all occupied, or Venus, Jupiter, and the Ascendant lord are all angular from the Ascendant.',
+            result: 'The classical text associates Bheri Yoga with prosperity, family resources, virtue, and public standing.',
+            check: c => {
+                if (!c.asc) return false;
+                const ascSn = Number(c.asc.sn) || 0;
+                const lord9 = c.planets && c.planets[lordOfHouse(ascSn, 9)];
+                const ascLord = c.planets && c.planets[lordOfHouse(ascSn, 1)];
+                const venus = c.planets && c.planets.Venus;
+                const jupiter = c.planets && c.planets.Jupiter;
+                const firstForm = lord9 && isStrong(lord9) && hasAllHousesOccupied(c, [12, 1, 2, 7]);
+                const secondForm = lord9 && isStrong(lord9) && ascLord && venus && jupiter &&
+                    [ascLord, venus, jupiter].every(pos => isKendra(Number(pos.house)));
+                return !!firstForm || !!secondForm;
+            }
+        },
+        {
+            name: 'Mridanga Yoga',
+            shloka: 'Ch. 36, shloka 17',
+            method: 'The Ascendant lord is strong, and the other seven classical planets occupy angles or trines, or their own or exaltation signs.',
+            result: 'The classical text associates Mridanga Yoga with happiness and elevated status.',
+            check: c => {
+                if (!c.asc) return false;
+                const positions = getNabhasaPositions(c);
+                const ascLordName = lordOfHouse(Number(c.asc.sn) || 0, 1);
+                const ascLord = c.planets && c.planets[ascLordName];
+                return !!(positions && ascLord && isStrong(ascLord) &&
+                    positions.filter(pos => pos.name !== ascLordName).every(pos =>
+                        isKendraTrikona(pos.house) || isOwnExaltedOrFriendly(pos.name, c.planets[pos.name])));
+            }
+        },
+        {
+            name: 'Sarada Yoga',
+            shloka: 'Ch. 36, shlokas 19-20',
+            method: 'Either the 10th lord is in the 5th, Mercury is angular, and the Sun is strong in Leo; or Jupiter or Mercury is trinal to the Moon while Mars occupies the 11th.',
+            result: 'The classical text associates Sarada Yoga with learning, prosperity, piety, and the regard of leaders.',
+            check: c => {
+                if (!c.asc || !c.planets) return false;
+                const ascSn = Number(c.asc.sn) || 0;
+                const lord10 = c.planets[lordOfHouse(ascSn, 10)];
+                const mercury = c.planets.Mercury;
+                const sun = c.planets.Sun;
+                const moon = c.planets.Moon;
+                const mars = c.planets.Mars;
+                const jupiter = c.planets.Jupiter;
+                const firstForm = lord10 && Number(lord10.house) === 5 && mercury &&
+                    isKendra(Number(mercury.house)) && sun && getSignIndex(sun) === 4 && isStrong(sun);
+                const secondForm = moon && mars && Number(mars.house) === 11 &&
+                    [jupiter, mercury].some(pos => pos &&
+                        isTrikona(houseCount(Number(moon.house), Number(pos.house))));
+                return !!firstForm || !!secondForm;
+            }
+        },
+        {
+            name: 'Matsya Yoga',
+            shloka: 'Ch. 36, shlokas 21-22',
+            method: 'Benefics occupy the 1st and 9th, both benefics and malefics occupy the 5th, and malefics occupy the 4th and 8th houses.',
+            result: 'The classical text associates Matsya Yoga with learning, kindness, virtue, and spiritual inclination.',
+            check: c => hasPlanetAtHouse(c, NABHASA_BENEFICS, 1) &&
+                hasPlanetAtHouse(c, NABHASA_BENEFICS, 9) &&
+                hasPlanetAtHouse(c, NABHASA_BENEFICS, 5) &&
+                hasPlanetAtHouse(c, CLASSICAL_MALEFICS, 5) &&
+                hasPlanetAtHouse(c, CLASSICAL_MALEFICS, 4) &&
+                hasPlanetAtHouse(c, CLASSICAL_MALEFICS, 8)
+        },
+        {
+            name: 'Koorma Yoga',
+            shloka: 'Ch. 36, shlokas 23-24',
+            method: 'Benefics in the 5th, 6th, and 7th are in own, exalted, or friendly signs; malefics occupy the 3rd and 11th; the Ascendant lord is in its own or exalted sign.',
+            result: 'The classical text associates Koorma Yoga with courage, virtue, helpfulness, happiness, and leadership.',
+            check: c => {
+                if (!c.asc || !c.planets) return false;
+                const ascSn = Number(c.asc.sn) || 0;
+                const ascLordName = lordOfHouse(ascSn, 1);
+                const ascLord = c.planets[ascLordName];
+                const beneficHouses = [5, 6, 7];
+                const beneficForm = beneficHouses.every(house => {
+                    const occupants = NABHASA_BENEFICS.filter(name =>
+                        c.planets[name] && Number(c.planets[name].house) === house);
+                    return occupants.length > 0 && occupants.every(name =>
+                        isOwnExaltedOrFriendly(name, c.planets[name]));
+                });
+                return !!(ascLord && isStrong(ascLord) && beneficForm &&
+                    hasPlanetAtHouse(c, CLASSICAL_MALEFICS, 3) &&
+                    hasPlanetAtHouse(c, CLASSICAL_MALEFICS, 11));
+            }
+        },
+        {
+            name: 'Khadga Yoga',
+            shloka: 'Ch. 36, shlokas 25-26',
+            method: 'The 2nd and 9th lords exchange signs, and the Ascendant lord occupies a kendra or trikona.',
+            result: 'The classical text associates Khadga Yoga with wealth, fortune, learning, intelligence, and skill.',
+            check: c => {
+                if (!c.asc || !c.planets) return false;
+                const ascSn = Number(c.asc.sn) || 0;
+                const lord2Name = lordOfHouse(ascSn, 2);
+                const lord9Name = lordOfHouse(ascSn, 9);
+                const lord2 = c.planets[lord2Name];
+                const lord9 = c.planets[lord9Name];
+                const ascLord = c.planets[lordOfHouse(ascSn, 1)];
+                return !!(lord2 && lord9 && ascLord &&
+                    signLord(YOGA_SIGNS()[getSignIndex(lord2)]) === lord9Name &&
+                    signLord(YOGA_SIGNS()[getSignIndex(lord9)]) === lord2Name &&
+                    isKendraTrikona(Number(ascLord.house)));
+            }
+        },
+        {
+            name: 'Kusuma Yoga',
+            shloka: 'Ch. 36, shlokas 29-30',
+            method: 'A fixed sign rises; Venus is angular, the Moon is trinal with another benefic, and Saturn occupies the 10th.',
+            result: 'The classical text associates Kusuma Yoga with comfort, generosity, virtue, and distinction.',
+            check: c => {
+                if (!c.asc || !c.planets || !c.planets.Moon || !c.planets.Venus || !c.planets.Saturn) return false;
+                const ascSn = Number(c.asc.sn);
+                const moonHouse = Number(c.planets.Moon.house);
+                return [1, 4, 7, 10].includes(ascSn) &&
+                    isKendra(Number(c.planets.Venus.house)) &&
+                    isTrikona(moonHouse) &&
+                    hasPlanetAtHouse(c, NABHASA_BENEFICS.filter(name => name !== 'Moon'), moonHouse) &&
+                    Number(c.planets.Saturn.house) === 10;
+            }
+        },
+        {
+            name: 'Kalanidhi Yoga',
+            shloka: 'Ch. 36, shlokas 31-32',
+            method: 'Jupiter occupies the 2nd or 5th, and is conjunct or aspected by both Mercury and Venus.',
+            result: 'The classical text associates Kalanidhi Yoga with learning, happiness, health, and material prosperity.',
+            check: c => {
+                if (!c.asc || !c.planets || !c.planets.Jupiter || !c.planets.Mercury || !c.planets.Venus) return false;
+                const jupiter = c.planets.Jupiter;
+                const supportedBy = name => {
+                    const pos = c.planets[name];
+                    return Number(pos.house) === Number(jupiter.house) ||
+                        hasAspect(name, Number(pos.house), Number(jupiter.house));
+                };
+                return [2, 5].includes(Number(jupiter.house)) &&
+                    supportedBy('Mercury') && supportedBy('Venus');
+            }
+        },
+        {
+            name: 'Kalpadruma/Parijata Yoga',
+            shloka: 'Ch. 36, shlokas 33-34',
+            method: 'The Ascendant lord, its dispositor, that planet’s dispositor, and the Navamsa dispositor of the third planet are each in a kendra/trikona or exalted.',
+            result: 'The classical text associates Kalpadruma (also called Parijata) Yoga with prosperity, strength, virtue, and high status.',
+            check: c => {
+                if (!c.asc || !c.planets) return false;
+                const ascLordName = lordOfHouse(Number(c.asc.sn) || 0, 1);
+                const ascLord = c.planets[ascLordName];
+                if (!ascLord) return false;
+                const ascLordSn = getSignIndex(ascLord);
+                if (ascLordSn < 0) return false;
+                const firstDispositor = signLord(YOGA_SIGNS()[ascLordSn]);
+                const firstPos = c.planets[firstDispositor];
+                if (!firstPos) return false;
+                const firstPosSn = getSignIndex(firstPos);
+                if (firstPosSn < 0) return false;
+                const secondDispositor = signLord(YOGA_SIGNS()[firstPosSn]);
+                const secondPos = c.planets[secondDispositor];
+                if (!secondPos) return false;
+                const navamsaSn = getNavamsaSignIndex(secondPos);
+                if (navamsaSn < 0) return false;
+                const navamsaDispositor = signLord(YOGA_SIGNS()[navamsaSn]);
+                const chain = [
+                    [ascLordName, ascLord],
+                    [firstDispositor, firstPos],
+                    [secondDispositor, secondPos],
+                    [navamsaDispositor, c.planets[navamsaDispositor]]
+                ];
+                return chain.every(([name, pos]) => isInNavamsaKendraOrTrikonaOrExalted(name, pos));
+            }
+        },
+        {
+            name: 'Hari Yoga',
+            shloka: 'Ch. 36, shlokas 35-36',
+            method: 'Natural benefics occupy the 2nd, 12th, and 8th houses counted from the 2nd lord.',
+            result: 'The classical text associates Hari Yoga with happiness, learning, wealth, and family resources.',
+            check: c => {
+                if (!c.asc) return false;
+                const lord2Name = lordOfHouse(Number(c.asc.sn) || 0, 2);
+                return hasBeneficsAtRelativeHouses(c, lord2Name, [2, 12, 8]);
+            }
+        },
+        {
+            name: 'Hara Yoga',
+            shloka: 'Ch. 36, shlokas 35-36',
+            method: 'Natural benefics occupy the 4th, 9th, and 8th houses counted from the sign occupied by the 7th lord.',
+            result: 'The classical text associates Hara Yoga with happiness, learning, wealth, and family resources.',
+            check: c => {
+                if (!c.asc) return false;
+                const lord7Name = lordOfHouse(Number(c.asc.sn) || 0, 7);
+                return hasBeneficsAtRelativeHouses(c, lord7Name, [4, 9, 8]);
+            }
+        },
+        {
+            name: 'Brahma Yoga (Trimurthi)',
+            shloka: 'Ch. 36, shlokas 35-36',
+            method: 'Natural benefics occupy the 4th, 10th, and 11th houses counted from the Ascendant lord.',
+            result: 'The classical text associates Brahma Yoga with happiness, learning, wealth, and family resources.',
+            check: c => {
+                if (!c.asc) return false;
+                const ascLordName = lordOfHouse(Number(c.asc.sn) || 0, 1);
+                return hasBeneficsAtRelativeHouses(c, ascLordName, [4, 10, 11]);
+            }
+        }
+    ];
+
+    BPHS_NAMED_YOGAS.forEach(definition => {
+        NEW_YOGAS.push({
+            name: definition.name,
+            category: 'Classical Yoga',
+            quality: 'Special',
+            planets: [],
+            keywords: ['BPHS', 'classical yoga'],
+            methodOfCalculation: definition.method,
+            cause: 'This placement rule is taken from the named yoga section of Brihat Parashara Hora Shastra.',
+            description: definition.method,
+            result: definition.result,
+            nullification: 'The evaluator checks the stated formation rule only; weigh strength, affliction, and source-specific variants separately.',
+            referenceShloka: `BPHS, ${definition.shloka}.`,
+            strength: 'Moderate',
+            remedies: [],
+            mantras: [],
+            deities: [],
+            evaluate: function (c) {
+                const detected = !!definition.check(c || {});
+                return {
+                    result: detected,
+                    rationale: detected
+                        ? `It forms according to the BPHS rule in ${definition.shloka}.`
+                        : `The chart does not satisfy the BPHS rule in ${definition.shloka}, or required birth-chart placements are unavailable.`
+                };
+            }
+        });
+    });
+
+    NABHASA_YOGAS.forEach(definition => {
+        const method = definition.rule.type === 'modality'
+        ? `All seven classical planets occupy ${definition.name === 'Rajju Yoga' ? 'movable' : definition.name === 'Musala Yoga' ? 'fixed' : 'dual'} signs.`
+        : definition.rule.type === 'dala'
+                ? `Natural ${definition.name === 'Maala Yoga' ? 'benefics' : 'malefics'} occupy at least three angular houses.`
+                : definition.rule.type === 'sankhya'
+                    ? `The seven classical planets occupy exactly ${definition.rule.signCount} distinct signs, with no other Nabhasa Yoga taking precedence.`
+                : definition.rule.type === 'mixed-houses'
+                    ? 'All natural benefics occupy the specified benefic angles, while all natural malefics occupy the opposite specified angles.'
+                    : `All seven classical planets are confined to the ${definition.rule.type === 'house-set' ? definition.rule.houses : definition.rule.sets.join(' or ')} house pattern.`;
+        NEW_YOGAS.push({
+            name: definition.name,
+            category: 'Nabhasa Yoga',
+            quality: 'Special',
+            planets: NABHASA_PLANETS.slice(),
+            keywords: ['Nabhasa', 'classical planetary distribution'],
+            methodOfCalculation: method,
+            cause: 'This is a chart-wide planetary-distribution combination in the BPHS Nabhasa classification.',
+            description: method,
+            result: definition.result,
+            nullification: definition.rule.type === 'sankhya'
+                ? 'BPHS states that Sankhya forms are not operative when another Nabhasa Yoga is derivable.'
+                : definition.rule.type === 'modality'
+                    ? 'Saravali, Ch. 21, shloka 7, says Asraya effects do not operate when another Nabhasa Yoga is present; this entry reports the placement pattern.'
+                : 'Interpret with the full chart; this evaluator checks the classical placement pattern only.',
+            referenceShloka: definition.referenceShloka ||
+                `BPHS, Ch. 35, shloka ${definition.shloka} (formation); effects in shloka ${definition.effects}.`,
+            strength: 'Moderate',
+            remedies: [],
+            mantras: [],
+            deities: [],
+            evaluate: function (c) {
+                const detected = matchesNabhasaRule(c, definition);
+                const positions = getNabhasaPositions(c);
+                const rationale = detected
+                    ? definition.rule.type === 'sankhya'
+                        ? `It forms because all seven classical planets occupy exactly ${definition.rule.signCount} distinct signs, with no earlier Nabhasa Yoga detected.`
+                        : `It forms because all seven classical planets meet the ${definition.sourceLabel || 'BPHS'} placement rule for ${definition.name}.`
+                    : positions
+                        ? 'The chart does not meet this Nabhasa placement rule, or a preceding Nabhasa Yoga takes priority.'
+                        : 'All seven classical planet positions are required to evaluate this Nabhasa Yoga.';
+                return { result: detected, rationale };
+            }
+        });
+    });
 
 // Merge NEW_YOGAS into YOGAS_DATA, skipping any name that already exists
 // (kept idempotent/defensive even though there are no known collisions
